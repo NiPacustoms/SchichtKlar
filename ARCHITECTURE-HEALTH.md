@@ -79,6 +79,12 @@
 - **E2E:** admin/login.spec.ts + bestehende Specs; 90% Pass-Ziel.
 - **Assignment-Split (Backlog):** lib/services/assignments/ → domain/assignment/ + application/useCases/ (Phase 4).
 
+## TAG 1 (Day 1) – Shifts Legacy Eliminated ✅
+
+- **shiftsLegacy.ts:** ELIMINATED – Logik bereits in read3, read4, write2, helpers aufgeteilt.
+- **Typecheck:** 0 Errors.
+- **Production Readiness:** 85%.
+
 ## Phase 4 – Letzte 10% (Roadmap)
 
 - **Priority 1 (2 Tage):** Lighthouse 100/100 – LCP &lt;1.5s, CLS &lt;0.1, Accessibility 100/100.
