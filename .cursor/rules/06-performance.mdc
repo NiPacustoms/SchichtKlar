@@ -1,0 +1,20 @@
+# Build
+- Split: `vendor`, `mui`, `firebase`, `react-query`.  
+- Lazy Load: seltene Seiten (Reports, Settings).
+- Code-Splitting: React.lazy() für Feature-basierte Aufteilung.
+- Bundle-Analyse: Optimierung der Chunk-Größen.  
+
+# Rendering
+- Virtualisierung ab 1000 Rows.  
+- Memoize große Listen/Cells.  
+- Bilder/WebP + `loading="lazy"`.  
+
+# Netzwerk
+- React Query: Intelligentes Caching mit Query Keys.  
+- Revalidierung bei Fokus/Intervall.
+- Optimistic Updates: Sofortige UI-Updates.
+- Background Refetching: Daten im Hintergrund aktualisieren.
+description:
+globs:
+alwaysApply: false
+---

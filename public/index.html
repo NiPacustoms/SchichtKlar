@@ -1,0 +1,256 @@
+<!-- Moved to index-static.html to avoid Next.js routing conflicts -->
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="JobFlow - Zeitarbeits-App für medizinisches Personal" />
+    <meta name="keywords" content="Zeitarbeit, Medizin, Personal, Arbeitszeiterfassung, DSGVO" />
+    <meta name="author" content="JobFlow Team" />
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#005f73" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="JobFlow" />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-32.png" />
+
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Preconnect to Firebase -->
+    <link rel="preconnect" href="https://firebaseapp.com" />
+    <link rel="preconnect" href="https://firestore.googleapis.com" />
+    <link rel="preconnect" href="https://storage.googleapis.com" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>JobFlow - Zeitarbeits-App</title>
+
+    <!-- Critical CSS -->
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Roboto', sans-serif;
+        background-color: #f5f5f5;
+      }
+
+      #root {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .loading {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+
+      .logo-container {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+
+      .logo {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #005f73 0%, #0a9396 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+        box-shadow: 0 8px 32px rgba(0, 95, 115, 0.3);
+      }
+
+      .app-name {
+        font-size: 32px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #005f73 0%, #0a9396 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .spinner-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 24px;
+      }
+
+      .spinner {
+        border: 4px solid rgba(0, 95, 115, 0.1);
+        border-top: 4px solid #005f73;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+      }
+
+      .spinner-inner {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #005f73 0%, #0a9396 100%);
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      .loading-text {
+        font-size: 18px;
+        color: #005f73;
+        font-weight: 500;
+        margin-bottom: 16px;
+      }
+
+      .dots {
+        display: flex;
+        gap: 8px;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #005f73;
+        animation: bounce 1.4s ease-in-out infinite both;
+      }
+
+      .dot:nth-child(1) { animation-delay: -0.32s; }
+      .dot:nth-child(2) { animation-delay: -0.16s; }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+
+      @keyframes bounce {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="loading">
+        <div class="logo-container">
+          <div class="logo">JF</div>
+          <div class="app-name">JobFlow</div>
+        </div>
+        
+        <div class="spinner-container">
+          <div class="spinner"></div>
+          <div class="spinner-inner"></div>
+        </div>
+        
+        <div class="loading-text">JobFlow wird geladen...</div>
+        
+        <div class="dots">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('/sw.js')
+            .then(registration => {
+              console.log('SW registered: ', registration);
+            })
+            .catch(registrationError => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
+
+    <!-- Firebase Messaging Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        if (!isDevelopment) {
+          navigator.serviceWorker
+            .register('/firebase-messaging-sw.js')
+            .then(registration => {
+              console.log('Firebase messaging SW registered: ', registration);
+              
+              // Versuche Firebase-Konfiguration zu senden, falls verfügbar
+              // Die Konfiguration sollte von Next.js über window.__FIREBASE_CONFIG__ bereitgestellt werden
+              // oder wird vom app/layout.tsx gesendet
+              const sendConfig = () => {
+                const firebaseConfig = window.__FIREBASE_CONFIG__ || null;
+                if (firebaseConfig && registration.active) {
+                  registration.active.postMessage({
+                    type: 'FIREBASE_CONFIG',
+                    config: firebaseConfig
+                  });
+                } else if (firebaseConfig && registration.installing) {
+                  registration.installing.addEventListener('statechange', function() {
+                    if (this.state === 'activated' && registration.active) {
+                      registration.active.postMessage({
+                        type: 'FIREBASE_CONFIG',
+                        config: firebaseConfig
+                      });
+                    }
+                  });
+                } else if (firebaseConfig && registration.waiting) {
+                  registration.waiting.postMessage({
+                    type: 'FIREBASE_CONFIG',
+                    config: firebaseConfig
+                  });
+                }
+              };
+              
+              // Versuche sofort zu senden
+              sendConfig();
+              
+              // Versuche auch nach einem kurzen Delay (falls Config später verfügbar wird)
+              setTimeout(sendConfig, 1000);
+            })
+            .catch(registrationError => {
+              console.log('Firebase messaging SW registration failed: ', registrationError);
+            });
+        }
+      }
+    </script>
+  </body>
+</html>

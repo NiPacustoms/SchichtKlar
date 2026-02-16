@@ -1,0 +1,67 @@
+import { NextResponse } from 'next/server';
+
+export async function GET() {
+  const results: Record<string, unknown> = {};
+
+  try {
+    // Dynamisch importieren, um serverseitige Import-Fehler zu vermeiden
+    const { userService } = await import('@/lib/services/users');
+    const { adminSettingsService } = await import('@/lib/services/adminSettings');
+    const { settingsService } = await import('@/lib/services/settings');
+
+    // Test userService.getAll
+    try {
+      const users = await userService.getAll(1, 1, {});
+      results.userService = { success: true, data: users };
+    } catch (error) {
+      results.userService = {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      };
+    }
+
+    // Test adminSettingsService.getSettings
+    try {
+      const settings = await adminSettingsService.getSettings();
+      results.adminSettingsService = { success: true, data: settings };
+    } catch (error) {
+      results.adminSettingsService = {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      };
+    }
+
+    // Test settingsService.getAll
+    try {
+      const allSettings = await settingsService.getAll();
+      results.settingsService = { success: true, data: allSettings };
+    } catch (error) {
+      results.settingsService = {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      };
+    }
+
+    return NextResponse.json({
+      success: true,
+      results,
+      environment: {
+        isServer: typeof window === 'undefined',
+        nodeEnv: process.env.NODE_ENV,
+      },
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        message: 'Error during import or execution',
+      },
+      { status: 500 }
+    );
+  }
+}

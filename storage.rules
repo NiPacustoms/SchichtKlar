@@ -1,0 +1,57 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Public company logos (uploaded by authenticated admins/dispatchers)
+    match /logos/{allPaths=**} {
+      // Read: allow public read to display logo in app
+      allow read: if true;
+      // Write: only authenticated users; restrict to image content types and reasonable size
+      allow write: if request.auth != null &&
+        request.resource.size < 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+      // Delete: only admins
+      allow delete: if request.auth != null && request.auth.token.role == 'admin';
+    }
+
+    // Documents Storage Path: /documents/{userId}/{documentId}/{fileName}
+    match /documents/{userId}/{documentId}/{fileName} {
+      // Read: Own documents OR admin/dispatcher
+      allow read: if request.auth != null && 
+        (request.auth.uid == userId || 
+         request.auth.token.role in ['admin', 'dispatcher']);
+      
+      // Write: Own documents only, with size and type restrictions
+      allow write: if request.auth != null && 
+        request.auth.uid == userId &&
+        request.resource.size < 10 * 1024 * 1024 &&  // Max 10MB
+        request.resource.contentType.matches('image/.*|application/pdf');
+      
+      // Delete: Own documents OR admin
+      allow delete: if request.auth != null &&
+        (request.auth.uid == userId || request.auth.token.role == 'admin');
+    }
+
+    // Chat Uploads: /chatUploads/{companyId}/{channelId}/{userId}/{fileId}
+    // SECURITY: Channel-Teilnehmer-Prüfung erfolgt server-side in app/api/chat/upload/route.ts (Zeile 38-52).
+    // Storage Rules können keine Firestore-Daten lesen, daher prüfen wir hier nur:
+    // - Authentifizierung
+    // - userId im Path muss request.auth.uid entsprechen
+    // - Path-Struktur muss exakt eingehalten werden
+    // Defense-in-Depth: Server-side Prüfung verhindert unberechtigte Uploads bereits vor Storage-Zugriff.
+    match /chatUploads/{companyId}/{channelId}/{userId}/{fileId} {
+      // Read: Nur authentifizierte User, die der userId im Path entsprechen
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // Write: Nur authentifizierte User, die der userId im Path entsprechen
+      // Zusätzliche Einschränkungen: Größe und Dateityp
+      allow write: if request.auth != null &&
+        request.auth.uid == userId &&
+        request.resource.size < 10 * 1024 * 1024 &&  // Max 10MB
+        request.resource.contentType.matches('image/.*|application/pdf');
+      
+      // Delete: Nur authentifizierte User, die der userId im Path entsprechen
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+

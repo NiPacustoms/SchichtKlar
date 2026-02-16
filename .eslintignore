@@ -1,0 +1,4 @@
+functions/**
+tests/**
+lib/services/__tests__/**
+

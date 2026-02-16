@@ -1,0 +1,8 @@
+# E-Mail-Adressen, die als verifiziert gesetzt werden (eine pro Zeile).
+# Nur diese Konten werden beim Aufruf von verify-all-emails.js als verifiziert markiert.
+# Alle anderen und alle neuen Nutzer müssen sich weiter per E-Mail-Link verifizieren.
+# Leerzeilen und Zeilen mit # werden ignoriert.
+
+admin@jobflow.de
+dispatcher@jobflow.de
+nurse1@jobflow.de

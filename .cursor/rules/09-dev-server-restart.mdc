@@ -1,0 +1,24 @@
+---
+description: Dev-Server nach relevanten Änderungen neu starten
+alwaysApply: true
+---
+
+# Dev-Server neu starten
+
+Nach Änderungen, die das Laufzeitverhalten des Next.js Dev-Servers betreffen, **den Dev-Server neu starten**.
+
+## Wann neu starten
+
+- **next.config.js** / **next.config.mjs** (Rewrites, Redirects, Env, Webpack)
+- **.env**, **.env.local**, **.env.development** (Umgebungsvariablen)
+- **middleware.ts** / **middleware.js** (Pfade, Auth, Redirects)
+- **app/api/** (neue oder geänderte API-Routen, damit sie registriert werden)
+- **pages/api/** (Pages-API-Routen)
+- Nach Hinweisen wie „bitte Dev-Server neu starten“ oder bei 404 auf API-Routen trotz existierender Route
+
+## Vorgehen
+
+1. Laufenden Dev-Server ggf. beenden (z. B. Prozess auf Port 3000 oder `npm run dev:kill`).
+2. Dev-Server neu starten: `npm run dev` (im Projektroot).
+
+Wenn ein Terminal bereits `npm run dev` ausführt: dort Strg+C, dann erneut `npm run dev` ausführen.

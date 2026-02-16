@@ -1,0 +1,84 @@
+# 🎨 Designsystem Vorgaben
+
+## Grundprinzipien
+- Desktop-First (≥1280px optimiert), Mobile voll funktionsfähig als Fallback
+- Klar, modern, professionell. Fokus: Übersichtlichkeit und Produktivität
+- Einheitliche Abstände, Typografie und Interaktionen
+- **Framework:** ausschließlich Material-UI (MUI 5)
+
+## Farbpalette
+- Primary (Branding): Petrol `#005f73`
+- Secondary (Akzent): Mustard `#e8aa42`
+- Error: `#D32F2F`
+- Warning: `#ED6C02`
+- Info: `#0288D1`
+- Success: `#2E7D32`
+- Text:  
+  - Dark UI: `rgba(0,0,0,0.87)`  
+  - Light UI: `rgba(255,255,255,0.92)`  
+- Hintergrund:  
+  - App: `#252422` (Dark Theme default)  
+  - Cards: `rgba(255,255,255,0.08)` (Glasmorphism Layer)
+
+## Typografie
+- Font: "Inter", System-Fallback
+- Hierarchie (Desktop):
+  - h1: 32/40, bold  
+  - h2: 24/32, semibold  
+  - h3: 20/28, semibold  
+  - body1: 14/20, regular  
+  - body2: 13/18, regular  
+  - button: 14/20, semibold (kein Uppercase)
+
+## Layout & Spacing
+- 8px-Grid (Multiplikatoren 8/16/24/32)
+- Container max-width: 1440px
+- Desktop: Sidebar 280px + Topbar 56–64px
+- Mobile: kompakte Topbar, Aktionen über Drawer/SpeedDial
+- Cards: BorderRadius 16px, Shadow weich, **Glasmorphism Effekt**:
+  - Hintergrund: `rgba(255,255,255,0.08)`
+  - Border: `1px solid rgba(255,255,255,0.2)`
+  - BackdropFilter: blur(12px)
+
+## Komponenten
+- **Tabellen (DataGrid):**  
+  - Dichte: `dense`  
+  - RowHeight 40–44px  
+  - Sticky Header  
+  - Suche, Filter, Export Pflicht
+- **Formulare:**  
+  - 2-spaltig ab md, sonst 1-spaltig  
+  - Pflichtfelder mit *  
+  - Validierung inline (zod + react-hook-form)  
+- **Buttons:**  
+  - Primär: `contained` (Petrol)  
+  - Sekundär: `outlined` (Mustard oder neutral)  
+  - Min-Breite 120px (Desktop)
+
+## Interaktionsmuster
+- Create/Edit im Drawer (rechts) oder Dialog (maxWidth="sm|md")  
+- Loading: `LinearProgress` in Toolbars, `Skeleton` in Tabellen  
+- Feedback: Snackbar unten rechts (1 sichtbar, autoHide 4–6s)  
+- ConfirmDialog für kritische Aktionen  
+
+## Navigation
+- Sidebar mit Gruppen: Dashboard · Aufträge · Mitarbeiter · Kunden · Arbeitszeiten · Dokumente · Reports · Benachrichtigungen · Einstellungen
+- Topbar: Suche, globale Aktionen, User-Menü
+- Detailseiten: Breadcrumbs
+- Tabs nur für sekundäre Unterbereiche
+
+## Barrierefreiheit
+- WCAG AA Kontraste
+- Fokuszustände sichtbar
+- ARIA-Labels bei IconButtons
+- Hit-Area mind. 40x40px
+
+## Regeln für Cursor
+- ✅ Immer Theme-Tokens nutzen (keine Inline-Hexfarben)  
+- ✅ Einheitliche Toolbars, klare CTAs  
+- ✅ Drawer/Dialog statt Fullscreen für CRUD  
+- ✅ Glasmorphism für Cards/Overlays (wie im JobFlow-Theme definiert)  
+- ❌ Keine fremden UI-Bibliotheken  
+- ❌ Keine Uppercase-Buttons  
+- ❌ Keine ungefragten Modals beim Navigieren  
+- ❌ Kein endloses Scrolling – stattdessen Pagination

@@ -1,0 +1,102 @@
+# 🚀 **Prompt Optimization Rules**
+
+## **🎯 Grundprinzipien**
+- **Spezifität vor Vagheit:** Konkrete Fragen statt allgemeine Begriffe
+- **Kontext ist König:** Immer ausreichend Background-Information liefern
+- **Ein Ziel, ein Prompt:** Nicht mehrere Aufgaben in einer Anfrage mischen
+- **Progressiver Ansatz:** Von grob zu fein, von Overview zu Detail
+
+## **📝 Prompt-Struktur**
+
+### **Optimale Anfrage-Formate:**
+```
+❌ SCHLECHT: "AuthService"
+✅ GUT: "Wie funktioniert die Benutzer-Authentifizierung in AuthService?"
+
+❌ SCHLECHT: "Fehler, Performance"  
+✅ GUT: "Wie kann ich die Performance der Tabellen-Rendering optimieren?"
+
+❌ SCHLECHT: "Frontend Backend"
+✅ GUT: "Wie integriert das Frontend die Firebase Auth Services?"
+```
+
+### **Kontext-Aufbau:**
+1. **Was:** Klar definiertes Ziel beschreiben
+2. **Wo:** Relevante Dateien/Bereiche benennen  
+3. **Warum:** Motivation/Problem erklären
+4. **Wie:** Gewünschte Umsetzung (falls bekannt)
+
+## **🔍 Explorations-Strategie**
+
+### **Semantic Search Best Practices:**
+- **Breit beginnen:** `"Wie funktioniert Authentifizierung?"` vor `"login.ts"`
+- **Mehrere Suchwinkel:** Verschiedene Begriffe für dasselbe Konzept
+- **Fokussierung:** Von `[]` (global) zu `["src/features/auth/"]` (spezifisch)
+- **Vollständigkeit:** Solange suchen bis alle Aspekte abgedeckt sind
+
+### **Such-Progression:**
+1. **Overview:** `"Wie ist die Auth-Architektur aufgebaut?"`
+2. **Components:** `"Welche Auth-Komponenten gibt es?"`
+3. **Integration:** `"Wie werden Auth-Services integriert?"`
+4. **Details:** `"Wie funktioniert Token-Refresh?"`
+
+## **⚡ Tool-Einsatz Optimierung**
+
+### **Parallele Tool-Calls:**
+- **Immer bevorzugen:** Mehrere Suchen gleichzeitig ausführen
+- **Batch-Reading:** Mehrere Dateien parallel lesen
+- **Comprehensive Search:** Verschiedene Suchstrategien kombinieren
+
+### **Sequentielle Calls nur wenn:**
+- Output von A zwingend für Input von B benötigt
+- Editierung basiert auf vorherigem Read-Ergebnis
+- Conditional Logic erfordert Zwischenergebnis
+
+## **🎯 Zielfokussierung**
+
+### **Anfrage-Kategorien:**
+- **🔍 Verstehen:** "Wie funktioniert X?"
+- **🔧 Implementieren:** "Erstelle Feature Y mit Anforderungen Z"
+- **🐛 Debuggen:** "Warum tritt Fehler X auf?"
+- **⚡ Optimieren:** "Wie verbessere ich Performance von Y?"
+- **🔄 Refactoring:** "Wie reorganisiere ich Code-Struktur X?"
+
+### **Erfolgs-Kriterien:**
+- **Vollständigkeit:** Alle relevanten Aspekte erfasst
+- **Präzision:** Spezifische, umsetzbare Antworten
+- **Effizienz:** Minimale Tool-Calls für maximale Information
+- **Konsistenz:** Einheitliche Code-Qualität und Standards
+
+## **📋 Prompt-Templates**
+
+### **Feature-Implementierung:**
+```
+"Implementiere [Feature-Name] für [Zielgruppe] mit folgenden Anforderungen:
+- Funktionalität: [Beschreibung]
+- UI-Anforderungen: [Design-Vorgaben] 
+- Integration: [Services/APIs]
+- Constraints: [Limitierungen]"
+```
+
+### **Code-Analyse:**
+```
+"Analysiere [Code-Bereich] bezüglich:
+- Architektur: [Strukturelle Aspekte]
+- Performance: [Optimierungspotential]  
+- Sicherheit: [Vulnerability-Check]
+- Best Practices: [SOTA-Compliance]"
+```
+
+### **Problem-Solving:**
+```
+"Löse folgendes Problem in [Kontext]:
+- Problem: [Detaillierte Beschreibung]
+- Symptome: [Beobachtete Effekte]
+- Erwartung: [Gewünschtes Verhalten]
+- Constraints: [Limitierungen/Requirements]"
+```
+
+---
+**Ziel:** Maximale Effizienz durch optimale Prompt-Gestaltung
+**Anwendung:** Bei jeder Cursor-Interaktion anwenden
+**Update:** Bei neuen Erkenntnissen erweitern

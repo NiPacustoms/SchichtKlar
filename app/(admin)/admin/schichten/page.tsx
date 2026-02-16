@@ -1,0 +1,591 @@
+'use client';
+
+import { useAuth } from '@/contexts/AuthContext';
+import { ShiftManagementCard } from '@/components/admin/ShiftManagementCard';
+import { ShiftCreateDialog } from '@/components/admin/ShiftCreateDialog';
+import ShiftEditDialog from '@/components/admin/ShiftEditDialog';
+import { AssignShiftDialog } from '@/components/admin/AssignShiftDialog';
+import AdminCalendarView from '@/components/schedule/AdminCalendarView';
+import { AdminListView } from '@/components/schedule/AdminListView';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
+import { useShifts } from '@/lib/hooks/useShifts';
+import type { Shift as ShiftEntity } from '@/lib/services/shifts';
+import type { Shift as DomainShift } from '@/lib/types';
+import { toast } from '@/lib/utils/toast';
+import {
+  Add,
+  CalendarMonth,
+  FilterList,
+  List,
+  Refresh,
+  Search,
+  ViewModule,
+} from '@mui/icons-material';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  FormControl,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+  Alert,
+  Stack,
+} from '@mui/material';
+import Grid from '@mui/material/Grid';
+import { useState, useMemo, useEffect, Suspense, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
+
+const convertToDomainShift = (shift: ShiftEntity): DomainShift => {
+  const parsedDate =
+    typeof shift.date === 'string' ? new Date(shift.date) : (shift.date as unknown as Date);
+  const safeDate =
+    parsedDate instanceof Date && !Number.isNaN(parsedDate.getTime()) ? parsedDate : new Date();
+
+  return {
+    id: shift.id,
+    facilityId: shift.facilityId,
+    stationId: shift.stationId ?? '',
+    companyId: (shift as ShiftEntity & { companyId?: string }).companyId || '', // companyId wird vom Service hinzugefügt
+    date: safeDate,
+    startTime: shift.startTime,
+    endTime: shift.endTime,
+    type: (shift.type as DomainShift['type']) || 'Frühdienst',
+    requiredQualifications: shift.requiredQualifications || [],
+    maxStaff: shift.maxStaff || shift.capacity || 1,
+    status: shift.status || 'open',
+    createdAt: shift.createdAt ?? new Date(),
+    updatedAt: shift.updatedAt ?? new Date(),
+    capacity: shift.capacity || shift.maxStaff || 1,
+    assignedCount: shift.assignedCount || 0,
+    tz: shift.timezone || 'Europe/Berlin',
+    notes: shift.notes,
+    createdBy: shift.createdBy || 'system',
+    surchargeNight: undefined,
+    surchargeWeekend: undefined,
+    surchargeHoliday: undefined,
+    surchargeOnCall: undefined,
+  };
+};
+
+function AdminShiftsPageContent() {
+  const { user, loading: authLoading } = useAuth();
+  // useSearchParams must be used inside Suspense boundary
+  const searchParams = useSearchParams();
+
+  // State management
+  const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'grid'>('calendar');
+  // const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedShift, setSelectedShift] = useState<ShiftEntity | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [selectedCreateDate, setSelectedCreateDate] = useState<Date | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [facilityFilter, setFacilityFilter] = useState<string>('all');
+
+  // Filter object for useShifts
+  const filters = useMemo(
+    () => ({
+      status: statusFilter === 'all' ? undefined : (statusFilter as ShiftEntity['status']),
+      type: typeFilter === 'all' ? undefined : (typeFilter as ShiftEntity['type']),
+      facilityId: facilityFilter === 'all' ? undefined : facilityFilter,
+    }),
+    [statusFilter, typeFilter, facilityFilter]
+  );
+
+  const {
+    shifts,
+    isLoading,
+    error,
+    createShift,
+    updateShift: _updateShift,
+    deleteShift,
+    assignShift: _assignShift,
+    unassignShift: _unassignShift,
+    getShiftStats: _getShiftStats,
+    refetch,
+  } = useShifts(filters);
+
+  const shiftEntities = useMemo(
+    () => (Array.isArray(shifts) ? (shifts as ShiftEntity[]) : []),
+    [shifts]
+  );
+
+  // Apply client-side search filter
+  const filteredShiftEntities = useMemo(() => {
+    if (!searchTerm) return shiftEntities;
+    const searchLower = searchTerm.toLowerCase();
+    return shiftEntities.filter(
+      shift =>
+        shift.title?.toLowerCase().includes(searchLower) ||
+        shift.type?.toLowerCase().includes(searchLower) ||
+        shift.notes?.toLowerCase().includes(searchLower) ||
+        shift.facilityId?.toLowerCase().includes(searchLower) ||
+        shift.stationId?.toLowerCase().includes(searchLower)
+    );
+  }, [shiftEntities, searchTerm]);
+
+  // Calculate stats from filtered shifts (client-side filtered)
+  const stats = useMemo(() => {
+    const shiftsArray = filteredShiftEntities;
+    return {
+      total: shiftsArray.length,
+      open: shiftsArray.filter(s => s.status === 'open').length,
+      filled: shiftsArray.filter(s => s.status === 'filled').length,
+      cancelled: shiftsArray.filter(s => s.status === 'cancelled').length,
+      assignedCount: shiftsArray.reduce((sum, s) => sum + (s.assignedCount || 0), 0),
+      totalCapacity: shiftsArray.reduce((sum, s) => sum + (s.capacity || 1), 0),
+    };
+  }, [filteredShiftEntities]);
+
+  const domainShifts = useMemo(
+    () => filteredShiftEntities.map(convertToDomainShift),
+    [filteredShiftEntities]
+  );
+
+  const getShiftEntityById = useCallback(
+    (shiftId: string) => shiftEntities.find(item => item.id === shiftId),
+    [shiftEntities]
+  );
+
+  // Check for create query parameter
+  useEffect(() => {
+    if (searchParams && searchParams.get('create') === 'true') {
+      setCreateDialogOpen(true);
+      // Clean up URL
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('create');
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+  }, [searchParams]);
+
+  const handleCreateShift = () => {
+    setSelectedCreateDate(null);
+    setCreateDialogOpen(true);
+  };
+
+  const handleEditShift = (shift: { id: string }) => {
+    const entity = getShiftEntityById(shift.id);
+    if (!entity) return;
+    setSelectedShift(entity);
+    setEditDialogOpen(true);
+  };
+
+  const handleAssignShift = (shift: { id: string }) => {
+    const entity = getShiftEntityById(shift.id);
+    if (!entity) return;
+    setSelectedShift(entity);
+    setAssignDialogOpen(true);
+  };
+
+  const handleDeleteShift = async (shift: { id: string; type?: string }) => {
+    if (confirm(`Schicht "${shift.type}" wirklich löschen?`)) {
+      try {
+        await deleteShift(shift.id);
+        toast.success('Schicht erfolgreich gelöscht');
+      } catch (error) {
+        toast.error('Fehler beim Löschen der Schicht');
+      }
+    }
+  };
+
+  const handleDuplicateShift = async (shift: { id: string }) => {
+    try {
+      const entity = getShiftEntityById(shift.id);
+      if (!entity) {
+        toast.error('Schicht nicht gefunden');
+        return;
+      }
+
+      const {
+        id: _id,
+        createdAt: _createdAt,
+        updatedAt: _updatedAt,
+        assignedCount: _assignedCount,
+        assignedTo: _assignedTo,
+        title,
+        ...rest
+      } = entity;
+
+      const baseDate = new Date(entity.date);
+      baseDate.setDate(baseDate.getDate() + 1);
+      const nextDate = baseDate.toISOString().split('T')[0];
+
+      const baseNotes = entity.notes?.trim() ?? '';
+      const duplicateNotes = baseNotes
+        ? `${baseNotes} (Kopie)`
+        : `${entity.title || entity.type || 'Schicht'} (Kopie)`;
+
+      const duplicatedShift = {
+        ...rest,
+        title: `${title || entity.type || 'Schicht'} (Kopie)`,
+        date: nextDate,
+        startTime: entity.startTime,
+        endTime: entity.endTime,
+        notes: duplicateNotes,
+        status: 'open' as const,
+        assignedCount: 0,
+      } satisfies Omit<ShiftEntity, 'id' | 'createdAt' | 'updatedAt'>;
+
+      await createShift(duplicatedShift);
+      toast.success('Schicht erfolgreich dupliziert');
+    } catch (error) {
+      toast.error('Fehler beim Duplizieren der Schicht');
+    }
+  };
+
+  const handleShiftClick = (shift: { id: string }) => {
+    const entity = getShiftEntityById(shift.id);
+    if (!entity) return;
+    setSelectedShift(entity);
+    setEditDialogOpen(true);
+  };
+
+  // const handleDateSelect = (date: Date) => {
+  //   setSelectedDate(date);
+  // };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setTypeFilter('all');
+    setFacilityFilter('all');
+  };
+
+  if (authLoading || isLoading) {
+    return <LoadingSpinner message="Schichtverwaltung wird geladen..." />;
+  }
+
+  if (error) {
+    return <ErrorDisplay error={error} />;
+  }
+
+  if (!user) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">Bitte melde dich an, um Schichten zu verwalten.</Alert>
+      </Box>
+    );
+  }
+
+  if (!user.companyId) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="warning">
+          Keine Unternehmens-ID gefunden. Bitte kontaktiere den Administrator, um dein Konto einem
+          Unternehmen zuzuordnen.
+        </Alert>
+      </Box>
+    );
+  }
+
+  return (
+    <>
+      <Box sx={{ maxWidth: 1400, mx: 'auto', p: 3 }}>
+        {/* Header */}
+        <Box sx={{ mb: 4 }}>
+          <Typography
+            variant="h3"
+            sx={{
+              color: 'text.primary',
+              fontWeight: 700,
+              mb: 1,
+            }}
+          >
+            Schichtverwaltung
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+            Verwalten Sie alle Schichten und deren Zuweisungen
+          </Typography>
+        </Box>
+
+        {/* Statistics */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card className="glass">
+              <CardContent sx={{ textAlign: 'center' }}>
+                <Typography variant="h4" color="primary" sx={{ fontWeight: 600 }}>
+                  {stats.total}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Gesamt Schichten
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card className="glass">
+              <CardContent sx={{ textAlign: 'center' }}>
+                <Typography variant="h4" color="warning.main" sx={{ fontWeight: 600 }}>
+                  {stats.open}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Offene Schichten
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card className="glass">
+              <CardContent sx={{ textAlign: 'center' }}>
+                <Typography variant="h4" color="success.main" sx={{ fontWeight: 600 }}>
+                  {stats.filled}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Besetzte Schichten
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card className="glass">
+              <CardContent sx={{ textAlign: 'center' }}>
+                <Typography variant="h4" color="info.main" sx={{ fontWeight: 600 }}>
+                  {stats.assignedCount}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Zugewiesene Mitarbeiter
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Actions and Filters */}
+        <Paper className="glass" sx={{ p: 3, mb: 3 }}>
+          <Stack
+            direction={{ xs: 'column', lg: 'row' }}
+            spacing={2}
+            alignItems={{ xs: 'flex-start', lg: 'center' }}
+            justifyContent="space-between"
+            sx={{ mb: 2 }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Schichten {domainShifts.length}
+            </Typography>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems="center">
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={handleCreateShift}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
+              >
+                Neue Schicht
+              </Button>
+              <IconButton
+                onClick={() => refetch()}
+                sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+              >
+                <Refresh />
+              </IconButton>
+            </Stack>
+          </Stack>
+
+          {/* Filters */}
+          <Grid container spacing={3} alignItems="center">
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Schichten suchen..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+                }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={statusFilter}
+                  label="Status"
+                  onChange={e => setStatusFilter(e.target.value)}
+                >
+                  <MenuItem value="all">Alle</MenuItem>
+                  <MenuItem value="open">Offen</MenuItem>
+                  <MenuItem value="filled">Besetzt</MenuItem>
+                  <MenuItem value="cancelled">Abgesagt</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Schichttyp</InputLabel>
+                <Select
+                  value={typeFilter}
+                  label="Schichttyp"
+                  onChange={e => setTypeFilter(e.target.value)}
+                >
+                  <MenuItem value="all">Alle</MenuItem>
+                  <MenuItem value="Frühdienst">Frühdienst</MenuItem>
+                  <MenuItem value="Spätdienst">Spätdienst</MenuItem>
+                  <MenuItem value="Nachtdienst">Nachtdienst</MenuItem>
+                  <MenuItem value="On-call">On-call</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Button
+                variant="outlined"
+                startIcon={<FilterList />}
+                onClick={clearFilters}
+                fullWidth
+                size="small"
+              >
+                Filter zurücksetzen
+              </Button>
+            </Grid>
+          </Grid>
+        </Paper>
+
+        {/* View Mode Toggle */}
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_, newMode) => newMode && setViewMode(newMode)}
+            aria-label="view mode"
+          >
+            <ToggleButton value="calendar" aria-label="calendar">
+              <CalendarMonth />
+            </ToggleButton>
+            <ToggleButton value="list" aria-label="list">
+              <List />
+            </ToggleButton>
+            <ToggleButton value="grid" aria-label="grid">
+              <ViewModule />
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
+        {/* Content based on view mode */}
+        {viewMode === 'calendar' && (
+          <AdminCalendarView
+            shifts={domainShifts}
+            onShiftClick={handleShiftClick}
+            onDayClick={(d: Date) => {
+              setSelectedCreateDate(d);
+              setCreateDialogOpen(true);
+            }}
+          />
+        )}
+
+        {viewMode === 'list' && (
+          <AdminListView
+            shifts={domainShifts}
+            onShiftClick={handleShiftClick}
+            onEdit={handleEditShift}
+            onAssign={handleAssignShift}
+            onDelete={handleDeleteShift}
+            onDuplicate={handleDuplicateShift}
+          />
+        )}
+
+        {viewMode === 'grid' && (
+          <Grid container spacing={3}>
+            {domainShifts.map(shift => (
+              <Grid key={shift.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+                <ShiftManagementCard
+                  shift={shift}
+                  onEdit={handleEditShift}
+                  onAssign={handleAssignShift}
+                  onDelete={handleDeleteShift}
+                  onDuplicate={handleDuplicateShift}
+                />
+              </Grid>
+            ))}
+          </Grid>
+        )}
+
+        {domainShifts.length === 0 && (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+              Keine Schichten gefunden
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              {searchTerm ||
+              statusFilter !== 'all' ||
+              typeFilter !== 'all' ||
+              facilityFilter !== 'all'
+                ? 'Versuchen Sie andere Filterkriterien'
+                : 'Erstellen Sie die erste Schicht'}
+            </Typography>
+            <Button variant="contained" startIcon={<Add />} onClick={handleCreateShift}>
+              Schicht erstellen
+            </Button>
+          </Box>
+        )}
+      </Box>
+
+      {/* Dialogs */}
+      <ShiftCreateDialog
+        open={createDialogOpen}
+        onClose={() => {
+          setCreateDialogOpen(false);
+          setSelectedCreateDate(null);
+        }}
+        initialDate={selectedCreateDate}
+      />
+
+      {selectedShift && (
+        <ShiftEditDialog
+          open={editDialogOpen}
+          onClose={() => {
+            setEditDialogOpen(false);
+            setSelectedShift(null);
+          }}
+          shift={
+            {
+              ...selectedShift,
+              tz: selectedShift.timezone || 'Europe/Berlin',
+              stationId: selectedShift.stationId || '',
+            } as ShiftEntity & { tz: string; stationId: string }
+          }
+        />
+      )}
+
+      {selectedShift && (
+        <AssignShiftDialog
+          open={assignDialogOpen}
+          onClose={() => {
+            setAssignDialogOpen(false);
+            setSelectedShift(null);
+          }}
+          shift={convertToDomainShift(selectedShift)}
+        />
+      )}
+    </>
+  );
+}
+
+const AdminShiftsPage = (): JSX.Element => {
+  // Ensure this only renders on client side
+  if (typeof window === 'undefined') {
+    return <LoadingSpinner message="Schichtverwaltung wird geladen..." />;
+  }
+
+  return (
+    <Suspense fallback={<LoadingSpinner message="Schichtverwaltung wird geladen..." />}>
+      <AdminShiftsPageContent />
+    </Suspense>
+  );
+};
+
+export default AdminShiftsPage;

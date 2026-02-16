@@ -1,0 +1,6 @@
+{
+  "hints": {
+    "apple-touch-icons": "off",
+    "compat-api/html": "off"
+  }
+}

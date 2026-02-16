@@ -1,0 +1,71 @@
+# Layout Management Rules
+
+## Header Management
+- **NIEMALS** doppelte Header verwenden
+- **AppLayout** ist die zentrale Layout-Komponente für alle Seiten
+- Verwende `hideHeader={true}` Prop wenn kein Header gewünscht ist
+- **GlobalHeader** wird nur einmal pro Seite gerendert
+
+## Navigation Management
+- **BottomNav** wird nur in spezifischen Layouts hinzugefügt (Admin/Employee)
+- **NIEMALS** BottomNav in Root-Layout hinzufügen
+- Jede Route-Gruppe hat ihr eigenes Layout mit entsprechender Navigation
+
+## Layout-Struktur
+```
+Root Layout (app/layout.tsx)
+├── Nur Provider und Theme
+├── KEINE Navigation hier
+└── Spezifische Layouts für Route-Gruppen
+
+Admin Layout (app/(admin)/admin/layout.tsx)
+├── AppLayout mit hideHeader={true}
+├── BottomNav für Admin-Navigation
+└── RoleGuard für Admin-Zugriff
+
+Employee Layout (app/(employee)/employee/layout.tsx)
+├── AppLayout mit hideHeader={true}
+├── BottomNav für Employee-Navigation
+└── RoleGuard für Employee-Zugriff
+```
+
+## Regeln für Layout-Entwicklung
+1. **Prüfe vor jeder Layout-Änderung**: Gibt es bereits einen Header/Navigation?
+2. **Verwende AppLayout** als Basis für alle Seiten
+3. **hideHeader Prop** verwenden wenn kein GlobalHeader gewünscht
+4. **BottomNav nur in spezifischen Layouts** hinzufügen
+5. **NIEMALS** Navigation in Root-Layout duplizieren
+
+## Code-Beispiele
+
+### ✅ Korrekt - AppLayout mit Header
+```tsx
+<AppLayout>
+  <PageContent />
+</AppLayout>
+```
+
+### ✅ Korrekt - AppLayout ohne Header
+```tsx
+<AppLayout hideHeader>
+  <PageContent />
+  <BottomNav />
+</AppLayout>
+```
+
+### ❌ Falsch - Doppelte Header
+```tsx
+<AppLayout>
+  <GlobalHeader /> {/* FALSCH - wird bereits in AppLayout gerendert */}
+  <PageContent />
+</AppLayout>
+```
+
+### ❌ Falsch - BottomNav in Root-Layout
+```tsx
+// In app/layout.tsx
+<MUIThemeProviderWrapper>
+  {children}
+  <BottomNav /> {/* FALSCH - führt zu doppelter Navigation */}
+</MUIThemeProviderWrapper>
+```

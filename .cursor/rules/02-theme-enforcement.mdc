@@ -1,0 +1,45 @@
+# Theme Enforcement Regeln
+
+## Farben & Styles
+- Nur Theme-Tokens (`theme.palette.*`, `theme.typography.*`)
+- ❌ Keine Inline-Hexfarben
+- ❌ Keine globalen CSS-Overrides außerhalb `theme/components.ts`
+- ✅ Primär: Petrol (#005f73), Sekundär: Mustard (#e8aa42)
+- ✅ Hintergrund: Dark (#252422) + Glasmorphism Layers
+
+## Buttons
+- Primäraktionen: `variant="contained"` (Petrol)
+- Sekundär: `outlined` (Mustard/neutral)
+- `text` sparsam; ❌ kein `textTransform: uppercase`
+
+## Cards & Overlays (Glasmorphism)
+- Hintergrund: `rgba(255,255,255,0.08)`
+- Border: `1px solid rgba(255,255,255,0.2)`
+- `backdropFilter: blur(12px)`; Radius 16px; max. Elevation 2
+
+## Typografie
+- Immer aus `theme.typography`; ❌ keine Inline-Fontgrößen
+
+## Tabellen
+- DataGrid/Table mit `dense`, RowHeight 40–44px, sticky Header
+- Farben nur via Theme, keine Inline-Styles
+
+## Interaktionen
+- Create/Edit via Drawer rechts oder Dialog `maxWidth="sm|md"`
+- Loading: `LinearProgress`, `Skeleton`
+- Feedback: Snackbar unten rechts, autoHide 4–6 s
+
+## Layout
+- Sidebar: Petrol-Akzent + Glasmorphism
+- Topbar: 56–64 px, Dark BG, Petrol Highlights
+- Mobile: kompakte Topbar, Actions als SpeedDial/Drawer
+
+## A11y
+- Kontrast ≥ WCAG AA, sichtbare Fokuszustände, Hit‑Area ≥ 40x40px
+
+# Zusammenfassung
+- Alle UI-Elemente nutzen das **JobFlow Theme**. Keine Inline-Farben, keine Fremdlibs. Glasmorphism ist Standard.
+description:
+globs:
+alwaysApply: false
+---

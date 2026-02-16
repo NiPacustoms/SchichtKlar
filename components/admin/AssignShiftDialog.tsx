@@ -1,0 +1,477 @@
+'use client';
+
+import { useAuth } from '@/contexts/AuthContext';
+import { assignmentService, cloudFunctions, userService } from '@/lib/services';
+import { Assignment, Shift, User } from '@/lib/types';
+import { sendAssignmentFormEmail } from '@/lib/services/email';
+import { toast } from '@/lib/utils/toast';
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  Grid,
+  InputLabel,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemButton,
+  ListItemText,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+} from '@mui/material';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
+import { useMemo, useState } from 'react';
+import { Add, Close, Person, Search } from '@mui/icons-material';
+import { logger, PerformanceMonitor, UserActionTracker } from '@/lib/logging';
+
+interface AssignShiftDialogProps {
+  open: boolean;
+  onClose: () => void;
+  shift: Shift;
+}
+
+type AssignedUserEntry = {
+  assignment: Assignment;
+  user: User;
+};
+
+export function AssignShiftDialog({ open, onClose, shift }: AssignShiftDialogProps) {
+  const { user: _user } = useAuth();
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+
+  // Load assigned users inkl. Assignment-Infos
+  const { data: assignedUsers = [], isLoading: assignedUsersLoading } = useQuery<
+    AssignedUserEntry[]
+  >({
+    queryKey: ['assignedUsers', shift.id],
+    queryFn: async () => {
+      const assignments = await assignmentService.getByShiftId(shift.id);
+      const activeAssignments = assignments.filter(assignment =>
+        ['assigned', 'accepted', 'requested'].includes(assignment.status)
+      );
+      if (activeAssignments.length === 0) {
+        return [];
+      }
+
+      const users = await Promise.all(
+        activeAssignments.map(assignment => userService.getById(assignment.userId))
+      );
+
+      return activeAssignments
+        .map((assignment, index) => {
+          const user = users[index];
+          if (!user) {
+            return null;
+          }
+          return { assignment, user };
+        })
+        .filter((entry): entry is AssignedUserEntry => Boolean(entry?.user));
+    },
+  });
+
+  // Load available users
+  const { data: availableUsers = [], isLoading: usersLoading } = useQuery({
+    queryKey: ['availableUsers', shift.id, searchTerm, roleFilter],
+    queryFn: async () => {
+      const filters = {
+        search: searchTerm || undefined,
+        role: roleFilter === 'all' ? undefined : (roleFilter as User['role']),
+        excludeAssigned: true,
+        shiftId: shift.id,
+      };
+      return await userService.getAvailableForShift(filters);
+    },
+  });
+
+  // Assign user mutation via Cloud Function
+  const assignUserMutation = useMutation({
+    mutationFn: async (user: User) => {
+      // Admins können Konflikte überschreiben
+      const result = await cloudFunctions.assignShiftToUser(shift.id, user.id, false, true);
+      return { result, user };
+    },
+    retry: 2,
+    retryDelay: attempt => Math.min(1000 * Math.pow(2, attempt), 5000),
+    onSuccess: ({ result, user }) => {
+      if (process.env.NODE_ENV === 'development') {
+        PerformanceMonitor.endTimer('shift.assign', { result: 'success' });
+      }
+      logger.info('User assigned to shift', { shiftId: shift.id } as Record<string, unknown>);
+      queryClient.invalidateQueries({ queryKey: ['assignedUsers', shift.id] });
+      queryClient.invalidateQueries({ queryKey: ['availableUsers'] });
+      queryClient.invalidateQueries({ queryKey: ['shifts'] });
+      queryClient.invalidateQueries({ queryKey: ['schedule'] });
+      toast.success(result.message || 'Mitarbeiter zugewiesen');
+      const assignmentId = result.assignmentId;
+      const formLink = assignmentId ? `/employee/formulare/einsaetze/${assignmentId}` : null;
+      const shiftInfo = `${format(shift.date, 'dd.MM.yyyy', { locale: de })} • ${shift.startTime} - ${shift.endTime}`;
+      const fullFormLink =
+        formLink && typeof window !== 'undefined'
+          ? new URL(formLink, window.location.origin).toString()
+          : (formLink ?? undefined);
+
+      if (user.email && formLink) {
+        void sendAssignmentFormEmail({
+          to: user.email,
+          employeeName: user.displayName,
+          formLink: fullFormLink ?? formLink ?? '',
+          shiftInfo,
+        });
+      }
+    },
+    onError: (error: unknown) => {
+      if (process.env.NODE_ENV === 'development') {
+        PerformanceMonitor.endTimer('shift.assign', { result: 'error' });
+      }
+      const err = error instanceof Error ? error : new Error('Unknown error');
+      logger.error('Assign user failed', err, { shiftId: shift.id } as Record<string, unknown>);
+      const message = err.message || 'Unbekannter Fehler';
+      toast.error('Fehler beim Zuweisen: ' + message);
+    },
+  });
+
+  // Unassign user mutation via Cloud Function
+  const unassignUserMutation = useMutation({
+    mutationFn: async (assignmentId: string) => {
+      return await cloudFunctions.unassignUser(assignmentId, 'Zuweisung durch Admin entfernt');
+    },
+    retry: 2,
+    retryDelay: attempt => Math.min(1000 * Math.pow(2, attempt), 5000),
+    onSuccess: result => {
+      if (process.env.NODE_ENV === 'development') {
+        PerformanceMonitor.endTimer('shift.unassign', { result: 'success' });
+      }
+      logger.info('User unassigned from shift', { shiftId: shift.id } as Record<string, unknown>);
+      queryClient.invalidateQueries({ queryKey: ['assignedUsers', shift.id] });
+      queryClient.invalidateQueries({ queryKey: ['availableUsers'] });
+      queryClient.invalidateQueries({ queryKey: ['shifts'] });
+      queryClient.invalidateQueries({ queryKey: ['schedule'] });
+      toast.success(result?.message || 'Zuweisung erfolgreich entfernt');
+    },
+    onError: (error: unknown) => {
+      if (process.env.NODE_ENV === 'development') {
+        PerformanceMonitor.endTimer('shift.unassign', { result: 'error' });
+      }
+      const err = error instanceof Error ? error : new Error('Unknown error');
+      logger.error('Unassign user failed', err, { shiftId: shift.id } as Record<string, unknown>);
+      const message = err.message || 'Unbekannter Fehler';
+      toast.error('Fehler beim Entfernen der Zuweisung: ' + message);
+    },
+  });
+
+  const handleAssignUser = (userId: string) => {
+    if (process.env.NODE_ENV === 'development') {
+      PerformanceMonitor.startTimer('shift.assign');
+      UserActionTracker.trackAction('shift_assign_click', { userId, shiftId: shift.id });
+    }
+    const userObj = availableUsers.find(u => u?.id === userId) as User | undefined;
+    if (!userObj) {
+      toast.error('Mitarbeiter nicht gefunden');
+      return;
+    }
+    assignUserMutation.mutate(userObj);
+  };
+
+  const handleUnassignUser = (userId: string) => {
+    if (process.env.NODE_ENV === 'development') {
+      PerformanceMonitor.startTimer('shift.unassign');
+      UserActionTracker.trackAction('shift_unassign_click', { userId, shiftId: shift.id });
+    }
+    const entry = assignedUsers.find(assigned => assigned.user.id === userId);
+    if (!entry) {
+      toast.error('Keine aktive Zuweisung gefunden');
+      return;
+    }
+    unassignUserMutation.mutate(entry.assignment.id);
+  };
+
+  const handleBulkAssign = () => {
+    selectedUsers.forEach(userId => {
+      const userObj = availableUsers.find(u => u?.id === userId);
+      if (userObj) {
+        assignUserMutation.mutate(userObj);
+      }
+    });
+    setSelectedUsers([]);
+  };
+
+  const handleUserSelect = (userId: string) => {
+    setSelectedUsers(prev =>
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const handleClose = () => {
+    setSearchTerm('');
+    setRoleFilter('all');
+    setSelectedUsers([]);
+    onClose();
+  };
+
+  const availableSlots = useMemo(
+    () => Math.max(0, shift.capacity - assignedUsers.length),
+    [shift.capacity, assignedUsers.length]
+  );
+  const isFullyAssigned = availableSlots <= 0;
+  const isOverAssigned = assignedUsers.length > shift.capacity;
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: { borderRadius: 3 },
+      }}
+    >
+      <DialogTitle sx={{ fontWeight: 700, fontSize: '20px', py: 2.5 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '20px' }}>
+              Schicht zuweisen: {shift.type}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '14px', mt: 0.5 }}>
+              {format(shift.date, 'dd.MM.yyyy', { locale: de })} • {shift.startTime} -{' '}
+              {shift.endTime}
+            </Typography>
+          </Box>
+          <Button
+            onClick={handleClose}
+            aria-label="Dialog schließen"
+            size="small"
+            startIcon={<Close />}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 2,
+            }}
+          >
+            Schließen
+          </Button>
+        </Box>
+      </DialogTitle>
+
+      <DialogContent>
+        {/* Shift Info */}
+        <Alert
+          severity="info"
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'info.main',
+          }}
+        >
+          <Typography variant="body2" sx={{ fontSize: '14px', lineHeight: 1.6 }}>
+            <strong>Kapazität:</strong> {assignedUsers.length}/{shift.capacity} Mitarbeiter
+            {availableSlots > 0 && ` • ${availableSlots} Plätze frei`}
+            {isFullyAssigned && !isOverAssigned && ' • Voll besetzt'}
+            {isOverAssigned && ' • Überbelegt!'}
+          </Typography>
+        </Alert>
+
+        {isOverAssigned && (
+          <Alert severity="warning" sx={{ mb: 3 }}>
+            <Typography variant="body2">
+              <strong>Überbelegung:</strong> Mehr Mitarbeiter zugewiesen als Kapazität erlaubt.
+            </Typography>
+          </Alert>
+        )}
+
+        <Grid container spacing={3}>
+          {/* Assigned Users */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Zugewiesene Mitarbeiter ({assignedUsers.length})
+            </Typography>
+
+            {assignedUsersLoading ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Lädt Zuweisungen...
+                </Typography>
+              </Box>
+            ) : assignedUsers.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Person sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+                <Typography variant="body2" color="text.secondary">
+                  Keine Mitarbeiter zugewiesen
+                </Typography>
+              </Box>
+            ) : (
+              <List>
+                {assignedUsers.map(({ assignment, user }) => (
+                  <ListItem key={assignment.id} sx={{ px: 0 }}>
+                    <ListItemAvatar>
+                      <Avatar>{user.displayName.charAt(0).toUpperCase()}</Avatar>
+                    </ListItemAvatar>
+                    <ListItemText primary={user.displayName} secondary={user.email} />
+                    <Button
+                      size="small"
+                      color="error"
+                      onClick={() => handleUnassignUser(user.id)}
+                      disabled={unassignUserMutation.isPending}
+                    >
+                      Entfernen
+                    </Button>
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Grid>
+
+          {/* Available Users */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Verfügbare Mitarbeiter
+            </Typography>
+
+            {/* Search and Filter */}
+            <Box sx={{ mb: 2 }}>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Mitarbeiter suchen..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+                }}
+                sx={{ mb: 2 }}
+              />
+
+              <FormControl fullWidth size="small">
+                <InputLabel>Rolle</InputLabel>
+                <Select
+                  value={roleFilter}
+                  label="Rolle"
+                  onChange={e => setRoleFilter(e.target.value)}
+                >
+                  <MenuItem value="all">Alle</MenuItem>
+                  <MenuItem value="nurse">Krankenschwester</MenuItem>
+                  <MenuItem value="dispatcher">Disponent</MenuItem>
+                  <MenuItem value="admin">Administrator</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+            {/* Bulk Actions */}
+            {selectedUsers.length > 0 && (
+              <Box sx={{ mb: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  {selectedUsers.length} Mitarbeiter ausgewählt
+                </Typography>
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<Add />}
+                  onClick={handleBulkAssign}
+                  disabled={assignUserMutation.isPending || isFullyAssigned}
+                >
+                  Alle zuweisen
+                </Button>
+              </Box>
+            )}
+
+            {/* Available Users List */}
+            {usersLoading ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Lade verfügbare Mitarbeiter...
+                </Typography>
+              </Box>
+            ) : availableUsers.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Person sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+                <Typography variant="body2" color="text.secondary">
+                  Keine verfügbaren Mitarbeiter gefunden
+                </Typography>
+              </Box>
+            ) : (
+              <List>
+                {availableUsers.map(user => (
+                  <ListItem key={user.id} sx={{ px: 0 }}>
+                    <ListItemButton
+                      onClick={() => handleUserSelect(user.id)}
+                      selected={selectedUsers.includes(user.id)}
+                    >
+                      <ListItemAvatar>
+                        <Avatar>{user.displayName.charAt(0).toUpperCase()}</Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={user.displayName}
+                        secondary={
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">
+                              {user.email}
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                              <Chip
+                                label={
+                                  user.role === 'nurse'
+                                    ? 'Krankenschwester'
+                                    : user.role === 'dispatcher'
+                                      ? 'Disponent'
+                                      : 'Admin'
+                                }
+                                size="small"
+                                color="primary"
+                                variant="outlined"
+                              />
+                              {user.qualifications?.map(qual => (
+                                <Chip key={qual} label={qual} size="small" variant="outlined" />
+                              ))}
+                            </Box>
+                          </Box>
+                        }
+                        secondaryTypographyProps={{ component: 'div' }}
+                      />
+                    </ListItemButton>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<Add />}
+                      onClick={() => handleAssignUser(user.id)}
+                      disabled={assignUserMutation.isPending || isFullyAssigned}
+                    >
+                      Zuweisen
+                    </Button>
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Grid>
+        </Grid>
+      </DialogContent>
+
+      <DialogActions sx={{ p: 3, pt: 2 }}>
+        <Button
+          onClick={handleClose}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 600,
+            borderRadius: 2,
+            px: 3,
+          }}
+        >
+          Schließen
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}

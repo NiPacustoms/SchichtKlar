@@ -1,0 +1,164 @@
+---
+# Worktree-Koordination & Multi-Agenten-Aufgabenverteilung
+
+## 🎯 Grundprinzipien
+- **Automatische Aufgabenteilung:** Bei Worktree-Nutzung mit mehreren Agenten automatisch erkennen und Aufgaben intelligent verteilen
+- **Konfliktvermeidung:** Parallele Arbeiten an verschiedenen Dateien/Bereichen bevorzugen
+- **Abhängigkeitsmanagement:** Abhängigkeiten zwischen Aufgaben erkennen und Reihenfolge optimieren
+- **Kommunikation:** Klare Schnittstellen zwischen Agenten-Arbeiten definieren
+
+## 📋 Aufgabenteilungs-Strategien
+
+### **1. Feature-basierte Aufteilung**
+Wenn eine Aufgabe mehrere Features betrifft:
+- **Agent 1:** Frontend-Komponenten (React/MUI)
+- **Agent 2:** Backend-Services (Firebase/Firestore)
+- **Agent 3:** Integration & Testing
+- **Agent 4:** Dokumentation & Refactoring
+
+### **2. Layer-basierte Aufteilung**
+Bei Architektur-Änderungen:
+- **Agent 1:** UI-Layer (Components, Pages)
+- **Agent 2:** Business-Logic (Services, Hooks)
+- **Agent 3:** Data-Layer (Firestore, Queries)
+- **Agent 4:** Infrastructure (Routing, Auth, Config)
+
+### **3. Datei-basierte Aufteilung**
+Bei großen Refactorings:
+- **Agent 1:** `src/features/orders/` (Aufträge)
+- **Agent 2:** `src/features/employees/` (Mitarbeiter)
+- **Agent 3:** `src/features/customers/` (Kunden)
+- **Agent 4:** `src/shared/` (Shared Components)
+
+### **4. Task-basierte Aufteilung**
+Bei komplexen Features:
+- **Agent 1:** Datenmodell & Firestore Rules
+- **Agent 2:** Service-Layer & API-Integration
+- **Agent 3:** UI-Komponenten & Formulare
+- **Agent 4:** Routing & Navigation
+
+## 🔍 Automatische Erkennung von Aufgabentypen
+
+### **Frontend-Aufgaben** → Agent 1
+- React-Komponenten erstellen/bearbeiten
+- MUI-Integration
+- Formulare & Validierung
+- UI/UX-Verbesserungen
+- Routing & Navigation
+
+### **Backend-Aufgaben** → Agent 2
+- Firestore Collections & Rules
+- Firebase Functions
+- Service-Layer Implementierung
+- Datenvalidierung & Business-Logic
+- API-Integration
+
+### **Integration-Aufgaben** → Agent 3
+- Frontend-Backend-Verbindung
+- React Query Setup
+- Error Handling Integration
+- Testing & QA
+- Performance-Optimierung
+
+### **Infrastructure-Aufgaben** → Agent 4
+- Konfiguration & Setup
+- Build & Deployment
+- Dokumentation
+- Code-Refactoring
+- Dependency-Updates
+
+## ⚠️ Konfliktvermeidung
+
+### **Parallele Arbeiten vermeiden:**
+- ❌ **Nicht:** Mehrere Agenten an derselben Datei
+- ❌ **Nicht:** Mehrere Agenten an abhängigen Features gleichzeitig
+- ❌ **Nicht:** Mehrere Agenten an kritischen Infrastruktur-Dateien
+
+### **Sichere parallele Arbeiten:**
+- ✅ **OK:** Verschiedene Features in verschiedenen Verzeichnissen
+- ✅ **OK:** Frontend + Backend parallel (bei klaren Schnittstellen)
+- ✅ **OK:** UI-Komponenten + Services parallel
+- ✅ **OK:** Dokumentation + Code parallel
+
+## 🔗 Abhängigkeitsmanagement
+
+### **Reihenfolge beachten:**
+1. **Zuerst:** Datenmodell & Firestore Rules
+2. **Dann:** Service-Layer & Business-Logic
+3. **Danach:** UI-Komponenten & Integration
+4. **Zuletzt:** Testing & Dokumentation
+
+### **Schnittstellen definieren:**
+- **TypeScript Interfaces:** Vorab definieren, dann parallel entwickeln
+- **API-Contracts:** Service-Signaturen zuerst, dann Implementierung
+- **Props-Types:** Komponenten-Interfaces vor Implementierung
+
+## 📝 Worktree-Best-Practices
+
+### **Bei Aufgabenstellung:**
+1. **Aufgabe analysieren:** Welche Bereiche betroffen?
+2. **Aufteilen:** In unabhängige Teilaufgaben zerlegen
+3. **Zuordnen:** Jeder Agent bekommt klar definierte Bereiche
+4. **Schnittstellen:** Gemeinsame Interfaces/Types definieren
+5. **Reihenfolge:** Abhängigkeiten beachten
+
+### **Beispiel-Aufgabenverteilung:**
+
+**Aufgabe:** "Implementiere Chat-System mit E-Mail-Benachrichtigungen"
+
+**Aufteilung:**
+- **Agent 1 (Frontend):** Chat-UI, Message-Komponenten, Chat-Liste
+- **Agent 2 (Backend):** Firestore Collections (messages, conversations), Firestore Rules
+- **Agent 3 (Services):** Chat-Service, Message-Service, Notification-Service
+- **Agent 4 (Integration):** E-Mail-Integration, React Query Setup, Error Handling
+
+**Schnittstellen:**
+```typescript
+// Vorab definieren (Agent 4 oder gemeinsam)
+interface Message {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  content: string;
+  timestamp: Timestamp;
+}
+```
+
+## 🎯 Automatische Empfehlungen
+
+### **Wenn Worktree aktiv ist:**
+- **Erkenne:** Anzahl der aktiven Agenten
+- **Analysiere:** Aufgaben-Komplexität und betroffene Bereiche
+- **Empfehle:** Optimale Aufteilung basierend auf:
+  - Datei-Struktur (Feature-basiert)
+  - Architektur-Layer (Frontend/Backend)
+  - Abhängigkeiten (Datenmodell → Services → UI)
+  - Konfliktpotential (gleiche Dateien)
+
+### **Aufgaben-Priorisierung:**
+1. **Kritisch:** Datenmodell, Auth, Firestore Rules
+2. **Wichtig:** Services, Business-Logic
+3. **Standard:** UI-Komponenten, Formulare
+4. **Optional:** Dokumentation, Refactoring
+
+## 🔄 Merge-Strategien
+
+### **Bei paralleler Entwicklung:**
+- **Feature-Branches:** Jeder Agent arbeitet in eigenem Feature-Branch
+- **Regelmäßige Syncs:** Häufige Merges vom Main-Branch
+- **Konflikt-Früherkennung:** Schnittstellen vorab definieren
+- **Code-Review:** Vor Merge prüfen auf Konsistenz
+
+## 📊 Erfolgs-Kriterien
+
+- ✅ **Keine Konflikte:** Parallele Arbeiten ohne Merge-Konflikte
+- ✅ **Klarheit:** Jeder Agent weiß genau, was zu tun ist
+- ✅ **Effizienz:** Minimale Wartezeiten zwischen Agenten
+- ✅ **Qualität:** Konsistente Code-Qualität über alle Agenten
+- ✅ **Vollständigkeit:** Alle Teilaufgaben werden abgedeckt
+
+---
+description: Worktree-Koordination für Multi-Agenten-Umgebungen - Intelligente Aufgabenteilung und Konfliktvermeidung
+globs:
+alwaysApply: true
+---

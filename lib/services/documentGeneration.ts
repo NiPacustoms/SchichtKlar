@@ -1,0 +1,1124 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Timesheet, timesheetService } from './timesheets';
+import { Assignment, assignmentService } from './assignments';
+import { shiftService } from './shifts';
+import { facilityService } from './facilities';
+import { userService } from './users';
+import { firebaseStorageService } from './firebaseStorage';
+import { logger } from '@/lib/logging';
+
+export type DocumentType = 
+  | 'timesheet-report'      // Zeiterfassungsbericht
+  | 'assignment-confirmation' // Einsatzbestätigung
+  | 'shift-summary'         // Schichtzusammenfassung
+  | 'monthly-report'        // Monatsbericht
+  | 'custom-report'          // Benutzerdefinierter Bericht
+  | 'assignment-notification' // Einsatzmitteilung nach § 11 Absatz 2 Satz 4 AÜG
+  | 'assignment-signatures'; // Assignment mit allen Signaturen
+
+export interface DocumentGenerationOptions {
+  type: DocumentType;
+  title?: string;
+  dateRange?: {
+    start: Date;
+    end: Date;
+  };
+  userId?: string;
+  assignmentId?: string;
+  timesheetIds?: string[];
+  includeSignatures?: boolean;
+  customData?: Record<string, unknown>;
+  // Für Einsatzmitteilung
+  assignmentNotificationData?: {
+    employeeName: string;
+    facilityName: string;
+    facilityAddress?: string;
+    shiftTimes: string;
+    date: Date;
+    isDeclined: boolean;
+    signatureDataUrl?: string; // Base64-encoded signature image
+    declineReason?: string;
+    branding?: {
+      companyName?: string;
+      companyLogo?: string; // URL zum Logo
+    };
+  };
+}
+
+export interface GeneratedDocument {
+  url: string;
+  fileName: string;
+  fileSize: number;
+  createdAt: Date;
+}
+
+class DocumentGenerationService {
+  /**
+   * Generiert ein PDF-Dokument basierend auf dem Typ und den Optionen
+   */
+  async generateDocument(options: DocumentGenerationOptions): Promise<GeneratedDocument> {
+    const { default: jsPDF } = await import('jspdf');
+    const autoTableModule = await import('jspdf-autotable');
+    const autoTable = autoTableModule.default;
+    
+    const doc = new (jsPDF as any)();
+    let pdfBlob: Blob;
+
+    switch (options.type) {
+      case 'timesheet-report':
+        pdfBlob = await this.generateTimesheetReport(doc, autoTable, options);
+        break;
+      case 'assignment-confirmation':
+        pdfBlob = await this.generateAssignmentConfirmation(doc, autoTable, options);
+        break;
+      case 'shift-summary':
+        pdfBlob = await this.generateShiftSummary(doc, autoTable, options);
+        break;
+      case 'monthly-report':
+        pdfBlob = await this.generateMonthlyReport(doc, autoTable, options);
+        break;
+      case 'custom-report':
+        pdfBlob = await this.generateCustomReport(doc, autoTable, options);
+        break;
+      case 'assignment-notification':
+        pdfBlob = await this.generateAssignmentNotification(doc, autoTable, options);
+        break;
+      case 'assignment-signatures':
+        pdfBlob = await this.generateAssignmentSignatures(doc, autoTable, options);
+        break;
+      default:
+        throw new Error(`Unbekannter Dokumenttyp: ${options.type}`);
+    }
+
+    // PDF in Firebase Storage hochladen
+    const fileName = this.generateFileName(options);
+    
+    // Validiere PDF-Blob
+    if (!pdfBlob || pdfBlob.size === 0) {
+      throw new Error('Fehler beim Generieren des PDF-Dokuments');
+    }
+    
+    const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+    
+    try {
+      const upload = await firebaseStorageService.uploadFile(
+        file,
+        `documents/generated/${fileName}`,
+        {
+          kind: 'generated-document',
+          documentType: options.type,
+          generatedAt: new Date().toISOString(),
+        }
+      );
+
+      if (!upload?.url) {
+        throw new Error('Fehler beim Hochladen des generierten Dokuments - keine URL erhalten');
+      }
+
+      return {
+        url: upload.url,
+        fileName,
+        fileSize: pdfBlob.size,
+        createdAt: new Date(),
+      };
+    } catch (uploadError) {
+      logger.error('Upload-Fehler', uploadError instanceof Error ? uploadError : new Error(String(uploadError)));
+      throw new Error(`Fehler beim Hochladen: ${uploadError instanceof Error ? uploadError.message : 'Unbekannter Fehler'}`);
+    }
+  }
+
+  /**
+   * Generiert einen Zeiterfassungsbericht
+   */
+  private async generateTimesheetReport(
+    doc: any,
+    autoTable: any,
+    options: DocumentGenerationOptions
+  ): Promise<Blob> {
+    const margin = 14;
+    let y = 20;
+
+    // Header
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Zeiterfassungsbericht', margin, y);
+    
+    y += 10;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    
+    if (options.dateRange) {
+      doc.text(
+        `Zeitraum: ${options.dateRange.start.toLocaleDateString('de-DE')} - ${options.dateRange.end.toLocaleDateString('de-DE')}`,
+        margin,
+        y
+      );
+      y += 8;
+    }
+    
+    doc.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, margin, y);
+    y += 15;
+
+    // Lade echte Timesheet-Daten
+    let timesheets: Timesheet[] = [];
+    if (options.dateRange && options.userId) {
+      try {
+        // Stelle sicher, dass die Daten korrekt normalisiert sind
+        const startDate = new Date(options.dateRange.start);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(options.dateRange.end);
+        endDate.setHours(23, 59, 59, 999);
+        
+        timesheets = await timesheetService.getTimesheetsByDateRange(
+          startDate,
+          endDate,
+          options.userId
+        );
+      } catch (error) {
+        logger.error('Fehler beim Laden der Zeiterfassungen', error instanceof Error ? error : new Error(String(error)));
+        // Weiter mit leerem Array
+      }
+    }
+
+    // Erstelle Tabellendaten
+    const tableData = timesheets.length > 0
+      ? timesheets.map(ts => [
+          ts.date ? new Date(ts.date).toLocaleDateString('de-DE') : '-',
+          ts.startTime || '-',
+          ts.endTime || '-',
+          `${ts.breakMinutes || 0} Min`,
+          `${ts.totalHours?.toFixed(2) || '0,00'}`,
+          this.getStatusLabel(ts.status || 'pending'),
+        ])
+      : [
+          ['Keine Daten verfügbar', '', '', '', '', ''],
+        ];
+
+    // Limit auf 100 Einträge pro Seite für Zeiterfassungsberichte
+    const maxEntriesPerPage = 100;
+    const entriesToShow = tableData.slice(0, maxEntriesPerPage);
+    
+    autoTable(doc, {
+      head: [['Datum', 'Start', 'Ende', 'Pause', 'Stunden', 'Status']],
+      body: entriesToShow,
+      startY: y,
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [66, 139, 202] },
+      theme: 'striped',
+    });
+    
+    // Wenn mehr Einträge vorhanden sind, Hinweis hinzufügen
+    if (tableData.length > maxEntriesPerPage) {
+      const finalY = (doc as any).lastAutoTable?.finalY || y + (entriesToShow.length * 10) + 20;
+      y = finalY + 10;
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(9);
+      doc.text(`Hinweis: Es werden nur die ersten ${maxEntriesPerPage} von ${tableData.length} Einträgen angezeigt.`, margin, y);
+      y += 10;
+    }
+
+    // Zusammenfassung
+    if (timesheets.length > 0) {
+      const totalHours = timesheets.reduce((sum, ts) => sum + (ts.totalHours || 0), 0);
+      const approvedHours = timesheets
+        .filter(ts => ts.status === 'approved')
+        .reduce((sum, ts) => sum + (ts.totalHours || 0), 0);
+      
+      // Ermittle die Y-Position nach der Tabelle
+      const displayedEntries = Math.min(timesheets.length, 100);
+      const finalY = (doc as any).lastAutoTable?.finalY || y + (displayedEntries * 10) + 20;
+      y = finalY + 15;
+      
+      doc.setFont('helvetica', 'bold');
+      doc.text('Zusammenfassung:', margin, y);
+      y += 10;
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Gesamtstunden: ${totalHours.toFixed(2)}`, margin + 10, y);
+      y += 8;
+      doc.text(`Genehmigte Stunden: ${approvedHours.toFixed(2)}`, margin + 10, y);
+    }
+
+    return doc.output('blob');
+  }
+
+  /**
+   * Generiert eine Einsatzbestätigung
+   */
+  private async generateAssignmentConfirmation(
+    doc: any,
+    autoTable: any,
+    options: DocumentGenerationOptions
+  ): Promise<Blob> {
+    const margin = 14;
+    let y = 20;
+
+    // Header
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Einsatzbestätigung', margin, y);
+    
+    y += 15;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    
+    // Lade Assignment-Daten
+    let assignment: Assignment | null = null;
+    let shift: any = null;
+    let facility: any = null;
+    
+    if (options.assignmentId) {
+      try {
+        assignment = await assignmentService.getById(options.assignmentId);
+        
+        // Lade Schicht-Daten wenn Assignment vorhanden
+        if (assignment?.shiftId) {
+          try {
+            shift = await shiftService.getById(assignment.shiftId);
+            
+            // Lade Einrichtungs-Daten wenn Schicht vorhanden
+            if (shift?.facilityId) {
+              try {
+                facility = await facilityService.getById(shift.facilityId);
+              } catch (error) {
+                logger.error('Fehler beim Laden der Einrichtung', error instanceof Error ? error : new Error(String(error)));
+              }
+            }
+          } catch (error) {
+            logger.error('Fehler beim Laden der Schicht', error instanceof Error ? error : new Error(String(error)));
+          }
+        }
+      } catch (error) {
+        logger.error('Fehler beim Laden des Einsatzes', error instanceof Error ? error : new Error(String(error)));
+      }
+    }
+
+    const assignmentData = [
+      ['Einsatz-ID', options.assignmentId || '-'],
+      ['Datum', assignment?.assignedAt ? new Date(assignment.assignedAt).toLocaleDateString('de-DE') : new Date().toLocaleDateString('de-DE')],
+      ['Status', this.getAssignmentStatusLabel(assignment?.status || 'pending')],
+      ['Einrichtung', facility?.name || shift?.facilityId || '-'],
+      ['Schicht', shift ? `${shift.startTime} - ${shift.endTime}` : '-'],
+      ['Schichttyp', shift?.type || '-'],
+      ['Abgeschlossen am', assignment?.completedAt ? new Date(assignment.completedAt).toLocaleDateString('de-DE') : '-'],
+    ];
+
+    assignmentData.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${label}:`, margin, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(String(value), margin + 80, y);
+      y += 10;
+    });
+
+    if (assignment?.notes) {
+      y += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Notizen:', margin, y);
+      y += 8;
+      doc.setFont('helvetica', 'normal');
+      try {
+        const notesLines = doc.splitTextToSize(assignment.notes, 170);
+        if (Array.isArray(notesLines)) {
+          notesLines.forEach((line: string) => {
+            if (y > 250) { // Neue Seite wenn nötig
+              doc.addPage();
+              y = 20;
+            }
+            doc.text(line, margin, y);
+            y += 6;
+          });
+        } else {
+          doc.text(String(assignment.notes).substring(0, 100), margin, y);
+        }
+      } catch (error) {
+        // Fallback wenn splitTextToSize fehlschlägt
+        const truncatedNotes = String(assignment.notes).substring(0, 200);
+        doc.text(truncatedNotes, margin, y);
+        y += 8;
+      }
+    }
+
+    y += 10;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Unterschriften:', margin, y);
+    y += 10;
+    doc.setFont('helvetica', 'normal');
+    doc.text('Mitarbeiter: _________________________', margin, y);
+    y += 10;
+    doc.text('Einrichtung: _________________________', margin, y);
+
+    return doc.output('blob');
+  }
+
+  /**
+   * Generiert eine Schichtzusammenfassung
+   */
+  private async generateShiftSummary(
+    doc: any,
+    autoTable: any,
+    options: DocumentGenerationOptions
+  ): Promise<Blob> {
+    const margin = 14;
+    let y = 20;
+
+    // Header
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Schichtzusammenfassung', margin, y);
+    
+    y += 10;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    
+    const reportDate = options.dateRange?.start || new Date();
+    doc.text(`Datum: ${reportDate.toLocaleDateString('de-DE')}`, margin, y);
+    y += 15;
+
+    // Lade Timesheet-Daten für den Tag
+    let timesheets: Timesheet[] = [];
+    if (options.dateRange && options.userId) {
+      try {
+        // Stelle sicher, dass die Daten korrekt normalisiert sind
+        const startDate = new Date(options.dateRange.start);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(options.dateRange.end);
+        endDate.setHours(23, 59, 59, 999);
+        
+        timesheets = await timesheetService.getTimesheetsByDateRange(
+          startDate,
+          endDate,
+          options.userId
+        );
+      } catch (error) {
+        logger.error('Fehler beim Laden der Schichtdaten', error instanceof Error ? error : new Error(String(error)));
+        // Weiter mit leerem Array
+      }
+    }
+
+    // Erstelle Tabellendaten
+    const tableData = timesheets.length > 0
+      ? timesheets.map(ts => [
+          ts.date ? new Date(ts.date).toLocaleDateString('de-DE') : '-',
+          `${ts.startTime || '-'} - ${ts.endTime || '-'}`,
+          `${ts.totalHours?.toFixed(2) || '0,00'}`,
+          this.getStatusLabel(ts.status || 'pending'),
+        ])
+      : [
+          ['Keine Schichtdaten verfügbar', '', '', ''],
+        ];
+
+    autoTable(doc, {
+      head: [['Datum', 'Schicht', 'Stunden', 'Status']],
+      body: tableData,
+      startY: y,
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [66, 139, 202] },
+      theme: 'striped',
+    });
+
+    return doc.output('blob');
+  }
+
+  /**
+   * Generiert einen Monatsbericht
+   */
+  private async generateMonthlyReport(
+    doc: any,
+    autoTable: any,
+    options: DocumentGenerationOptions
+  ): Promise<Blob> {
+    const margin = 14;
+    let y = 20;
+
+    // Header
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Monatsbericht', margin, y);
+    
+    y += 10;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    
+    const reportDate = options.dateRange?.start || new Date();
+    const month = reportDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+    doc.text(`Monat: ${month}`, margin, y);
+    y += 15;
+
+    // Lade Timesheet-Daten für den Monat
+    let timesheets: Timesheet[] = [];
+    if (options.dateRange && options.userId) {
+      try {
+        // Stelle sicher, dass die Daten korrekt normalisiert sind
+        const startDate = new Date(options.dateRange.start);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(options.dateRange.end);
+        endDate.setHours(23, 59, 59, 999);
+        
+        timesheets = await timesheetService.getTimesheetsByDateRange(
+          startDate,
+          endDate,
+          options.userId
+        );
+      } catch (error) {
+        logger.error('Fehler beim Laden der Monatsdaten', error instanceof Error ? error : new Error(String(error)));
+        // Weiter mit leerem Array
+      }
+    }
+
+    // Berechne Statistiken
+    const totalHours = timesheets.reduce((sum, ts) => sum + (ts.totalHours || 0), 0);
+    const overtimeHours = timesheets.reduce((sum, ts) => sum + (ts.overtimeHours || 0), 0);
+    const nightHours = timesheets.reduce((sum, ts) => sum + (ts.nightHours || 0), 0);
+    const assignmentCount = timesheets.length;
+
+    // Statistiken
+    const stats = [
+      ['Gesamtstunden', totalHours.toFixed(2)],
+      ['Einsätze', String(assignmentCount)],
+      ['Überstunden', overtimeHours.toFixed(2)],
+      ['Nachtstunden', nightHours.toFixed(2)],
+    ];
+
+    stats.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${label}:`, margin, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(value, margin + 80, y);
+      y += 10;
+    });
+
+    y += 10;
+    
+    // Detaillierte Tabelle mit echten Daten
+    const tableData = timesheets.length > 0
+      ? timesheets.map(ts => [
+          ts.date ? new Date(ts.date).toLocaleDateString('de-DE') : '-',
+          `${ts.totalHours?.toFixed(2) || '0,00'}`,
+          '1', // Ein Einsatz pro Timesheet
+          `${ts.totalHours?.toFixed(2) || '0,00'}`,
+        ])
+      : [
+          ['Keine Daten verfügbar', '', '', ''],
+        ];
+
+    // Limit auf 50 Einträge pro Seite, bei mehr automatisch neue Seiten
+    const maxEntriesPerPage = 50;
+    const entriesToShow = tableData.slice(0, maxEntriesPerPage);
+    
+    autoTable(doc, {
+      head: [['Datum', 'Stunden', 'Einsätze', 'Durchschnitt']],
+      body: entriesToShow,
+      startY: y,
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [66, 139, 202] },
+      theme: 'striped',
+    });
+    
+    // Wenn mehr Einträge vorhanden sind, Hinweis hinzufügen
+    if (tableData.length > maxEntriesPerPage) {
+      const finalY = (doc as any).lastAutoTable?.finalY || y + (entriesToShow.length * 10) + 20;
+      y = finalY + 10;
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(9);
+      doc.text(`Hinweis: Es werden nur die ersten ${maxEntriesPerPage} von ${tableData.length} Einträgen angezeigt.`, margin, y);
+    }
+
+    return doc.output('blob');
+  }
+
+  /**
+   * Generiert einen benutzerdefinierten Bericht
+   */
+  private async generateCustomReport(
+    doc: any,
+    autoTable: any,
+    options: DocumentGenerationOptions
+  ): Promise<Blob> {
+    const margin = 14;
+    let y = 20;
+
+    // Header
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text(options.title || 'Benutzerdefinierter Bericht', margin, y);
+    
+    y += 15;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, margin, y);
+    y += 15;
+
+    // Benutzerdefinierte Daten
+    if (options.customData) {
+      Object.entries(options.customData).forEach(([key, value]) => {
+        // Prüfe ob neue Seite nötig
+        if (y > 250) {
+          doc.addPage();
+          y = 20;
+        }
+        
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${key}:`, margin, y);
+        doc.setFont('helvetica', 'normal');
+        
+        // Handle lange Texte
+        try {
+          const valueStr = String(value || '');
+          if (valueStr.length > 100) {
+            // Text umbrechen
+            const lines = doc.splitTextToSize(valueStr, 170);
+            if (Array.isArray(lines)) {
+              lines.forEach((line: string) => {
+                if (y > 250) {
+                  doc.addPage();
+                  y = 20;
+                }
+                doc.text(line, margin + 80, y);
+                y += 6;
+              });
+            } else {
+              doc.text(valueStr.substring(0, 100), margin + 80, y);
+              y += 10;
+            }
+          } else {
+            doc.text(valueStr, margin + 80, y);
+            y += 10;
+          }
+        } catch (error) {
+          // Fallback für komplexe Objekte
+          doc.text(JSON.stringify(value).substring(0, 100), margin + 80, y);
+          y += 10;
+        }
+      });
+    } else {
+      // Wenn keine customData vorhanden, zeige Hinweis
+      doc.setFont('helvetica', 'italic');
+      doc.text('Keine benutzerdefinierten Daten vorhanden', margin, y);
+      y += 10;
+    }
+
+    return doc.output('blob');
+  }
+
+  /**
+   * Generiert eine Einsatzmitteilung nach § 11 Absatz 2 Satz 4 AÜG
+   */
+  private async generateAssignmentNotification(
+    doc: any,
+    _autoTable: any,
+    options: DocumentGenerationOptions
+  ): Promise<Blob> {
+    if (!options.assignmentNotificationData) {
+      throw new Error('assignmentNotificationData ist erforderlich für Einsatzmitteilung');
+    }
+
+    const data = options.assignmentNotificationData;
+    const margin = 14;
+    let y = 20;
+
+    // Branding: Logo oben rechts (Firmenlogo oder JobFlow-Fallback)
+    const logoUrl = data.branding?.companyLogo || '/Design ohne Titel (28).png';
+    try {
+      // Lade Logo von URL und konvertiere zu Base64
+      const logoResponse = await fetch(logoUrl);
+      if (!logoResponse.ok) {
+        throw new Error(`Logo konnte nicht geladen werden: ${logoResponse.status}`);
+      }
+      const logoBlob = await logoResponse.blob();
+      const logoDataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(logoBlob);
+      });
+
+      // Füge Logo ein (rechts oben, max. 40x40 mm)
+      const logoMaxWidth = 40;
+      const logoMaxHeight = 40;
+      const img = new Image();
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+        img.src = logoDataUrl;
+      });
+
+      let logoWidth = img.width;
+      let logoHeight = img.height;
+      const logoRatio = Math.min(logoMaxWidth / logoWidth, logoMaxHeight / logoHeight);
+      logoWidth = logoWidth * logoRatio;
+      logoHeight = logoHeight * logoRatio;
+
+      // Position: rechts oben
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const logoX = pageWidth - margin - logoWidth;
+      doc.addImage(logoDataUrl, 'PNG', logoX, y, logoWidth, logoHeight);
+    } catch (error) {
+      logger.error('Fehler beim Laden des Logos', error instanceof Error ? error : new Error(String(error)));
+      // Weiter ohne Logo, aber das sollte nicht passieren, da Fallback vorhanden ist
+    }
+
+    // Header
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Einsatzmitteilung nach § 11 Absatz 2 Satz 4 AÜG', margin, y);
+    
+    // Firmenname (falls Branding vorhanden)
+    if (data.branding?.companyName) {
+      y += 8;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(data.branding.companyName, margin, y);
+    }
+    
+    y += 15;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    
+    // Mitarbeiter
+    doc.setFont('helvetica', 'bold');
+    doc.text('Mitarbeiter:', margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(data.employeeName, margin + 50, y);
+    y += 12;
+
+    // Firmenname für den gesamten Dokumentinhalt
+    const companyName = data.branding?.companyName || 'AufAbruf GmbH';
+
+    if (!data.isDeclined) {
+      // Einsatzbestätigung
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Hiermit setzte ich Sie in Kenntnis, dass Sie als Zeitarbeitnehmer für die ${companyName} tätig werden.`, margin, y);
+      y += 12;
+
+      // Einsatzort
+      doc.setFont('helvetica', 'bold');
+      doc.text('Einsatzort:', margin, y);
+      doc.setFont('helvetica', 'normal');
+      const facilityText = data.facilityAddress 
+        ? `${data.facilityName}, ${data.facilityAddress}`
+        : data.facilityName;
+      doc.text(facilityText, margin + 50, y);
+      y += 12;
+
+      // Einsatzzeiten
+      doc.setFont('helvetica', 'bold');
+      doc.text('Einsatzzeiten:', margin, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(data.shiftTimes, margin + 50, y);
+      y += 12;
+
+      // Hinweise
+      y += 5;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const hintText1 = `Bitte denken Sie daran, die Einsatzzeit mittels den zur Verfügung gestellten Zeiterfassungsbögen zu dokumentieren und vom Berechtigten am Einsatzort unterschreiben zu lassen. Die Zeiterfassungsbögen müssen wöchentlich an die ${companyName} Zentrale übermittelt werden.`;
+      const hintLines1 = doc.splitTextToSize(hintText1, 180);
+      hintLines1.forEach((line: string) => {
+        doc.text(line, margin, y);
+        y += 6;
+      });
+      y += 3;
+
+      const hintText2 = 'Bitte denken Sie an entsprechende Arbeitsschutzkleidung (Kasack, festes Schuhwerk) und achten die Hygienevorschriften sowie den zur Verfügung gestellten Hautschutzplan.';
+      const hintLines2 = doc.splitTextToSize(hintText2, 180);
+      hintLines2.forEach((line: string) => {
+        doc.text(line, margin, y);
+        y += 6;
+      });
+    } else {
+      // Ablehnung
+      doc.setFont('helvetica', 'normal');
+      doc.text('Ablehnung der angeforderten Dienste', margin, y);
+      y += 12;
+
+      doc.text('Hiermit lehne ich den angeforderten Dienst ab. Mir ist bewusst, dass mir diese Zeit von meiner vertraglich vereinbarten Betriebszeit in Abzug gebracht wird.', margin, y);
+      y += 12;
+
+      if (data.declineReason) {
+        y += 5;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Begründung:', margin, y);
+        y += 8;
+        doc.setFont('helvetica', 'normal');
+        const reasonLines = doc.splitTextToSize(data.declineReason, 180);
+        reasonLines.forEach((line: string) => {
+          doc.text(line, margin, y);
+          y += 6;
+        });
+        y += 5;
+      }
+    }
+
+    // Unterschriftsbereich
+    y += 15;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    
+    // Linie für Unterschrift
+    const signatureY = y + 20;
+    doc.line(margin, signatureY, margin + 100, signatureY);
+    
+    y = signatureY + 8;
+    doc.text('Datum / Unterschrift Mitarbeiter/in', margin, y);
+
+    // Wenn Unterschrift vorhanden (bei Ablehnung)
+    if (data.isDeclined && data.signatureDataUrl) {
+      try {
+        // Konvertiere Base64 zu Bild
+        const img = new Image();
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = reject;
+          img.src = data.signatureDataUrl!;
+        });
+
+        // Füge Unterschrift ein (max. 80x30 mm)
+        const maxWidth = 80;
+        const maxHeight = 30;
+        let imgWidth = img.width;
+        let imgHeight = img.height;
+        const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
+        imgWidth = imgWidth * ratio;
+        imgHeight = imgHeight * ratio;
+
+        doc.addImage(data.signatureDataUrl, 'PNG', margin, signatureY - imgHeight - 2, imgWidth, imgHeight);
+      } catch (error) {
+        logger.error('Fehler beim Einfügen der Unterschrift', error instanceof Error ? error : new Error(String(error)));
+        // Fallback: Text
+        doc.text('[Unterschrift vorhanden]', margin, signatureY - 5);
+      }
+    }
+
+    // Datum
+    y += 15;
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Datum: ${data.date.toLocaleDateString('de-DE')}`, margin, y);
+
+    return doc.output('blob');
+  }
+
+  /**
+   * Generiert ein PDF mit allen Signaturen für ein Assignment
+   * Enthält: Employee Signature (bei Ablehnung), Relieving Personnel Signatures, Facility Signatures
+   */
+  private async generateAssignmentSignatures(
+    doc: any,
+    _autoTable: any,
+    options: DocumentGenerationOptions
+  ): Promise<Blob> {
+    if (!options.assignmentId) {
+      throw new Error('assignmentId ist erforderlich für Assignment-Signaturen-PDF');
+    }
+
+    const assignment = await assignmentService.getById(options.assignmentId);
+    if (!assignment) {
+      throw new Error('Assignment nicht gefunden');
+    }
+
+    const shift = await shiftService.getById(assignment.shiftId);
+    if (!shift) {
+      throw new Error('Shift nicht gefunden');
+    }
+
+    const facility = shift.facilityId ? await facilityService.getById(shift.facilityId) : null;
+    const employee = await userService.getById(assignment.userId);
+
+    const margin = 14;
+    let y = 20;
+
+    // Header
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Zeiterfassung mit Unterschriften', margin, y);
+    y += 10;
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Assignment-ID: ${assignment.id}`, margin, y);
+    y += 8;
+
+    // Assignment-Informationen
+    doc.setFont('helvetica', 'bold');
+    doc.text('Einsatzinformationen:', margin, y);
+    y += 8;
+    doc.setFont('helvetica', 'normal');
+
+    if (employee) {
+      doc.text(`Mitarbeiter: ${employee.displayName}`, margin, y);
+      y += 6;
+    }
+
+    if (facility) {
+      doc.text(`Einrichtung: ${facility.name}`, margin, y);
+      y += 6;
+    }
+
+    if (shift) {
+      const shiftDate = typeof shift.date === 'string' ? new Date(shift.date) : (shift.date as Date);
+      doc.text(`Datum: ${shiftDate.toLocaleDateString('de-DE')}`, margin, y);
+      y += 6;
+      doc.text(`Zeiten: ${shift.startTime} - ${shift.endTime}`, margin, y);
+      y += 6;
+    }
+
+    y += 10;
+
+    // Employee Signature (bei Ablehnung)
+    if (assignment.employeeSignatureUrl) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Mitarbeiter-Unterschrift (Ablehnung):', margin, y);
+      y += 8;
+
+      try {
+        const signatureResponse = await fetch(assignment.employeeSignatureUrl);
+        const signatureBlob = await signatureResponse.blob();
+        const signatureDataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(signatureBlob);
+        });
+
+        const img = new Image();
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = reject;
+          img.src = signatureDataUrl;
+        });
+
+        const maxWidth = 100;
+        const maxHeight = 40;
+        let imgWidth = img.width;
+        let imgHeight = img.height;
+        const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
+        imgWidth = imgWidth * ratio;
+        imgHeight = imgHeight * ratio;
+
+        doc.addImage(signatureDataUrl, 'PNG', margin, y, imgWidth, imgHeight);
+        y += imgHeight + 5;
+
+        if (assignment.employeeSignedAt) {
+          doc.setFontSize(10);
+          const signedAt = assignment.employeeSignedAt instanceof Date ? assignment.employeeSignedAt : new Date(assignment.employeeSignedAt);
+          doc.text(`Unterschrieben am: ${signedAt.toLocaleDateString('de-DE')} ${signedAt.toLocaleTimeString('de-DE')}`, margin, y);
+          y += 6;
+        }
+        doc.setFontSize(12);
+      } catch (error) {
+        logger.error('Fehler beim Laden der Mitarbeiter-Unterschrift', error instanceof Error ? error : new Error(String(error)));
+        doc.text('[Unterschrift konnte nicht geladen werden]', margin, y);
+        y += 8;
+      }
+
+      y += 10;
+    }
+
+    // Relieving Personnel Signatures
+    if (assignment.relievingSignatures && assignment.relievingSignatures.length > 0) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Unterschriften durch ablösendes Personal:', margin, y);
+      y += 8;
+
+      for (const sig of assignment.relievingSignatures) {
+        // Prüfe ob neue Seite benötigt wird
+        if (y > 250) {
+          doc.addPage();
+          y = 20;
+        }
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(11);
+        doc.text(`Datum: ${sig.date}`, margin, y);
+        y += 6;
+        doc.text(`Unterschrieben von: ${sig.signerName}${sig.signerRole ? ` (${sig.signerRole})` : ''}`, margin, y);
+        y += 6;
+
+        if (sig.verifiedTimes) {
+          doc.setFontSize(10);
+          doc.text(`Verifizierte Zeiten: ${sig.verifiedTimes.startTime} - ${sig.verifiedTimes.endTime}`, margin, y);
+          y += 5;
+          doc.text(`Pausen: ${sig.verifiedTimes.breakMinutes} Min, Gesamt: ${sig.verifiedTimes.totalHours}h`, margin, y);
+          y += 5;
+          doc.setFontSize(11);
+        }
+
+        try {
+          const signatureResponse = await fetch(sig.signatureUrl);
+          const signatureBlob = await signatureResponse.blob();
+          const signatureDataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(signatureBlob);
+          });
+
+          const img = new Image();
+          await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = reject;
+            img.src = signatureDataUrl;
+          });
+
+          const maxWidth = 100;
+          const maxHeight = 40;
+          let imgWidth = img.width;
+          let imgHeight = img.height;
+          const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
+          imgWidth = imgWidth * ratio;
+          imgHeight = imgHeight * ratio;
+
+          doc.addImage(signatureDataUrl, 'PNG', margin, y, imgWidth, imgHeight);
+          y += imgHeight + 5;
+
+          doc.setFontSize(10);
+          const signedAt = sig.signedAt instanceof Date ? sig.signedAt : new Date(sig.signedAt);
+          doc.text(`Unterschrieben am: ${signedAt.toLocaleDateString('de-DE')} ${signedAt.toLocaleTimeString('de-DE')}`, margin, y);
+          y += 8;
+          doc.setFontSize(12);
+        } catch (error) {
+          logger.error('Fehler beim Laden der Unterschrift', error instanceof Error ? error : new Error(String(error)));
+          doc.text('[Unterschrift konnte nicht geladen werden]', margin, y);
+          y += 8;
+        }
+
+        y += 10;
+      }
+    }
+
+    // Facility Signatures (von Timesheets)
+    if (options.timesheetIds && options.timesheetIds.length > 0) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Unterschriften durch Einrichtung:', margin, y);
+      y += 8;
+
+      for (const timesheetId of options.timesheetIds) {
+        const timesheet = await timesheetService.getById(timesheetId);
+        if (timesheet && timesheet.facilitySignatureUrl) {
+          // Prüfe ob neue Seite benötigt wird
+          if (y > 250) {
+            doc.addPage();
+            y = 20;
+          }
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(11);
+          const tsDate = timesheet.date instanceof Date ? timesheet.date : new Date(timesheet.date);
+          doc.text(`Datum: ${tsDate.toLocaleDateString('de-DE')}`, margin, y);
+          y += 6;
+          doc.text(`Zeiten: ${timesheet.startTime} - ${timesheet.endTime}`, margin, y);
+          y += 6;
+          doc.text(`Gesamtstunden: ${timesheet.totalHours}h`, margin, y);
+          y += 6;
+
+          if (timesheet.facilitySignerName) {
+            doc.text(`Unterschrieben von: ${timesheet.facilitySignerName}`, margin, y);
+            y += 6;
+          }
+
+          try {
+            const signatureResponse = await fetch(timesheet.facilitySignatureUrl);
+            const signatureBlob = await signatureResponse.blob();
+            const signatureDataUrl = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(signatureBlob);
+            });
+
+            const img = new Image();
+            await new Promise<void>((resolve, reject) => {
+              img.onload = () => resolve();
+              img.onerror = reject;
+              img.src = signatureDataUrl;
+            });
+
+            const maxWidth = 100;
+            const maxHeight = 40;
+            let imgWidth = img.width;
+            let imgHeight = img.height;
+            const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
+            imgWidth = imgWidth * ratio;
+            imgHeight = imgHeight * ratio;
+
+            doc.addImage(signatureDataUrl, 'PNG', margin, y, imgWidth, imgHeight);
+            y += imgHeight + 5;
+
+            if (timesheet.facilitySignedAt) {
+              doc.setFontSize(10);
+              const facilitySignedAt = timesheet.facilitySignedAt instanceof Date ? timesheet.facilitySignedAt : new Date(timesheet.facilitySignedAt);
+              doc.text(`Unterschrieben am: ${facilitySignedAt.toLocaleDateString('de-DE')} ${facilitySignedAt.toLocaleTimeString('de-DE')}`, margin, y);
+              y += 8;
+            }
+            doc.setFontSize(12);
+          } catch (error) {
+            logger.error('Fehler beim Laden der Einrichtungs-Unterschrift', error instanceof Error ? error : new Error(String(error)));
+            doc.text('[Unterschrift konnte nicht geladen werden]', margin, y);
+            y += 8;
+          }
+
+          y += 10;
+        }
+      }
+    }
+
+    // Footer
+    y += 10;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'italic');
+    doc.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')} ${new Date().toLocaleTimeString('de-DE')}`, margin, y);
+
+    return doc.output('blob');
+  }
+
+  /**
+   * Generiert einen Dateinamen für das Dokument
+   */
+  private generateFileName(options: DocumentGenerationOptions): string {
+    const date = new Date().toISOString().split('T')[0];
+    const typeMap: Record<DocumentType, string> = {
+      'timesheet-report': 'Zeiterfassungsbericht',
+      'assignment-confirmation': 'Einsatzbestätigung',
+      'shift-summary': 'Schichtzusammenfassung',
+      'monthly-report': 'Monatsbericht',
+      'custom-report': 'Bericht',
+      'assignment-notification': 'Einsatzmitteilung',
+      'assignment-signatures': 'Zeiterfassung_Unterschriften',
+    };
+    
+    const typeName = typeMap[options.type] || 'Dokument';
+    return `${typeName}_${date}.pdf`;
+  }
+
+  /**
+   * Konvertiert Timesheet-Status zu Label
+   */
+  private getStatusLabel(status: string): string {
+    const statusMap: Record<string, string> = {
+      'pending': 'Ausstehend',
+      'submitted': 'Eingereicht',
+      'approved': 'Genehmigt',
+      'rejected': 'Abgelehnt',
+    };
+    return statusMap[status] || status;
+  }
+
+  /**
+   * Konvertiert Assignment-Status zu Label
+   */
+  private getAssignmentStatusLabel(status: string): string {
+    const statusMap: Record<string, string> = {
+      'requested': 'Angefragt',
+      'accepted': 'Angenommen',
+      'declined': 'Abgelehnt',
+      'assigned': 'Zugewiesen',
+      'completed': 'Abgeschlossen',
+      'pending-signature': 'Wartet auf Unterschrift',
+      'pending': 'Ausstehend',
+      'done': 'Erledigt',
+    };
+    return statusMap[status] || status;
+  }
+}
+
+export const documentGenerationService = new DocumentGenerationService();
+

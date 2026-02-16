@@ -1,0 +1,33 @@
+---
+# Projekt
+- Name: **JobFlow**
+- Zweck: Zeitarbeits-App für medizinisches Personal (ohne KI-Funktionen)
+- Ziel: **Desktop-First** (optimiert für ≥1280px), responsive auf Mobile
+- Tech: React 18 + TypeScript + Webpack + MUI 5 + Firebase + React Query
+- Sprache: Deutsch
+- Theme: SOTA Design-System mit Grün (#4CAF50), kontrastreich, PWA aktiv
+- Architektur: Feature-basiert, SOTA Best Practices, DSGVO-konform
+
+# Arbeitsweise in Cursor
+- Antworte knapp, deutsch, direkt.  
+- Immer **SOTA-Lösungen**: React 18, MUI 5, Firebase, React Query, Zod.  
+- Fokus: Desktop UX zuerst, dann Mobile.
+- **Keine KI-Funktionen** - nur bewährte Business-Logik.
+- **DSGVO-konform** - Arbeitszeit-Grenzen, Datenschutz.
+- **Keine Platzhalter, Demo- oder Mock-Daten** - Immer echte, produktionsreife Implementierungen.
+
+# Datei- und Pfad-Regeln
+- **Beziehe dich nur auf Dateien/Ordner, die du im Repo siehst.**
+- **Bevor du einen Pfad erwähnst: prüfe mit `list_dir` oder `glob_file_search`, ob er existiert.**
+- **Wenn du etwas nicht findest, schreib: UNBEKANNT / NICHT GEFUNDEN – erfinde nichts.**
+- **Wenn du einen Status behauptest (z. B. 'Build ok', 'Rules deployed'), zeig mir:**
+  - welchen Befehl du ausgeführt hast,
+  - die relevante Ausgabe oder
+  - die Dateistelle (Pfad + Zeilennummer).
+- **Ändere nur Dateien, die explizit in diesem Prompt genannt sind (z. B. in docs/release/... oder tasks/...).**
+
+# Implementation Status
+- **Aktueller Fortschritt:** 75% der Features implementiert
+- **Nächste Priorität:** Chat-System, E-Mail/SMS Integration, Push-Notifications
+- **To-Do Liste:** Siehe .cursor/rules/09-todo-implementation.mdc
+---

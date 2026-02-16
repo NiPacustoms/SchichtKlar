@@ -1,0 +1,98 @@
+# Error Handling Rules
+
+## Services
+- ✅ Use AppError classes instead of raw exceptions
+- ✅ Transform errors with errorHandler.handleFirebaseError()
+- ✅ Add context (component, action) to all errors
+- ✅ Use structured logging with logger.error()
+- ✅ Implement retry logic for network operations
+- ✅ React Query: Configure retry and error states
+
+## UI Components
+- ✅ Wrap components in ErrorBoundary hierarchy
+- ✅ Use ErrorDisplay for user-facing errors
+- ✅ Use ErrorToast for notifications
+- ✅ Implement LoadingStates for better UX
+- ✅ Provide retry mechanisms for critical operations
+- ✅ Show user-friendly German error messages
+
+## Error Boundaries
+- ✅ GlobalErrorBoundary: Root-level error catching
+- ✅ RouteErrorBoundary: Route-specific isolation
+- ✅ ComponentErrorBoundary: Component-level isolation
+- ✅ Use withComponentErrorBoundary HOC for easy wrapping
+
+## Logging
+- ✅ Use logger instead of console.log/error/warn
+- ✅ Add context (userId, sessionId, route) to logs
+- ✅ Use appropriate log levels (debug, info, warn, error, critical)
+- ✅ Log performance metrics and user actions
+- ✅ Production: Structured JSON logging ready
+
+## Error Types
+- ✅ Use typed ErrorCode enum for consistency
+- ✅ Use ErrorSeverity levels (critical, error, warning, info)
+- ✅ Provide German user messages for all errors
+- ✅ Include technical details for debugging
+
+## Testing
+- ✅ Test error boundary behavior
+- ✅ Test service error handling
+- ✅ Test user error flows
+- ✅ Mock error scenarios in tests
+
+## Monitoring (Optional)
+- ✅ Sentry integration prepared (feature-flagged)
+- ✅ Error analytics foundation ready
+- ✅ Performance monitoring hooks available
+- ✅ Error grouping and fingerprinting
+
+## Best Practices
+- ✅ Never throw raw errors - always use AppError
+- ✅ Always provide user-friendly error messages
+- ✅ Include context for debugging
+- ✅ Implement graceful degradation
+- ✅ Provide recovery mechanisms
+- ✅ Log errors with structured data
+
+## Examples
+
+### Service Error Handling
+```typescript
+try {
+  const result = await firebaseOperation();
+  return result;
+} catch (error) {
+  const appError = errorHandler.handleFirebaseError(error, {
+    component: 'userService',
+    action: 'getUserById'
+  });
+  logger.error('Failed to get user', appError, { userId: id });
+  throw appError;
+}
+```
+
+### Component Error Handling
+```typescript
+<ComponentErrorBoundary component="UserProfile">
+  <UserProfileContent user={user} />
+</ComponentErrorBoundary>
+```
+
+### Toast Notifications
+```typescript
+const { showSuccess, showError } = useToastManager();
+showSuccess('Benutzer erfolgreich gespeichert!');
+showError('Fehler beim Speichern');
+```
+
+### Loading States
+```typescript
+<LoadingState variant="skeleton" rows={3} />
+<LoadingState variant="spinner" message="Lädt..." />
+```
+
+description: Comprehensive error handling system with SOTA practices
+globs: ["**/*.ts", "**/*.tsx"]
+alwaysApply: true
+---

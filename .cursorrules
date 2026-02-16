@@ -1,0 +1,19 @@
+# JobFlow - Automatische Cursor Rules
+# Diese Datei sorgt dafür, dass alle Rules automatisch in jedem Chat angewendet werden
+
+# Always Rules (immer aktiv)
+- .cursor/rules/00-project.mdc
+- .cursor/rules/01-design-system.mdc
+- .cursor/rules/02-frontend.mdc
+- .cursor/rules/05-prompt-optimization.mdc
+- .cursor/rules/08-worktree-coordination.mdc
+
+# Auto-Attached Rules (automatisch bei relevanten Dateien)
+- .cursor/rules/03-services.mdc
+
+# Agent Requested Rules (bei Bedarf verfügbar)
+- .cursor/rules/04-security.mdc
+- .cursor/rules/06-testing.mdc
+
+# Documentation Rules (Referenz)
+- .cursor/rules/07-todo-implementation.mdc

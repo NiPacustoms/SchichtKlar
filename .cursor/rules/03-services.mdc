@@ -1,0 +1,25 @@
+# Firestore
+- Collections: `users`, `customers`, `orders`, `worktimes`, `documents`, `qualifications`.  
+- Felder: `createdAt`, `updatedAt` = serverTimestamp.  
+- Nur paginierte Queries, kein unlimitiertes `.get()`.  
+
+# Auth
+- Rollen in `users/{uid}.role`.  
+- UI & Security Rules prüfen konsistent.  
+
+# Storage
+- Pfade: `/signatures/{worktimeId}.png`, `/documents/{entity}/{id}/{filename}`.  
+- Typ- & Größenprüfung vorm Upload.  
+
+# Messaging
+- Token im User-Dokument speichern.  
+- Channels: Auftrag, Update, Reminder.  
+
+# Export
+- Lange Jobs via Worker oder Cloud Functions, nie im UI blockieren.
+- React Query: Optimierte Datenverwaltung und Caching.
+- SOTA Error Handling: Try-Catch mit benutzerfreundlichen Fehlermeldungen.
+description:
+globs:
+alwaysApply: false
+---

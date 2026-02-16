@@ -1,0 +1,34 @@
+# React & MUI
+- TypeScript strict. Keine `any`.  
+- Benenne Komponenten nach Feature: `OrdersPage`, `WorktimeTable`.  
+- Exporte: **named exports**.  
+- Pages: Toolbar, Table/Card, Actions (FAB oder Button).  
+- Forms: `react-hook-form` + zod + SOTA Validierung.
+- Error Boundaries: Graceful Degradation.
+- React Query: Intelligentes Caching.  
+
+# Routing
+- React Router v6.  
+- Routen: `/dashboard`, `/orders`, `/worktimes`, `/customers`, `/employees`, `/reports`, `/settings`.  
+
+# Tabellen
+- MUI DataGrid bevorzugt.  
+- Toolbar mit Suche, Filter, Export.  
+- Row-Actions als IconButtons am rechten Rand.
+
+# Performance & Error Handling
+- **Build:** Code-Splitting mit React.lazy(), Bundle-Analyse
+- **Rendering:** Virtualisierung ab 1000 Rows, Memoize große Listen
+- **Error Handling:** Keine nackten Exceptions, benutzerfreundliche Fehlermeldungen
+- **Loading:** Skeletons, Progress Bars, Skeleton-Tables
+- **Feedback:** Snackbar unten rechts, max. 1 sichtbar, autoHide 4-6s
+
+# Testing (bei Bedarf aktivieren)
+- Unit Tests: Jest + React Testing Library
+- Integration Tests: Firebase Emulator
+- E2E Tests: Playwright (optional)
+- Test Coverage: Mindestens 80% für kritische Features
+description:
+globs:
+alwaysApply: false
+---

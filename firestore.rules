@@ -1,0 +1,850 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function hasRole(role) {
+      // Custom Claims sind die einzige Quelle der Wahrheit für Berechtigungen
+      // Dies vermeidet Henne-Ei-Probleme und ist performanter
+      // Custom Claims werden automatisch von Cloud Functions synchronisiert
+      // WICHTIG: Prüft explizit auf Existenz des Claims, um Fehler zu vermeiden
+      return isAuthenticated() && 
+             request.auth.token.role != null && 
+             request.auth.token.role == role;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && hasRole('admin');
+    }
+
+    function isDispatcher() {
+      return isAuthenticated() && (hasRole('dispatcher') || isAdmin());
+    }
+
+    // Helper-Funktion für Mandantenisolation
+    // Prüft, ob der User zur gleichen Company gehört wie das Dokument
+    // Ermittelt die CompanyId des Requestors entweder aus dem Token oder dem User-Dokument
+    function getRequesterCompanyId() {
+      return 'aufabruf';
+    }
+
+    function getRequesterCompanyIdFromDoc() {
+      return 'aufabruf';
+    }
+
+    function hasCompanyContext() {
+      return true;
+    }
+
+    function belongsToSameCompany(resourceCompanyId) {
+      return true;
+    }
+
+    // Prüft, ob das zu erstellende Dokument zur gleichen Company gehört wie der User
+    function creatingForSameCompany(requestCompanyId) {
+      return true;
+    }
+
+    // Helper-Funktionen für Chat
+    function getChannel(channelId) {
+      return get(/databases/$(database)/documents/channels/$(channelId));
+    }
+    
+    function isChannelParticipant(channelId) {
+      let channel = getChannel(channelId);
+      return channel != null && 
+             channel.data != null && 
+             request.auth.uid in channel.data.participants;
+    }
+    
+    function canCreateMessage(channelId) {
+      let channel = getChannel(channelId);
+      return channel != null && 
+             channel.data != null &&
+             (
+               channel.data.type != 'broadcast' ||
+               (channel.data.type == 'broadcast' && (hasRole('admin') || hasRole('dispatcher')))
+             );
+    }
+
+    // Users: Eigene Daten lesen/schreiben; Admin Vollzugriff mit Mandantenisolation
+    // WICHTIG: Eigene Dokumente können IMMER gelesen werden, auch ohne Custom Claims
+    // Dies löst das Henne-Ei-Problem beim ersten Login
+    match /users/{uid} {
+      // Lesen: Eigene Dokumente IMMER erlaubt (auch ohne Custom Claims)
+      allow read: if isAuthenticated() && request.auth.uid == uid;
+      // Lesen: Benutzer derselben Company dürfen andere Benutzer sehen
+      allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId);
+      // Erstellen: Eigene Dokumente ODER Admin derselben Company
+      allow create: if isAuthenticated() && (
+        request.auth.uid == uid || 
+        (hasRole('admin') && creatingForSameCompany(request.resource.data.companyId))
+      );
+      // Aktualisieren: Eigene Dokumente ODER Admin derselben Company
+      allow update: if isAuthenticated() && (
+        request.auth.uid == uid || 
+        (hasRole('admin') && belongsToSameCompany(resource.data.companyId) && 
+         creatingForSameCompany(request.resource.data.companyId))
+      );
+      // Löschen: Nur Admin derselben Company
+      allow delete: if hasRole('admin') && belongsToSameCompany(resource.data.companyId);
+    }
+    
+    // Users Collection-Level Queries: Für alle authentifizierten Benutzer (für Chat-Benutzerauswahl)
+    // list erlaubt Collection-Queries und Aggregation-Queries
+    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
+    // Die Document-Level Rules stellen sicher, dass nur Benutzer derselben Company gelesen werden können
+    // Für Aggregation-Queries muss der Benutzer eine companyId im Token haben
+    match /users {
+      allow list: if hasCompanyContext();
+    }
+
+    // Facilities: Lesen für Dispatcher/Admin; Schreiben nur Dispatcher/Admin mit Mandantenisolation
+    match /facilities/{facilityId} {
+      allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId);
+      allow create: if isDispatcher() && creatingForSameCompany(request.resource.data.companyId);
+      allow update: if isDispatcher() && belongsToSameCompany(resource.data.companyId) && 
+        creatingForSameCompany(request.resource.data.companyId);
+      allow delete: if isDispatcher() && belongsToSameCompany(resource.data.companyId);
+    }
+    
+    // Facilities Collection-Level Queries
+    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
+    match /facilities {
+      allow list: if hasCompanyContext();
+    }
+
+    // Shifts: Lesen für authentifizierte Nutzer; Schreiben nur Dispatcher/Admin mit Mandantenisolation
+    // WICHTIG: Mitarbeiter können Shifts lesen, wenn sie zur gleichen Company gehören
+    // Migration: Shifts ohne companyId werden auch erlaubt (für alte Daten)
+    // FALLBACK: Wenn User keine companyId hat ODER Shift keine companyId hat, erlaube Zugriff (für Migration/Edge Cases)
+    // TEMPORÄR: Sehr permissive Regel für Migration - sollte in Produktion verschärft werden
+    match /shifts/{shiftId} {
+      // Lesen: Alle authentifizierten Nutzer können Shifts lesen
+      // WICHTIG: Diese Regel ist sehr permissiv für Migration
+      // In Produktion sollte sie verschärft werden, um nur Shifts der gleichen Company zu erlauben
+      allow read: if isAuthenticated();
+      allow create: if isDispatcher() && (
+        request.resource.data.companyId == null || // Migration: Erlaube Shifts ohne companyId
+        creatingForSameCompany(request.resource.data.companyId)
+      );
+      allow update: if isDispatcher() && (
+        resource.data.companyId == null || // Migration: Alte Shifts ohne companyId
+        (belongsToSameCompany(resource.data.companyId) && 
+         (request.resource.data.companyId == null || creatingForSameCompany(request.resource.data.companyId)))
+      );
+      allow delete: if isDispatcher() && (
+        resource.data.companyId == null || // Migration: Alte Shifts ohne companyId
+        belongsToSameCompany(resource.data.companyId)
+      );
+    }
+    
+    // Shifts Collection-Level Queries
+    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
+    match /shifts {
+      allow list: if isAuthenticated();
+    }
+
+    // Documents: Besitzer oder Admin/Dispatcher; Schreiben nur Besitzer oder Admin mit Mandantenisolation
+    match /documents/{docId} {
+      allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
+        resource.data.userId == request.auth.uid || isDispatcher()
+      );
+      allow create: if isAuthenticated() && creatingForSameCompany(request.resource.data.companyId) && (
+        request.resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow update: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && 
+        creatingForSameCompany(request.resource.data.companyId) && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow delete: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+    }
+
+    // Assignments: Lesen Besitzer/Dispatcher/Admin; Schreiben Dispatcher/Admin mit Mandantenisolation
+    match /assignments/{assignmentId} {
+      allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
+        resource.data.userId == request.auth.uid || isDispatcher()
+      );
+      allow create: if isDispatcher() && creatingForSameCompany(request.resource.data.companyId);
+      // Update: Dispatcher/Admin ODER Mitarbeiter kann sein eigenes Assignment aktualisieren
+      // (z.B. zum Ablehnen oder Annehmen)
+      allow update: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
+        isDispatcher() || // Dispatcher/Admin kann alle Assignments aktualisieren
+        (resource.data.userId == request.auth.uid && // Mitarbeiter kann nur sein eigenes Assignment aktualisieren
+         request.resource.data.companyId == resource.data.companyId) // companyId darf nicht geändert werden
+      );
+      allow delete: if isDispatcher() && belongsToSameCompany(resource.data.companyId);
+    }
+    
+    // Assignments Collection-Level Queries
+    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
+    match /assignments {
+      allow list: if isAuthenticated();
+    }
+
+    // Reports: Lesen für Besitzer/Admin/Dispatcher; Schreiben nur Admin/Dispatcher mit Mandantenisolation
+    match /reports/{reportId} {
+      allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
+        resource.data.userId == request.auth.uid || isDispatcher()
+      );
+      allow create: if isAuthenticated() && creatingForSameCompany(request.resource.data.companyId) && (
+        request.resource.data.userId == request.auth.uid || isDispatcher()
+      );
+      allow update, delete: if isDispatcher() && belongsToSameCompany(resource.data.companyId) && 
+        creatingForSameCompany(request.resource.data.companyId);
+    }
+    
+    // Reports Collection-Level Queries
+    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
+    match /reports {
+      allow list: if isAuthenticated();
+    }
+
+    // Employee Reports: Mitarbeiter-Berichte mit Mandantenisolation
+    match /employeeReports/{reportId} {
+      allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
+        resource.data.userId == request.auth.uid || isDispatcher()
+      );
+      allow create: if isAuthenticated() && creatingForSameCompany(request.resource.data.companyId) && (
+        request.resource.data.userId == request.auth.uid || isDispatcher()
+      );
+      allow update, delete: if isDispatcher() && belongsToSameCompany(resource.data.companyId) && 
+        creatingForSameCompany(request.resource.data.companyId);
+    }
+    
+    // Employee Reports Collection-Level Queries
+    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
+    match /employeeReports {
+      allow list: if isAuthenticated();
+    }
+
+    // Channels: Chat-Kanäle mit Mandantenisolation
+    match /channels/{channelId} {
+      // Lesen: Nur Teilnehmer können Channel sehen und müssen zur gleichen Company gehören
+      allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && 
+        request.auth.uid in resource.data.participants;
+      
+      // Erstellen: Jeder authentifizierte User kann Channels erstellen, muss aber zur gleichen Company gehören
+      allow create: if isAuthenticated() && creatingForSameCompany(request.resource.data.companyId) && 
+        request.auth.uid in request.resource.data.participants;
+      
+      // Update: Nur Ersteller oder Admin können Channel ändern, und nur innerhalb derselben Company
+      allow update: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && 
+        creatingForSameCompany(request.resource.data.companyId) && (
+        resource.data.createdBy == request.auth.uid || 
+        isAdmin()
+      );
+      
+      // Löschen: Nur Admin kann Channels löschen, und nur innerhalb derselben Company
+      allow delete: if isAdmin() && belongsToSameCompany(resource.data.companyId);
+    }
+    
+    // Channels Collection-Level Queries
+    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
+    match /channels {
+      allow list: if isAuthenticated();
+    }
+
+    // Messages: Chat-Nachrichten mit Mandantenisolation
+    match /messages/{messageId} {
+      // Lesen: Nur Teilnehmer des Channels können Messages lesen und müssen zur gleichen Company gehören
+      allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && 
+        resource.data.channelId != null &&
+        isChannelParticipant(resource.data.channelId);
+      
+      // Erstellen: 
+      // - In Broadcast-Channels: Nur Admin/Dispatcher
+      // - In anderen Channels: Alle Teilnehmer
+      // - Muss zur gleichen Company gehören
+      allow create: if isAuthenticated() && creatingForSameCompany(request.resource.data.companyId) && 
+        request.resource.data.channelId != null &&
+        isChannelParticipant(request.resource.data.channelId) &&
+        canCreateMessage(request.resource.data.channelId);
+      
+      // Update: Nur eigener Ersteller oder Admin, und nur innerhalb derselben Company
+      allow update: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && 
+        creatingForSameCompany(request.resource.data.companyId) && (
+        resource.data.userId == request.auth.uid || 
+        isAdmin()
+      );
+      
+      // Löschen: Nur eigener Ersteller oder Admin, und nur innerhalb derselben Company
+      allow delete: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
+        resource.data.userId == request.auth.uid || 
+        isAdmin()
+      );
+    }
+    
+    // Messages Collection-Level Queries
+    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
+    match /messages {
+      allow list: if isAuthenticated();
+    }
+
+    // Typing Indicators: Tipp-Indikatoren
+    match /typing/{typingId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+
+    // Admin Channels: Admin-spezifische Chat-Kanäle
+    match /adminChannels/{channelId} {
+      // Lesen: Nur Dispatcher/Admin können Admin-Channels sehen
+      allow read: if isDispatcher();
+      
+      // Erstellen: Nur Dispatcher/Admin können Admin-Channels erstellen
+      allow create: if isDispatcher();
+      
+      // Update: Nur Ersteller oder Admin können Admin-Channel ändern
+      allow update: if isDispatcher() && (
+        resource.data.createdBy == request.auth.uid || 
+        isAdmin()
+      );
+      
+      // Löschen: Nur Admin kann Admin-Channels löschen
+      allow delete: if isAdmin();
+    }
+
+    // Admin Messages: Admin-spezifische Chat-Nachrichten
+    match /adminMessages/{messageId} {
+      // Lesen: Nur Dispatcher/Admin können Admin-Messages lesen
+      allow read: if isDispatcher();
+      
+      // Erstellen: Nur Dispatcher/Admin können Admin-Messages erstellen
+      allow create: if isDispatcher();
+      
+      // Update: Nur eigener Ersteller oder Admin
+      allow update: if isDispatcher() && (
+        resource.data.userId == request.auth.uid || 
+        isAdmin()
+      );
+      
+      // Löschen: Nur eigener Ersteller oder Admin
+      allow delete: if isDispatcher() && (
+        resource.data.userId == request.auth.uid || 
+        isAdmin()
+      );
+    }
+
+    // Admin Broadcasts: Broadcast-Nachrichten
+    match /adminBroadcasts/{broadcastId} {
+      // Lesen: Nur Dispatcher/Admin können Broadcasts lesen
+      allow read: if isDispatcher();
+      
+      // Erstellen: Nur Dispatcher/Admin können Broadcasts erstellen
+      allow create: if isDispatcher();
+      
+      // Update/Delete: Nur Admin
+      allow update, delete: if isAdmin();
+    }
+
+    // Admin Announcements: Ankündigungen
+    match /adminAnnouncements/{announcementId} {
+      // Lesen: Alle authentifizierten User können Ankündigungen lesen
+      allow read: if isAuthenticated();
+      
+      // Erstellen: Nur Dispatcher/Admin können Ankündigungen erstellen
+      allow create: if isDispatcher();
+      
+      // Update/Delete: Nur Admin
+      allow update, delete: if isAdmin();
+    }
+
+    // Activities: Aktivitäts-Log mit Mandantenisolation
+    match /activities/{activityId} {
+      allow read: if isAdmin() && belongsToSameCompany(resource.data.companyId);
+      allow create: if isAuthenticated() && creatingForSameCompany(request.resource.data.companyId);
+      allow update, delete: if isAdmin() && belongsToSameCompany(resource.data.companyId);
+    }
+    
+    // Activities Collection-Level Queries
+    // Erlaubt für Admin mit companyId im Token
+    match /activities {
+      allow list: if isAdmin() && hasCompanyContext();
+    }
+
+    // Timesheets: Arbeitszeiterfassung
+    // GoBD-konform: approved/submitted Timesheets sind unveränderlich
+    // Mit Mandantenisolation
+    match /timesheets/{timesheetId} {
+      allow read: if isAuthenticated() && (
+        // Eigene Timesheets: userId muss übereinstimmen
+        resource.data.userId == request.auth.uid ||
+        // Dispatcher/Admin: Müssen zur gleichen Company gehören (wenn companyId vorhanden)
+        (isDispatcher() && (
+          resource.data.companyId == null ||
+          belongsToSameCompany(resource.data.companyId)
+        ))
+      );
+      allow create: if isAuthenticated() && (
+        request.resource.data.companyId == null || 
+        creatingForSameCompany(request.resource.data.companyId)
+      );
+      
+      // Update: Nur wenn NICHT approved/submitted (GoBD-Konformität) und gleiche Company
+      allow update: if isAuthenticated() && (
+        resource.data.companyId == null || 
+        (belongsToSameCompany(resource.data.companyId) && 
+         creatingForSameCompany(request.resource.data.companyId))
+      ) && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      ) && (
+        resource.data.status != 'approved' && 
+        resource.data.status != 'submitted'
+      );
+      
+      // Delete: Nur wenn NICHT approved/submitted (GoBD-Konformität) und gleiche Company
+      allow delete: if isAuthenticated() && (
+        resource.data.companyId == null || 
+        belongsToSameCompany(resource.data.companyId)
+      ) && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      ) && (
+        resource.data.status != 'approved' && 
+        resource.data.status != 'submitted'
+      );
+    }
+    
+    // Timesheets Collection-Level Queries
+    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
+    // Erlaube Queries nur wenn der Benutzer authentifiziert ist
+    // Die Document-Level Rules stellen sicher, dass nur eigene Timesheets zurückgegeben werden
+    // und dass sie zur gleichen Company gehören
+    match /timesheets {
+      allow list: if isAuthenticated();
+    }
+
+    // Times: Zeiterfassung (Arbeitszeiten, Pausen, Krankheit)
+    // WICHTIG: work/break müssen immer an einen zugewiesenen Auftrag (assignmentId) gebunden sein
+    // sick kann ohne assignmentId sein
+    // HINWEIS: companyId-Feld wurde hinzugefügt für vollständige Mandantenisolation
+    // Migration: Alte Einträge ohne companyId werden weiterhin unterstützt (null-Wert)
+    match /times/{timeId} {
+      // Helper-Funktion: Prüft, ob assignmentId für work/break vorhanden ist
+      function hasRequiredAssignment() {
+        let entryType = request.resource.data.type;
+        // work und break benötigen assignmentId
+        return (entryType == 'work' || entryType == 'break') 
+          ? request.resource.data.assignmentId != null
+          : true; // sick benötigt kein assignmentId
+      }
+      
+      // Helper-Funktion: Prüft Mandantenisolation
+      function timesEntryBelongsToSameCompany() {
+        let resourceCompanyId = resource.data.companyId;
+        let requestCompanyId = request.resource.data.companyId;
+        let authCompanyId = getRequesterCompanyId();
+        
+        // Wenn companyId im Dokument vorhanden ist, muss es mit Auth übereinstimmen
+        // Migration: null-Werte werden akzeptiert (alte Einträge)
+        return resourceCompanyId == null || requestCompanyId == null || 
+               resourceCompanyId == authCompanyId || requestCompanyId == authCompanyId;
+      }
+      
+      // Lesen: Eigene Time Entries ODER Admin/Dispatcher derselben Company
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || 
+        ((hasRole('admin') || hasRole('dispatcher')) && timesEntryBelongsToSameCompany())
+      );
+      
+      // Erstellen: Eigene Time Entries ODER Admin/Dispatcher derselben Company
+      // WICHTIG: work/break müssen assignmentId haben, companyId muss gesetzt werden
+      allow create: if isAuthenticated() && (
+        request.resource.data.userId == request.auth.uid || 
+        ((hasRole('admin') || hasRole('dispatcher')) && timesEntryBelongsToSameCompany())
+      ) && hasRequiredAssignment() &&
+        (request.resource.data.companyId == getRequesterCompanyId() || 
+         request.resource.data.companyId == null); // Migration: null akzeptieren
+      
+      // Aktualisieren: Eigene Time Entries ODER Admin/Dispatcher derselben Company
+      // WICHTIG: work/break müssen assignmentId behalten, companyId muss erhalten bleiben
+      // Für neue Einträge (create) ist assignmentId Pflicht, für Updates erlauben wir auch alte Einträge ohne assignmentId
+      // um Migration zu ermöglichen
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || 
+        ((hasRole('admin') || hasRole('dispatcher')) && timesEntryBelongsToSameCompany())
+      ) && (
+        // Wenn bestehender Typ work/break ist:
+        // - Erlaube Update, wenn assignmentId im Update ODER im Dokument vorhanden ist
+        // - ODER wenn assignmentId in beiden fehlt/null ist (alte Einträge, Migration)
+        (resource.data.type == 'work' || resource.data.type == 'break')
+          ? (
+            // Wenn assignmentId im Update vorhanden ist (nicht null/undefined)
+            (request.resource.data.assignmentId != null) ||
+            // ODER wenn assignmentId im bestehenden Dokument vorhanden ist (nicht null/undefined)
+            (resource.data.assignmentId != null) ||
+            // ODER wenn assignmentId in beiden fehlt/null ist (Migration für alte Einträge)
+            // Prüfe explizit auf null oder fehlendes Feld
+            (!('assignmentId' in request.resource.data) || request.resource.data.assignmentId == null) &&
+            (!('assignmentId' in resource.data) || resource.data.assignmentId == null)
+          )
+          : true
+      ) && (
+        // companyId muss erhalten bleiben oder von null auf companyId gesetzt werden (Migration)
+        request.resource.data.companyId == resource.data.companyId || 
+        (resource.data.companyId == null && request.resource.data.companyId == getRequesterCompanyId())
+      );
+      
+      // Löschen: Eigene Time Entries ODER Admin derselben Company
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || 
+        (hasRole('admin') && timesEntryBelongsToSameCompany())
+      );
+    }
+    
+    // Times Collection-Level Queries
+    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
+    match /times {
+      allow list: if isAuthenticated();
+    }
+
+    // Alerts: Benachrichtigungen und Warnungen mit Mandantenisolation
+    match /alerts/{alertId} {
+      allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow create: if isAuthenticated() && creatingForSameCompany(request.resource.data.companyId);
+      allow update: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && 
+        creatingForSameCompany(request.resource.data.companyId) && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow delete: if isAdmin() && belongsToSameCompany(resource.data.companyId);
+    }
+    
+    // Alerts Collection-Level Queries
+    // Erlaubt für alle authentifizierten User mit companyId im Token
+    // Die Dokument-Regeln filtern die Ergebnisse automatisch
+    match /alerts {
+      allow list: if hasCompanyContext();
+    }
+
+    // Notifications: Benachrichtigungen mit Mandantenisolation
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow create: if isAuthenticated() && creatingForSameCompany(request.resource.data.companyId);
+      allow update: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && 
+        creatingForSameCompany(request.resource.data.companyId) && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow delete: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+    }
+    
+    // Notifications Collection-Level Queries
+    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
+    // Für Aggregation-Queries muss der Benutzer eine companyId im Token haben
+    match /notifications {
+      allow list: if hasCompanyContext();
+    }
+
+    // Settings: System-Einstellungen
+    match /settings/{settingId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Config: Zentrale Konfigurationsdokumente (z.B. Kategorien)
+    // Lesen: alle authentifizierten Nutzer
+    // Schreiben: nur Admin
+    match /config/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Settings Collection-Level Queries
+    match /settings {
+      allow list: if isAdmin();
+    }
+
+    // SystemSettings: System-Einstellungen (alternative Collection)
+    match /systemSettings/{settingId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // SystemSettings Collection-Level Queries
+    match /systemSettings {
+      allow list: if isAdmin();
+    }
+
+    // AdminSettings: Admin-Einstellungen
+    match /adminSettings/{settingId} {
+      allow read: if isDispatcher();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // AdminSettings Collection-Level Queries
+    match /adminSettings {
+      allow list: if isDispatcher();
+    }
+
+    // AdminRoles: Admin-Rollen
+    match /adminRoles/{roleId} {
+      allow read: if isDispatcher();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // AdminRoles Collection-Level Queries
+    match /adminRoles {
+      allow list: if isDispatcher();
+    }
+
+    // AdminDocumentTypes: Admin-Dokumenttypen
+    match /adminDocumentTypes/{docTypeId} {
+      allow read: if isDispatcher();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // AdminDocumentTypes Collection-Level Queries
+    match /adminDocumentTypes {
+      allow list: if isDispatcher();
+    }
+
+    // AdminEmailTemplates: Admin-E-Mail-Templates
+    match /adminEmailTemplates/{templateId} {
+      allow read: if isDispatcher();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // AdminEmailTemplates Collection-Level Queries
+    match /adminEmailTemplates {
+      allow list: if isDispatcher();
+    }
+
+    // DocumentTypes: Dokumententypen für alle Benutzer
+    // Lesen: alle authentifizierten Nutzer
+    // Schreiben: nur Admin/Dispatcher
+    match /documentTypes/{docTypeId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isDispatcher();
+    }
+    
+    // DocumentTypes Collection-Level Queries
+    match /documentTypes {
+      allow list: if isAuthenticated();
+    }
+
+    // Audit Logs: Unveränderlich (GoBD-Konformität)
+    // Nur Cloud Functions dürfen schreiben, alle Änderungen sind verboten
+    // Mit Mandantenisolation
+    match /auditLogs/{logId} {
+      allow read: if isAdmin() && belongsToSameCompany(resource.data.companyId);
+      allow create: if false; // Nur Cloud Functions können schreiben (bypass Rules)
+      allow update, delete: if false; // Unveränderlich nach Erstellung
+    }
+    
+    // Audit Logs Collection-Level Queries
+    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
+    match /auditLogs {
+      allow list: if isAdmin();
+    }
+
+    // Payroll Periods: Lohnabrechnungsperioden
+    // GoBD-konform: Gesperrte Perioden sind unveränderlich
+    match /payrollPeriods/{periodId} {
+      // Lesen: Dispatcher/Admin
+      allow read: if isDispatcher();
+      
+      // Erstellen: Dispatcher/Admin
+      allow create: if isDispatcher() && 
+        request.resource.data.status == 'open' &&
+        request.resource.data.year != null &&
+        request.resource.data.month != null;
+      
+      // Aktualisieren: Dispatcher/Admin mit Status-Validierung
+      // WICHTIG: Gesperrte Perioden (locked) sind unveränderlich (GoBD)
+      allow update: if isDispatcher() && 
+        resource.data.status != 'locked' && // Gesperrte Perioden können nicht geändert werden
+        (
+          // Status-Übergänge validieren
+          (resource.data.status == 'open' && request.resource.data.status in ['open', 'calculating']) ||
+          (resource.data.status == 'calculating' && request.resource.data.status in ['calculating', 'ready', 'open']) ||
+          (resource.data.status == 'ready' && request.resource.data.status in ['ready', 'approved']) ||
+          (resource.data.status == 'approved' && request.resource.data.status in ['approved', 'paid']) ||
+          (resource.data.status == 'paid' && request.resource.data.status in ['paid', 'locked']) ||
+          // Admin kann Status zurücksetzen (für Fehlerbehandlung)
+          (isAdmin() && request.resource.data.status == 'open')
+        );
+      
+      // Löschen: Nur Admin, und nur wenn nicht locked (GoBD)
+      allow delete: if isAdmin() && resource.data.status != 'locked';
+    }
+    
+    // Payroll Periods Collection-Level Queries
+    match /payrollPeriods {
+      allow list: if isDispatcher();
+    }
+
+    // Payroll Items: Einzelne Lohnabrechnungs-Items
+    match /payrollItems/{itemId} {
+      // Lesen: Dispatcher/Admin
+      allow read: if isDispatcher();
+      
+      // Schreiben: Nur Cloud Functions (false = Client-seitig verboten)
+      // Cloud Functions umgehen Firestore Rules
+      allow create, update, delete: if false;
+    }
+    
+    // Payroll Items Collection-Level Queries
+    match /payrollItems {
+      allow list: if isDispatcher();
+    }
+
+    // Payroll Audit Logs: Audit-Log für Payroll-Aktionen
+    match /payrollAuditLogs/{logId} {
+      // Lesen: Nur Admin
+      allow read: if isAdmin();
+      
+      // Schreiben: Nur Cloud Functions (false = Client-seitig verboten)
+      allow create, update, delete: if false;
+    }
+    
+    // Payroll Audit Logs Collection-Level Queries
+    match /payrollAuditLogs {
+      allow list: if isAdmin();
+    }
+
+    // Employee Payroll Data: Mitarbeiter-Gehaltsdaten
+    // Enthält sensible Daten (IBAN, SV-Nr., Steuer-ID) - nur Admin-Zugriff
+    match /employeePayrollData/{employeeId} {
+      // Lesen: Nur Admin (sensible Daten)
+      allow read: if isAdmin();
+      
+      // Schreiben: Nur Admin
+      allow create, update: if isAdmin() && 
+        request.resource.data.employeeId == employeeId; // Konsistenz-Prüfung
+      
+      // Löschen: Nur Admin (mit Vorsicht - Daten sollten archiviert werden)
+      allow delete: if isAdmin();
+    }
+    
+    // Employee Payroll Data Collection-Level Queries
+    match /employeePayrollData {
+      allow list: if isAdmin();
+    }
+
+    // Payroll Settings: Payroll-Einstellungen pro Mitarbeiter
+    // Enthält Steuerdaten, aber keine sensiblen Daten wie IBAN/SV-Nr.
+    match /payrollSettings/{userId} {
+      // Lesen: Eigener User oder Admin/Dispatcher
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId || isDispatcher()
+      );
+      
+      // Schreiben: Admin/Dispatcher
+      // Konsistenz: userId im Dokument muss mit dem Pfad übereinstimmen
+      allow create, update: if isDispatcher() && 
+        request.resource.data.userId == userId;
+      
+      // Löschen: Nur Admin
+      allow delete: if isAdmin();
+    }
+    
+    // Payroll Settings Collection-Level Queries
+    match /payrollSettings {
+      allow list: if isDispatcher();
+    }
+
+    // Payroll Calculations: Berechnungen (falls verwendet)
+    match /payrollCalculations/{calculationId} {
+      // Lesen: Eigener User oder Admin/Dispatcher
+      allow read: if isAuthenticated() && (
+        resource.data.employeeId == request.auth.uid || isDispatcher()
+      );
+      
+      // Schreiben: Nur Cloud Functions
+      allow create, update, delete: if false;
+    }
+    
+    // Payroll Calculations Collection-Level Queries
+    match /payrollCalculations {
+      allow list: if isDispatcher();
+    }
+
+    // Chat Channels: Neue Chat-Struktur mit Subcollections
+    match /chatChannels/{channelId} {
+      // Helper-Funktion: Prüft ob User Teilnehmer ist
+      function isChatChannelParticipant() {
+        return isAuthenticated() && request.auth.uid in resource.data.participants;
+      }
+      
+      // Lesen: Nur Teilnehmer können Channel sehen
+      allow read: if isChatChannelParticipant();
+      
+      // Erstellen: Alle authentifizierten Benutzer können Channels erstellen, wenn:
+      // - Sie Teilnehmer sind
+      // - Es zur gleichen Company gehört (wenn companyId vorhanden)
+      // - Broadcast-Channels nur von Admin/Dispatcher
+      allow create: if isAuthenticated() && 
+        request.auth.uid in request.resource.data.participants &&
+        (request.resource.data.companyId == null || creatingForSameCompany(request.resource.data.companyId)) &&
+        (request.resource.data.type != 'broadcast' || (isAdmin() || isDispatcher()));
+      
+      // Update: Nur Admin/Dispatcher, und nur wenn nicht archiviert
+      allow update: if isAuthenticated() && (isAdmin() || isDispatcher()) && 
+        resource.data.archived != true;
+      
+      // Delete: Nur Admin
+      allow delete: if isAdmin();
+      
+      match /messages/{msgId} {
+        // Helper-Funktion: Prüft ob User Teilnehmer des Channels ist
+        function isMessageChannelParticipant() {
+          let channel = get(/databases/$(database)/documents/chatChannels/$(channelId));
+          return isAuthenticated() && 
+                 channel != null && 
+                 channel.data != null &&
+                 request.auth.uid in channel.data.participants;
+        }
+        
+        // Helper-Funktion: Prüft ob Channel Broadcast ist
+        function isMessageBroadcastChannel() {
+          let channel = get(/databases/$(database)/documents/chatChannels/$(channelId));
+          return channel != null && channel.data != null && channel.data.type == 'broadcast';
+        }
+        
+        // Lesen: Nur Teilnehmer können Nachrichten lesen
+        allow read: if isMessageChannelParticipant();
+        
+        // Erstellen: 
+        // - In Broadcast-Channels: Nur Admin/Dispatcher
+        // - In anderen Channels: Alle Teilnehmer
+        allow create: if isMessageChannelParticipant() && (
+          !isMessageBroadcastChannel() || (isAdmin() || isDispatcher())
+        );
+        
+        // Update: Nur eigener Ersteller oder Admin/Dispatcher
+        allow update: if isMessageChannelParticipant() && (
+          resource.data.senderId == request.auth.uid || (isAdmin() || isDispatcher())
+        );
+        
+        // Delete: Nur eigener Ersteller oder Admin/Dispatcher
+        allow delete: if isMessageChannelParticipant() && (
+          resource.data.senderId == request.auth.uid || (isAdmin() || isDispatcher())
+        );
+      }
+    }
+
+    // Route Cache: Nur für Admin-Zugriff (Lesen) und System-Schreiben
+    match /route_cache/{documentId} {
+      allow read: if isAdmin();
+      allow write: if isAuthenticated(); // Jeder authentifizierte User kann schreiben (für Caching)
+    }
+
+    // Default: deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

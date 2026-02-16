@@ -1,0 +1,23 @@
+# Unit (Vitest)
+- Services & Utils testen.  
+- Firestore via Emulator mocken.
+- Zod-Schemas: Validierung testen.
+- Custom Hooks: useAuth, useGeoLocation, useResponsive.
+- Date-Utilities: Deutsche Lokalisierung testen.  
+
+# Integration
+- React Testing Library für Pages & Forms.
+- Error Boundaries: Fehlerbehandlung testen.
+- React Query: Cache-Verhalten testen.
+- Form-Validierung: Zod + react-hook-form Integration.  
+
+# E2E
+- Playwright.  
+- Kritischer Flow: Auftrag → Worktime → Signatur → Export.  
+- Standard Viewport: 1440x900 (Desktop-First).
+- DSGVO-Compliance: Arbeitszeit-Grenzen testen.
+- Responsive Testing: Desktop, Tablet, Mobile.
+description:
+globs:
+alwaysApply: false
+---
