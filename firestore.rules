@@ -460,16 +460,6 @@ service cloud.firestore {
       allow list: if isAdmin();
     }
 
-    // AdminEmailTemplates: Admin-E-Mail-Templates
-    match /adminEmailTemplates/{templateId} {
-      allow read: if isAdmin();
-      allow create, update, delete: if isAdmin();
-    }
-    
-    match /adminEmailTemplates {
-      allow list: if isAdmin();
-    }
-
     // DocumentTypes: Dokumententypen für alle Benutzer
     match /documentTypes/{docTypeId} {
       allow read: if isAuthenticated();

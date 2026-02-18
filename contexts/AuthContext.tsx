@@ -5,7 +5,7 @@ import { logger } from '@/lib/logging';
 import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { getAuthSafe } from '@/lib/firebase';
 import { firebaseAuthErrorMessages } from '@/lib/validations/authForms';
 import { AuthService } from '@/lib/services/authService';
 import { authUserService } from '@/lib/services/authUserService';
@@ -58,7 +58,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       return;
     }
-    if (!auth) {
+    const authInstance = getAuthSafe();
+    if (!authInstance) {
       logger.warn('Firebase Auth not initialized');
       setLoading(false);
       return;
@@ -70,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const unsubscribe = auth.onAuthStateChanged((fbUser: FirebaseUser | null) => {
+    const unsubscribe = authInstance.onAuthStateChanged((fbUser: FirebaseUser | null) => {
       setAuthError(null);
       if (fbUser) {
         // Sofort anzeigen: App mit Fallback-User nutzbar machen, dann volles Profil im Hintergrund laden
@@ -147,11 +148,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Ungültige E-Mail-Adresse');
     }
     logger.debug('Attempting Firebase authentication', {}, { email });
-    if (!auth) throw new Error('Firebase Auth not initialized');
+    const authInstance = getAuthSafe();
+    if (!authInstance) throw new Error('Firebase Auth not initialized');
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(authInstance, email, password);
       logger.info('Firebase authentication successful', {}, { email });
-      const fbUser = auth.currentUser;
+      const fbUser = authInstance.currentUser;
       if (fbUser) {
         try {
           const token = await fbUser.getIdToken();
@@ -193,8 +195,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       await AuthService.clearSessionCookie();
-      if (!auth) throw new Error('Firebase Auth not initialized');
-      await signOut(auth);
+      const authInstance = getAuthSafe();
+      if (!authInstance) throw new Error('Firebase Auth not initialized');
+      await signOut(authInstance);
       setUser(null);
       setFirebaseUser(null);
     } catch (error: unknown) {
@@ -216,13 +219,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const sendPasswordReset = useCallback(async (email: string) => {
     if (!email?.trim()) throw new Error('E-Mail ist erforderlich');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Ungültige E-Mail-Adresse');
-    if (!auth) throw new Error('Firebase Auth not initialized');
+    const authInstance = getAuthSafe();
+    if (!authInstance) throw new Error('Firebase Auth not initialized');
     const actionCodeSettings = {
       url: `${typeof window !== 'undefined' ? window.location.origin : ''}/anmelden`,
       handleCodeInApp: false,
     };
     try {
-      await sendPasswordResetEmail(auth, email, actionCodeSettings);
+      await sendPasswordResetEmail(authInstance, email, actionCodeSettings);
     } catch (error: unknown) {
       logger.error('Password reset failed', error instanceof Error ? error : new Error(String(error)));
       const code = (error as { code?: string })?.code;
@@ -234,13 +238,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const sendEmailVerificationEmail = useCallback(async () => {
-    if (!auth?.currentUser) throw new Error('Kein Benutzer angemeldet');
+    const authInstance = getAuthSafe();
+    if (!authInstance?.currentUser) throw new Error('Kein Benutzer angemeldet');
     const actionCodeSettings = {
       url: `${typeof window !== 'undefined' ? window.location.origin : ''}/anmelden`,
       handleCodeInApp: false,
     };
     try {
-      await sendEmailVerification(auth.currentUser, actionCodeSettings);
+      await sendEmailVerification(authInstance.currentUser, actionCodeSettings);
     } catch (error: unknown) {
       logger.error('Email verification failed', error instanceof Error ? error : new Error(String(error)));
       const code = (error as { code?: string })?.code;

@@ -26,18 +26,6 @@ export interface DocumentType {
   updatedAt: Date;
 }
 
-export interface EmailTemplate {
-  id: string;
-  name: string;
-  subject: string;
-  body: string;
-  type: 'notification' | 'reminder' | 'welcome' | 'password_reset';
-  active: boolean;
-  variables: string[];
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 export interface SystemSettings {
   maintenanceMode: boolean;
   allowRegistration: boolean;
@@ -78,7 +66,6 @@ export interface Settings {
   email: EmailSettings;
   userRoles: UserRole[];
   documentTypes: DocumentType[];
-  emailTemplates: EmailTemplate[];
 }
 
 export function useSettings() {
@@ -184,44 +171,6 @@ export function useSettings() {
     },
   });
 
-  // Create email template mutation
-  const createEmailTemplateMutation = useMutation({
-    mutationFn: (data: Omit<EmailTemplate, 'id' | 'createdAt' | 'updatedAt'>) =>
-      settingsService.createEmailTemplate(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings'] });
-      toast.success('E-Mail-Template erfolgreich erstellt');
-    },
-    onError: (error: Error) => {
-      toast.error('Fehler beim Erstellen des Templates: ' + error.message);
-    },
-  });
-
-  // Update email template mutation
-  const updateEmailTemplateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<EmailTemplate> }) =>
-      settingsService.updateEmailTemplate(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings'] });
-      toast.success('E-Mail-Template erfolgreich aktualisiert');
-    },
-    onError: (error: Error) => {
-      toast.error('Fehler beim Aktualisieren des Templates: ' + error.message);
-    },
-  });
-
-  // Delete email template mutation
-  const deleteEmailTemplateMutation = useMutation({
-    mutationFn: (id: string) => settingsService.deleteEmailTemplate(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings'] });
-      toast.success('E-Mail-Template erfolgreich gelöscht');
-    },
-    onError: (error: Error) => {
-      toast.error('Fehler beim Löschen des Templates: ' + error.message);
-    },
-  });
-
   // Export settings mutation
   const exportSettingsMutation = useMutation({
     mutationFn: () => settingsService.exportSettings(),
@@ -283,18 +232,6 @@ export function useSettings() {
     return deleteDocumentTypeMutation.mutateAsync(id);
   };
 
-  const createEmailTemplate = async (data: Omit<EmailTemplate, 'id' | 'createdAt' | 'updatedAt'>) => {
-    return createEmailTemplateMutation.mutateAsync(data);
-  };
-
-  const updateEmailTemplate = async (id: string, data: Partial<EmailTemplate>) => {
-    return updateEmailTemplateMutation.mutateAsync({ id, data });
-  };
-
-  const deleteEmailTemplate = async (id: string) => {
-    return deleteEmailTemplateMutation.mutateAsync(id);
-  };
-
   const exportSettings = async () => {
     return exportSettingsMutation.mutateAsync();
   };
@@ -314,14 +251,11 @@ export function useSettings() {
     createDocumentType,
     updateDocumentType,
     deleteDocumentType,
-    createEmailTemplate,
-    updateEmailTemplate,
-    deleteEmailTemplate,
     exportSettings,
     importSettings,
     refetch,
     isUpdating: updateSettingsMutation.isPending,
-    isCreating: createUserRoleMutation.isPending || createDocumentTypeMutation.isPending || createEmailTemplateMutation.isPending,
-    isDeleting: deleteUserRoleMutation.isPending || deleteDocumentTypeMutation.isPending || deleteEmailTemplateMutation.isPending,
+    isCreating: createUserRoleMutation.isPending || createDocumentTypeMutation.isPending,
+    isDeleting: deleteUserRoleMutation.isPending || deleteDocumentTypeMutation.isPending,
   };
 }

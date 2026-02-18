@@ -11,7 +11,6 @@ import {
   useAdminSettings,
   Role,
   DocumentType as AdminDocumentType,
-  EmailTemplate,
   SystemSettings,
 } from '@/lib/hooks/useAdminSettings';
 import { useBrandingSettings } from '@/lib/hooks/useBrandingSettings';
@@ -61,7 +60,6 @@ import {
   Settings,
   Security,
   Description,
-  Email,
   Notifications,
   Backup,
   Restore,
@@ -125,7 +123,6 @@ export default function AdminSettingsPage() {
     settings,
     roles,
     documentTypes,
-    emailTemplates,
     systemInfo,
     isLoading,
     error,
@@ -136,9 +133,6 @@ export default function AdminSettingsPage() {
     createDocumentType,
     updateDocumentType,
     deleteDocumentType,
-    createEmailTemplate,
-    updateEmailTemplate,
-    deleteEmailTemplate,
     backupData,
     restoreData,
     isUpdating,
@@ -155,12 +149,9 @@ export default function AdminSettingsPage() {
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [documentTypeDialogOpen, setDocumentTypeDialogOpen] = useState(false);
-  const [emailTemplateDialogOpen, setEmailTemplateDialogOpen] = useState(false);
   const [backupDialogOpen, setBackupDialogOpen] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<Role | AdminDocumentType | EmailTemplate | null>(
-    null
-  );
+  const [selectedItem, setSelectedItem] = useState<Role | AdminDocumentType | null>(null);
   const [roleFormName, setRoleFormName] = useState('');
   const [roleFormDescription, setRoleFormDescription] = useState('');
   const [roleFormPermissions, setRoleFormPermissions] = useState<string[]>([]);
@@ -327,35 +318,6 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const handleCreateEmailTemplate = async (
-    data: Omit<EmailTemplate, 'id' | 'createdAt' | 'updatedAt'>
-  ) => {
-    try {
-      await createEmailTemplate(data);
-      setEmailTemplateDialogOpen(false);
-    } catch (error) {
-      // Error handling is done in the mutations
-    }
-  };
-
-  const handleUpdateEmailTemplate = async (data: Partial<EmailTemplate>) => {
-    try {
-      await updateEmailTemplate((selectedItem as EmailTemplate).id, data);
-      setEmailTemplateDialogOpen(false);
-      setSelectedItem(null);
-    } catch (error) {
-      // Error handling is done in the mutations
-    }
-  };
-
-  const handleDeleteEmailTemplate = async (templateId: string) => {
-    try {
-      await deleteEmailTemplate(templateId);
-    } catch (error) {
-      // Error handling is done in the mutations
-    }
-  };
-
   const handleBackupData = async () => {
     try {
       await backupData();
@@ -432,7 +394,7 @@ export default function AdminSettingsPage() {
             System-Einstellungen
           </Typography>
           <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-            Verwalten Sie Systemkonfiguration, Rollen, Dokumenttypen und E-Mail-Templates
+            Verwalten Sie Systemkonfiguration, Rollen und Dokumenttypen
           </Typography>
         </Box>
 
@@ -618,7 +580,6 @@ export default function AdminSettingsPage() {
             <Tab label="System" icon={<Settings />} iconPosition="start" />
             <Tab label="Rollen & Rechte" icon={<Security />} iconPosition="start" />
             <Tab label="Dokumenttypen" icon={<Description />} iconPosition="start" />
-            <Tab label="E-Mail-Templates" icon={<Email />} iconPosition="start" />
             <Tab label="Benachrichtigungen" icon={<Notifications />} iconPosition="start" />
             <Tab label="Backup & Restore" icon={<Backup />} iconPosition="start" />
             <Tab label="Features" icon={<ToggleOn />} iconPosition="start" />
@@ -962,108 +923,6 @@ export default function AdminSettingsPage() {
         </TabPanel>
 
         <TabPanel value={activeTab} index={3}>
-          <Card className="glass">
-            <CardContent>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: 3,
-                }}
-              >
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Email sx={{ mr: 1 }} />
-                  E-Mail-Templates verwalten
-                </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<Add />}
-                  onClick={() => setEmailTemplateDialogOpen(true)}
-                  disabled={isCreating}
-                >
-                  {isCreating ? 'Erstelle...' : 'Neues Template'}
-                </Button>
-              </Box>
-
-              <TableContainer component={Paper} elevation={0}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Name</TableCell>
-                      <TableCell>Typ</TableCell>
-                      <TableCell>Betreff</TableCell>
-                      <TableCell>Letzte Änderung</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell align="right">Aktionen</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {emailTemplates.map(template => (
-                      <TableRow key={template.id}>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {template.name}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip label={template.type} size="small" />
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {template.subject}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {format(template.updatedAt, 'dd.MM.yyyy', { locale: de })}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={template.status}
-                            color={
-                              getStatusColor(template.status) as
-                                | 'primary'
-                                | 'secondary'
-                                | 'error'
-                                | 'info'
-                                | 'success'
-                                | 'warning'
-                                | 'default'
-                            }
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          <IconButton
-                            size="small"
-                            onClick={() => {
-                              setSelectedItem(template);
-                              setEmailTemplateDialogOpen(true);
-                            }}
-                          >
-                            <Edit />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDeleteEmailTemplate(template.id)}
-                            color="error"
-                            disabled={isDeleting}
-                          >
-                            <Delete />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </TabPanel>
-
-        <TabPanel value={activeTab} index={4}>
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 6 }}>
               <Card className="glass">
@@ -1242,7 +1101,7 @@ export default function AdminSettingsPage() {
           </Grid>
         </TabPanel>
 
-        <TabPanel value={activeTab} index={5}>
+        <TabPanel value={activeTab} index={4}>
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 6 }}>
               <Card className="glass">
@@ -1336,7 +1195,7 @@ export default function AdminSettingsPage() {
         </TabPanel>
 
         {/* Features Tab */}
-        <TabPanel value={activeTab} index={6}>
+        <TabPanel value={activeTab} index={5}>
           <Grid container spacing={3}>
             <Grid size={{ xs: 12 }}>
               <Alert severity="info" sx={{ mb: 3 }}>
@@ -1695,75 +1554,6 @@ export default function AdminSettingsPage() {
                       category: 'professional',
                       validityPeriod: 365,
                       required: false,
-                      status: 'active',
-                    })
-              }
-              variant="contained"
-              disabled={isCreating || isUpdating}
-            >
-              {isCreating || isUpdating ? 'Speichere...' : 'Speichern'}
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Email Template Dialog */}
-        <Dialog
-          open={emailTemplateDialogOpen}
-          onClose={() => setEmailTemplateDialogOpen(false)}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle>
-            {selectedItem ? 'E-Mail-Template bearbeiten' : 'Neues E-Mail-Template erstellen'}
-          </DialogTitle>
-          <DialogContent>
-            <Grid container spacing={3}>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="Template-Name"
-                  placeholder="z.B. Schicht-Erinnerung, Krankmeldung"
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Typ</InputLabel>
-                  <Select label="Typ">
-                    <MenuItem value="notification">Benachrichtigung</MenuItem>
-                    <MenuItem value="reminder">Erinnerung</MenuItem>
-                    <MenuItem value="confirmation">Bestätigung</MenuItem>
-                    <MenuItem value="alert">Warnung</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField fullWidth label="Betreff" placeholder="Betreff der E-Mail" />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="E-Mail-Inhalt"
-                  multiline
-                  rows={8}
-                  placeholder="E-Mail-Inhalt mit Platzhaltern..."
-                />
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setEmailTemplateDialogOpen(false)}>Abbrechen</Button>
-            <Button
-              onClick={() =>
-                selectedItem
-                  ? handleUpdateEmailTemplate({
-                      name: 'Updated Template',
-                      type: 'notification',
-                    })
-                  : handleCreateEmailTemplate({
-                      name: 'Test Template',
-                      type: 'notification',
-                      subject: 'Test Subject',
-                      content: 'Test Content',
                       status: 'active',
                     })
               }

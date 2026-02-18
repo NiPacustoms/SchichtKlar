@@ -15,7 +15,6 @@ import {
 const SETTINGS_COLLECTION = 'settings';
 const USER_ROLES_COLLECTION = 'userRoles';
 const DOCUMENT_TYPES_COLLECTION = 'documentTypes';
-const EMAIL_TEMPLATES_COLLECTION = 'emailTemplates';
 
 export interface UserRole {
   id: string;
@@ -35,18 +34,6 @@ export interface DocumentType {
   validityPeriod: number; // in days
   required: boolean;
   category: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface EmailTemplate {
-  id: string;
-  name: string;
-  subject: string;
-  body: string;
-  type: 'notification' | 'reminder' | 'welcome' | 'password_reset';
-  active: boolean;
-  variables: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -91,7 +78,6 @@ export interface Settings {
   email: EmailSettings;
   userRoles: UserRole[];
   documentTypes: DocumentType[];
-  emailTemplates: EmailTemplate[];
 }
 
 export const settingsService = {
@@ -132,7 +118,6 @@ export const settingsService = {
         },
         userRoles: [],
         documentTypes: [],
-        emailTemplates: [],
       };
     }
     try {
@@ -176,24 +161,6 @@ export const settingsService = {
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       }));
 
-      // Get email templates
-      const emailTemplatesQuery = query(
-        collection(getDb(), EMAIL_TEMPLATES_COLLECTION),
-        orderBy('name', 'asc')
-      );
-      const emailTemplatesSnapshot = await getDocs(emailTemplatesQuery);
-      const emailTemplates: EmailTemplate[] = emailTemplatesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        name: doc.data().name,
-        subject: doc.data().subject,
-        body: doc.data().body,
-        type: doc.data().type,
-        active: doc.data().active !== false,
-        variables: doc.data().variables || [],
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-      }));
-
       return {
         system: {
           maintenanceMode: systemDoc.data()?.maintenanceMode || false,
@@ -226,7 +193,6 @@ export const settingsService = {
         },
         userRoles,
         documentTypes,
-        emailTemplates,
       };
     } catch (error) {
       throw error;
@@ -307,36 +273,6 @@ export const settingsService = {
 
   async deleteDocumentType(id: string): Promise<void> {
     await deleteDoc(doc(getDb(), DOCUMENT_TYPES_COLLECTION, id));
-  },
-
-  // Email Templates
-  async createEmailTemplate(data: Omit<EmailTemplate, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    try {
-      const docRef = await addDoc(collection(getDb(), EMAIL_TEMPLATES_COLLECTION), {
-        ...data,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-      return docRef.id;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  async updateEmailTemplate(id: string, data: Partial<EmailTemplate>): Promise<void> {
-    try {
-      const templateRef = doc(getDb(), EMAIL_TEMPLATES_COLLECTION, id);
-      await updateDoc(templateRef, {
-        ...data,
-        updatedAt: serverTimestamp(),
-      });
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  async deleteEmailTemplate(id: string): Promise<void> {
-    await deleteDoc(doc(getDb(), EMAIL_TEMPLATES_COLLECTION, id));
   },
 
   // Export settings

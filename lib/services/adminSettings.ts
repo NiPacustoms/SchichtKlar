@@ -17,7 +17,6 @@ import {
 const SETTINGS_COLLECTION = 'adminSettings';
 const ROLES_COLLECTION = 'adminRoles';
 const DOCUMENT_TYPES_COLLECTION = 'adminDocumentTypes';
-const EMAIL_TEMPLATES_COLLECTION = 'adminEmailTemplates';
 
 export interface SystemSettings {
   systemName: string;
@@ -57,17 +56,6 @@ export interface DocumentType {
   category: 'personal' | 'professional' | 'legal';
   validityPeriod: number;
   required: boolean;
-  status: 'active' | 'inactive' | 'pending';
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface EmailTemplate {
-  id: string;
-  name: string;
-  type: 'notification' | 'reminder' | 'confirmation' | 'alert';
-  subject: string;
-  content: string;
   status: 'active' | 'inactive' | 'pending';
   createdAt: Date;
   updatedAt: Date;
@@ -398,83 +386,6 @@ export const adminSettingsService = {
     await deleteDoc(doc(db, DOCUMENT_TYPES_COLLECTION, id));
   },
 
-  // Get all email templates
-  async getEmailTemplates(): Promise<EmailTemplate[]> {
-    if (!db) {
-      return [];
-    }
-    try {
-      const q = query(
-        collection(db, EMAIL_TEMPLATES_COLLECTION),
-        orderBy('name', 'asc')
-      );
-
-      const snapshot = await getDocs(q);
-      const emailTemplates: EmailTemplate[] = [];
-
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        emailTemplates.push({
-          id: doc.id,
-          name: data.name,
-          type: data.type,
-          subject: data.subject,
-          content: data.content,
-          status: data.status || 'active',
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-        });
-      });
-
-      return emailTemplates;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // Create email template
-  async createEmailTemplate(data: Omit<EmailTemplate, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    if (!db) {
-      throw new Error('Firestore nicht initialisiert');
-    }
-    try {
-      const emailTemplateData = {
-        ...data,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-
-      const docRef = await addDoc(collection(db, EMAIL_TEMPLATES_COLLECTION), emailTemplateData);
-      return docRef.id;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // Update email template
-  async updateEmailTemplate(id: string, data: Partial<EmailTemplate>): Promise<void> {
-    if (!db) {
-      throw new Error('Firestore nicht initialisiert');
-    }
-    try {
-      const emailTemplateRef = doc(db, EMAIL_TEMPLATES_COLLECTION, id);
-      await updateDoc(emailTemplateRef, {
-        ...data,
-        updatedAt: serverTimestamp(),
-      });
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // Delete email template
-  async deleteEmailTemplate(id: string): Promise<void> {
-    if (!db) {
-      throw new Error('Firestore nicht initialisiert');
-    }
-    await deleteDoc(doc(db, EMAIL_TEMPLATES_COLLECTION, id));
-  },
-
   // Get system info
   async getSystemInfo(): Promise<SystemInfo> {
     // Gather system information from Firestore and system stats
@@ -563,46 +474,17 @@ export const adminSettingsService = {
     }
   },
 
-  // Get email template by ID
-  async getEmailTemplateById(templateId: string): Promise<EmailTemplate | null> {
-    if (!db) {
-      return null;
-    }
-    try {
-      const templateDoc = await getDoc(doc(db, EMAIL_TEMPLATES_COLLECTION, templateId));
-      if (!templateDoc.exists()) {
-        return null;
-      }
-
-      const data = templateDoc.data();
-      return {
-        id: templateDoc.id,
-        name: data.name,
-        type: data.type,
-        subject: data.subject,
-        content: data.content,
-        status: data.status || 'active',
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-      };
-    } catch (error) {
-      throw error;
-    }
-  },
-
   // Export settings
   async exportSettings(): Promise<string> {
     try {
       const settings = await this.getSettings();
       const roles = await this.getRoles();
       const documentTypes = await this.getDocumentTypes();
-      const emailTemplates = await this.getEmailTemplates();
 
       const exportData = {
         settings,
         roles,
         documentTypes,
-        emailTemplates,
         exportedAt: new Date().toISOString(),
         version: '1.0.0',
       };
@@ -639,13 +521,6 @@ export const adminSettingsService = {
       if (importData.documentTypes) {
         for (const documentType of importData.documentTypes) {
           await this.createDocumentType(documentType);
-        }
-      }
-
-      // Import email templates
-      if (importData.emailTemplates) {
-        for (const emailTemplate of importData.emailTemplates) {
-          await this.createEmailTemplate(emailTemplate);
         }
       }
     } catch (error) {

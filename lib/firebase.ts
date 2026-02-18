@@ -79,6 +79,40 @@ if (typeof window !== 'undefined' && app) {
   }
 }
 
+/**
+ * Gibt die Auth-Instanz zurück und initialisiert Firebase Auth bei Bedarf clientseitig.
+ * Verhindert "Firebase Auth not initialized", wenn das Modul zuerst serverseitig (ohne window) geladen wurde.
+ */
+export function getAuthSafe(): Auth | null {
+  if (typeof window === 'undefined') return null;
+  if (auth) return auth;
+  if (!app && hasAllRequiredValues) {
+    try {
+      app = initializeApp(firebaseConfig);
+      logger.info('✅ Firebase wurde erfolgreich initialisiert (lazy)');
+    } catch (error) {
+      logger.error('❌ Firebase lazy initialization failed:', error);
+      return null;
+    }
+  }
+  if (app && !auth) {
+    try {
+      auth = getAuth(app);
+      if (!db) {
+        db = initializeFirestore(app, {
+          experimentalAutoDetectLongPolling: true,
+          ignoreUndefinedProperties: true,
+        });
+      }
+      if (!storage) storage = getFirebaseStorage(app);
+      if (!functions) functions = getFunctions(app);
+    } catch (error) {
+      logger.warn('⚠️ Firebase services lazy init failed:', error);
+    }
+  }
+  return auth;
+}
+
 // Exportiere alle Services
 export { auth, db, storage, functions, messaging };
 

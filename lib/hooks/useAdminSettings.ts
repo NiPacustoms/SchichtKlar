@@ -49,17 +49,6 @@ export interface DocumentType {
   updatedAt: Date;
 }
 
-export interface EmailTemplate {
-  id: string;
-  name: string;
-  type: 'notification' | 'reminder' | 'confirmation' | 'alert';
-  subject: string;
-  content: string;
-  status: 'active' | 'inactive' | 'pending';
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 export interface SystemInfo {
   status: string;
   version: string;
@@ -108,18 +97,6 @@ export function useAdminSettings() {
   } = useQuery({
     queryKey: ['adminDocumentTypes'],
     queryFn: () => adminSettingsService.getDocumentTypes(),
-    enabled: isAdmin, // Only fetch if user is admin
-    retry: false, // Don't retry on permission errors
-  });
-
-  // Get email templates
-  const {
-    data: emailTemplates = [],
-    isLoading: emailTemplatesLoading,
-    error: emailTemplatesError,
-  } = useQuery({
-    queryKey: ['adminEmailTemplates'],
-    queryFn: () => adminSettingsService.getEmailTemplates(),
     enabled: isAdmin, // Only fetch if user is admin
     retry: false, // Don't retry on permission errors
   });
@@ -220,42 +197,6 @@ export function useAdminSettings() {
     },
   });
 
-  // Create email template mutation
-  const createEmailTemplateMutation = useMutation({
-    mutationFn: (data: Omit<EmailTemplate, 'id' | 'createdAt' | 'updatedAt'>) => adminSettingsService.createEmailTemplate(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['adminEmailTemplates'] });
-      toast.success('E-Mail-Template erfolgreich erstellt');
-    },
-    onError: (error) => {
-      toast.error('Fehler beim Erstellen des E-Mail-Templates: ' + error.message);
-    },
-  });
-
-  // Update email template mutation
-  const updateEmailTemplateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<EmailTemplate> }) => adminSettingsService.updateEmailTemplate(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['adminEmailTemplates'] });
-      toast.success('E-Mail-Template erfolgreich aktualisiert');
-    },
-    onError: (error) => {
-      toast.error('Fehler beim Aktualisieren des E-Mail-Templates: ' + error.message);
-    },
-  });
-
-  // Delete email template mutation
-  const deleteEmailTemplateMutation = useMutation({
-    mutationFn: (id: string) => adminSettingsService.deleteEmailTemplate(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['adminEmailTemplates'] });
-      toast.success('E-Mail-Template erfolgreich gelöscht');
-    },
-    onError: (error) => {
-      toast.error('Fehler beim Löschen des E-Mail-Templates: ' + error.message);
-    },
-  });
-
   // Backup data mutation
   const backupDataMutation = useMutation({
     mutationFn: () => adminSettingsService.backupData(),
@@ -283,7 +224,6 @@ export function useAdminSettings() {
       queryClient.invalidateQueries({ queryKey: ['adminSettings'] });
       queryClient.invalidateQueries({ queryKey: ['adminRoles'] });
       queryClient.invalidateQueries({ queryKey: ['adminDocumentTypes'] });
-      queryClient.invalidateQueries({ queryKey: ['adminEmailTemplates'] });
       toast.success('Daten erfolgreich wiederhergestellt');
     },
     onError: (error) => {
@@ -320,18 +260,6 @@ export function useAdminSettings() {
     return deleteDocumentTypeMutation.mutateAsync(id);
   };
 
-  const createEmailTemplate = async (data: Omit<EmailTemplate, 'id' | 'createdAt' | 'updatedAt'>) => {
-    return createEmailTemplateMutation.mutateAsync(data);
-  };
-
-  const updateEmailTemplate = async (id: string, data: Partial<EmailTemplate>) => {
-    return updateEmailTemplateMutation.mutateAsync({ id, data });
-  };
-
-  const deleteEmailTemplate = async (id: string) => {
-    return deleteEmailTemplateMutation.mutateAsync(id);
-  };
-
   const backupData = async () => {
     return backupDataMutation.mutateAsync();
   };
@@ -360,7 +288,6 @@ export function useAdminSettings() {
     },
     roles,
     documentTypes,
-    emailTemplates,
     systemInfo: systemInfo || {
       status: 'Online',
       version: '1.0.0',
@@ -370,8 +297,8 @@ export function useAdminSettings() {
       cpu: '15%',
       network: 'Gut',
     },
-    isLoading: settingsLoading || rolesLoading || documentTypesLoading || emailTemplatesLoading || systemInfoLoading,
-    error: settingsError || rolesError || documentTypesError || emailTemplatesError || systemInfoError,
+    isLoading: settingsLoading || rolesLoading || documentTypesLoading || systemInfoLoading,
+    error: settingsError || rolesError || documentTypesError || systemInfoError,
     updateSettings,
     createRole,
     updateRole,
@@ -379,14 +306,11 @@ export function useAdminSettings() {
     createDocumentType,
     updateDocumentType,
     deleteDocumentType,
-    createEmailTemplate,
-    updateEmailTemplate,
-    deleteEmailTemplate,
     backupData,
     restoreData,
     isUpdating: updateSettingsMutation.isPending,
-    isCreating: createRoleMutation.isPending || createDocumentTypeMutation.isPending || createEmailTemplateMutation.isPending,
-    isDeleting: deleteRoleMutation.isPending || deleteDocumentTypeMutation.isPending || deleteEmailTemplateMutation.isPending,
+    isCreating: createRoleMutation.isPending || createDocumentTypeMutation.isPending,
+    isDeleting: deleteRoleMutation.isPending || deleteDocumentTypeMutation.isPending,
     isBackingUp: backupDataMutation.isPending,
     isRestoring: restoreDataMutation.isPending,
   };
