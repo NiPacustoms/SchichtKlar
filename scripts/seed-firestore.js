@@ -76,8 +76,8 @@ const testUsers = [
   {
     email: 'dispatcher@jobflow.de',
     password: 'dispatcher123',
-    displayName: 'Disponent',
-    role: 'dispatcher',
+    displayName: 'Admin 2',
+    role: 'admin',
     phone: '+49 123 456790',
     qualifications: ['Pflegemanagement', 'Personalführung'],
     active: true,
@@ -450,7 +450,7 @@ async function seedFirestore() {
     
     console.log('\n🔑 Test Login Credentials:');
     console.log('Admin: admin@jobflow.de / admin123');
-    console.log('Disponent: dispatcher@jobflow.de / dispatcher123');
+    console.log('Admin 2: dispatcher@jobflow.de / dispatcher123');
     console.log('Nurse 1: nurse1@jobflow.de / nurse123');
     console.log('Nurse 2: nurse2@jobflow.de / nurse123');
     

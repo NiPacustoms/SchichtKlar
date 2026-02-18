@@ -32,28 +32,6 @@ export async function loginAsAdmin(page: Page, credentials?: LoginCredentials): 
 }
 
 /**
- * Login als Dispatcher
- */
-export async function loginAsDispatcher(page: Page, credentials?: LoginCredentials): Promise<void> {
-  const email = credentials?.email || process.env.E2E_DISPATCHER_EMAIL || 'dispatcher@test.jobflow.local';
-  const password = credentials?.password || process.env.E2E_DISPATCHER_PASSWORD || 'test-dispatcher-password';
-
-  await page.goto('/anmelden');
-  await page.waitForSelector('[data-testid="email-input"]', { state: 'visible' });
-  
-  await page.fill('[data-testid="email-input"]', email);
-  await page.fill('[data-testid="password-input"]', password);
-  await page.click('[data-testid="login-button"]');
-  
-  // Warte auf Weiterleitung nach Login
-  await page.waitForURL(/\/admin\//, { timeout: 15000 });
-  await page.waitForLoadState('networkidle');
-  
-  // Verifiziere, dass wir eingeloggt sind
-  await expect(page).toHaveURL(/\/admin/);
-}
-
-/**
  * Login als Nurse (Mitarbeiter)
  */
 export async function loginAsNurse(page: Page, credentials?: LoginCredentials): Promise<void> {

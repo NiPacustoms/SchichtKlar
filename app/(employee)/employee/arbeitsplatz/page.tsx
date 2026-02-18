@@ -282,7 +282,7 @@ function DashboardPageContent() {
                         <List disablePadding>
                           {upcomingAssignmentsPreview.map(
                             ({ assignment, shift, facility }, index) => (
-                              <Box key={assignment.id}>
+                              <Box key={assignment?.id ?? `assignment-${index}`}>
                                 <ListItem disableGutters>
                                   <ListItemIcon sx={{ minWidth: 36 }}>
                                     <Event fontSize="small" />
@@ -306,7 +306,7 @@ function DashboardPageContent() {
                                   />
                                 </ListItem>
                                 {index < upcomingAssignmentsPreview.length - 1 && (
-                                  <Divider component="li" sx={{ my: 1 }} />
+                                  <Divider key={`divider-${assignment?.id ?? index}`} component="li" sx={{ my: 1 }} />
                                 )}
                               </Box>
                             )
@@ -334,7 +334,7 @@ function DashboardPageContent() {
                       {upcomingNotifications.length > 0 ? (
                         <List disablePadding>
                           {upcomingNotifications.map((notification, index) => (
-                            <Box key={notification.id}>
+                            <Box key={notification?.id ?? `notification-${index}`}>
                               <ListItem disableGutters>
                                 <ListItemText
                                   primary={notification.title}
@@ -346,7 +346,7 @@ function DashboardPageContent() {
                                 />
                               </ListItem>
                               {index < upcomingNotifications.length - 1 && (
-                                <Divider component="li" sx={{ my: 1 }} />
+                                <Divider key={`divider-${notification?.id ?? index}`} component="li" sx={{ my: 1 }} />
                               )}
                             </Box>
                           ))}

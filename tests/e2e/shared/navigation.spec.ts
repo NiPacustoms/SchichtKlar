@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsAdmin, loginAsDispatcher, loginAsNurse } from '../fixtures/auth';
+import { loginAsAdmin, loginAsNurse } from '../fixtures/auth';
 
 test.describe('Navigation', () => {
   test.beforeEach(async ({ page }) => {
@@ -25,22 +25,6 @@ test.describe('Navigation', () => {
       // Mindestens ein Navigation-Element sollte sichtbar sein
       const visibleItems = await Promise.all(
         adminNavItems.map(item => item.isVisible().catch(() => false))
-      );
-      
-      expect(visibleItems.some(v => v)).toBeTruthy();
-    });
-
-    test('sollte Dispatcher-Navigation anzeigen', async ({ page }) => {
-      await loginAsDispatcher(page);
-      
-      // Dispatcher hat ähnliche Navigation wie Admin
-      const dispatcherNavItems = [
-        page.locator('text=/Übersicht|Dashboard/i'),
-        page.locator('text=/Schichten/i'),
-      ];
-      
-      const visibleItems = await Promise.all(
-        dispatcherNavItems.map(item => item.isVisible().catch(() => false))
       );
       
       expect(visibleItems.some(v => v)).toBeTruthy();
@@ -105,16 +89,6 @@ test.describe('Navigation', () => {
       }
     });
 
-    test('sollte Dispatcher auf Admin-Routen zugreifen können', async ({ page }) => {
-      await loginAsDispatcher(page);
-      
-      // Dispatcher sollte ähnliche Rechte wie Admin haben
-      await page.goto('/admin/schichten');
-      await page.waitForLoadState('networkidle');
-      
-      // Verifiziere, dass wir auf der Route sind
-      expect(page.url()).toContain('/admin/schichten');
-    });
   });
 
   test.describe('404-Seite', () => {
@@ -154,9 +128,9 @@ test.describe('Navigation', () => {
     test('sollte zwischen Admin-Seiten navigieren können', async ({ page }) => {
       await loginAsAdmin(page);
       
-      // Navigiere zu verschiedenen Admin-Seiten
+      // Navigiere zu verschiedenen Admin-Seiten (kanonische deutsche URLs)
       await page.goto('/admin/schichten');
-      await expect(page).toHaveURL(/\/admin\/shifts/);
+      await expect(page).toHaveURL(/\/admin\/schichten/);
       
       await page.goto('/admin/mitarbeiter');
       await expect(page).toHaveURL(/\/admin\/mitarbeiter/);
@@ -168,9 +142,9 @@ test.describe('Navigation', () => {
     test('sollte zwischen Nurse-Seiten navigieren können', async ({ page }) => {
       await loginAsNurse(page);
       
-      // Navigiere zu verschiedenen Nurse-Seiten
-      await page.goto('/employee/dashboard');
-      await expect(page).toHaveURL(/\/employee\/dashboard/);
+      // Navigiere zu verschiedenen Nurse-Seiten (kanonische deutsche URLs)
+      await page.goto('/employee/arbeitsplatz');
+      await expect(page).toHaveURL(/\/employee\/arbeitsplatz/);
       
       await page.goto('/employee/dienstplan');
       await expect(page).toHaveURL(/\/employee\/dienstplan/);

@@ -1,7 +1,6 @@
 import * as functions from 'firebase-functions/v1';
-import * as nodemailer from 'nodemailer';
 
-let cachedTransporter: nodemailer.Transporter | null = null;
+let cachedTransporter: import('nodemailer').Transporter | null = null;
 
 function getSmtpConfig() {
   const smtpHost = process.env.SMTP_HOST;
@@ -21,14 +20,14 @@ function getSmtpConfig() {
   };
 }
 
-async function getTransporter(): Promise<nodemailer.Transporter | null> {
+async function getTransporter(): Promise<import('nodemailer').Transporter | null> {
   if (cachedTransporter) return cachedTransporter;
   const config = getSmtpConfig();
   if (!config.host || !config.user || !config.pass || !config.from) {
     return null;
   }
-
-  cachedTransporter = nodemailer.createTransport({
+  const nodemailer = await import('nodemailer');
+  cachedTransporter = nodemailer.default.createTransport({
     host: config.host,
     port: config.port,
     secure: config.secure,
@@ -94,30 +93,83 @@ function renderInviteEmailHtml(payload: InviteEmailPayload): string {
   `;
 }
 
-export const sendInvitationEmailCF = functions.https.onCall(async (data: InviteEmailPayload, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Authentication required.');
-  }
+/**
+ * Versand per Resend (https://resend.com) – nur API-Key nötig, kein SMTP.
+ * Env: RESEND_API_KEY (Pflicht), optional RESEND_FROM (z. B. "JobFlow <noreply@ihredomain.de>").
+ */
+async function sendInvitationViaResend(
+  payload: InviteEmailPayload,
+  html: string,
+  text: string
+): Promise<{ success: boolean; fallback?: boolean }> {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) return { success: false, fallback: true };
 
+  const from = process.env.RESEND_FROM?.trim() || 'JobFlow <onboarding@resend.dev>';
+  try {
+    const { Resend } = await import('resend');
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from,
+      to: payload.to,
+      subject: 'Einladung zu JobFlow',
+      html,
+      text,
+    });
+    if (error) {
+      console.error('[Email:Resend]', error);
+      return { success: false, fallback: true };
+    }
+    return { success: true };
+  } catch (e) {
+    console.error('[Email:Resend]', e);
+    return { success: false, fallback: true };
+  }
+}
+
+/** Sendet die Einladungs-E-Mail (ohne Auth – für HTTP-Aufruf aus der API). */
+export async function sendInvitationEmailInternal(
+  data: InviteEmailPayload
+): Promise<{ success: boolean; fallback?: boolean }> {
   const { to, companyName, acceptLink } = data || {} as InviteEmailPayload;
   if (!to || !acceptLink) {
-    throw new functions.https.HttpsError('invalid-argument', 'Missing required fields');
+    return { success: false };
   }
+  const company = companyName || 'Ihre Firma';
+  const html = renderInviteEmailHtml({ to, companyName: company, acceptLink });
+  const text = [
+    `Sie wurden von ${company} eingeladen, JobFlow zu nutzen.`,
+    `Bitte öffnen Sie innerhalb von 24 Stunden folgenden Link: ${acceptLink}`,
+  ].join('\n\n');
 
-  const html = renderInviteEmailHtml({ to, companyName: companyName || 'Ihre Firma', acceptLink });
+  if (process.env.RESEND_API_KEY?.trim()) {
+    const res = await sendInvitationViaResend({ to, companyName: company, acceptLink }, html, text);
+    if (res.success) return res;
+  }
 
   const result = await sendTemplatedEmail({
     to,
     subject: 'Einladung zu JobFlow',
     html,
-    text: [
-      `Sie wurden von ${companyName || 'Ihrer Firma'} eingeladen, JobFlow zu nutzen.`,
-      `Bitte öffnen Sie innerhalb von 24 Stunden folgenden Link: ${acceptLink}`,
-    ].join('\n\n'),
+    text,
   });
+  return { success: !result.fallback, fallback: result.fallback };
+}
 
-  return { success: true, fallback: result.fallback };
-});
+/** Handler for lazy-load from index (avoids loading nodemailer at deploy). */
+export async function sendInvitationEmailHandler(
+  data: InviteEmailPayload,
+  context: { auth?: { uid: string }; authType?: string }
+): Promise<{ success: boolean; fallback?: boolean }> {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Authentication required.');
+  }
+  return sendInvitationEmailInternal(data);
+}
+
+export const sendInvitationEmailCF = functions.https.onCall(sendInvitationEmailHandler);
+
+/** HTTP-Variante von sendInvitationEmailHttp ist in index.ts definiert (lazy load). */
 
 export interface RenderFacilityAssignmentTakenPayload {
   employeeName: string;

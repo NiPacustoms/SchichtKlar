@@ -14,7 +14,7 @@ export const setUserRole = onCall(async request => {
 
   const { uid, role } = request.data;
 
-  if (!uid || !['admin', 'dispatcher', 'nurse'].includes(role)) {
+  if (!uid || !['admin', 'nurse'].includes(role)) {
     throw new HttpsError('invalid-argument', 'Invalid UID or role provided.');
   }
 
@@ -62,7 +62,7 @@ export const getUserRole = onCall(async request => {
 });
 
 export const getUsersWithRoles = onCall(async request => {
-  if (!request.auth || !['admin', 'dispatcher'].includes(request.auth.token.role)) {
+  if (!request.auth || request.auth.token.role !== 'admin') {
     throw new HttpsError('permission-denied', 'Insufficient permissions.');
   }
 

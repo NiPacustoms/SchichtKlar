@@ -190,7 +190,7 @@ async function sendExpirySummaryToAdmins(totalExpiring: number, notificationsSen
     // Get all admin users
     const adminUsers = await db
       .collection('users')
-      .where('role', 'in', ['admin', 'dispatcher'])
+      .where('role', '==', 'admin')
       .get();
 
     if (adminUsers.empty) {

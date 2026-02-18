@@ -17,10 +17,10 @@ export const deleteAllAssignments = functions.https.onCall(async (data, context)
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }
 
-  // Nur Admins/Dispatcher dürfen alle Assignments löschen
+  // Nur Admins dürfen alle Assignments löschen
   const userRole = (context.auth.token as { role?: string }).role;
-  if (userRole !== 'admin' && userRole !== 'dispatcher') {
-    throw new functions.https.HttpsError('permission-denied', 'Only admins and dispatchers can delete all assignments');
+  if (userRole !== 'admin') {
+    throw new functions.https.HttpsError('permission-denied', 'Only admins can delete all assignments');
   }
 
   try {

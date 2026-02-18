@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * Migration: times → timesheets (sick & vacation)
+ * Migration: times → timesheets (sick)
  *
- * Kopiert bestehende Einträge vom Typ "sick" und "vacation" aus der
- * Firestore-Collection "times" in die Collection "timesheets" (entryType sick/vacation).
- * Einmalig ausführen; danach werden Krank und Urlaub nur noch in timesheets gepflegt.
+ * Kopiert bestehende Einträge vom Typ "sick" aus der Firestore-Collection "times"
+ * in die Collection "timesheets" (entryType sick).
  *
  * Voraussetzung: .env.local mit NEXT_PUBLIC_FIREBASE_* gesetzt.
  * Ausführung: node scripts/migrate-times-to-timesheets.js
@@ -58,7 +57,7 @@ function run() {
     const timesRef = collection(db, 'times');
     const timesheetsRef = collection(db, 'timesheets');
 
-    const q = query(timesRef, where('type', 'in', ['sick', 'vacation']));
+    const q = query(timesRef, where('type', '==', 'sick'));
     const snapshot = await getDocs(q);
     const entries = [];
     snapshot.forEach((docSnap) => {
@@ -79,11 +78,11 @@ function run() {
     });
 
     if (entries.length === 0) {
-      console.log('Keine sick/vacation-Einträge in "times" gefunden. Migration übersprungen.');
+      console.log('Keine sick-Einträge in "times" gefunden. Migration übersprungen.');
       return;
     }
 
-    console.log(`Gefunden: ${entries.length} Einträge (sick/vacation). ${DRY_RUN ? '(DRY_RUN – keine Schreibvorgänge)' : ''}`);
+    console.log(`Gefunden: ${entries.length} Einträge (sick). ${DRY_RUN ? '(DRY_RUN – keine Schreibvorgänge)' : ''}`);
 
     let created = 0;
     for (const e of entries) {

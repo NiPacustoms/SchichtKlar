@@ -78,7 +78,7 @@ export const DEFAULT_LEGAL_INFO: LegalInfo = {
  * Wirft einen Fehler, wenn in Production erforderliche ENV-Variablen fehlen
  */
 export function validateLegalConfig(): void {
-  // In Development/Test erlauben wir Mock-Daten
+  // In Development/Test sind Platzhalter-Werte erlaubt
   // Prüfe auch auf Next.js Development-Modus
   if (process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_APP_ENV === 'development') {
     return;

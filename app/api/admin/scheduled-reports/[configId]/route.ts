@@ -36,7 +36,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ conf
     }
 
     const role = getRoleFromToken(decoded);
-    const isAdmin = role === 'admin' || role === 'dispatcher'; // Legacy
+    const isAdmin = role === 'admin';
     if (!isAdmin) {
       return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
     }
@@ -90,7 +90,7 @@ export async function PATCH(
     }
 
     const role = getRoleFromToken(decoded);
-    const isAdmin = role === 'admin' || role === 'dispatcher'; // Legacy
+    const isAdmin = role === 'admin';
     if (!isAdmin) {
       return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
     }
@@ -198,7 +198,7 @@ export async function DELETE(
     }
 
     const role = getRoleFromToken(decoded);
-    const isAdmin = role === 'admin' || role === 'dispatcher'; // Legacy
+    const isAdmin = role === 'admin';
     if (!isAdmin) {
       return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
     }

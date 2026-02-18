@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Box, Paper, Typography, TextField, Button, Alert, CircularProgress } from '@mui/material';
+import { AppLogo } from '@/components/ui/AppLogo';
 
 function AcceptInviteContent() {
   const searchParams = useSearchParams();
@@ -90,6 +91,9 @@ function AcceptInviteContent() {
       sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3 }}
     >
       <Paper className="glass" sx={{ p: 4, maxWidth: 480, width: '100%' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+          <AppLogo width={160} height={80} />
+        </Box>
         <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
           Einladung annehmen
         </Typography>

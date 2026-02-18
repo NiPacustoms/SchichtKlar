@@ -28,6 +28,6 @@
 
 # Implementation Status
 - **Aktueller Fortschritt:** 75% der Features implementiert
-- **Nächste Priorität:** Chat-System, E-Mail/SMS Integration, Push-Notifications
+- **Nächste Priorität:** E-Mail/SMS Integration, Push-Notifications (Chat, Lohnabrechnung, Urlaub aus der App entfernt)
 - **To-Do Liste:** Siehe .cursor/rules/09-todo-implementation.mdc
 ---

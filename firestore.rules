@@ -22,14 +22,6 @@ service cloud.firestore {
       return isAuthenticated() && (hasRole('admin') || hasRoleFromUserDoc('admin'));
     }
 
-    // Legacy: dispatcher-Token behält Admin-Rechte für Rückwärtskompatibilität
-    function isDispatcher() {
-      return isAuthenticated() && (
-        hasRole('admin') || hasRole('dispatcher') ||
-        hasRoleFromUserDoc('admin') || hasRoleFromUserDoc('dispatcher')
-      );
-    }
-
     // Helper-Funktion für Mandantenisolation
     // Prüft, ob der User zur gleichen Company gehört wie das Dokument
     // Ermittelt die CompanyId des Requestors entweder aus dem Token oder dem User-Dokument
@@ -58,10 +50,10 @@ service cloud.firestore {
     // Nur Admin hat volle Kontrolle (alle User derselben Company lesen/schreiben).
     // WICHTIG: Eigene Dokumente können IMMER gelesen werden (Henne-Ei beim ersten Login).
     match /users/{uid} {
-      // Lesen: Nur eigenes Dokument ODER Admin/Dispatcher derselben Company (Mitarbeiter sehen keine anderen Mitarbeiter)
+      // Lesen: Nur eigenes Dokument ODER Admin derselben Company (Mitarbeiter sehen keine anderen Mitarbeiter)
       allow read: if isAuthenticated() && (
         request.auth.uid == uid ||
-        (isDispatcher() && belongsToSameCompany(resource.data.companyId))
+        (isAdmin() && belongsToSameCompany(resource.data.companyId))
       );
       // Erstellen: Eigene Dokumente ODER Admin derselben Company
       allow create: if isAuthenticated() && (
@@ -84,13 +76,13 @@ service cloud.firestore {
       allow list: if hasCompanyContext();
     }
 
-    // Facilities: Lesen für Dispatcher/Admin; Schreiben nur Dispatcher/Admin mit Mandantenisolation
+    // Facilities: Lesen für Admin; Schreiben nur Admin mit Mandantenisolation
     match /facilities/{facilityId} {
       allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId);
-      allow create: if isDispatcher() && creatingForSameCompany(request.resource.data.companyId);
-      allow update: if isDispatcher() && belongsToSameCompany(resource.data.companyId) && 
+      allow create: if isAdmin() && creatingForSameCompany(request.resource.data.companyId);
+      allow update: if isAdmin() && belongsToSameCompany(resource.data.companyId) && 
         creatingForSameCompany(request.resource.data.companyId);
-      allow delete: if isDispatcher() && belongsToSameCompany(resource.data.companyId);
+      allow delete: if isAdmin() && belongsToSameCompany(resource.data.companyId);
     }
     
     // Facilities Collection-Level Queries
@@ -99,27 +91,20 @@ service cloud.firestore {
       allow list: if hasCompanyContext();
     }
 
-    // Shifts: Lesen für authentifizierte Nutzer; Schreiben nur Dispatcher/Admin mit Mandantenisolation
-    // WICHTIG: Mitarbeiter können Shifts lesen, wenn sie zur gleichen Company gehören
-    // Migration: Shifts ohne companyId werden auch erlaubt (für alte Daten)
-    // FALLBACK: Wenn User keine companyId hat ODER Shift keine companyId hat, erlaube Zugriff (für Migration/Edge Cases)
-    // TEMPORÄR: Sehr permissive Regel für Migration - sollte in Produktion verschärft werden
+    // Shifts: Lesen für authentifizierte Nutzer; Schreiben nur Admin mit Mandantenisolation
     match /shifts/{shiftId} {
-      // Lesen: Alle authentifizierten Nutzer können Shifts lesen
-      // WICHTIG: Diese Regel ist sehr permissiv für Migration
-      // In Produktion sollte sie verschärft werden, um nur Shifts der gleichen Company zu erlauben
       allow read: if isAuthenticated();
-      allow create: if isDispatcher() && (
-        request.resource.data.companyId == null || // Migration: Erlaube Shifts ohne companyId
+      allow create: if isAdmin() && (
+        request.resource.data.companyId == null ||
         creatingForSameCompany(request.resource.data.companyId)
       );
-      allow update: if isDispatcher() && (
-        resource.data.companyId == null || // Migration: Alte Shifts ohne companyId
+      allow update: if isAdmin() && (
+        resource.data.companyId == null ||
         (belongsToSameCompany(resource.data.companyId) && 
          (request.resource.data.companyId == null || creatingForSameCompany(request.resource.data.companyId)))
       );
-      allow delete: if isDispatcher() && (
-        resource.data.companyId == null || // Migration: Alte Shifts ohne companyId
+      allow delete: if isAdmin() && (
+        resource.data.companyId == null ||
         belongsToSameCompany(resource.data.companyId)
       );
     }
@@ -130,10 +115,10 @@ service cloud.firestore {
       allow list: if isAuthenticated();
     }
 
-    // Documents: Besitzer oder Admin/Dispatcher; Schreiben nur Besitzer oder Admin mit Mandantenisolation
+    // Documents: Besitzer oder Admin; Schreiben nur Besitzer oder Admin mit Mandantenisolation
     match /documents/{docId} {
       allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
-        resource.data.userId == request.auth.uid || isDispatcher()
+        resource.data.userId == request.auth.uid || isAdmin()
       );
       allow create: if isAuthenticated() && creatingForSameCompany(request.resource.data.companyId) && (
         request.resource.data.userId == request.auth.uid || isAdmin()
@@ -147,20 +132,18 @@ service cloud.firestore {
       );
     }
 
-    // Assignments: Lesen Besitzer/Dispatcher/Admin; Schreiben Dispatcher/Admin mit Mandantenisolation
+    // Assignments: Lesen Besitzer/Admin; Schreiben Admin mit Mandantenisolation
     match /assignments/{assignmentId} {
       allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
-        resource.data.userId == request.auth.uid || isDispatcher()
+        resource.data.userId == request.auth.uid || isAdmin()
       );
-      allow create: if isDispatcher() && creatingForSameCompany(request.resource.data.companyId);
-      // Update: Dispatcher/Admin ODER Mitarbeiter kann sein eigenes Assignment aktualisieren
-      // (z.B. zum Ablehnen oder Annehmen)
+      allow create: if isAdmin() && creatingForSameCompany(request.resource.data.companyId);
       allow update: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
-        isDispatcher() || // Dispatcher/Admin kann alle Assignments aktualisieren
-        (resource.data.userId == request.auth.uid && // Mitarbeiter kann nur sein eigenes Assignment aktualisieren
-         request.resource.data.companyId == resource.data.companyId) // companyId darf nicht geändert werden
+        isAdmin() ||
+        (resource.data.userId == request.auth.uid &&
+         request.resource.data.companyId == resource.data.companyId)
       );
-      allow delete: if isDispatcher() && belongsToSameCompany(resource.data.companyId);
+      allow delete: if isAdmin() && belongsToSameCompany(resource.data.companyId);
     }
     
     // Assignments Collection-Level Queries
@@ -169,15 +152,15 @@ service cloud.firestore {
       allow list: if isAuthenticated();
     }
 
-    // Reports: Lesen für Besitzer/Admin/Dispatcher; Schreiben nur Admin/Dispatcher mit Mandantenisolation
+    // Reports: Lesen für Besitzer/Admin; Schreiben nur Admin mit Mandantenisolation
     match /reports/{reportId} {
       allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
-        resource.data.userId == request.auth.uid || isDispatcher()
+        resource.data.userId == request.auth.uid || isAdmin()
       );
       allow create: if isAuthenticated() && creatingForSameCompany(request.resource.data.companyId) && (
-        request.resource.data.userId == request.auth.uid || isDispatcher()
+        request.resource.data.userId == request.auth.uid || isAdmin()
       );
-      allow update, delete: if isDispatcher() && belongsToSameCompany(resource.data.companyId) && 
+      allow update, delete: if isAdmin() && belongsToSameCompany(resource.data.companyId) && 
         creatingForSameCompany(request.resource.data.companyId);
     }
     
@@ -190,12 +173,12 @@ service cloud.firestore {
     // Employee Reports: Mitarbeiter-Berichte mit Mandantenisolation
     match /employeeReports/{reportId} {
       allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
-        resource.data.userId == request.auth.uid || isDispatcher()
+        resource.data.userId == request.auth.uid || isAdmin()
       );
       allow create: if isAuthenticated() && creatingForSameCompany(request.resource.data.companyId) && (
-        request.resource.data.userId == request.auth.uid || isDispatcher()
+        request.resource.data.userId == request.auth.uid || isAdmin()
       );
-      allow update, delete: if isDispatcher() && belongsToSameCompany(resource.data.companyId) && 
+      allow update, delete: if isAdmin() && belongsToSameCompany(resource.data.companyId) && 
         creatingForSameCompany(request.resource.data.companyId);
     }
     
@@ -207,13 +190,8 @@ service cloud.firestore {
 
     // Admin Announcements: Ankündigungen
     match /adminAnnouncements/{announcementId} {
-      // Lesen: Alle authentifizierten User können Ankündigungen lesen
       allow read: if isAuthenticated();
-      
-      // Erstellen: Nur Dispatcher/Admin können Ankündigungen erstellen
-      allow create: if isDispatcher();
-      
-      // Update/Delete: Nur Admin
+      allow create: if isAdmin();
       allow update, delete: if isAdmin();
     }
 
@@ -237,8 +215,8 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (
         // Eigene Timesheets: userId muss übereinstimmen
         resource.data.userId == request.auth.uid ||
-        // Dispatcher/Admin: Müssen zur gleichen Company gehören (wenn companyId vorhanden)
-        (isDispatcher() && (
+        // Admin: Muss zur gleichen Company gehören (wenn companyId vorhanden)
+        (isAdmin() && (
           resource.data.companyId == null ||
           belongsToSameCompany(resource.data.companyId)
         ))
@@ -281,13 +259,13 @@ service cloud.firestore {
       allow list: if isAuthenticated();
     }
 
-    // Wochenstunden-Limit: Anträge auf Erhöhung (Pflegekraft → Disponent)
+    // Wochenstunden-Limit: Anträge auf Erhöhung (Pflegekraft → Admin)
     match /limitIncreaseRequests/{requestId} {
       allow read: if isAuthenticated() && (
-        resource.data.mitarbeiterId == request.auth.uid || isDispatcher()
+        resource.data.mitarbeiterId == request.auth.uid || isAdmin()
       );
       allow create: if isAuthenticated() && request.resource.data.mitarbeiterId == request.auth.uid;
-      allow update, delete: if isDispatcher();
+      allow update, delete: if isAdmin();
     }
     match /limitIncreaseRequests {
       allow list: if isAuthenticated();
@@ -320,28 +298,27 @@ service cloud.firestore {
                resourceCompanyId == authCompanyId || requestCompanyId == authCompanyId;
       }
       
-      // Lesen: Eigene Time Entries ODER Admin/Dispatcher derselben Company
+      // Lesen: Eigene Time Entries ODER Admin derselben Company
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid || 
-        ((hasRole('admin') || hasRole('dispatcher')) && timesEntryBelongsToSameCompany())
+        (hasRole('admin') && timesEntryBelongsToSameCompany())
       );
       
-      // Erstellen: Eigene Time Entries ODER Admin/Dispatcher derselben Company
-      // WICHTIG: work/break müssen assignmentId haben, companyId muss gesetzt werden
+      // Erstellen: Eigene Time Entries ODER Admin derselben Company
       allow create: if isAuthenticated() && (
         request.resource.data.userId == request.auth.uid || 
-        ((hasRole('admin') || hasRole('dispatcher')) && timesEntryBelongsToSameCompany())
+        (hasRole('admin') && timesEntryBelongsToSameCompany())
       ) && hasRequiredAssignment() &&
         (request.resource.data.companyId == getRequesterCompanyId() || 
-         request.resource.data.companyId == null); // Migration: null akzeptieren
+         request.resource.data.companyId == null);
       
-      // Aktualisieren: Eigene Time Entries ODER Admin/Dispatcher derselben Company
+      // Aktualisieren: Eigene Time Entries ODER Admin derselben Company
       // WICHTIG: work/break müssen assignmentId behalten, companyId muss erhalten bleiben
       // Für neue Einträge (create) ist assignmentId Pflicht, für Updates erlauben wir auch alte Einträge ohne assignmentId
       // um Migration zu ermöglichen
       allow update: if isAuthenticated() && (
         resource.data.userId == request.auth.uid || 
-        ((hasRole('admin') || hasRole('dispatcher')) && timesEntryBelongsToSameCompany())
+        (hasRole('admin') && timesEntryBelongsToSameCompany())
       ) && (
         // Wenn bestehender Typ work/break ist:
         // - Erlaube Update, wenn assignmentId im Update ODER im Dokument vorhanden ist
@@ -367,7 +344,7 @@ service cloud.firestore {
       // Löschen: Eigene Time Entries ODER Admin derselben Company
       allow delete: if isAuthenticated() && (
         resource.data.userId == request.auth.uid || 
-        ((hasRole('admin') || hasRole('dispatcher')) && timesEntryBelongsToSameCompany())
+        (hasRole('admin') && timesEntryBelongsToSameCompany())
       );
     }
     
@@ -451,13 +428,12 @@ service cloud.firestore {
 
     // AdminSettings: Admin-Einstellungen
     match /adminSettings/{settingId} {
-      allow read: if isDispatcher();
+      allow read: if isAdmin();
       allow create, update, delete: if isAdmin();
     }
     
-    // AdminSettings Collection-Level Queries
     match /adminSettings {
-      allow list: if isDispatcher();
+      allow list: if isAdmin();
     }
 
     // AdminRoles: Admin-Rollen (Admins verwalten; Nutzer dürfen ihre zugewiesene Rolle lesen)
@@ -466,43 +442,38 @@ service cloud.firestore {
       return userDoc != null && userDoc.data != null && userDoc.data.customRoleId == roleId;
     }
     match /adminRoles/{roleId} {
-      allow read: if isDispatcher() || (isAuthenticated() && isOwnAssignedRole(roleId));
+      allow read: if isAdmin() || (isAuthenticated() && isOwnAssignedRole(roleId));
       allow create, update, delete: if isAdmin();
     }
     
-    // AdminRoles Collection-Level Queries
     match /adminRoles {
-      allow list: if isDispatcher();
+      allow list: if isAdmin();
     }
 
     // AdminDocumentTypes: Admin-Dokumenttypen
     match /adminDocumentTypes/{docTypeId} {
-      allow read: if isDispatcher();
+      allow read: if isAdmin();
       allow create, update, delete: if isAdmin();
     }
     
-    // AdminDocumentTypes Collection-Level Queries
     match /adminDocumentTypes {
-      allow list: if isDispatcher();
+      allow list: if isAdmin();
     }
 
     // AdminEmailTemplates: Admin-E-Mail-Templates
     match /adminEmailTemplates/{templateId} {
-      allow read: if isDispatcher();
+      allow read: if isAdmin();
       allow create, update, delete: if isAdmin();
     }
     
-    // AdminEmailTemplates Collection-Level Queries
     match /adminEmailTemplates {
-      allow list: if isDispatcher();
+      allow list: if isAdmin();
     }
 
     // DocumentTypes: Dokumententypen für alle Benutzer
-    // Lesen: alle authentifizierten Nutzer
-    // Schreiben: nur Admin/Dispatcher
     match /documentTypes/{docTypeId} {
       allow read: if isAuthenticated();
-      allow create, update, delete: if isDispatcher();
+      allow create, update, delete: if isAdmin();
     }
     
     // DocumentTypes Collection-Level Queries

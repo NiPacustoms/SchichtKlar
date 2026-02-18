@@ -15,7 +15,7 @@ const ROUTE = '/api/admin/user/[userId]/data-export';
  * GET /api/admin/user/[userId]/data-export
  *
  * DSGVO Art. 15: Admin löst Datenexport für einen Nutzer aus.
- * Nur admin darf für andere User auslösen (Legacy: dispatcher-Token wird wie admin behandelt).
+ * Nur admin darf für andere User auslösen.
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   try {
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ user
     }
 
     const role = getRoleFromToken(decoded);
-    const isAdmin = role === 'admin' || role === 'dispatcher'; // Legacy
+    const isAdmin = role === 'admin';
     if (!isAdmin) {
       return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
     }

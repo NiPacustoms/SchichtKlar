@@ -19,7 +19,6 @@ export interface FeatureFlags {
   enableEmployeeAssignments: boolean;
   enableEmployeeFacilities: boolean;
   enableEmployeeNotifications: boolean;
-  enableEmployeeVacation: boolean;
 }
 
 /**
@@ -37,7 +36,6 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   enableEmployeeAssignments: true,
   enableEmployeeFacilities: true,
   enableEmployeeNotifications: true,
-  enableEmployeeVacation: true,
 } as const;
 
 /**

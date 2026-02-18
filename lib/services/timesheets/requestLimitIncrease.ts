@@ -1,6 +1,6 @@
 /**
  * Pflegekraft: Antrag auf Erhöhung des Wochenstunden-Limits.
- * Erstellt einen Eintrag für Disponent/Admin (z. B. Subcollection oder Anforderung).
+ * Erstellt einen Eintrag für Admin (z. B. Subcollection oder Anforderung).
  * Die eigentliche Erhöhung erfolgt durch Admin über writeWeeklyLimit/addLimitGenehmigung.
  */
 

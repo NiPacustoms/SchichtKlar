@@ -79,8 +79,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
         (async () => {
           try {
-            await AuthService.setSessionCookie(fbUser);
-            const loadedUser = await authUserService.loadUserForAuth(fbUser);
+            // Parallel: Session-Cookie und User-Profil – spart spürbar Zeit
+            const [_, loadedUser] = await Promise.all([
+              AuthService.setSessionCookie(fbUser),
+              authUserService.loadUserForAuth(fbUser),
+            ]);
             if (loadedUser) {
               setUser(loadedUser);
             }
@@ -103,6 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     setAuthError(null);
+    // Nur für E2E-Login ohne echte DB; kein Produktionscode. App-Runtime nutzt sonst ausschließlich Firebase Auth.
     if (isE2ETestMode) {
       if (!email?.trim() || !password?.trim()) {
         throw new Error('E-Mail und Passwort sind erforderlich');
@@ -147,17 +151,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       logger.info('Firebase authentication successful', {}, { email });
-      // Direkt nach Login: Session setzen und User übernehmen (nicht auf onAuthStateChanged warten)
       const fbUser = auth.currentUser;
       if (fbUser) {
         try {
-          await AuthService.setSessionCookie(fbUser);
-          const loadedUser = await authUserService.loadUserForAuth(fbUser);
-          if (loadedUser) {
-            setUser(loadedUser);
-          } else {
-            setUser(authUserService.buildFallbackUser(fbUser));
-          }
+          const token = await fbUser.getIdToken();
+          const [_, firestoreUser] = await Promise.all([
+            AuthService.setSessionCookieWithToken(token),
+            authUserService.getOrCreateAuthUser(fbUser),
+          ]);
+          const loadedUser = firestoreUser
+            ? await authUserService.applyClaimsToUser(fbUser, firestoreUser)
+            : null;
+          setUser(loadedUser ?? authUserService.buildFallbackUser(fbUser));
           setFirebaseUser(fbUser);
         } catch (sessionError) {
           const msg = sessionError instanceof Error ? sessionError.message : String(sessionError);

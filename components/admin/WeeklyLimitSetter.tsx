@@ -101,7 +101,7 @@ export function WeeklyLimitSetter({ employee, compact = false }: WeeklyLimitSett
       </Typography>
       {status === 'blocked' && (
         <Alert severity="error" sx={{ mt: 1 }}>
-          Wochenlimit überschritten. Bitte Disponent kontaktieren oder Limit anpassen.
+          Wochenlimit überschritten. Bitte Admin kontaktieren oder Limit anpassen.
         </Alert>
       )}
     </Box>

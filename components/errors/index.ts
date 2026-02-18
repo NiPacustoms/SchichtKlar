@@ -1,8 +1,8 @@
 /**
  * Error Components Index
  *
- * Central export point for all error-related components
+ * Central export point for error boundary components (HOCs/hooks bleiben in den Quellmodulen).
  */
 
-export * from './GlobalErrorBoundary';
-export * from './ComponentErrorBoundary';
+export { GlobalErrorBoundary } from './GlobalErrorBoundary';
+export { ComponentErrorBoundary } from './ComponentErrorBoundary';

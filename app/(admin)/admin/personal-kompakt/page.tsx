@@ -227,9 +227,7 @@ export default function StaffSimplePage() {
                           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                             {member.role === 'nurse'
                               ? 'Pflegekraft'
-                              : member.role === 'admin' || !!member.customRoleId
-                                ? 'Administrator'
-                                : 'Disponent'}
+                              : 'Administrator'}
                           </Typography>
                         </Box>
                       </Box>

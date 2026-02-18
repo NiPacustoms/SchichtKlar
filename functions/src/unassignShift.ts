@@ -32,7 +32,7 @@ export const unassignShift = functions.https.onCall(async (data, context) => {
 
       // 2. Berechtigung prüfen
       const userClaims = context.auth!.token as { role?: string };
-      const isAdmin = ['admin', 'dispatcher'].includes(userClaims.role || '');
+      const isAdmin = userClaims.role === 'admin';
       const isOwner = context.auth!.uid === assignment.userId;
 
       if (!isAdmin && !isOwner) {

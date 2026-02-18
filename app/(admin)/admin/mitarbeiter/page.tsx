@@ -20,7 +20,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { escapeHtml } from '@/lib/utils/sanitize';
-import { People, Add, Group, Edit, Delete, Visibility } from '@mui/icons-material';
+import { People, Add, Group, Edit, Delete, Visibility, ContentCopy } from '@mui/icons-material';
 import {
   Box,
   Typography,
@@ -39,6 +39,12 @@ import {
   Select,
   MenuItem,
   Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import Skeleton from '@mui/material/Skeleton';
@@ -77,6 +83,16 @@ export default function StaffManagementPage() {
     const t = setTimeout(() => setSearchTerm(searchTermInput), 300);
     return () => clearTimeout(t);
   }, [searchTermInput]);
+
+  // Invitation link dialog (damit Admin den Link manuell weiterleiten kann, falls E-Mail nicht ankommt)
+  const [inviteLinkDialog, setInviteLinkDialog] = useState<{
+    open: boolean;
+    acceptLink: string;
+    email: string;
+    companyName: string;
+    emailSendFailed?: boolean;
+    firebaseSendFailed?: boolean;
+  }>({ open: false, acceptLink: '', email: '', companyName: '' });
 
   // Notification states
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -413,7 +429,7 @@ export default function StaffManagementPage() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data?.message || 'Fehler beim Versenden der Einladung');
+        throw new Error(data?.message || data?.error?.userMessage || 'Fehler beim Erstellen der Einladung');
       }
       const invitationData = await res.json();
 
@@ -422,39 +438,38 @@ export default function StaffManagementPage() {
         (typeof window !== 'undefined' ? window.location.origin : '');
       const acceptLink =
         invitationData?.acceptLink ||
-        `${baseUrl}/accept-invite?token=${encodeURIComponent(invitationData?.token ?? '')}`;
+        `${baseUrl}/einladung-annehmen?token=${encodeURIComponent(invitationData?.token ?? '')}`;
 
-      let emailSendFailed = false;
+      // SOTA: E-Mail wird serverseitig versendet; API liefert emailSent
+      const emailSendFailed = invitationData?.emailSent === false;
+      let firebaseSendFailed = false;
 
-      try {
-        // Dynamischer Import, um serverseitige Probleme zu vermeiden
-        const { sendInvitationEmail } = await import('@/lib/services/email');
-        await sendInvitationEmail({
-          to: email,
-          companyName: invitationData?.companyName || 'Ihre Firma',
-          acceptLink,
-        });
-      } catch (emailError) {
-        logger.error(
-          'Einladungs-E-Mail konnte nicht versendet werden',
-          emailError instanceof Error ? emailError : new Error(String(emailError))
-        );
-        showSnackbar('Einladung erstellt, aber der E-Mail-Versand ist fehlgeschlagen.', 'error');
-        emailSendFailed = true;
-      }
-
-      // Zusätzlich: Firebase Auth Magic Link (E-Mail-Link-Anmeldung) senden
+      // Optional: Firebase Sign-In-Link als zweiten Kanal (Magic Link)
       if (auth) {
-        const actionCodeSettings = {
-          url: `${baseUrl}/accept-invite`,
-          handleCodeInApp: true,
-        } as const;
-        await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+        try {
+          const actionCodeSettings = {
+            url: `${baseUrl}/einladung-annehmen`,
+            handleCodeInApp: true,
+          } as const;
+          await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+        } catch (firebaseError) {
+          logger.error(
+            'Firebase Sign-In-Link konnte nicht gesendet werden',
+            firebaseError instanceof Error ? firebaseError : new Error(String(firebaseError))
+          );
+          firebaseSendFailed = true;
+        }
       }
 
-      if (!emailSendFailed) {
-        showSnackbar('Einladung versendet', 'success');
-      }
+      setInviteLinkDialog({
+        open: true,
+        acceptLink,
+        email,
+        companyName: invitationData?.companyName || 'Ihre Firma',
+        emailSendFailed,
+        firebaseSendFailed,
+      });
+      showSnackbar('Einladung erstellt', 'success');
     } catch (e: unknown) {
       showSnackbar(e instanceof Error ? e.message : 'Unbekannter Fehler', 'error');
     }
@@ -508,7 +523,7 @@ export default function StaffManagementPage() {
   };
 
   const getRoleLabel = (role: string) =>
-    role === 'dispatcher' ? 'Administrator' : (roleLabelMap[(role as keyof typeof roleLabelMap) || 'nurse'] || 'Krankenschwester');
+    roleLabelMap[(role as keyof typeof roleLabelMap) || 'nurse'] || 'Krankenschwester';
 
   if (authLoading || staffLoading) {
     return <LoadingSpinner message="Mitarbeiterverwaltung wird geladen..." />;
@@ -551,7 +566,7 @@ export default function StaffManagementPage() {
 
         {/* Stats Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid key="stats-total" size={{ xs: 12, sm: 6, md: 3 }}>
             <StaffStatsCard
               title="Gesamt Mitarbeiter"
               value={allStaff.length}
@@ -559,7 +574,7 @@ export default function StaffManagementPage() {
               color="primary"
             />
           </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid key="stats-active" size={{ xs: 12, sm: 6, md: 3 }}>
             <StaffStatusCard
               title="Aktive Mitarbeiter"
               value={allStaff.filter(s => s.active).length}
@@ -568,7 +583,7 @@ export default function StaffManagementPage() {
               color="success"
             />
           </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid key="stats-nurse" size={{ xs: 12, sm: 6, md: 3 }}>
             <StaffGroupCard
               title="Pflegekräfte"
               value={allStaff.filter(s => s.role === 'nurse').length}
@@ -576,7 +591,7 @@ export default function StaffManagementPage() {
               color="info"
             />
           </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid key="stats-admin" size={{ xs: 12, sm: 6, md: 3 }}>
             <StaffGroupCard
               title="Administratoren"
               value={allStaff.filter(s => s.role === 'admin').length}
@@ -794,6 +809,7 @@ export default function StaffManagementPage() {
                           ))}
                           {member.qualifications.length > 2 && (
                             <Chip
+                              key={`${member.id}-more-qual`}
                               label={`+${member.qualifications.length - 2}`}
                               size="small"
                               variant="outlined"
@@ -951,6 +967,78 @@ export default function StaffManagementPage() {
           showSnackbar('Kategorien erfolgreich aktualisiert', 'success');
         }}
       />
+
+      {/* Dialog: Einladungslink anzeigen (für manuelles Weiterleiten, falls E-Mail nicht ankommt) */}
+      <Dialog
+        open={inviteLinkDialog.open}
+        onClose={() => setInviteLinkDialog(prev => ({ ...prev, open: false }))}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Einladung erstellt</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Einladung für <strong>{inviteLinkDialog.email}</strong> ({inviteLinkDialog.companyName}).
+          </Typography>
+          {inviteLinkDialog.emailSendFailed && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              Die E-Mail konnte nicht automatisch versendet werden (z. B. E-Mail-Dienst nicht konfiguriert oder
+              Fehler beim Versand). Bitte senden Sie den folgenden Link manuell an die eingeladene Person (z. B. per
+              E-Mail oder WhatsApp).
+            </Alert>
+          )}
+          {inviteLinkDialog.firebaseSendFailed && !inviteLinkDialog.emailSendFailed && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Die Einladungs-E-Mail wurde versendet. Ein zusätzlicher Anmeldelink (Firebase) konnte nicht gesendet
+              werden – der unten stehende Link reicht zur Annahme der Einladung.
+            </Alert>
+          )}
+          {!inviteLinkDialog.emailSendFailed && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              {inviteLinkDialog.firebaseSendFailed
+                ? 'Falls die Person die E-Mail nicht erhält, können Sie den Link manuell weiterleiten:'
+                : 'Falls die Person keine E-Mail erhält, können Sie den Link manuell weiterleiten:'}
+            </Typography>
+          )}
+          {inviteLinkDialog.acceptLink?.includes('localhost') && (
+            <Alert severity="info" sx={{ mb: 1 }}>
+              Der Link verweist auf localhost. Damit Empfänger die Einladung öffnen können, setzen Sie in .env.local
+              <strong> NEXT_PUBLIC_APP_URL</strong> auf Ihre öffentliche URL (z. B. https://app.ihredomain.de) und starten
+              Sie den Dev-Server neu.
+            </Alert>
+          )}
+          <TextField
+            fullWidth
+            size="small"
+            label="Einladungslink"
+            value={inviteLinkDialog.acceptLink}
+            InputProps={{
+              readOnly: true,
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => {
+                      if (inviteLinkDialog.acceptLink && navigator.clipboard) {
+                        navigator.clipboard.writeText(inviteLinkDialog.acceptLink);
+                        showSnackbar('Link in Zwischenablage kopiert', 'success');
+                      }
+                    }}
+                    aria-label="Link kopieren"
+                  >
+                    <ContentCopy />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setInviteLinkDialog(prev => ({ ...prev, open: false }))}>
+            Schließen
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar */}
       <Snackbar

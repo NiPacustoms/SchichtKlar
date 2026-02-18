@@ -1,6 +1,5 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
-import { sendFormReminderEmails } from './formReminders';
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -11,7 +10,6 @@ export { getUserRole, getUsersWithRoles, setUserRole } from './auth';
 // User Triggers
 export { onUserCreated, onUserUpdated } from './userTriggers';
 
-// Audit Log Triggers
 export {
   onAssignmentCreated,
   onAssignmentUpdated,
@@ -24,7 +22,6 @@ export {
   onTimesheetUpdated,
 } from './auditLogTriggers';
 
-// Notification Triggers
 export {
   checkDocumentExpiry,
   onAssignmentStatusChanged,
@@ -32,21 +29,18 @@ export {
   onShiftAssigned,
 } from './notificationTriggers';
 
-// Timesheet Validation
 export { updateTimesheetValidation, validateTimesheet } from './timesheetValidation';
 
-// Document Expiry Check
+// documentExpiryCheck → codebase "scheduled" (noch im default, falls scheduled nur Form+KPI hat)
 export {
   checkDocumentExpiry as checkDocumentExpiryScheduled,
   checkSpecificDocumentTypes,
   manualDocumentExpiryCheck,
 } from './documentExpiryCheck';
 
-// Shift Notifications
 export { notifyShiftCreated, notifyShiftUpdated } from './shiftNotifications';
 
-// KPI Aggregations
-export { aggregateKPIs, dailyKPIAggregation } from './kpiAggregations';
+// KPI Aggregations → codebase "scheduled"
 
 // Admin Functions
 export { deleteAllAssignments } from './deleteAllAssignments';
@@ -63,8 +57,42 @@ export { submitTimesheet } from './submitTimesheet';
 export { protectApprovedTimesheets } from './protectTimesheet';
 export { onTimesheetWrite } from './weeklyLimitOnTimesheetWrite';
 
-// Email
-export { sendInvitationEmailCF } from './email';
+// Email – lazy load to avoid loading email/nodemailer at deploy (prevents backend discovery timeout)
+export const sendInvitationEmailCF = functions.https.onCall(async (data, context) => {
+  const { sendInvitationEmailHandler } = await import('./email');
+  return sendInvitationEmailHandler(data as Parameters<typeof sendInvitationEmailHandler>[0], context);
+});
+export const sendInvitationEmailHttp = functions.https.onRequest(async (req, res) => {
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+  const secret = process.env.INVITATION_EMAIL_SECRET;
+  const authHeader = req.headers.authorization;
+  const bearer = typeof authHeader === 'string' && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!secret || bearer !== secret) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  const body = req.body as { to?: string; acceptLink?: string; companyName?: string };
+  const { to, acceptLink } = body || {};
+  if (!to || !acceptLink) {
+    res.status(400).json({ error: 'Missing to or acceptLink' });
+    return;
+  }
+  try {
+    const { sendInvitationEmailInternal } = await import('./email');
+    const result = await sendInvitationEmailInternal({
+      to,
+      acceptLink,
+      companyName: body.companyName ?? '',
+    });
+    res.status(200).json({ success: result.success, fallback: result.fallback });
+  } catch (e) {
+    console.error('sendInvitationEmailHttp', e);
+    res.status(500).json({ error: 'Failed to send email' });
+  }
+});
 // DSGVO DSR Functions
 export { exportUserData } from './dsr/exportUserData';
 export { deleteUserData } from './dsr/deleteUserData';
@@ -75,20 +103,4 @@ export { cleanupApiMonitoring, manualCleanupApiMonitoring } from './apiMonitorin
 // API Monitoring Alerts
 export { checkApiLimitAlert, manualCheckApiLimitAlert } from './apiMonitoring/checkApiLimitAlert';
 
-export const scheduledFormReminders = functions.pubsub
-  .schedule('every 24 hours')
-  .timeZone('Europe/Berlin')
-  .onRun(async () => {
-    await sendFormReminderEmails();
-  });
-
-export const runFormReminders = functions.https.onRequest(async (_req, res) => {
-  try {
-    await sendFormReminderEmails();
-    res.status(200).json({ok: true});
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e);
-    res.status(500).json({ok: false, error: e instanceof Error ? e.message : 'unknown'});
-  }
-});
+// scheduledFormReminders + runFormReminders → deployed from codebase "scheduled" (functions-scheduled/)

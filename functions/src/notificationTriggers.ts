@@ -151,7 +151,7 @@ async function sendNotification({
     const userData = userDoc.data() as Record<string, unknown>;
     const companyId = typeof userData.companyId === 'string' ? userData.companyId : undefined;
     const email = typeof userData.email === 'string' ? userData.email : undefined;
-    const localeValue =
+    const rawLocale =
       (typeof (userData as Record<string, unknown>).preferredLocale === 'string'
         ? (userData as Record<string, string>).preferredLocale
         : undefined)
@@ -159,6 +159,8 @@ async function sendNotification({
         ? (userData as Record<string, string>).locale
         : undefined)
       || DEFAULT_LOCALE;
+    // Nur Deutsch: andere Locales werden auf de abgebildet (keine en-Templates mehr).
+    const localeValue = rawLocale === 'de' ? 'de' : DEFAULT_LOCALE;
 
     const settingsDoc = await db.collection('notificationSettings').doc(userId).get();
     const settingsData = settingsDoc.exists ? (settingsDoc.data() as Record<string, unknown>) : {};
@@ -484,7 +486,7 @@ export const onShiftFull = onDocumentUpdated('shifts/{shiftId}', async event => 
   if (after.assignedCount >= after.capacity && before.assignedCount < before.capacity) {
     try {
       // Alle Admins benachrichtigen
-      const adminsQuery = db.collection('users').where('role', 'in', ['admin', 'dispatcher']);
+      const adminsQuery = db.collection('users').where('role', '==', 'admin');
       const adminsSnapshot = await adminsQuery.get();
 
       const notifications = adminsSnapshot.docs.map(adminDoc =>

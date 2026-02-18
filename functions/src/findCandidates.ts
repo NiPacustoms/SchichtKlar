@@ -1,6 +1,5 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
-import { checkOverlap, parseShiftToUTC } from './utils/timeUtils';
 
 const db = admin.firestore();
 
@@ -9,6 +8,8 @@ const db = admin.firestore();
  * Filtert nach Qualifikationen, Verfügbarkeit und Erfahrung
  */
 export const findCandidates = functions.https.onCall(async (data, context) => {
+  const { checkOverlap, parseShiftToUTC } = await import('./utils/timeUtils');
+
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }
@@ -21,10 +22,10 @@ export const findCandidates = functions.https.onCall(async (data, context) => {
 
   // Rollenprüfung
   const userClaims = context.auth.token as { role?: string };
-  if (!['admin', 'dispatcher'].includes(userClaims.role || '')) {
+  if (userClaims.role !== 'admin') {
     throw new functions.https.HttpsError(
       'permission-denied',
-      'Only admins and dispatchers can search candidates'
+      'Only admins can search candidates'
     );
   }
 

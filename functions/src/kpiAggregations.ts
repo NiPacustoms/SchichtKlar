@@ -1,93 +1,75 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { getFirestore } from 'firebase-admin/firestore';
 
-const db = getFirestore();
+/** Lazy init to avoid getFirestore() at module load (reduces deploy timeout) */
+function getDb() {
+  return getFirestore();
+}
 
-// Scheduled function to run hourly
-export const aggregateKPIs = onSchedule(
-  {
-    schedule: '0 * * * *', // Every hour
-    timeZone: 'Europe/Berlin',
-    region: 'europe-west1',
-  },
-  async event => {
-    logger.info('Starting KPI aggregation...');
+/** Called by index.ts schedule (hourly). Exported for dynamic import. */
+export async function runAggregateKPIs(): Promise<void> {
+  logger.info('Starting KPI aggregation...');
 
-    try {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay());
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  try {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-      // Calculate various KPIs
-      const kpis = await calculateAllKPIs(today, startOfWeek, startOfMonth);
+    const kpis = await calculateAllKPIs(today, startOfWeek, startOfMonth);
 
-      // Store aggregated KPIs
-      await storeAggregatedKPIs(kpis, now);
+    await storeAggregatedKPIs(kpis, now);
 
-      // Create audit log
-      await createAuditLog({
-        action: 'kpi_aggregation',
-        userId: 'system',
-        resourceType: 'system',
-        description: 'KPI-Aggregation abgeschlossen',
-        metadata: {
-          timestamp: now.toISOString(),
-          kpis: Object.keys(kpis),
-        },
-      });
+    await createAuditLog({
+      action: 'kpi_aggregation',
+      userId: 'system',
+      resourceType: 'system',
+      description: 'KPI-Aggregation abgeschlossen',
+      metadata: {
+        timestamp: now.toISOString(),
+        kpis: Object.keys(kpis),
+      },
+    });
 
-      logger.info('KPI aggregation completed successfully');
-    } catch (error) {
-      logger.error('Error during KPI aggregation:', error);
+    logger.info('KPI aggregation completed successfully');
+  } catch (error) {
+    logger.error('Error during KPI aggregation:', error);
 
-      // Create error audit log
-      await createAuditLog({
-        action: 'kpi_aggregation_error',
-        userId: 'system',
-        resourceType: 'system',
-        description: `Fehler bei KPI-Aggregation: ${(error as Error).message}`,
-        error: (error as Error).message,
-      });
-    }
+    await createAuditLog({
+      action: 'kpi_aggregation_error',
+      userId: 'system',
+      resourceType: 'system',
+      description: `Fehler bei KPI-Aggregation: ${(error as Error).message}`,
+      error: (error as Error).message,
+    });
   }
-);
+}
 
-// Daily aggregation for more detailed metrics
-export const dailyKPIAggregation = onSchedule(
-  {
-    schedule: '0 1 * * *', // Daily at 1:00 AM
-    timeZone: 'Europe/Berlin',
-    region: 'europe-west1',
-  },
-  async event => {
-    logger.info('Starting daily KPI aggregation...');
+/** Called by index.ts schedule (daily). Exported for dynamic import. */
+export async function runDailyKPIAggregation(): Promise<void> {
+  logger.info('Starting daily KPI aggregation...');
 
-    try {
-      const now = new Date();
-      const yesterday = new Date(now);
-      yesterday.setDate(yesterday.getDate() - 1);
+  try {
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-      const startOfWeek = new Date(yesterday);
-      startOfWeek.setDate(yesterday.getDate() - yesterday.getDay());
+    const startOfWeek = new Date(yesterday);
+    startOfWeek.setDate(yesterday.getDate() - yesterday.getDay());
 
-      const startOfMonth = new Date(yesterday.getFullYear(), yesterday.getMonth(), 1);
+    const startOfMonth = new Date(yesterday.getFullYear(), yesterday.getMonth(), 1);
 
-      // Calculate daily KPIs
-      const dailyKPIs = await calculateDailyKPIs(yesterday, startOfWeek, startOfMonth);
+    const dailyKPIs = await calculateDailyKPIs(yesterday, startOfWeek, startOfMonth);
 
-      // Store daily KPIs
-      await storeDailyKPIs(dailyKPIs, yesterday);
+    await storeDailyKPIs(dailyKPIs, yesterday);
 
-      logger.info('Daily KPI aggregation completed successfully');
-    } catch (error) {
-      logger.error('Error during daily KPI aggregation:', error);
-    }
+    logger.info('Daily KPI aggregation completed successfully');
+  } catch (error) {
+    logger.error('Error during daily KPI aggregation:', error);
   }
-);
+}
 
 async function calculateAllKPIs(today: Date, startOfWeek: Date, startOfMonth: Date) {
   const kpis = {
@@ -162,16 +144,19 @@ async function calculateDailyKPIs(date: Date, startOfWeek: Date, startOfMonth: D
 
 // Shift-related functions
 async function countOpenShifts(): Promise<number> {
+  const db = getDb();
   const snapshot = await db.collection('shifts').where('status', '==', 'open').get();
   return snapshot.size;
 }
 
 async function countAssignedShifts(): Promise<number> {
+  const db = getDb();
   const snapshot = await db.collection('shifts').where('status', '==', 'assigned').get();
   return snapshot.size;
 }
 
 async function countCompletedShifts(date: Date): Promise<number> {
+  const db = getDb();
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date);
@@ -187,6 +172,7 @@ async function countCompletedShifts(date: Date): Promise<number> {
 }
 
 async function countCompletedShiftsInPeriod(startDate: Date, endDate: Date): Promise<number> {
+  const db = getDb();
   const snapshot = await db
     .collection('shifts')
     .where('status', '==', 'done')
@@ -198,6 +184,7 @@ async function countCompletedShiftsInPeriod(startDate: Date, endDate: Date): Pro
 
 // User-related functions
 async function countActiveNurses(): Promise<number> {
+  const db = getDb();
   const snapshot = await db
     .collection('users')
     .where('role', '==', 'nurse')
@@ -207,11 +194,13 @@ async function countActiveNurses(): Promise<number> {
 }
 
 async function countTotalNurses(): Promise<number> {
+  const db = getDb();
   const snapshot = await db.collection('users').where('role', '==', 'nurse').get();
   return snapshot.size;
 }
 
 async function countOnlineUsers(): Promise<number> {
+  const db = getDb();
   const fiveMinutesAgo = new Date();
   fiveMinutesAgo.setMinutes(fiveMinutesAgo.getMinutes() - 5);
 
@@ -223,6 +212,7 @@ async function countOnlineUsers(): Promise<number> {
 }
 
 async function countActiveUsersForDate(date: Date): Promise<number> {
+  const db = getDb();
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date);
@@ -246,6 +236,7 @@ async function countActiveUsersForDate(date: Date): Promise<number> {
 }
 
 async function countNewRegistrationsForDate(date: Date): Promise<number> {
+  const db = getDb();
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date);
@@ -261,6 +252,7 @@ async function countNewRegistrationsForDate(date: Date): Promise<number> {
 
 // Time-related functions
 async function calculateTotalHoursToday(date: Date): Promise<number> {
+  const db = getDb();
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date);
@@ -285,6 +277,7 @@ async function calculateTotalHoursToday(date: Date): Promise<number> {
 }
 
 async function calculateTotalHoursThisWeek(startOfWeek: Date): Promise<number> {
+  const db = getDb();
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
   endOfWeek.setHours(23, 59, 59, 999);
@@ -308,6 +301,7 @@ async function calculateTotalHoursThisWeek(startOfWeek: Date): Promise<number> {
 }
 
 async function calculateTotalHoursThisMonth(startOfMonth: Date): Promise<number> {
+  const db = getDb();
   const endOfMonth = new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 0);
   endOfMonth.setHours(23, 59, 59, 999);
 
@@ -334,6 +328,7 @@ async function calculateTotalHoursForDate(date: Date): Promise<number> {
 }
 
 async function calculateTotalHoursInPeriod(startDate: Date, endDate: Date): Promise<number> {
+  const db = getDb();
   const snapshot = await db
     .collection('timesheets')
     .where('startTime', '>=', startDate.toISOString())
@@ -354,6 +349,7 @@ async function calculateTotalHoursInPeriod(startDate: Date, endDate: Date): Prom
 
 // Document-related functions
 async function countDocumentsExpiringSoon(): Promise<number> {
+  const db = getDb();
   const thirtyDaysFromNow = new Date();
   thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
@@ -366,11 +362,13 @@ async function countDocumentsExpiringSoon(): Promise<number> {
 }
 
 async function countPendingDocumentVerifications(): Promise<number> {
+  const db = getDb();
   const snapshot = await db.collection('documents').where('verified', '==', false).get();
   return snapshot.size;
 }
 
 async function countDocumentsUploadedForDate(date: Date): Promise<number> {
+  const db = getDb();
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date);
@@ -385,6 +383,7 @@ async function countDocumentsUploadedForDate(date: Date): Promise<number> {
 }
 
 async function countDocumentsVerifiedForDate(date: Date): Promise<number> {
+  const db = getDb();
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date);
@@ -429,16 +428,19 @@ async function calculateRevenueInPeriod(startDate: Date, endDate: Date): Promise
 
 // System functions
 async function countTotalNotifications(): Promise<number> {
+  const db = getDb();
   const snapshot = await db.collection('notifications').get();
   return snapshot.size;
 }
 
 async function countUnreadNotifications(): Promise<number> {
+  const db = getDb();
   const snapshot = await db.collection('notifications').where('read', '==', false).get();
   return snapshot.size;
 }
 
 async function countSystemErrors(date: Date): Promise<number> {
+  const db = getDb();
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date);
@@ -467,6 +469,7 @@ async function calculateErrorRate(date: Date): Promise<number> {
 
 // Storage functions
 async function storeAggregatedKPIs(kpis: any, timestamp: Date) {
+  const db = getDb();
   try {
     await db.collection('kpiAggregations').add({
       ...kpis,
@@ -479,6 +482,7 @@ async function storeAggregatedKPIs(kpis: any, timestamp: Date) {
 }
 
 async function storeDailyKPIs(dailyKPIs: any, date: Date) {
+  const db = getDb();
   try {
     await db.collection('dailyKPIs').add({
       ...dailyKPIs,
@@ -490,6 +494,7 @@ async function storeDailyKPIs(dailyKPIs: any, date: Date) {
 }
 
 async function createAuditLog(logData: any) {
+  const db = getDb();
   try {
     await db.collection('auditLogs').add({
       ...logData,

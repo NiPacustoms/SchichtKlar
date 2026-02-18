@@ -30,7 +30,7 @@ export const useAuth = () => {
     email: string,
     password: string,
     displayName: string,
-    role: 'admin' | 'dispatcher' | 'nurse' = 'nurse'
+    role: 'admin' | 'nurse' = 'nurse'
   ) => {
     await AuthService.signUp(email, password, displayName, role);
   };

@@ -166,8 +166,6 @@ export const useDashboard = () => {
         })
         .reduce((sum, ts) => sum + (ts?.totalHours || 0), 0),
     monthHours: (recentTimesheets || []).reduce((sum, ts) => sum + (ts?.totalHours || 0), 0),
-    vacationDays: 0,
-    usedVacationDays: 0,
   };
 
   const isLoading =

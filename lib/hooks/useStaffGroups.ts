@@ -5,7 +5,7 @@ import { logger } from '@/lib/utils/logger';
 import { useAuth as useAuthReal } from '@/contexts/AuthContext';
 const useAuth = useAuthReal;
 
-// Mock types
+// Lokale Typen (Service noch nicht implementiert)
 interface StaffGroup {
   id: string;
   name: string;
@@ -65,7 +65,7 @@ const staffGroupService = {
   }
 };
 
-// Mock toast utility (verwendet Logger für bessere Performance)
+// Stub-Toast (verwendet Logger für bessere Performance)
 const toast = {
   success: (message: string) => logger.info('Success:', message),
   error: (message: string) => logger.error('Error:', message),

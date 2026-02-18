@@ -19,9 +19,6 @@ const DEFAULT_NOTIFICATION_SETTINGS = {
   systemAnnouncements: true,
 } as const;
 
-/** Legacy-Rolle aus Firestore (wird bei Lesen zu admin gemappt, nicht mehr anlegen). */
-const LEGACY_DISPATCHER_ROLE = 'dispatcher';
-
 function getFirestoreErrorCode(error: unknown): string | undefined {
   if (typeof error === 'object' && error !== null && 'code' in error) {
     return (error as { code?: string }).code;
@@ -101,12 +98,6 @@ export async function getOrCreateAuthUser(firebaseUser: FirebaseUser): Promise<U
 
   while (retries > 0) {
     try {
-      try {
-        await firebaseUser.getIdToken(true);
-      } catch {
-        // Token-Refresh ignorieren
-      }
-
       const docSnapshot = await getDoc(userDocRef);
       userDoc = docSnapshot;
 
@@ -189,13 +180,11 @@ export async function getOrCreateAuthUser(firebaseUser: FirebaseUser): Promise<U
   const userData = userDoc.data() as Record<string, unknown>;
   const rawRole = userData.role as string;
   const effectiveRole: User['role'] =
-    rawRole === LEGACY_DISPATCHER_ROLE
-      ? 'admin'
-      : rawRole === 'admin' || rawRole === 'nurse'
-        ? (rawRole as User['role'])
-        : 'nurse';
+    rawRole === 'admin' || rawRole === 'nurse'
+      ? (rawRole as User['role'])
+      : 'admin';
 
-  if (rawRole === LEGACY_DISPATCHER_ROLE || (effectiveRole !== rawRole && rawRole !== 'admin' && rawRole !== 'nurse')) {
+  if (effectiveRole !== rawRole) {
     try {
       await updateDoc(doc(getDb(), 'users', firebaseUser.uid), {
         role: effectiveRole,
@@ -245,21 +234,19 @@ export async function getOrCreateAuthUser(firebaseUser: FirebaseUser): Promise<U
 const ALLOWED_ROLES: Array<User['role']> = ['admin', 'nurse'];
 
 /**
- * Lädt den Auth-User inkl. Token-Claims (Rolle, companyId).
- * Sollte nach onAuthStateChanged aufgerufen werden.
- * @returns User oder null (z. B. bei permission-denied); Caller nutzt dann buildFallbackUser.
+ * Wendet Token-Claims (Rolle, companyId) auf ein bereits geladenes User-Dokument an.
+ * Für Login: erlaubt paralleles Session-Setzen und getOrCreateAuthUser, danach ein Aufruf.
  */
-export async function loadUserForAuth(firebaseUser: FirebaseUser): Promise<User | null> {
-  const user = await getOrCreateAuthUser(firebaseUser);
-  if (!user) return null;
-
+export async function applyClaimsToUser(
+  firebaseUser: FirebaseUser,
+  user: User
+): Promise<User> {
   let latestTokenResult: Awaited<ReturnType<FirebaseUser['getIdTokenResult']>> | null = null;
   try {
     latestTokenResult = await firebaseUser.getIdTokenResult(false);
     const expiryTime = latestTokenResult.expirationTime ? new Date(latestTokenResult.expirationTime).getTime() : null;
     const now = Date.now();
-    const needsRefresh = expiryTime ? expiryTime - now < 5 * 60 * 1000 : false;
-    if (needsRefresh) {
+    if (expiryTime && expiryTime - now < 5 * 60 * 1000) {
       await firebaseUser.getIdToken(true);
       latestTokenResult = await firebaseUser.getIdTokenResult(false);
     }
@@ -272,9 +259,7 @@ export async function loadUserForAuth(firebaseUser: FirebaseUser): Promise<User 
 
   let effectiveRole: User['role'] = user.role;
   const claimsRole = latestTokenResult?.claims?.role as string | undefined;
-  if (claimsRole === LEGACY_DISPATCHER_ROLE) {
-    effectiveRole = 'admin';
-  } else if (claimsRole && ALLOWED_ROLES.includes(claimsRole as User['role'])) {
+  if (claimsRole && ALLOWED_ROLES.includes(claimsRole as User['role'])) {
     effectiveRole = claimsRole as User['role'];
   } else if (!ALLOWED_ROLES.includes(user.role)) {
     effectiveRole = 'nurse';
@@ -290,7 +275,7 @@ export async function loadUserForAuth(firebaseUser: FirebaseUser): Promise<User 
 
   let companyId = user.companyId || SINGLE_COMPANY_ID;
   try {
-    let tokenResult = latestTokenResult ?? (await firebaseUser.getIdTokenResult());
+    let tokenResult = latestTokenResult ?? (await firebaseUser.getIdTokenResult(false));
     const hasCompanyClaim = Boolean(tokenResult.claims.companyId);
     const hasRoleClaim = Boolean(tokenResult.claims.role);
     if ((!hasCompanyClaim || !hasRoleClaim) && companyId) {
@@ -324,6 +309,17 @@ export async function loadUserForAuth(firebaseUser: FirebaseUser): Promise<User 
 }
 
 /**
+ * Lädt den Auth-User inkl. Token-Claims (Rolle, companyId).
+ * Sollte nach onAuthStateChanged aufgerufen werden.
+ * @returns User oder null (z. B. bei permission-denied); Caller nutzt dann buildFallbackUser.
+ */
+export async function loadUserForAuth(firebaseUser: FirebaseUser): Promise<User | null> {
+  const user = await getOrCreateAuthUser(firebaseUser);
+  if (!user) return null;
+  return applyClaimsToUser(firebaseUser, user);
+}
+
+/**
  * Aktualisiert Benutzerfelder (für self-service Profilbearbeitung).
  */
 export async function updateAuthUserProfile(uid: string, data: Partial<User>): Promise<void> {
@@ -338,6 +334,7 @@ export async function updateAuthUserProfile(uid: string, data: Partial<User>): P
 export const authUserService = {
   getOrCreateAuthUser,
   loadUserForAuth,
+  applyClaimsToUser,
   updateAuthUserProfile,
   buildFallbackUser,
 };

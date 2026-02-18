@@ -561,7 +561,7 @@ function AdminShiftsPageContent() {
   );
 }
 
-const AdminShiftsPage = (): JSX.Element => {
+function AdminShiftsPage() {
   // Ensure this only renders on client side
   if (typeof window === 'undefined') {
     return <LoadingSpinner message="Schichtverwaltung wird geladen..." />;
@@ -572,6 +572,6 @@ const AdminShiftsPage = (): JSX.Element => {
       <AdminShiftsPageContent />
     </Suspense>
   );
-};
+}
 
 export default AdminShiftsPage;

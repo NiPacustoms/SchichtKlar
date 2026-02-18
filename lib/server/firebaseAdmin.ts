@@ -82,10 +82,10 @@ export const adminDb = admin.apps.length ? admin.firestore() : null;
 export interface FirebaseAuthToken {
   uid: string;
   email?: string;
-  role?: 'admin' | 'dispatcher' | 'mitarbeiter';
+  role?: 'admin' | 'mitarbeiter';
   companyId?: string;
   customClaims?: {
-    role?: 'admin' | 'dispatcher' | 'mitarbeiter';
+    role?: 'admin' | 'mitarbeiter';
     companyId?: string;
   };
   [key: string]: unknown; // Für andere Firebase Token Properties
@@ -94,21 +94,10 @@ export interface FirebaseAuthToken {
 /**
  * Helper-Funktion zum Extrahieren der Role aus einem Firebase Auth Token
  */
-export function getRoleFromToken(token: admin.auth.DecodedIdToken | null): 'admin' | 'dispatcher' | 'mitarbeiter' | null {
+export function getRoleFromToken(token: admin.auth.DecodedIdToken | null): 'admin' | 'mitarbeiter' | null {
   if (!token) return null;
-  
-  // Prüfe zuerst direkt auf dem Token
-  const directRole = (token as FirebaseAuthToken).role;
-  if (directRole && ['admin', 'dispatcher', 'mitarbeiter'].includes(directRole)) {
-    return directRole;
-  }
-  
-  // Prüfe in customClaims
-  const customClaims = (token as FirebaseAuthToken).customClaims;
-  if (customClaims?.role && ['admin', 'dispatcher', 'mitarbeiter'].includes(customClaims.role)) {
-    return customClaims.role;
-  }
-  
+  const raw = (token as FirebaseAuthToken).role ?? (token as FirebaseAuthToken).customClaims?.role;
+  if (raw === 'admin' || raw === 'mitarbeiter') return raw;
   return null;
 }
 

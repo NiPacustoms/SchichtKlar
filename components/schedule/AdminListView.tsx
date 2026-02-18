@@ -482,6 +482,7 @@ export function AdminListView({
                       ))}
                       {shift.requiredQualifications && shift.requiredQualifications.length > 2 && (
                         <Chip
+                          key={`${shift.id}-more`}
                           label={`+${shift.requiredQualifications.length - 2}`}
                           size="small"
                           variant="outlined"

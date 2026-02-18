@@ -2,7 +2,7 @@ import React from 'react';
 import { CssBaseline, ThemeProvider as MUIThemeProvider } from '@mui/material';
 import { StyledEngineProvider } from '@mui/material/styles';
 import { createAppTheme } from '@/lib/theme';
-import { StorybookProviders } from './mockProviders';
+import { StorybookProviders } from './StorybookProviders';
 import '../app/globals.css';
 
 const theme = createAppTheme('light');

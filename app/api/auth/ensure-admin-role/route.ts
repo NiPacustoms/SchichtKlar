@@ -68,9 +68,19 @@ export async function POST(req: NextRequest) {
     const userDoc = await userRef.get();
 
     const existingData = userDoc.exists
-      ? (userDoc.data() as { companyId?: string; displayName?: string } | undefined)
+      ? (userDoc.data() as { companyId?: string; displayName?: string; role?: string } | undefined)
       : undefined;
     const companyId = existingData?.companyId || SINGLE_COMPANY_ID;
+    const currentFirestoreRole = existingData?.role;
+    const currentClaimsRole = (decoded as { role?: string }).role;
+
+    // Bereits Admin in Firestore und im Token → keine Änderung, kein Log
+    if (currentFirestoreRole === 'admin' && currentClaimsRole === 'admin') {
+      return NextResponse.json({
+        success: true,
+        message: 'Bereits Admin.',
+      });
+    }
 
     await userRef.set(
       {

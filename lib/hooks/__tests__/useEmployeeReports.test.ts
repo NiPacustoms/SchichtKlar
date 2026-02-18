@@ -63,8 +63,6 @@ vi.mock('@/lib/utils/logger', () => ({
   },
 }));
 
-// vacationDaysCalculation wird intern benutzt – wir wollen echtes Verhalten,
-// daher kein Mock, sondern echter Import
 import { useEmployeeReports } from '../useEmployeeReports';
 
 function createWrapper() {

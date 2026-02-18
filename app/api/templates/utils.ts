@@ -60,7 +60,7 @@ export async function getRequestContext(request: NextRequest): Promise<RequestCo
         : undefined;
 
   const role = claimRole || docRole;
-  if (!role || (role !== 'admin' && role !== 'dispatcher')) {
+  if (!role || role !== 'admin') {
     throw new Response(JSON.stringify({ message: 'Forbidden' }), { status: 403 });
   }
 

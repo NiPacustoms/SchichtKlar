@@ -261,7 +261,7 @@ export const useAdminDashboard = () => {
     }));
   }, [weeklyTimesheets]);
 
-  // Calculate staff activity (nur Aktiv/Verfügbar – keine Urlaub-/Abwesenheitspflege)
+  // Calculate staff activity (nur Aktiv/Verfügbar)
   const getStaffActivity = React.useCallback(() => {
     const activeUsers = allUsers.filter(u => u.active);
     const onDuty = activeUsers.filter(u => u.currentStatus === 'active').length;

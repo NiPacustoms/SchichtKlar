@@ -103,7 +103,7 @@ export default function PrivacyPage() {
               <Typography variant="body2">Name/Anzeigename</Typography>
             </li>
             <li>
-              <Typography variant="body2">Rolle (Admin, Dispatcher, Mitarbeiter)</Typography>
+              <Typography variant="body2">Rolle (Admin, Mitarbeiter)</Typography>
             </li>
             <li>
               <Typography variant="body2">Firmenzugehörigkeit (companyId)</Typography>

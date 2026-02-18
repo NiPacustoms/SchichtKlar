@@ -1,0 +1,17 @@
+{
+  "name": "functions-scheduled",
+  "scripts": {
+    "build": "tsc"
+  },
+  "engines": { "node": "20" },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^13.6.0",
+    "firebase-functions": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "typescript": "^5.0.0"
+  },
+  "private": true
+}

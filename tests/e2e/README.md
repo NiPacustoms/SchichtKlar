@@ -1,6 +1,6 @@
 # E2E-Tests für JobFlow
 
-Umfassende End-to-End-Tests mit Playwright, die alle drei Nutzertypen (admin, dispatcher, nurse) und ihre kritischen User Flows abdecken.
+Umfassende End-to-End-Tests mit Playwright, die Admin- und Mitarbeiter-Rollen (admin, nurse) und ihre kritischen User Flows abdecken.
 
 ## Setup
 
@@ -18,10 +18,6 @@ NEXT_PUBLIC_E2E_TEST=true
 # Admin-Account (Rolle: admin)
 E2E_ADMIN_EMAIL=admin@test.jobflow.local
 E2E_ADMIN_PASSWORD=test-admin-password
-
-# Dispatcher-Account (Rolle: dispatcher)
-E2E_DISPATCHER_EMAIL=dispatcher@test.jobflow.local
-E2E_DISPATCHER_PASSWORD=test-dispatcher-password
 
 # Mitarbeiter-Account (Rolle: nurse)
 E2E_EMPLOYEE_EMAIL=nurse@test.jobflow.local
@@ -43,16 +39,15 @@ tests/e2e/
 │   └── test-data.ts     # Test-Daten-Generatoren
 ├── admin/               # Admin-Tests
 │   ├── admin-dashboard.spec.ts
+│   ├── admin-schichten-dashboard.spec.ts
+│   ├── admin-dokumente-verwaltung.spec.ts
+│   ├── admin-shifts-zuweisung.spec.ts
 │   ├── mitarbeiter-verwaltung.spec.ts
 │   ├── einrichtungen-verwaltung.spec.ts
 │   ├── shifts-verwaltung.spec.ts
 │   ├── berichte-export.spec.ts
 │   ├── chat-system.spec.ts
 │   └── lohnabrechnung.spec.ts
-├── dispatcher/          # Dispatcher-Tests
-│   ├── dispatcher-dashboard.spec.ts
-│   ├── shifts-zuweisung.spec.ts
-│   └── dokumente-verwaltung.spec.ts
 ├── nurse/               # Nurse-Tests
 │   ├── nurse-dashboard.spec.ts
 │   ├── zeiterfassung.spec.ts
@@ -105,9 +100,6 @@ npm run test:e2e:headed
 # Nur Admin-Tests
 npm run test:e2e:admin
 
-# Nur Dispatcher-Tests
-npm run test:e2e:dispatcher
-
 # Nur Nurse-Tests
 npm run test:e2e:nurse
 
@@ -137,12 +129,6 @@ npm run test:e2e:codegen
 - Berichte & Export (PDF/Excel)
 - Chat-System
 - Lohnabrechnung
-
-### Dispatcher-Tests
-- Dashboard-Übersicht
-- Schicht-Zuweisung
-- Verfügbarkeitsprüfung
-- Dokumentenverwaltung
 
 ### Nurse-Tests
 - Dashboard-Übersicht

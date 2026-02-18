@@ -58,7 +58,7 @@ if (!admin.apps.length) {
 const auth = admin.auth();
 const db = admin.firestore();
 
-const allowedRoles = ['admin', 'dispatcher', 'nurse'];
+const allowedRoles = ['admin', 'nurse'];
 
 async function syncCustomClaims() {
   console.log('🔄 Synchronisiere Custom Claims für alle User...\n');

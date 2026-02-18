@@ -22,11 +22,11 @@ export const validateExportToken = functions.https.onCall(async (data, context) 
 
   // Admin-Prüfung
   const role = (context.auth.token as { role?: string }).role;
-  let isPrivileged = role === 'admin' || role === 'dispatcher';
+  let isPrivileged = role === 'admin';
   if (!isPrivileged) {
     const userDoc = await db.collection('users').doc(context.auth.uid).get();
     const r = userDoc.exists ? userDoc.get('role') : undefined;
-    isPrivileged = r === 'admin' || r === 'dispatcher';
+    isPrivileged = r === 'admin';
   }
   if (!isPrivileged) {
     throw new functions.https.HttpsError('permission-denied', 'Admin access required');

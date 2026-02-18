@@ -11,7 +11,7 @@ Nach Änderungen, die das Laufzeitverhalten des Next.js Dev-Servers betreffen, *
 
 - **next.config.js** / **next.config.mjs** (Rewrites, Redirects, Env, Webpack)
 - **.env**, **.env.local**, **.env.development** (Umgebungsvariablen)
-- **middleware.ts** / **middleware.js** (Pfade, Auth, Redirects)
+- **middleware.ts** / **middleware.js** (veraltet in Next.js 16) bzw. **proxy.ts** / **proxy.js** (Pfade, Auth, Redirects)
 - **app/api/** (neue oder geänderte API-Routen, damit sie registriert werden)
 - **pages/api/** (Pages-API-Routen)
 - Nach Hinweisen wie „bitte Dev-Server neu starten“ oder bei 404 auf API-Routen trotz existierender Route

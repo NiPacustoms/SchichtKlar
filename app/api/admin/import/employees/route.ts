@@ -59,11 +59,10 @@ function parseCsv(content: string): string[][] {
   return lines.map(l => parseCsvLine(l));
 }
 
-function normalizeRole(value: string): 'nurse' | 'admin' | 'dispatcher' | null {
+function normalizeRole(value: string): 'nurse' | 'admin' | null {
   const v = value.trim().toLowerCase();
   if (v === 'nurse' || v === 'mitarbeiter' || v === 'pflege') return 'nurse';
   if (v === 'admin' || v === 'administrator') return 'admin';
-  if (v === 'dispatcher' || v === 'disponent') return 'dispatcher';
   return null;
 }
 
@@ -95,7 +94,7 @@ export async function POST(req: NextRequest) {
     }
 
     const role = getRoleFromToken(decoded);
-    if (role !== 'admin' && role !== 'dispatcher') {
+    if (role !== 'admin') {
       return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
     }
 
@@ -198,7 +197,7 @@ export async function POST(req: NextRequest) {
       if (roleNorm === null && roleStr.trim() !== '') {
         errors.push({
           row: rowNum,
-          message: `Ungültige Rolle: ${roleStr} (erlaubt: Mitarbeiter, Admin, Disponent)`,
+          message: `Ungültige Rolle: ${roleStr} (erlaubt: Mitarbeiter, Admin)`,
         });
         continue;
       }

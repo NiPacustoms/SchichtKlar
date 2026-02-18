@@ -93,7 +93,6 @@ export function StaffImportDialog({ open, onClose, onImport }: StaffImportDialog
         const roleRaw = String((r as Record<string, unknown>).role || (r as Record<string, unknown>).rolle || (r as Record<string, unknown>).berufsbezeichnung || '').trim().toLowerCase();
         const roleMap: Record<string, typeof roleOptions[number]> = {
           nurse: 'nurse', krankenschwester: 'nurse', pflegekraft: 'nurse',
-          dispatcher: 'dispatcher', disponent: 'dispatcher',
           admin: 'admin', administrator: 'admin',
         };
         const role = roleMap[roleRaw] || 'nurse';

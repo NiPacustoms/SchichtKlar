@@ -7,7 +7,7 @@ const ContentSecurityPolicy = `
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   img-src 'self' data: blob: https://firebasestorage.googleapis.com https://lh3.googleusercontent.com;
   font-src 'self' https://fonts.gstatic.com;
-  connect-src 'self' https://firestore.googleapis.com https://firebase.googleapis.com https://firebasestorage.googleapis.com https://firebasedynamiclinks.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://fcmregistrations.googleapis.com https://fcm.googleapis.com https://www.google-analytics.com wss:;
+  connect-src 'self' https://firestore.googleapis.com https://firebase.googleapis.com https://firebasestorage.googleapis.com https://firebasedynamiclinks.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://fcmregistrations.googleapis.com https://fcm.googleapis.com https://*.cloudfunctions.net https://www.google-analytics.com wss:;
   media-src 'self' https://firebasestorage.googleapis.com;
   frame-ancestors 'none';
   base-uri 'self';
@@ -68,18 +68,13 @@ const nextConfig = {
 
   // Absolute minimale Konfiguration für Next.js 15/16 Stabilität
   transpilePackages: ['recharts'],
-  // Turbopack (Next 16): Projektroot setzen, damit "app" nicht fälschlich als Root erkannt wird
+  // Turbopack (Next 16): absoluter Projektroot, damit next/package.json gefunden wird
   turbopack: {
-    root: __dirname,
+    root: path.resolve(__dirname),
   },
-  // ESLint: in Next.js 16 nicht mehr in next.config.js – nutze next lint / eslint direkt
   // TypeScript-Fehler während Build prüfen
   typescript: {
     ignoreBuildErrors: false,
-  },
-  // ESLint: Build nutzt veraltete Optionen (useEslintrc/extensions). Lint läuft in CI via npm run lint:ci.
-  eslint: {
-    ignoreDuringBuilds: true,
   },
   // Image Optimization Konfiguration für Firebase Storage
   images: {
@@ -211,8 +206,32 @@ const nextConfig = {
     return config;
   },
   async redirects() {
-    // Keine englischen URLs – nur deutsche Routen (z. B. /anmelden, /employee/dienstplan)
-    return [];
+    // Englische URLs → deutsche kanonische Routen (keine englischen Routen mehr)
+    return [
+      { source: '/documents', destination: '/dokumente', permanent: true },
+      { source: '/facilities', destination: '/einrichtungen', permanent: true },
+      { source: '/profile', destination: '/profil', permanent: true },
+      { source: '/schedule', destination: '/admin/dienstplan', permanent: true },
+      { source: '/dashboard', destination: '/employee/arbeitsplatz', permanent: true },
+      { source: '/maintenance', destination: '/wartung', permanent: true },
+      { source: '/time', destination: '/employee/zeiten', permanent: true },
+      { source: '/login', destination: '/anmelden', permanent: true },
+      { source: '/register', destination: '/registrieren', permanent: true },
+      { source: '/forgot-password', destination: '/passwort-vergessen', permanent: true },
+      { source: '/admin-register', destination: '/admin-registrieren', permanent: true },
+      { source: '/admin/dashboard', destination: '/admin/schichten', permanent: true },
+      { source: '/admin/assignments', destination: '/admin/einsaetze', permanent: true },
+      { source: '/admin/shifts', destination: '/admin/schichten', permanent: true },
+      { source: '/admin/staff', destination: '/admin/mitarbeiter', permanent: true },
+      { source: '/admin/audit-logs', destination: '/admin/pruefprotokolle', permanent: true },
+      { source: '/legal/imprint', destination: '/recht/impressum', permanent: true },
+      { source: '/legal/privacy', destination: '/recht/datenschutz', permanent: true },
+      { source: '/status', destination: '/systemstatus', permanent: true },
+      { source: '/accept-invite', destination: '/einladung-annehmen', permanent: true },
+      { source: '/employee/dashboard', destination: '/employee/arbeitsplatz', permanent: true },
+      { source: '/employee/assignments', destination: '/employee/einsaetze', permanent: true },
+      { source: '/messenger', destination: '/employee/arbeitsplatz', permanent: true },
+    ];
   },
   async headers() {
     return [

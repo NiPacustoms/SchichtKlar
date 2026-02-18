@@ -88,7 +88,7 @@ export async function createAssignmentWithMatchingAction(
     const message = String(err.message ?? 'Cloud Function Fehler');
     if (err.status === 'unauthenticated') return { ok: false, error: 'Nicht angemeldet' };
     if (err.status === 'permission-denied')
-      return { ok: false, error: 'Nur Admins und Dispatcher dürfen Einsätze erstellen' };
+      return { ok: false, error: 'Nur Admins dürfen Einsätze erstellen' };
     if (err.status === 'invalid-argument') return { ok: false, error: message };
     return { ok: false, error: message };
   }

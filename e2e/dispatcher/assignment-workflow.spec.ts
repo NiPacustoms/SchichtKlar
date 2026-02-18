@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Critical Path: Dispatcher/Admin – Einsatz-Workflow (Einsätze verwalten, Status).
+ * Critical Path: Admin – Einsatz-Workflow (Einsätze verwalten, Status).
  * Ohne Auth: Redirect auf Login.
  */
-test.describe('Dispatcher Assignment Workflow', () => {
+test.describe('Admin Assignment Workflow', () => {
   test('unauthenticated user is redirected to login', async ({ page }) => {
     await page.goto('/admin/einsaetze', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/\/anmelden/, { timeout: 20000 });

@@ -808,7 +808,7 @@ export default function AdminSettingsPage() {
                               <Chip key={index} label={getPermissionLabel(permission)} size="small" />
                             ))}
                             {role.permissions.length > 3 && (
-                              <Chip label={`+${role.permissions.length - 3}`} size="small" />
+                              <Chip key={`${role.id}-more`} label={`+${role.permissions.length - 3}`} size="small" />
                             )}
                           </Box>
                         </TableCell>
@@ -1562,7 +1562,7 @@ export default function AdminSettingsPage() {
                 <TextField
                   fullWidth
                   label="Rollen-Name"
-                  placeholder="z.B. Disponent, Teamleiter, Personalplaner"
+                  placeholder="z.B. Teamleiter, Personalplaner"
                   value={roleFormName}
                   onChange={e => setRoleFormName(e.target.value)}
                 />

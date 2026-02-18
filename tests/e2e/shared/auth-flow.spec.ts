@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsAdmin, loginAsDispatcher, loginAsNurse, logout } from '../fixtures/auth';
+import { loginAsAdmin, loginAsNurse, logout } from '../fixtures/auth';
 
 test.describe('Authentication Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -12,13 +12,6 @@ test.describe('Authentication Flow', () => {
   test.describe('Login', () => {
     test('sollte mit gültigen Admin-Credentials einloggen', async ({ page }) => {
       await loginAsAdmin(page);
-      
-      // Verifiziere, dass wir auf der Admin-Seite sind
-      await expect(page).toHaveURL(/\/admin\//);
-    });
-
-    test('sollte mit gültigen Dispatcher-Credentials einloggen', async ({ page }) => {
-      await loginAsDispatcher(page);
       
       // Verifiziere, dass wir auf der Admin-Seite sind
       await expect(page).toHaveURL(/\/admin\//);
@@ -72,14 +65,6 @@ test.describe('Authentication Flow', () => {
   test.describe('Logout', () => {
     test('sollte als Admin ausloggen können', async ({ page }) => {
       await loginAsAdmin(page);
-      await logout(page);
-      
-      // Verifiziere, dass wir auf der Login-Seite sind
-      await expect(page).toHaveURL(/\/anmelden/);
-    });
-
-    test('sollte als Dispatcher ausloggen können', async ({ page }) => {
-      await loginAsDispatcher(page);
       await logout(page);
       
       // Verifiziere, dass wir auf der Login-Seite sind

@@ -10,11 +10,11 @@ test.describe('Admin Dashboard', () => {
   });
 
   test('sollte Admin-Dashboard laden', async ({ page }) => {
-    await page.goto('/admin/dashboard');
+    await page.goto('/admin/schichten');
     await page.waitForLoadState('networkidle');
     
-    // Verifiziere, dass wir auf dem Admin-Dashboard sind
-    await expect(page).toHaveURL(/\/admin\/dashboard/);
+    // Verifiziere, dass wir auf dem Admin-Dashboard sind (kanonische deutsche URL)
+    await expect(page).toHaveURL(/\/admin\/schichten/);
     
     // Prüfe, ob Dashboard-Elemente vorhanden sind
     const dashboardElements = [
@@ -31,7 +31,7 @@ test.describe('Admin Dashboard', () => {
   });
 
   test('sollte KPIs anzeigen', async ({ page }) => {
-    await page.goto('/admin/dashboard');
+    await page.goto('/admin/schichten');
     await page.waitForLoadState('networkidle');
     
     // Prüfe, ob KPI-Elemente vorhanden sind
@@ -50,7 +50,7 @@ test.describe('Admin Dashboard', () => {
   });
 
   test('sollte Quick Actions anzeigen', async ({ page }) => {
-    await page.goto('/admin/dashboard');
+    await page.goto('/admin/schichten');
     await page.waitForLoadState('networkidle');
     
     // Prüfe, ob Quick Actions vorhanden sind
@@ -68,7 +68,7 @@ test.describe('Admin Dashboard', () => {
   });
 
   test('sollte Alerts anzeigen', async ({ page }) => {
-    await page.goto('/admin/dashboard');
+    await page.goto('/admin/schichten');
     await page.waitForLoadState('networkidle');
     
     // Prüfe, ob Alerts-Panel vorhanden ist
@@ -87,7 +87,7 @@ test.describe('Admin Dashboard', () => {
   });
 
   test('sollte Navigation zu allen Admin-Bereichen ermöglichen', async ({ page }) => {
-    await page.goto('/admin/dashboard');
+    await page.goto('/admin/schichten');
     await page.waitForLoadState('networkidle');
     
     // Prüfe, ob Navigation zu verschiedenen Admin-Bereichen möglich ist

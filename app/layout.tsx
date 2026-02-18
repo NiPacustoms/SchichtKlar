@@ -67,12 +67,19 @@ export const viewport: Viewport = {
 // Verhindert statische Prerender-Fehler (webpack-runtime .call) bei "/"
 export const dynamic = 'force-dynamic';
 
-// Env-Werte für Inline-Scripts sicher escapen (verhindert SyntaxError bei Sonderzeichen in .env).
-// Backticks escapen, damit der Wert im gebündelten Template-Literal in layout.js kein "Invalid token" auslöst.
-const safeEnv = (key: string) => {
-  const raw = JSON.stringify(process.env[key] ?? '');
-  return raw.replace(/`/g, '\\`');
-};
+// Firebase-Config für Service Worker als JSON (wird ins data-Attribut geschrieben, nicht ins Script).
+// Verhindert "Invalid or unexpected token" durch Sonderzeichen in Env-Werten im gebündelten layout.js.
+const FIREBASE_CONFIG_JSON =
+  typeof process !== 'undefined' && process.env
+    ? JSON.stringify({
+        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? '',
+        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? '',
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? '',
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? '',
+        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? '',
+        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? '',
+      })
+    : '{}';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -117,14 +124,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     });
                   } else {
                     var initServiceWorkers = function() {
-                      var firebaseConfig = {
-                        apiKey: ${safeEnv('NEXT_PUBLIC_FIREBASE_API_KEY')},
-                        authDomain: ${safeEnv('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN')},
-                        projectId: ${safeEnv('NEXT_PUBLIC_FIREBASE_PROJECT_ID')},
-                        storageBucket: ${safeEnv('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET')},
-                        messagingSenderId: ${safeEnv('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID')},
-                        appId: ${safeEnv('NEXT_PUBLIC_FIREBASE_APP_ID')},
-                      };
+                      var raw = document.body ? document.body.getAttribute('data-firebase-config') : null;
+                      var firebaseConfig = {};
+                      try { if (raw) firebaseConfig = JSON.parse(raw); } catch (e) {}
                       var sendFirebaseConfig = function(registration) {
                         var sendConfig = function(target) {
                           if (target) {
@@ -304,7 +306,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className={`${inter.className} ${inter.variable}`} suppressHydrationWarning>
+      <body
+        className={`${inter.className} ${inter.variable}`}
+        data-e2e-test={process.env.NEXT_PUBLIC_E2E_TEST === 'true' ? 'true' : 'false'}
+        data-firebase-config={FIREBASE_CONFIG_JSON}
+        suppressHydrationWarning
+      >
         <EmotionRegistry>
           <GlobalErrorBoundary showDetails={process.env.NODE_ENV === 'development'}>
             <QueryProvider>
@@ -325,13 +332,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </GlobalErrorBoundary>
         </EmotionRegistry>
 
-        {/* E2E-Test-Flag als Runtime-Variable */}
+        {/* E2E-Test-Flag aus data-Attribut (keine Env-Injection ins Script) */}
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                if (typeof window !== 'undefined' && ${safeEnv('NEXT_PUBLIC_E2E_TEST')} === 'true') {
+                if (typeof document !== 'undefined' && document.body && document.body.getAttribute('data-e2e-test') === 'true') {
                   window.__E2E_TEST_MODE__ = true;
                   window.__JOBFLOW_E2E_TEST = true;
                 }

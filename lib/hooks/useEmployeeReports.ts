@@ -166,22 +166,7 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
     }),
     []
   );
-  const vacationReport = useMemo(
-    () => ({
-      data: [] as unknown[],
-      summary: {},
-      totalVacationDays: 0,
-      usedVacationDays: 0,
-      remainingVacationDays: 0,
-      averageVacationDaysPerMonth: 0,
-      vacationTrend: 0,
-      vacationByMonth: [] as unknown[],
-    }),
-    []
-  );
-
   const exportWorkTimeReport = async (_format: 'pdf' | 'excel') => { toast.info('Export wird vorbereitet'); };
-  const exportVacationReport = async (_format: 'pdf' | 'excel') => { toast.info('Export wird vorbereitet'); };
   const exportAllReports = async (_format: 'pdf' | 'excel') => { toast.info('Export wird vorbereitet'); };
 
   const refetch = () => { void refetchTimesheets(); queryClient.invalidateQueries({ queryKey: ['employeeTimeEntries'] }); };
@@ -234,7 +219,6 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
     timeEntries,
     user,
     workTimeReport,
-    vacationReport,
     // Loading states
     isLoading,
     loadingTimesheets,
@@ -246,7 +230,6 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
     exportTimeAccountReportPDF,
     exportTimeAccountReportExcel,
     exportWorkTimeReport,
-    exportVacationReport,
     exportAllReports,
     refetch,
     // Helper functions

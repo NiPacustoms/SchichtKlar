@@ -2,7 +2,8 @@
 
 /**
  * Normalisiert bestehende Benutzerrollen in Firestore.
- * Wandelt alle Eintraege mit ungueltiger Rolle (z.B. "user") in "nurse" um.
+ * - role "dispatcher" (entfernte Rolle) → "admin"
+ * - Alle anderen ungültigen Rollen (z.B. "user") → "nurse"
  */
 
 const fs = require('fs');
@@ -34,7 +35,7 @@ if (admin.apps.length === 0) {
 }
 
 const db = admin.firestore();
-const allowedRoles = new Set(['admin', 'dispatcher', 'nurse']);
+const allowedRoles = new Set(['admin', 'nurse']);
 
 (async () => {
   console.log('🔍 Scanne Firestore-Collection "users" nach ungültigen Rollen...');
@@ -53,8 +54,10 @@ const allowedRoles = new Set(['admin', 'dispatcher', 'nurse']);
     const role = data.role;
 
     if (!allowedRoles.has(role)) {
+      // Dispatcher-Rolle wurde entfernt → Admin-Rechte
+      const newRole = role === 'dispatcher' ? 'admin' : 'nurse';
       await doc.ref.update({
-        role: 'nurse',
+        role: newRole,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         migrationMeta: {
           previousRole: role || null,
@@ -63,7 +66,7 @@ const allowedRoles = new Set(['admin', 'dispatcher', 'nurse']);
         },
       });
       migrated += 1;
-      console.log(`✔︎ Rolle korrigiert für ${doc.id}: ${role} → nurse`);
+      console.log(`✔︎ Rolle korrigiert für ${doc.id}: ${role} → ${newRole}`);
     } else {
       alreadyCompliant += 1;
     }
@@ -72,6 +75,9 @@ const allowedRoles = new Set(['admin', 'dispatcher', 'nurse']);
   console.log('\n✅ Migration abgeschlossen.');
   console.log(`   Angepasste Benutzer: ${migrated}`);
   console.log(`   Bereits konforme Benutzer: ${alreadyCompliant}`);
+  if (migrated > 0) {
+    console.log('\n💡 Custom Claims aktualisieren: node scripts/sync-custom-claims.js --force');
+  }
   process.exit(0);
 })().catch(error => {
   console.error('❌ Migration fehlgeschlagen:', error);

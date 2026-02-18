@@ -75,7 +75,6 @@ export function useFeatureFlags() {
     assignments: isFeatureEnabled('enableEmployeeAssignments'),
     facilities: isFeatureEnabled('enableEmployeeFacilities'),
     notifications: isFeatureEnabled('enableEmployeeNotifications'),
-    vacation: isFeatureEnabled('enableEmployeeVacation'),
   };
 
   // Rollenbasierte Feature-Checks
@@ -89,7 +88,6 @@ export function useFeatureFlags() {
   const canAccessEmployeeAssignments = isEmployee && employeeFeatures.assignments;
   const canAccessEmployeeFacilities = isEmployee && employeeFeatures.facilities;
   const canAccessEmployeeNotifications = isEmployee && employeeFeatures.notifications;
-  const canAccessEmployeeVacation = isEmployee && employeeFeatures.vacation;
 
   return {
     // Feature-Objekte
@@ -112,7 +110,6 @@ export function useFeatureFlags() {
     canAccessEmployeeAssignments,
     canAccessEmployeeFacilities,
     canAccessEmployeeNotifications,
-    canAccessEmployeeVacation,
 
     // Loading & Error States
     isLoading,

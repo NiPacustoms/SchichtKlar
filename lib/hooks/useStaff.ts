@@ -49,7 +49,7 @@ export const useStaff = () => {
   } = useQuery({
     queryKey: ['users', 'staff', 'by-role'],
     queryFn: async () => {
-      const roles: User['role'][] = ['nurse', 'dispatcher', 'admin'];
+      const roles: User['role'][] = ['nurse', 'admin'];
       const results = await Promise.all(
         roles.map(role => userService.getByRole(role))
       );
@@ -128,7 +128,6 @@ export const useStaff = () => {
     active: staff.filter(user => user.active).length,
     inactive: staff.filter(user => !user.active).length,
     nurses: staff.filter(user => user.role === 'nurse').length,
-    dispatchers: staff.filter(user => user.role === 'dispatcher').length,
     admins: staff.filter(user => user.role === 'admin').length,
     byStatus: staffByStatus || {},
     byRole: staffByRole || {},

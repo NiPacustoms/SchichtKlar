@@ -49,14 +49,6 @@ vi.mock('@/lib/services/facilities', () => ({
   },
 }));
 
-const calculateUsedVacationDays = vi.fn().mockResolvedValue(5);
-const getTotalVacationDays = vi.fn().mockReturnValue(30);
-
-vi.mock('@/lib/utils/vacationDaysCalculation', () => ({
-  calculateUsedVacationDays: (...args: unknown[]) => calculateUsedVacationDays(...args),
-  getTotalVacationDays: (...args: unknown[]) => getTotalVacationDays(...args),
-}));
-
 const loggerError = vi.fn();
 
 vi.mock('@/lib/utils/logger', () => ({
@@ -82,8 +74,6 @@ describe('useDashboard', () => {
     addBreak.mockReset();
     getByIdShift.mockReset();
     getByIdFacility.mockReset();
-    calculateUsedVacationDays.mockReset();
-    getTotalVacationDays.mockReset();
     loggerError.mockReset();
   });
 
@@ -115,9 +105,6 @@ describe('useDashboard', () => {
         date: yesterday,
       },
     ]);
-
-    calculateUsedVacationDays.mockResolvedValue(10);
-    getTotalVacationDays.mockReturnValue(30);
 
     const { result } = renderHook(() => useDashboard(), {
       wrapper: createWrapper(),
@@ -160,9 +147,6 @@ describe('useDashboard', () => {
       name: 'Test-Einrichtung',
     });
 
-    calculateUsedVacationDays.mockResolvedValue(0);
-    getTotalVacationDays.mockReturnValue(0);
-
     const { result } = renderHook(() => useDashboard(), {
       wrapper: createWrapper(),
     });
@@ -184,8 +168,6 @@ describe('useDashboard', () => {
     getUpcomingAssignments.mockResolvedValue([]);
     getTodayTimesheet.mockResolvedValue(null);
     getRecentTimesheets.mockResolvedValue([]);
-    calculateUsedVacationDays.mockResolvedValue(0);
-    getTotalVacationDays.mockReturnValue(0);
 
     addBreak.mockResolvedValue({ id: 'break-1' });
 

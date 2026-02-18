@@ -10,11 +10,11 @@ test.describe('Nurse Dashboard', () => {
   });
 
   test('sollte Dashboard-Übersicht laden', async ({ page }) => {
-    await page.goto('/employee/dashboard');
+    await page.goto('/employee/arbeitsplatz');
     await page.waitForLoadState('networkidle');
     
-    // Verifiziere, dass wir auf dem Dashboard sind
-    await expect(page).toHaveURL(/\/employee\/dashboard/);
+    // Verifiziere, dass wir auf dem Dashboard sind (kanonische deutsche URL)
+    await expect(page).toHaveURL(/\/employee\/arbeitsplatz/);
     
     // Prüfe, ob Dashboard-Elemente vorhanden sind
     const dashboardElements = [
@@ -31,7 +31,7 @@ test.describe('Nurse Dashboard', () => {
   });
 
   test('sollte KPIs anzeigen', async ({ page }) => {
-    await page.goto('/employee/dashboard');
+    await page.goto('/employee/arbeitsplatz');
     await page.waitForLoadState('networkidle');
     
     // Prüfe, ob KPI-Elemente vorhanden sind (können in verschiedenen Formaten sein)
@@ -48,7 +48,7 @@ test.describe('Nurse Dashboard', () => {
   });
 
   test('sollte Navigation zu anderen Seiten ermöglichen', async ({ page }) => {
-    await page.goto('/employee/dashboard');
+    await page.goto('/employee/arbeitsplatz');
     await page.waitForLoadState('networkidle');
     
     // Prüfe, ob Navigation-Elemente vorhanden sind
@@ -67,7 +67,7 @@ test.describe('Nurse Dashboard', () => {
   });
 
   test('sollte heutige Assignments anzeigen', async ({ page }) => {
-    await page.goto('/employee/dashboard');
+    await page.goto('/employee/arbeitsplatz');
     await page.waitForLoadState('networkidle');
     
     // Prüfe, ob Assignment-Informationen angezeigt werden

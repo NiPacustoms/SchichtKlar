@@ -14,7 +14,7 @@ Nach Änderungen an Konfiguration oder deploybaren Dateien **den zugehörigen Be
 | **firestore.rules** | `firebase deploy --only firestore:rules` |
 | **storage.rules** (falls vorhanden) | `firebase deploy --only storage` |
 | **.env**, **.env.local**, **.env.development** | Siehe Rule 09 – Dev-Server neu starten (nutzer darauf hinweisen oder `npm run dev:kill` + `npm run dev` anbieten) |
-| **middleware.ts**, **next.config.***, **app/api/** (neue Route) | Siehe Rule 09 – Dev-Server neu starten |
+| **middleware.ts** / **proxy.ts**, **next.config.***, **app/api/** (neue Route) | Siehe Rule 09 – Dev-Server neu starten |
 
 ## Vorgehen
 

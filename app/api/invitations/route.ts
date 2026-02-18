@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invitationService } from '@/lib/services/invitations';
-import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
-import { companyService } from '@/lib/services/companies';
+import { adminDb } from '@/lib/server/firebaseAdmin';
 import { isAdmin } from '@/lib/utils/authz';
+import { sendInvitationEmailServer } from '@/lib/server/email';
 import {
   createValidationErrorResponse,
   createNotFoundErrorResponse,
@@ -11,59 +9,138 @@ import {
   createErrorResponse,
 } from '@/lib/errors/apiErrorResponse';
 import { createAppError, ErrorCode } from '@/lib/errors/ErrorTypes';
+import { FieldValue } from 'firebase-admin/firestore';
+import { logger } from '@/lib/logging';
 
 export const runtime = 'nodejs';
 
 const ROUTE = '/api/invitations';
 
+function generateToken(length = 48): string {
+  const bytes = new Uint8Array(length);
+  if (typeof crypto !== 'undefined' && 'getRandomValues' in crypto) {
+    crypto.getRandomValues(bytes);
+  } else {
+    const nodeCrypto = require('node:crypto');
+    nodeCrypto.randomFillSync(bytes);
+  }
+  let binary = '';
+  bytes.forEach(b => (binary += String.fromCharCode(b)));
+  return Buffer.from(binary, 'binary').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 // POST /api/invitations
 // Body: { adminUid: string, email: string }
+// Nutzt Firebase Admin (adminDb), da die Route serverseitig läuft.
 export async function POST(req: NextRequest) {
+  let body: { adminUid?: string; email?: string } | null = null;
   try {
-    const body = await req.json();
-    const { adminUid, email } = body || {};
-    if (!adminUid || !email) {
-      return createValidationErrorResponse('adminUid und email erforderlich.', ErrorCode.VALIDATION_REQUIRED_FIELD, ROUTE);
+    body = await req.json();
+  } catch {
+    return createValidationErrorResponse(
+      'Ungültiger Request-Body (JSON erwartet).',
+      ErrorCode.VALIDATION_INVALID_FORMAT,
+      ROUTE
+    );
+  }
+  const { adminUid, email } = body || {};
+  if (!adminUid || !email) {
+    return createValidationErrorResponse('adminUid und email erforderlich.', ErrorCode.VALIDATION_REQUIRED_FIELD, ROUTE);
+  }
+
+  try {
+    if (!adminDb) {
+      return createErrorResponse(
+        createAppError(new Error('Firebase Admin nicht konfiguriert.'), ErrorCode.INTERNAL_ERROR, { route: ROUTE })
+      );
     }
 
-    if (!db) throw new Error('Firestore not initialized');
-    const adminDoc = await getDoc(doc(db, 'users', adminUid));
-    if (!adminDoc.exists())
+    const adminSnap = await adminDb.collection('users').doc(adminUid).get();
+    if (!adminSnap.exists)
       return createNotFoundErrorResponse('Admin nicht gefunden.', ROUTE);
-    const admin = adminDoc.data();
+    const admin = adminSnap.data();
     if (!isAdmin(admin))
       return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
-    let companyId = admin.companyId as string | undefined;
+
+    let companyId = admin?.companyId as string | undefined;
     if (!companyId) {
-      // Auto-Anlage einer Company und Verknüpfung mit dem Admin
-      const companyName = admin.companyName || admin.displayName || 'Meine Firma';
-      const newCompany = await companyService.create(companyName, adminUid);
-      companyId = newCompany.id;
-      await updateDoc(doc(db, 'users', adminUid), { companyId });
+      const companyName = (admin?.companyName || admin?.displayName || 'Meine Firma') as string;
+      const companyRef = await adminDb.collection('companies').add({
+        name: companyName,
+        createdByUserId: adminUid,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      companyId = companyRef.id;
+      await adminDb.collection('users').doc(adminUid).update({ companyId });
     }
 
-    const invitation = await invitationService.create(companyId, email, adminUid);
+    const emailTrim = String(email).trim().toLowerCase();
+    const invitationsSnap = await adminDb
+      .collection('invitations')
+      .where('companyId', '==', companyId)
+      .where('email', '==', emailTrim)
+      .get();
+    let invitationId: string;
+    let token: string;
+    let expiresAt: Date;
 
-    // Optional: Firmenname laden für E-Mail
-    const companyDoc = await getDoc(doc(db, 'companies', companyId));
-    const companyName = companyDoc.exists() ? companyDoc.data()?.name : 'Ihre Firma';
+    const existing = invitationsSnap.docs.find(d => !d.data().acceptedAt);
+    if (existing) {
+      const d = existing.data();
+      invitationId = existing.id;
+      token = d.token as string;
+      expiresAt = (d.expiresAt as { toDate?: () => Date })?.toDate?.() ?? new Date(Date.now() + 24 * 60 * 60 * 1000);
+    } else {
+      token = generateToken(48);
+      expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const invRef = await adminDb.collection('invitations').add({
+        companyId,
+        email: emailTrim,
+        token,
+        expiresAt,
+        acceptedAt: null,
+        createdByUserId: adminUid,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      invitationId = invRef.id;
+    }
+
+    const companySnap = await adminDb.collection('companies').doc(companyId).get();
+    const companyName = companySnap.exists && companySnap.data()?.name
+      ? String(companySnap.data()!.name)
+      : 'Ihre Firma';
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const acceptLink = `${baseUrl}/accept-invite?token=${encodeURIComponent(invitation.token)}`;
-    // Hinweis: Versand der E-Mail erfolgt über Firebase Auth (Magic Link) clientseitig
+    const acceptLink = `${baseUrl}/einladung-annehmen?token=${encodeURIComponent(token)}`;
+
+    let emailSent = false;
+    try {
+      const result = await sendInvitationEmailServer({ to: emailTrim, companyName, acceptLink });
+      emailSent = result.sent;
+    } catch {
+      emailSent = false;
+    }
 
     return NextResponse.json(
       {
-        invitationId: invitation.id,
-        token: invitation.token,
-        expiresAt: invitation.expiresAt?.toISOString?.() || invitation.expiresAt,
+        invitationId,
+        token,
+        expiresAt: expiresAt.toISOString(),
         acceptLink,
         companyName,
+        emailSent,
       },
       { status: 201 }
     );
   } catch (e: unknown) {
-    const appError = createAppError(e instanceof Error ? e : new Error('Internal error'), ErrorCode.INTERNAL_ERROR, { route: ROUTE });
+    const err = e instanceof Error ? e : new Error(String(e));
+    logger.error('[API] POST /api/invitations failed', err, { route: ROUTE, adminUid, email });
+    const msg = err.message || '';
+    if (msg.includes('index') && (msg.includes('required') || msg.includes('CREATE INDEX'))) {
+      const appError = createAppError(err, ErrorCode.FIREBASE_MISSING_INDEX, { route: ROUTE });
+      return createErrorResponse(appError);
+    }
+    const appError = createAppError(err, ErrorCode.INTERNAL_ERROR, { route: ROUTE });
     return createErrorResponse(appError);
   }
 }
@@ -75,17 +152,20 @@ export async function GET(req: NextRequest) {
     const adminUid = searchParams.get('adminUid');
     if (!adminUid) return createValidationErrorResponse('adminUid erforderlich.', ErrorCode.VALIDATION_REQUIRED_FIELD, ROUTE);
 
-    if (!db) throw new Error('Firestore not initialized');
-    const adminDoc = await getDoc(doc(db, 'users', adminUid));
-    if (!adminDoc.exists())
+    if (!adminDb) {
+      return createErrorResponse(
+        createAppError(new Error('Firebase Admin nicht konfiguriert.'), ErrorCode.INTERNAL_ERROR, { route: ROUTE })
+      );
+    }
+    const adminSnap = await adminDb.collection('users').doc(adminUid).get();
+    if (!adminSnap.exists)
       return createNotFoundErrorResponse('Admin nicht gefunden.', ROUTE);
-    const admin = adminDoc.data();
+    const admin = adminSnap.data();
     if (!isAdmin(admin)) return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
-    const companyId = admin.companyId as string | undefined;
+    const companyId = admin?.companyId as string | undefined;
     if (!companyId) return NextResponse.json({ data: [], total: 0 }, { status: 200 });
 
-    const q = query(collection(db, 'invitations'), where('companyId', '==', companyId));
-    const snap = await getDocs(q);
+    const snap = await adminDb.collection('invitations').where('companyId', '==', companyId).get();
     const data = snap.docs.map(d => {
       const x = d.data() as Record<string, unknown>;
       return {

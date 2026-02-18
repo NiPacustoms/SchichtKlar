@@ -17,12 +17,12 @@ export const requestExportToken = functions.https.onCall(async (_data, context) 
 
   // Admin-Prüfung via Custom Claim oder users-Collection
   const role = (context.auth.token as { role?: string }).role;
-  let isPrivileged = role === 'admin' || role === 'dispatcher';
+  let isPrivileged = role === 'admin';
   if (!isPrivileged) {
     // Fallback: Prüfe users-Collection
     const userDoc = await db.collection('users').doc(context.auth.uid).get();
     const r = userDoc.exists ? userDoc.get('role') : undefined;
-    isPrivileged = r === 'admin' || r === 'dispatcher';
+    isPrivileged = r === 'admin';
   }
   if (!isPrivileged) {
     throw new functions.https.HttpsError('permission-denied', 'Admin access required');

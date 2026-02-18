@@ -1,6 +1,7 @@
 // No React usage required here; simple function hooks returning identity mappers
+// App ist nur auf Deutsch lokalisiert (keine en-Locale).
 
-// Mock implementations for missing next-intl
+// Fallback implementations for missing next-intl
 export const useCommonTranslations = () => (key: string) => key;
 export const useAuthTranslations = () => (key: string) => key;
 export const useDashboardTranslations = () => (key: string) => key;

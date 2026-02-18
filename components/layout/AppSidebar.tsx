@@ -129,7 +129,7 @@ export function AppSidebar() {
   const featureFlags = useFeatureFlags();
 
   const isNurse = user?.role === 'nurse';
-  const _isAdmin = user?.role === 'admin' || user?.role === 'dispatcher';
+  const _isAdmin = user?.role === 'admin';
 
   const mainItems = isNurse ? nurseMainItems : adminMainItems;
   const moreItems = filterByFeatureFlags(

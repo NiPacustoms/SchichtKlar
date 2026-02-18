@@ -10,7 +10,7 @@ export interface TimeEntry {
   userId: string;
   assignmentId?: string; // Pflichtfeld für work/break, optional für sick
   date: Date;
-  type: 'work' | 'break' | 'sick' | 'vacation';
+  type: 'work' | 'break' | 'sick';
   startTime?: string;
   endTime?: string;
   hours: number;

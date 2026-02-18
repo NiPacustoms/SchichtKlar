@@ -317,7 +317,7 @@ export const shiftAssignmentHelpers = {
       return result.data as { success: boolean; deletedCount: number; message: string };
     } catch (error: unknown) {
       if ((error as { code?: string }).code === 'functions/permission-denied') {
-        throw new Error('Keine Berechtigung: Nur Admins und Dispatcher können alle Assignments löschen');
+        throw new Error('Keine Berechtigung: Nur Admins können alle Assignments löschen');
       }
       throw new Error((error as { message?: string }).message || 'Fehler beim Löschen der Assignments');
     }

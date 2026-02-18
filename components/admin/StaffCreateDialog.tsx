@@ -54,7 +54,6 @@ const DEFAULT_JOB_TITLE_OPTIONS = [
   'Pflegefachkraft',
   'Stationsleitung',
   'Praxisanleiter',
-  'Disponent',
   'Pflegeassistenz',
 ];
 

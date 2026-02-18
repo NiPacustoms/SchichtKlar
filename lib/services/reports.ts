@@ -676,12 +676,6 @@ export const reportService = {
     }
   },
 
-  async generateVacationReport(_filters: { period?: string; userId?: string }): Promise<unknown[]> {
-    // Geplant: Urlaubs-/Abwesenheitsdaten aus Firestore oder eigenem Modul. Aktuell leer.
-    logger.warn('generateVacationReport not yet implemented');
-    return [];
-  },
-
   async generateEmployeeStatistics(filters: { period?: string; startDate?: Date; endDate?: Date }): Promise<EmployeeStatistics[]> {
     try {
       const endDate = filters.endDate || new Date();
@@ -787,14 +781,6 @@ export const reportService = {
 
   async exportSurchargeReport(data: { reportId: string }, _filters: unknown): Promise<string> {
     return this.exportReport(data.reportId, 'csv');
-  },
-
-  async exportVacationReportPDF(data: { reportId: string }, _filters: unknown): Promise<string> {
-    return this.exportReport(data.reportId, 'pdf');
-  },
-
-  async exportVacationReportExcel(data: { reportId: string }, _filters: unknown): Promise<string> {
-    return this.exportReport(data.reportId, 'excel');
   },
 
   async exportEmployeeStatistics(data: { reportId: string }, _filters: unknown): Promise<string> {

@@ -86,6 +86,11 @@ class AuthService {
   /** Setzt __session-Cookie für Middleware (Zugriff auf /admin und /employee). Wirft bei Fehler, damit kein Redirect ohne Cookie erfolgt. */
   static async setSessionCookie(firebaseUser: User): Promise<void> {
     const token = await firebaseUser.getIdToken();
+    return this.setSessionCookieWithToken(token);
+  }
+
+  /** Setzt Session-Cookie mit bereits geholtem Token (für parallelen Ablauf beim Login). */
+  static async setSessionCookieWithToken(token: string): Promise<void> {
     const res = await fetch('/api/auth/session', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },

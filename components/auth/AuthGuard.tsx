@@ -121,10 +121,8 @@ export function AuthGuard({ children, requireAdmin = false }: AuthGuardProps) {
             });
 
             if (response.ok) {
-              // Token erneut aktualisieren, um neue Claims zu laden
               await firebaseUser.getIdToken(true);
-              // Seite neu laden, um sicherzustellen, dass alles aktualisiert ist
-              window.location.reload();
+              setIsSyncingClaims(false);
             } else {
               setIsSyncingClaims(false);
             }

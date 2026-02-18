@@ -62,11 +62,10 @@ export async function POST(req: NextRequest) {
       return createAuthErrorResponse('UNAUTHENTICATED', ROUTE);
     }
 
-    const sessionCookie = await adminAuth.createSessionCookie(idToken, {
-      expiresIn: SESSION_MAX_AGE_MS,
-    });
-
-    const routeRole: RouteRole = await resolveRouteRole(decoded.uid);
+    const [sessionCookie, routeRole] = await Promise.all([
+      adminAuth.createSessionCookie(idToken, { expiresIn: SESSION_MAX_AGE_MS }),
+      resolveRouteRole(decoded.uid),
+    ]);
 
     const res = NextResponse.json({ success: true });
     const cookieOpts = {

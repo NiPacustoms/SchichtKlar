@@ -1,6 +1,5 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
-import { checkOverlap, parseShiftToUTC } from './utils/timeUtils';
 
 const db = admin.firestore();
 
@@ -55,9 +54,11 @@ function normalizeFirestoreDate(value: unknown): Date | null {
 
 /**
  * Cloud Function für sichere Schichtzuweisung mit vollständiger Validierung
- * Nur Admins/Dispatchers können diese Function aufrufen
+ * Nur Admins können diese Function aufrufen
  */
 export const assignShift = functions.https.onCall(async (data, context) => {
+  const { checkOverlap, parseShiftToUTC } = await import('./utils/timeUtils');
+
   // Authentifizierung prüfen
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -83,10 +84,10 @@ export const assignShift = functions.https.onCall(async (data, context) => {
 
   // Rollenprüfung
   const userClaims = context.auth.token as { role?: string };
-  if (!['admin', 'dispatcher'].includes(userClaims.role || '')) {
+  if (userClaims.role !== 'admin') {
     throw new functions.https.HttpsError(
       'permission-denied',
-      'Only admins and dispatchers can assign shifts'
+      'Only admins can assign shifts'
     );
   }
 

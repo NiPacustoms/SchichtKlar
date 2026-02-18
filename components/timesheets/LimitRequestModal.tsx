@@ -24,7 +24,7 @@ const MAX_HOURS = 80;
 
 const schema = z.object({
   requestedLimit: z
-    .number({ invalid_type_error: 'Zahl zwischen 20 und 80 eingeben' })
+    .number({ message: 'Zahl zwischen 20 und 80 eingeben' })
     .min(MIN_HOURS, `Mindestens ${MIN_HOURS}h`)
     .max(MAX_HOURS, `Maximal ${MAX_HOURS}h`),
   reason: z.string().max(500).optional(),
@@ -77,7 +77,7 @@ export function LimitRequestModal({ open, onClose, limit, mitarbeiterId, onSucce
       <DialogContent>
         {pending ? (
           <Typography color="text.secondary">
-            Sie haben bereits einen offenen Antrag. Bitte warten Sie auf die Bearbeitung durch den Disponenten.
+            Sie haben bereits einen offenen Antrag. Bitte warten Sie auf die Bearbeitung durch den Admin.
           </Typography>
         ) : (
           <>

@@ -19,7 +19,7 @@ export const categoriesService = {
         roles: ['nurse', 'admin'],
         groups: ['Intensivstation', 'Operationssaal', 'Geriatrie', 'Pädiatrie'],
         qualifications: ['Krankenpfleger', 'Intensivpflege', 'OP-Pflege', 'Geriatrie'],
-        jobTitles: ['Pflegefachkraft', 'Stationsleitung', 'Praxisanleiter', 'Disponent', 'Pflegeassistenz'],
+        jobTitles: ['Pflegefachkraft', 'Stationsleitung', 'Praxisanleiter', 'Pflegeassistenz'],
         updatedAt: new Date(),
       };
       return defaults;
@@ -31,7 +31,7 @@ export const categoriesService = {
         roles: ['nurse', 'admin'],
         groups: ['Intensivstation', 'Operationssaal', 'Geriatrie', 'Pädiatrie'],
         qualifications: ['Krankenpfleger', 'Intensivpflege', 'OP-Pflege', 'Geriatrie'],
-        jobTitles: ['Pflegefachkraft', 'Stationsleitung', 'Praxisanleiter', 'Disponent', 'Pflegeassistenz'],
+        jobTitles: ['Pflegefachkraft', 'Stationsleitung', 'Praxisanleiter', 'Pflegeassistenz'],
         updatedAt: new Date(),
       };
       await setDoc(ref, {

@@ -25,7 +25,7 @@ export interface TimeEntry {
   companyId?: string; // Mandantenzugehörigkeit für vollständige Isolation
   assignmentId?: string; // Pflichtfeld für work/break, optional für krankheitsbedingte Einträge
   date: Date;
-  type: 'work' | 'break' | 'sick' | 'vacation';
+  type: 'work' | 'break' | 'sick';
   startTime?: string;
   endTime?: string;
   hours: number;
@@ -852,22 +852,5 @@ export const timesService = {
     } catch (error) {
       throw error;
     }
-  },
-
-  /** Stub: Ausstehende Urlaubsanträge (für Admin-Seite). Noch nicht implementiert. */
-  async getPendingVacationRequests(): Promise<TimeEntry[]> {
-    return [];
-  },
-
-  /** Stub: Urlaubsantrag genehmigen/ablehnen. Noch nicht implementiert. */
-  async approveRejectVacation(
-    _id: string,
-    _status: 'approved' | 'rejected',
-    _adminUserId: string,
-    _adminName: string,
-    _signatureUrl?: string,
-    _reason?: string
-  ): Promise<void> {
-    throw new Error('approveRejectVacation ist noch nicht implementiert');
   },
 };

@@ -279,9 +279,7 @@ export default function StaffSimplePage() {
                         >
                           {member.role === 'nurse'
                             ? 'Pflegekraft'
-                            : member.role === 'admin' || !!member.customRoleId
-                              ? 'Administrator'
-                              : 'Disponent'}
+                            : 'Administrator'}
                         </Typography>
                       </Box>
                     </Box>

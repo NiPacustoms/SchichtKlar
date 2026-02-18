@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     if (!decoded || !adminDb) return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
 
     const role = getRoleFromToken(decoded);
-    if (role !== 'admin' && role !== 'dispatcher')
+    if (role !== 'admin')
       return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
 
     let companyId = getCompanyIdFromToken(decoded) ?? '';
