@@ -40,7 +40,10 @@
   ],
   "exclude": [
     "node_modules",
+    "functions",
     "functions/**",
+    "functions-scheduled",
+    "functions-scheduled/**",
     "**/__tests__/**",
     "**/*.test.ts",
     "**/*.test.tsx",
