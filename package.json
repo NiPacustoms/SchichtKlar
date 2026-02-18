@@ -19,7 +19,7 @@
     "deps:reinstall": "rm -rf node_modules package-lock.json && npm install",
     "deps:fix-enotempty": "node scripts/remove-npm-temp-dirs.js && npm install",
     "deps:clean": "bash scripts/clean-node-modules.sh",
-    "build": "next build",
+    "build": "next build && node scripts/ensure-export-marker.js",
     "deploy": "npm run build && firebase deploy",
     "deploy:hosting": "npm run build && firebase deploy --only hosting",
     "start": "next start",

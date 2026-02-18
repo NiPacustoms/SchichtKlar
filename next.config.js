@@ -144,6 +144,27 @@ const nextConfig = {
       }
     }
     
+    // Firebase Hosting: .next/export-marker.json anlegen, falls Next.js 15 (App Router) sie nicht erzeugt.
+    // firebase-tools liest sie in usesNextImage(); fehlt sie, kommt ENOENT.
+    if (!dev && isServer) {
+      const fs = require('fs');
+      config.plugins.push({
+        apply: (compiler) => {
+          compiler.hooks.afterEmit.tap('EnsureExportMarkerPlugin', () => {
+            const markerPath = path.join(__dirname, '.next', 'export-marker.json');
+            if (fs.existsSync(markerPath)) return;
+            try {
+              const dir = path.dirname(markerPath);
+              if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+              fs.writeFileSync(markerPath, JSON.stringify({ isNextImageImported: false }, null, 2), 'utf8');
+            } catch (e) {
+              // ignorieren
+            }
+          });
+        },
+      });
+    }
+
     // Fix für fehlende server-reference-manifest.json Dateien
     if (dev && isServer) {
       const fs = require('fs');
