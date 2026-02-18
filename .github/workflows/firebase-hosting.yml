@@ -137,6 +137,17 @@ jobs:
           echo "⚠️  Attempting to setup cleanup policy..."
           firebase functions:artifacts:setpolicy --project jobflow25 --location europe-west1 2>&1 || echo "⚠️  Cleanup policy setup failed (will continue with --force)"
         continue-on-error: true
+      - name: Create .env.production for Next.js build (legal vars)
+        run: |
+          {
+            echo "NEXT_PUBLIC_APP_ENV=production"
+            echo "NEXT_PUBLIC_COMPANY_NAME=$NEXT_PUBLIC_COMPANY_NAME"
+            echo "NEXT_PUBLIC_COMPANY_STREET=$NEXT_PUBLIC_COMPANY_STREET"
+            echo "NEXT_PUBLIC_COMPANY_CITY=$NEXT_PUBLIC_COMPANY_CITY"
+            echo "NEXT_PUBLIC_COMPANY_ZIP=$NEXT_PUBLIC_COMPANY_ZIP"
+            echo "NEXT_PUBLIC_COMPANY_EMAIL=$NEXT_PUBLIC_COMPANY_EMAIL"
+          } >> .env.production
+          echo "Created .env.production with legal vars for next build"
       - name: Deploy to Firebase Hosting (production)
         uses: FirebaseExtended/action-hosting-deploy@v0
         env:
@@ -264,6 +275,17 @@ jobs:
             echo "💡 Or run manually: firebase functions:artifacts:setpolicy --location europe-west1"
           fi
         continue-on-error: true
+      - name: Create .env.production for Next.js build (legal vars)
+        run: |
+          {
+            echo "NEXT_PUBLIC_APP_ENV=production"
+            echo "NEXT_PUBLIC_COMPANY_NAME=$NEXT_PUBLIC_COMPANY_NAME"
+            echo "NEXT_PUBLIC_COMPANY_STREET=$NEXT_PUBLIC_COMPANY_STREET"
+            echo "NEXT_PUBLIC_COMPANY_CITY=$NEXT_PUBLIC_COMPANY_CITY"
+            echo "NEXT_PUBLIC_COMPANY_ZIP=$NEXT_PUBLIC_COMPANY_ZIP"
+            echo "NEXT_PUBLIC_COMPANY_EMAIL=$NEXT_PUBLIC_COMPANY_EMAIL"
+          } >> .env.production
+          echo "Created .env.production with legal vars for next build"
       - name: Deploy to Firebase Hosting (preview)
         uses: FirebaseExtended/action-hosting-deploy@v0
         env:
