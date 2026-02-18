@@ -149,7 +149,6 @@ jobs:
           } >> .env.production
           echo "Created .env.production with legal vars for next build"
       - name: Deploy to Firebase Hosting (production)
-        uses: FirebaseExtended/action-hosting-deploy@v0
         env:
           FIREBASE_CLI_EXPERIMENTS: webframeworks
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
@@ -165,12 +164,8 @@ jobs:
           NEXT_PUBLIC_COMPANY_CITY: ${{ env.NEXT_PUBLIC_COMPANY_CITY }}
           NEXT_PUBLIC_COMPANY_ZIP: ${{ env.NEXT_PUBLIC_COMPANY_ZIP }}
           NEXT_PUBLIC_COMPANY_EMAIL: ${{ env.NEXT_PUBLIC_COMPANY_EMAIL }}
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JobFlow }}
-          projectId: jobflow25
-          channelId: live
-          force: true
+        run: |
+          firebase deploy --only hosting --project jobflow25 --force
       - name: Cleanup service account file
         if: always()
         run: |
@@ -287,7 +282,6 @@ jobs:
           } >> .env.production
           echo "Created .env.production with legal vars for next build"
       - name: Deploy to Firebase Hosting (preview)
-        uses: FirebaseExtended/action-hosting-deploy@v0
         env:
           FIREBASE_CLI_EXPERIMENTS: webframeworks
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
@@ -303,13 +297,8 @@ jobs:
           NEXT_PUBLIC_COMPANY_CITY: ${{ env.NEXT_PUBLIC_COMPANY_CITY }}
           NEXT_PUBLIC_COMPANY_ZIP: ${{ env.NEXT_PUBLIC_COMPANY_ZIP }}
           NEXT_PUBLIC_COMPANY_EMAIL: ${{ env.NEXT_PUBLIC_COMPANY_EMAIL }}
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JobFlow }}
-          projectId: jobflow25
-          channelId: ${{ github.ref_name }}
-          expires: 7d
-          force: true
+        run: |
+          firebase hosting:channel:deploy ${{ github.ref_name }} --only hosting --project jobflow25 --expires 7d --force
       - name: Cleanup service account file
         if: always()
         run: |

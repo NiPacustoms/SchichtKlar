@@ -1,0 +1,23 @@
+---
+description: Nach Commit immer deployen (Build + Firebase)
+alwaysApply: true
+---
+
+# Commit und Deploy
+
+Wenn der Nutzer **alle Änderungen committen und deployen** möchte (z. B. „committe und deploye“, „commit und deploy“, „alle Änderungen committen und deployen“):
+
+## Vorgehen
+
+1. **Commit**: Alle geänderten Dateien stagen und committen.
+   - `git add -A`
+   - `git commit -m "…"` mit aussagekräftiger Message (z. B. Kurzbeschreibung der Änderungen)
+
+2. **Deploy**: Anschließend immer den vollen Deploy ausführen.
+   - `npm run deploy` (im Projektroot)
+   - Das führt `npm run build` und `firebase deploy` aus (Hosting, Firestore, Storage, Functions).
+
+## Hinweise
+
+- Deploy kann mehrere Minuten dauern (Build + Firebase-Upload). Bei Timeout im Hintergrund laufen lassen und Nutzer informieren.
+- Bei Fehlern: Fehlermeldung ausgeben und ggf. beheben.
