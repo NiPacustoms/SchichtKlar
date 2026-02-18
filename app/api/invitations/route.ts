@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as nodeCrypto from 'node:crypto';
 import { adminDb } from '@/lib/server/firebaseAdmin';
 import { isAdmin } from '@/lib/utils/authz';
 import { sendInvitationEmailServer } from '@/lib/server/email';
@@ -21,7 +22,6 @@ function generateToken(length = 48): string {
   if (typeof crypto !== 'undefined' && 'getRandomValues' in crypto) {
     crypto.getRandomValues(bytes);
   } else {
-    const nodeCrypto = require('node:crypto');
     nodeCrypto.randomFillSync(bytes);
   }
   let binary = '';
