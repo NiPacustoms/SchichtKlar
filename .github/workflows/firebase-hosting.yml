@@ -77,6 +77,21 @@ jobs:
           echo "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${FB_MESSAGING_SENDER_ID}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_FIREBASE_APP_ID=${FB_APP_ID}" >> $GITHUB_ENV
 
+      - name: Set legal/company environment variables (from Vars)
+        env:
+          LEGAL_COMPANY_NAME: ${{ vars.NEXT_PUBLIC_COMPANY_NAME || '' }}
+          LEGAL_STREET: ${{ vars.NEXT_PUBLIC_COMPANY_STREET || '' }}
+          LEGAL_CITY: ${{ vars.NEXT_PUBLIC_COMPANY_CITY || '' }}
+          LEGAL_ZIP: ${{ vars.NEXT_PUBLIC_COMPANY_ZIP || '' }}
+          LEGAL_EMAIL: ${{ vars.NEXT_PUBLIC_COMPANY_EMAIL || '' }}
+        run: |
+          echo "NEXT_PUBLIC_COMPANY_NAME=${LEGAL_COMPANY_NAME}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_COMPANY_STREET=${LEGAL_STREET}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_COMPANY_CITY=${LEGAL_CITY}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_COMPANY_ZIP=${LEGAL_ZIP}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_COMPANY_EMAIL=${LEGAL_EMAIL}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_APP_ENV=production" >> $GITHUB_ENV
+
       - name: Install Functions Dependencies
         run: |
           cd functions
@@ -133,6 +148,12 @@ jobs:
           NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
           NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
           NEXT_PUBLIC_FIREBASE_APP_ID: ${{ env.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_APP_ENV: production
+          NEXT_PUBLIC_COMPANY_NAME: ${{ env.NEXT_PUBLIC_COMPANY_NAME }}
+          NEXT_PUBLIC_COMPANY_STREET: ${{ env.NEXT_PUBLIC_COMPANY_STREET }}
+          NEXT_PUBLIC_COMPANY_CITY: ${{ env.NEXT_PUBLIC_COMPANY_CITY }}
+          NEXT_PUBLIC_COMPANY_ZIP: ${{ env.NEXT_PUBLIC_COMPANY_ZIP }}
+          NEXT_PUBLIC_COMPANY_EMAIL: ${{ env.NEXT_PUBLIC_COMPANY_EMAIL }}
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JobFlow }}
@@ -192,6 +213,21 @@ jobs:
           echo "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${FB_MESSAGING_SENDER_ID}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_FIREBASE_APP_ID=${FB_APP_ID}" >> $GITHUB_ENV
 
+      - name: Set legal/company environment variables (from Vars)
+        env:
+          LEGAL_COMPANY_NAME: ${{ vars.NEXT_PUBLIC_COMPANY_NAME || '' }}
+          LEGAL_STREET: ${{ vars.NEXT_PUBLIC_COMPANY_STREET || '' }}
+          LEGAL_CITY: ${{ vars.NEXT_PUBLIC_COMPANY_CITY || '' }}
+          LEGAL_ZIP: ${{ vars.NEXT_PUBLIC_COMPANY_ZIP || '' }}
+          LEGAL_EMAIL: ${{ vars.NEXT_PUBLIC_COMPANY_EMAIL || '' }}
+        run: |
+          echo "NEXT_PUBLIC_COMPANY_NAME=${LEGAL_COMPANY_NAME}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_COMPANY_STREET=${LEGAL_STREET}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_COMPANY_CITY=${LEGAL_CITY}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_COMPANY_ZIP=${LEGAL_ZIP}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_COMPANY_EMAIL=${LEGAL_EMAIL}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_APP_ENV=production" >> $GITHUB_ENV
+
       - name: Install Functions Dependencies
         run: |
           cd functions
@@ -239,6 +275,12 @@ jobs:
           NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
           NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
           NEXT_PUBLIC_FIREBASE_APP_ID: ${{ env.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_APP_ENV: production
+          NEXT_PUBLIC_COMPANY_NAME: ${{ env.NEXT_PUBLIC_COMPANY_NAME }}
+          NEXT_PUBLIC_COMPANY_STREET: ${{ env.NEXT_PUBLIC_COMPANY_STREET }}
+          NEXT_PUBLIC_COMPANY_CITY: ${{ env.NEXT_PUBLIC_COMPANY_CITY }}
+          NEXT_PUBLIC_COMPANY_ZIP: ${{ env.NEXT_PUBLIC_COMPANY_ZIP }}
+          NEXT_PUBLIC_COMPANY_EMAIL: ${{ env.NEXT_PUBLIC_COMPANY_EMAIL }}
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JobFlow }}
