@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Assignment, assignmentService } from '@/lib/services/assignments';
+import type { Assignment } from '@/lib/types/assignment';
+import { assignmentService } from '@/lib/services/assignments';
+import { listAllAssignments } from '@/src/composition';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/utils/toast';
 import { cloudFunctions } from '@/lib/services/cloudFunctions';
@@ -25,12 +27,12 @@ export const useAssignments = (filters?: AssignmentFilters) => {
   } = useQuery<Assignment[]>({
     queryKey: ['assignments', filters],
     queryFn: async () => {
-      const result = await assignmentService.getAll();
+      const result = await listAllAssignments.execute({ page: 1, limit: 500 });
       return result.data;
     },
     enabled: !!user?.id,
-    staleTime: 30000, // 30 seconds
-    refetchInterval: 30000, // Auto-refresh every 30 seconds
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchInterval: 2 * 60 * 1000, // Auto-refresh every 2 minutes
   });
 
   // Assignments nach Status filtern

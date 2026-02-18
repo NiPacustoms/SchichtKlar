@@ -139,8 +139,7 @@ async function syncUserClaims() {
     }
 
     console.log('\n⚠️  WICHTIG: Der Benutzer muss sich aus- und wieder einloggen,');
-    console.log('   oder einen neuen Token anfordern, damit die Änderungen wirksam werden.');
-    console.log('   In der App: /debug/token öffnen und "🔄 Token Refresh" klicken.');
+    console.log('   damit die Änderungen (Custom Claims) im Token wirksam werden.');
 
   } catch (error) {
     console.error('\n❌ Fehler:', error.message);

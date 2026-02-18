@@ -3,7 +3,9 @@ import { ProfileForm } from '@/components/profile/ProfileForm';
 import { ProfileStats } from '@/components/profile/ProfileStats';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import { useProfile } from '@/lib/hooks/useProfile';
 import { UserUpdateForm } from '@/lib/types';
 import { toast } from '@/lib/utils/toast';
@@ -53,6 +55,7 @@ import { useState } from 'react';
 
 export default function ProfilePage() {
   const { user, loading: authLoading, signOut } = useAuth();
+  const { canAccessAdminArea } = usePermissions();
 
   const {
     profile,
@@ -158,7 +161,7 @@ export default function ProfilePage() {
 
   return (
     <>
-      <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
+      <PageContainer maxWidth="standard">
         <Box sx={{ mb: 4 }}>
           <Typography
             variant="h4"
@@ -175,7 +178,7 @@ export default function ProfilePage() {
           </Typography>
         </Box>
 
-        {/* Tabs */}
+        {/* Tabs: Übersicht | Bearbeiten | Einstellungen */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
           <Tabs
             value={activeTab}
@@ -185,10 +188,13 @@ export default function ProfilePage() {
                 setActiveSettingsTab(null);
               }
             }}
+            textColor="primary"
+            indicatorColor="primary"
+            sx={{ minHeight: 48 }}
           >
-            <Tab label="Übersicht" />
-            <Tab label="Bearbeiten" />
-            <Tab label="Einstellungen" />
+            <Tab label="Übersicht" sx={{ textTransform: 'none', fontWeight: 500 }} />
+            <Tab label="Bearbeiten" sx={{ textTransform: 'none', fontWeight: 500 }} />
+            <Tab label="Einstellungen" sx={{ textTransform: 'none', fontWeight: 500 }} />
           </Tabs>
         </Box>
 
@@ -239,11 +245,7 @@ export default function ProfilePage() {
                       {profile.displayName}
                     </Typography>
                     <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-                      {profile.role === 'nurse'
-                        ? 'Pflegekraft'
-                        : profile.role === 'admin'
-                          ? 'Administrator'
-                          : 'Disponent'}
+                      {canAccessAdminArea ? 'Administrator' : 'Pflegekraft'}
                     </Typography>
                     <Button
                       variant="outlined"
@@ -380,7 +382,7 @@ export default function ProfilePage() {
                                       <Switch
                                         defaultChecked={true}
                                         onChange={_e => {
-                                          // TODO: Implementiere automatische Pausenerinnerung
+                                          // Feature später: Push/Benachrichtigung nach ArbZG-Frist (z. B. 6h ohne Pause)
                                           toast.info('Diese Funktion wird in Kürze verfügbar sein');
                                         }}
                                       />
@@ -802,7 +804,7 @@ export default function ProfilePage() {
                                       Hinweis zur Datenlöschung:
                                     </Typography>
                                     <Typography variant="body2">
-                                      GoBD-konforme Daten (Lohnabrechnungen, approved Timesheets)
+                                      GoBD-konforme Daten (z. B. approved Timesheets)
                                       werden nicht gelöscht, sondern anonymisiert (10 Jahre
                                       Aufbewahrungspflicht). Alle anderen Daten werden dauerhaft
                                       gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
@@ -840,7 +842,7 @@ export default function ProfilePage() {
             </Grid>
           </Box>
         )}
-      </Box>
+      </PageContainer>
 
       {/* Data Deletion Confirmation Dialog */}
       <Dialog
@@ -860,7 +862,7 @@ export default function ProfilePage() {
             </Typography>
             <Typography variant="body2">
               Alle Ihre Daten werden gelöscht oder anonymisiert. GoBD-konforme Daten
-              (Lohnabrechnungen, approved Timesheets) werden anonymisiert statt gelöscht (10 Jahre
+              (approved Timesheets u. Ä.) werden anonymisiert statt gelöscht (10 Jahre
               Aufbewahrungspflicht).
             </Typography>
           </Alert>

@@ -138,7 +138,7 @@ export function OpenShiftCard({
                 variant="body2"
                 sx={{ color: getShiftTypeColor(shift.type), fontWeight: 500 }}
               >
-                {shift.type}
+                Schicht
               </Typography>
             </Box>
           </Box>

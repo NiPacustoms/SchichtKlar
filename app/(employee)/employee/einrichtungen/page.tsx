@@ -5,6 +5,7 @@ import { logger } from '@/lib/logging';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { useEmployeeFacilities } from '@/lib/hooks/useEmployeeFacilities';
 import {
   Box,
@@ -186,7 +187,7 @@ export default function EmployeeFacilitiesPage() {
   }
 
   return (
-    <Box sx={{ maxWidth: 1400, mx: 'auto', p: 3 }}>
+    <PageContainer maxWidth="wide">
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography
@@ -684,6 +685,6 @@ export default function EmployeeFacilitiesPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </PageContainer>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { GlassCard } from '@/components/ui/GlassCard';
+import { assignmentStatusColors } from '@/lib/design-tokens';
 import { useEffect, useState } from 'react';
 import { shiftService } from '@/lib/services/shifts';
 import { facilityService } from '@/lib/services/facilities';
@@ -92,10 +93,18 @@ export function MyAssignmentCard({
     date: shiftDetails.date.toISOString(),
     startTime: shiftDetails.startTime || '',
   });
+  const isLoadingDetails = Boolean(assignment.shiftId && !shiftDetails.facilityName);
 
   return (
     <GlassCard>
       <CardContent sx={{ p: 3 }}>
+        {isLoadingDetails && (
+          <>
+            <Box className="shimmer-skeleton" sx={{ height: 24, width: '70%', mb: 1.5 }} aria-hidden />
+            <Box className="shimmer-skeleton" sx={{ height: 16, width: '50%', mb: 1.5 }} aria-hidden />
+            <Box className="shimmer-skeleton" sx={{ height: 16, width: '90%', mb: 2 }} aria-hidden />
+          </>
+        )}
         {/* Header with Status */}
         <Box
           sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}
@@ -115,27 +124,19 @@ export function MyAssignmentCard({
                 variant="body2"
                 sx={{ color: getShiftTypeColor(shiftDetails.type || 'Schicht'), fontWeight: 500 }}
               >
-                {shiftDetails.type || 'Schicht'}
+                Schicht
               </Typography>
             </Box>
           </Box>
           <Chip
             label={getStatusLabel(assignment.status)}
-            color={
-              getStatusColor(assignment.status) as
-                | 'default'
-                | 'primary'
-                | 'secondary'
-                | 'error'
-                | 'info'
-                | 'success'
-                | 'warning'
-            }
             size="small"
             sx={{
               fontWeight: 600,
               fontSize: '12px',
               height: 28,
+              backgroundColor: assignmentStatusColors[assignment.status] ?? assignmentStatusColors.pending,
+              color: '#fff',
             }}
           />
         </Box>

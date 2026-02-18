@@ -1,5 +1,4 @@
 import { createRequire } from "module";
-import { globalIgnores } from "eslint/config";
 import nextPlugin from "@next/eslint-plugin-next";
 import prettierConfig from "eslint-config-prettier";
 
@@ -116,19 +115,22 @@ export default [
       "no-unused-vars": "off",
     },
   },
-  globalIgnores([
-    ".next/**",
-    "out/**",
-    "build/**",
-    "dist/**",
-    "next-env.d.ts",
-    "node_modules/**",
-    "*.config.js",
-    "*.config.ts",
-    "*.config.mjs",
-    "y/**",
-    "functions/**",
-    "tests/**",
-    "lib/services/__tests__/**",
-  ]),
+  {
+    ignores: [
+      ".firebase/**",
+      ".next/**",
+      "out/**",
+      "build/**",
+      "dist/**",
+      "next-env.d.ts",
+      "node_modules/**",
+      "*.config.js",
+      "*.config.ts",
+      "*.config.mjs",
+      "y/**",
+      "functions/**",
+      "tests/**",
+      "lib/services/__tests__/**",
+    ],
+  },
 ];

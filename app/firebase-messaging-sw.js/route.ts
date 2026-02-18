@@ -1,5 +1,3 @@
-import { logger } from '@/lib/logging';
-
 import { NextResponse } from 'next/server';
 
 // Firebase Cloud Messaging Service Worker

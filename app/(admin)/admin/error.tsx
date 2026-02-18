@@ -50,7 +50,7 @@ export default function AdminError({
           Erneut versuchen
         </Button>
         <Button variant="outlined" onClick={() => router.push('/admin/uebersicht')}>
-          Zum Dashboard
+          Zur Übersicht
         </Button>
       </Box>
     </Box>

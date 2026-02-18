@@ -119,6 +119,29 @@ export const sendInvitationEmailCF = functions.https.onCall(async (data: InviteE
   return { success: true, fallback: result.fallback };
 });
 
+export interface RenderFacilityAssignmentTakenPayload {
+  employeeName: string;
+  facilityName: string;
+  dateStr: string;
+  timeStr: string;
+  contact?: string;
+}
+
+export function renderFacilityAssignmentTakenEmail(payload: RenderFacilityAssignmentTakenPayload): string {
+  const { employeeName, facilityName, dateStr, timeStr, contact } = payload;
+  return `
+    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111;">
+      <h2>Einsatz übernommen</h2>
+      <p>Guten Tag,</p>
+      <p><strong>${employeeName}</strong> übernimmt Ihren Einsatz bei <strong>${facilityName}</strong>.</p>
+      ${dateStr ? `<p><strong>Datum:</strong> ${dateStr}</p>` : ''}
+      ${timeStr ? `<p><strong>Zeit:</strong> ${timeStr}</p>` : ''}
+      ${contact ? `<p><strong>Kontakt:</strong> ${contact}</p>` : ''}
+      <p>Vielen Dank!</p>
+    </div>
+  `;
+}
+
 interface AssignmentSignatureEmailPayload {
   to: string;
   employeeName: string;

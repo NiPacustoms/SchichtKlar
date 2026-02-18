@@ -62,6 +62,10 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // output: 'standalone' deaktiviert: Verursacht bei Next.js 15 während "Collecting page data"
+  // MODULE_NOT_FOUND für Server-Chunks (z. B. ./7992.js). Normaler Build + Deploy funktioniert.
+  // Für Firebase Hosting: Standard-Build nutzen (kein Standalone nötig).
+
   // Absolute minimale Konfiguration für Next.js 15/16 Stabilität
   transpilePackages: ['recharts'],
   // Turbopack (Next 16): Projektroot setzen, damit "app" nicht fälschlich als Root erkannt wird
@@ -72,6 +76,10 @@ const nextConfig = {
   // TypeScript-Fehler während Build prüfen
   typescript: {
     ignoreBuildErrors: false,
+  },
+  // ESLint: Build nutzt veraltete Optionen (useEslintrc/extensions). Lint läuft in CI via npm run lint:ci.
+  eslint: {
+    ignoreDuringBuilds: true,
   },
   // Image Optimization Konfiguration für Firebase Storage
   images: {
@@ -122,13 +130,11 @@ const nextConfig = {
         poll: false,
       };
       
-      // Optimiere Cache für schnellere Rebuilds
+      // Optimiere Cache für schnellere Rebuilds (ohne config als buildDependency,
+      // um falsche "next.config.js changed" Neustarts beim ersten Kompilieren von / zu vermeiden)
       config.cache = {
         ...config.cache,
         type: 'filesystem',
-        buildDependencies: {
-          config: [__filename],
-        },
       };
       
       // WebSocket-Fehler in Development unterdrücken (von Browser-Erweiterungen)
@@ -205,71 +211,8 @@ const nextConfig = {
     return config;
   },
   async redirects() {
-    return [
-      // Auth routes: English → German
-      {
-        source: '/login',
-        destination: '/anmelden',
-        permanent: true,
-      },
-      {
-        source: '/register',
-        destination: '/registrieren',
-        permanent: true,
-      },
-      {
-        source: '/forgot-password',
-        destination: '/passwort-vergessen',
-        permanent: true,
-      },
-      // Profile routes
-      {
-        source: '/profile',
-        destination: '/profil',
-        permanent: true,
-      },
-      // Document routes
-      {
-        source: '/documents',
-        destination: '/dokumente',
-        permanent: true,
-      },
-      // Facility routes
-      {
-        source: '/facilities',
-        destination: '/einrichtungen',
-        permanent: true,
-      },
-      // Time/Schedule routes
-      {
-        source: '/time',
-        destination: '/zeiten',
-        permanent: true,
-      },
-      {
-        source: '/schedule',
-        destination: '/dienstplan',
-        permanent: true,
-      },
-      // Message/Chat routes
-      {
-        source: '/messenger',
-        destination: '/nachrichten',
-        permanent: true,
-      },
-      // Invitation routes
-      {
-        source: '/accept-invite',
-        destination: '/einladung-annehmen',
-        permanent: true,
-      },
-      // Admin routes: English → German
-      {
-        source: '/admin/shifts',
-        destination: '/admin/schichten',
-        permanent: true,
-      },
-    ];
+    // Keine englischen URLs – nur deutsche Routen (z. B. /anmelden, /employee/dienstplan)
+    return [];
   },
   async headers() {
     return [

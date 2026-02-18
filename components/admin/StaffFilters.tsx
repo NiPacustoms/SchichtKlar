@@ -1,7 +1,7 @@
 'use client';
 
 import { FormControl, InputLabel, Select, MenuItem } from '@mui/material';
-import Grid from '@mui/material/GridLegacy';
+import Grid from '@mui/material/Grid';
 import DebouncedSearch from '@/components/ui/DebouncedSearch';
 import { roleOptions, roleLabelMap, type RoleOption } from '@/lib/validations/staff';
 import { useQuery } from '@tanstack/react-query';
@@ -50,7 +50,7 @@ export function StaffFilters({
   const roleOptionsFromConfig = categories?.roles || roleOptions;
   return (
     <Grid container spacing={2}>
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <DebouncedSearch
           initialValue={searchTerm}
           onSearch={q => onSearchChange?.(q)}
@@ -59,7 +59,7 @@ export function StaffFilters({
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <FormControl fullWidth>
           <InputLabel>Rolle</InputLabel>
           <Select
@@ -77,7 +77,7 @@ export function StaffFilters({
         </FormControl>
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <FormControl fullWidth>
           <InputLabel>Status</InputLabel>
           <Select
@@ -92,7 +92,7 @@ export function StaffFilters({
         </FormControl>
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <FormControl fullWidth>
           <InputLabel>Gruppe</InputLabel>
           <Select

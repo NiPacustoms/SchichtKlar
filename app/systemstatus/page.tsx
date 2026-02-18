@@ -1,5 +1,8 @@
 'use client';
+
 import { useEffect, useState } from 'react';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Box, Typography, Chip } from '@mui/material';
 
 export default function StatusPage() {
   const [status, setStatus] = useState<'loading' | 'ok' | 'degraded'>('loading');
@@ -31,20 +34,30 @@ export default function StatusPage() {
     };
   }, []);
 
+  const statusColor = status === 'ok' ? 'success' : status === 'loading' ? 'default' : 'warning';
+  const statusLabel = status === 'ok' ? 'Operational' : status === 'loading' ? 'Checking…' : 'Degraded';
+
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-semibold mb-4">Systemstatus</h1>
-      <div
-        className={`inline-flex items-center gap-2 px-3 py-2 rounded ${status === 'ok' ? 'bg-green-100 text-green-800' : status === 'loading' ? 'bg-gray-100 text-gray-800' : 'bg-yellow-100 text-yellow-800'}`}
-      >
-        <span
-          className={`h-3 w-3 rounded-full ${status === 'ok' ? 'bg-green-500' : status === 'loading' ? 'bg-gray-500' : 'bg-yellow-500'}`}
+    <PageContainer maxWidth="narrow">
+      <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
+        Systemstatus
+      </Typography>
+      <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.5 }}>
+        <Box
+          sx={{
+            width: 12,
+            height: 12,
+            borderRadius: '50%',
+            bgcolor: status === 'ok' ? 'success.main' : status === 'loading' ? 'grey.500' : 'warning.main',
+          }}
         />
-        <span>
-          {status === 'ok' ? 'Operational' : status === 'loading' ? 'Checking…' : 'Degraded'}
-        </span>
-      </div>
-      {details && <p className="mt-3 text-sm text-gray-600">{details}</p>}
-    </div>
+        <Chip label={statusLabel} color={statusColor} size="small" />
+      </Box>
+      {details && (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+          {details}
+        </Typography>
+      )}
+    </PageContainer>
   );
 }

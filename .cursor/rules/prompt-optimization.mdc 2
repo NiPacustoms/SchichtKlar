@@ -1,0 +1,236 @@
+---
+alwaysApply: true
+---
+
+# Prompt Optimization Rule
+
+**ALWAYS APPLIED** - When user writes "prompt:" followed by text, automatically optimize and apply the prompt.
+
+## 🎯 **Prompt Optimization Workflow**
+
+### **Trigger Pattern**
+When user writes: `prompt: [text]`
+
+### **Response Pattern**
+1. **Analyze** the original prompt
+2. **Optimize** it for clarity, specificity, and effectiveness
+3. **Show** the optimized version for transparency
+4. **Automatically proceed** with the optimized prompt
+
+### **Optimization Guidelines**
+
+#### **Clarity & Specificity**
+- Make the request more specific
+- Add context where needed
+- Use clear, actionable language
+- Include relevant constraints or requirements
+
+#### **Structure & Format**
+- Break complex requests into steps
+- Use bullet points for multiple requirements
+- Include examples where helpful
+- Specify desired output format
+
+#### **Context & Scope**
+- Add relevant project context
+- Include security considerations (user/admin roles only)
+- Reference company scoping requirements
+- Consider existing codebase patterns
+
+#### **Technical Precision**
+- Use specific technical terms
+- Include file paths or component names
+- Reference existing functions or patterns
+- Specify TypeScript types where relevant
+
+### **Example Optimization**
+
+**Original:**
+```
+prompt: make a button component
+```
+
+**Optimized:**
+```
+Create a reusable button component for the EmpCoach web app with the following specifications:
+
+**Requirements:**
+- TypeScript React component with proper typing
+- Support for user/admin role-based styling
+- Follow existing UI component patterns in src/components/ui/
+- Include proper accessibility attributes (ARIA labels, keyboard navigation)
+- Use Tailwind CSS for styling
+- Support variants: primary, secondary, outline, ghost
+- Include loading state and disabled state
+- Follow security standards (no SuperAdmin logic)
+
+**File Location:** src/components/ui/Button.tsx
+
+**Props Interface:**
+- variant: 'primary' | 'secondary' | 'outline' | 'ghost'
+- size: 'sm' | 'md' | 'lg'
+- loading?: boolean
+- disabled?: boolean
+- children: React.ReactNode
+- onClick?: () => void
+
+**Include:** Unit tests, JSDoc documentation, and usage examples
+```
+
+### **Response Template**
+
+```
+## 🔧 **Prompt Optimization Applied**
+
+**Original Prompt:**
+[original text]
+
+**Optimized Prompt:**
+[optimized version]
+
+**Key Improvements:**
+- [improvement 1]
+- [improvement 2]
+- [improvement 3]
+
+**Proceeding with optimized prompt...**
+```
+
+### **Security Integration**
+- Always include role-based access considerations
+- Reference company scoping requirements
+- Ensure no SuperAdmin functionality
+- Include proper TypeScript types
+- Validate user permissions
+
+### **Codebase Context**
+- Reference existing patterns and conventions
+- Include relevant file paths
+- Consider existing component structure
+- Follow established naming conventions
+- Use existing utility functions where applicable
+
+- Validate user permissions
+
+### **Codebase Context**
+- Reference existing patterns and conventions
+- Include relevant file paths
+- Consider existing component structure
+- Follow established naming conventions
+- Use existing utility functions where applicable
+# Prompt Optimization Rule
+
+**ALWAYS APPLIED** - When user writes "prompt:" followed by text, automatically optimize and apply the prompt.
+
+## 🎯 **Prompt Optimization Workflow**
+
+### **Trigger Pattern**
+When user writes: `prompt: [text]`
+
+### **Response Pattern**
+1. **Analyze** the original prompt
+2. **Optimize** it for clarity, specificity, and effectiveness
+3. **Show** the optimized version for transparency
+4. **Automatically proceed** with the optimized prompt
+
+### **Optimization Guidelines**
+
+#### **Clarity & Specificity**
+- Make the request more specific
+- Add context where needed
+- Use clear, actionable language
+- Include relevant constraints or requirements
+
+#### **Structure & Format**
+- Break complex requests into steps
+- Use bullet points for multiple requirements
+- Include examples where helpful
+- Specify desired output format
+
+#### **Context & Scope**
+- Add relevant project context
+- Include security considerations (user/admin roles only)
+- Reference company scoping requirements
+- Consider existing codebase patterns
+
+#### **Technical Precision**
+- Use specific technical terms
+- Include file paths or component names
+- Reference existing functions or patterns
+- Specify TypeScript types where relevant
+
+### **Example Optimization**
+
+**Original:**
+```
+prompt: make a button component
+```
+
+**Optimized:**
+```
+Create a reusable button component for the EmpCoach web app with the following specifications:
+
+**Requirements:**
+- TypeScript React component with proper typing
+- Support for user/admin role-based styling
+- Follow existing UI component patterns in src/components/ui/
+- Include proper accessibility attributes (ARIA labels, keyboard navigation)
+- Use Tailwind CSS for styling
+- Support variants: primary, secondary, outline, ghost
+- Include loading state and disabled state
+- Follow security standards (no SuperAdmin logic)
+
+**File Location:** src/components/ui/Button.tsx
+
+**Props Interface:**
+- variant: 'primary' | 'secondary' | 'outline' | 'ghost'
+- size: 'sm' | 'md' | 'lg'
+- loading?: boolean
+- disabled?: boolean
+- children: React.ReactNode
+- onClick?: () => void
+
+**Include:** Unit tests, JSDoc documentation, and usage examples
+```
+
+### **Response Template**
+
+```
+## 🔧 **Prompt Optimization Applied**
+
+**Original Prompt:**
+[original text]
+
+**Optimized Prompt:**
+[optimized version]
+
+**Key Improvements:**
+- [improvement 1]
+- [improvement 2]
+- [improvement 3]
+
+**Proceeding with optimized prompt...**
+```
+
+### **Security Integration**
+- Always include role-based access considerations
+- Reference company scoping requirements
+- Ensure no SuperAdmin functionality
+- Include proper TypeScript types
+- Validate user permissions
+
+### **Codebase Context**
+- Reference existing patterns and conventions
+- Include relevant file paths
+- Consider existing component structure
+- Follow established naming conventions
+- Use existing utility functions where applicable
+
+- Validate user permissions
+
+### **Codebase Context**
+- Reference existing patterns and conventions
+- Include relevant file paths
+- Consider existing component structure
+- Follow established naming conventions
+- Use existing utility functions where applicable

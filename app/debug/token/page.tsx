@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { auth } from '@/lib/firebase';
 import { debugTokenStatus, refreshTokenAndDebug, logTokenStatus } from '@/lib/utils/tokenDebug';
 import Link from 'next/link';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Typography } from '@mui/material';
 
 export default function DebugTokenPage() {
   const [token, setToken] = useState<string>('');
@@ -43,12 +45,12 @@ export default function DebugTokenPage() {
   };
 
   useEffect(() => {
-    let cancelled = false;
+    let _cancelled = false;
     (async () => {
       await loadTokenData(false);
     })();
     return () => {
-      cancelled = true;
+      _cancelled = true;
     };
   }, []);
 
@@ -102,10 +104,10 @@ export default function DebugTokenPage() {
     !loading && (!tokenStatus?.authenticated || error === 'Kein Nutzer eingeloggt');
 
   return (
-    <div style={{ padding: 24, maxWidth: 1200 }}>
-      <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 12 }}>
+    <PageContainer maxWidth="standard">
+      <Typography variant="h4" sx={{ fontWeight: 600, mb: 2 }}>
         Debug: Token & Custom Claims
-      </h1>
+      </Typography>
 
       {loading && <p>Lade…</p>}
 
@@ -276,6 +278,6 @@ export default function DebugTokenPage() {
           Claims korrekt synchronisiert werden.
         </p>
       </div>
-    </div>
+    </PageContainer>
   );
 }

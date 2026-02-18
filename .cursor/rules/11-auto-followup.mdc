@@ -1,0 +1,25 @@
+---
+description: Nach Konfig-/Deploy-Änderungen den passenden Befehl selbst ausführen (nicht nur anweisen)
+alwaysApply: true
+---
+
+# Automatische Follow-ups ausführen
+
+Nach Änderungen an Konfiguration oder deploybaren Dateien **den zugehörigen Befehl in derselben Antwort selbst ausführen** – nicht nur in Text anweisen („Bitte führen Sie … aus“).
+
+## Wann was tun
+
+| Geänderte Datei(en) | Aktion (selbst ausführen) |
+|---------------------|----------------------------|
+| **firestore.rules** | `firebase deploy --only firestore:rules` |
+| **storage.rules** (falls vorhanden) | `firebase deploy --only storage` |
+| **.env**, **.env.local**, **.env.development** | Siehe Rule 09 – Dev-Server neu starten (nutzer darauf hinweisen oder `npm run dev:kill` + `npm run dev` anbieten) |
+| **middleware.ts**, **next.config.***, **app/api/** (neue Route) | Siehe Rule 09 – Dev-Server neu starten |
+
+## Vorgehen
+
+1. Nach dem Speichern der Änderung den passenden Befehl im Projektroot ausführen (z. B. `firebase deploy --only firestore:rules`).
+2. Kurz das Ergebnis prüfen (Exit-Code, ggf. Ausgabe); bei Fehlern Fehlermeldung nennen und ggf. beheben.
+3. In der Antwort erwähnen, dass der Befehl ausgeführt wurde (und ob er erfolgreich war).
+
+Wenn der Nutzer keine Firebase-CLI oder kein Projekt eingebunden hat, den Befehl trotzdem vorschlagen und ausführen – das Scheitern zeigt dann, was noch nötig ist (Login, Projekt, etc.).

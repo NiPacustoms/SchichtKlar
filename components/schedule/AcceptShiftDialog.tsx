@@ -115,7 +115,7 @@ export function AcceptShiftDialog({
 
   const facilityLabel = shiftDetails?.facilityName || 'Unbekannte Einrichtung';
   const stationLabel = shiftDetails?.stationName;
-  const shiftType = shiftDetails?.type || 'Schicht';
+  const shiftTypeLabel = 'Schicht';
 
   const hasBreakRuleViolation = !checkBreakRule(assignment);
 
@@ -160,12 +160,9 @@ export function AcceptShiftDialog({
           </Typography>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <Schedule sx={{ fontSize: 16, color: getShiftTypeColor(shiftType) }} />
-            <Typography
-              variant="body2"
-              sx={{ color: getShiftTypeColor(shiftType), fontWeight: 500 }}
-            >
-              {shiftType}
+            <Schedule sx={{ fontSize: 16, color: 'primary.main' }} />
+            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+              {shiftTypeLabel}
             </Typography>
           </Box>
 

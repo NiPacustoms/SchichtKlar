@@ -219,7 +219,7 @@ export const alertService = {
     
     try {
       // Hole companyId aus Auth, falls nicht übergeben
-      let companyId = companyIdParam;
+      const companyId = companyIdParam;
       if (!companyId) {
         // Versuche companyId synchron zu holen (nur wenn möglich)
         // Für async-Holung müsste die Funktion async sein, was die Signatur ändert

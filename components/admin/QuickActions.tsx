@@ -12,6 +12,9 @@ import {
   Divider,
   Chip,
   Stack,
+  Typography,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -25,6 +28,7 @@ import {
 import { useState } from 'react';
 import Link from 'next/link';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { radius, duration, easing } from '@/lib/design-tokens';
 
 interface QuickActionsProps {
   onCreateShift?: () => void;
@@ -33,19 +37,20 @@ interface QuickActionsProps {
   onOpenSettings?: () => void;
 }
 
+const chipTransition = `all ${duration.base}ms ${easing}`;
+
 export function QuickActions({
   onCreateShift,
   onAddStaff,
   onExportReport,
   onOpenSettings,
 }: QuickActionsProps) {
+  const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
-    // Entfernt den Fokus vom Auslöser, bevor aria-hidden auf Vorfahren gesetzt wird
-    // Verhindert Warnung: "Blocked aria-hidden on an element because its descendant retained focus"
     event.currentTarget.blur();
   };
 
@@ -58,37 +63,79 @@ export function QuickActions({
     handleClose();
   };
 
+  const primaryGradient = `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark ?? theme.palette.primary.main} 100%)`;
+
+  const menuPaperSx = {
+    minWidth: 200,
+    mt: 1,
+    borderRadius: radius.lg,
+    boxShadow: '0 12px 32px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.15)',
+    border: '1px solid rgba(0,95,115,0.08)',
+    backdropFilter: 'blur(20px) saturate(180%)',
+  };
+
   return (
-    <GlassCard sx={{ p: 0 }}>
-      <Stack
-        direction={{ xs: 'column', lg: 'row' }}
-        spacing={2}
+    <GlassCard sx={{ p: 0, borderRadius: radius.md }} hover={false}>
+      {/* Sektions-Header – ausreichend Abstand zu den Ecken, damit nichts abgeschnitten wird */}
+      <Box
         sx={{
-          p: 3,
-          flexWrap: 'wrap',
-          alignItems: 'center',
+          px: 3,
+          pt: 3,
+          pb: 0,
         }}
       >
-        {/* Primary Actions */}
+        <Typography
+          variant="overline"
+          sx={{
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            color: 'text.secondary',
+          }}
+        >
+          Schnellaktionen
+        </Typography>
+      </Box>
+
+      <Stack
+        direction={{ xs: 'column', lg: 'row' }}
+        spacing={{ xs: 2, lg: 3 }}
+        sx={{
+          p: 3,
+          pt: 2,
+          flexWrap: 'wrap',
+          alignItems: { xs: 'stretch', lg: 'center' },
+          gap: 1,
+        }}
+      >
+        {/* Primäre Aktionen */}
         <Stack
           key="primary-actions"
           direction={{ xs: 'column', sm: 'row' }}
-          spacing={1}
-          sx={{ width: { xs: '100%', lg: 'auto' } }}
+          spacing={1.5}
+          sx={{ width: { xs: '100%', lg: 'auto' }, minWidth: 0 }}
         >
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={onCreateShift}
+            aria-label="Dienst anlegen"
             sx={{
-              borderRadius: 2,
+              borderRadius: radius.md,
               textTransform: 'none',
               fontWeight: 600,
               px: 3,
-              py: 1.25,
-              fontSize: '15px',
+              py: 1.5,
+              fontSize: '0.9375rem',
               width: { xs: '100%', sm: 'auto' },
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
+              minWidth: { sm: 160 },
+              background: primaryGradient,
+              boxShadow: `0 2px 12px ${alpha(theme.palette.primary.main, 0.35)}`,
+              '&:hover': {
+                background: primaryGradient,
+                boxShadow: `0 4px 16px ${alpha(theme.palette.primary.main, 0.45)}`,
+                filter: 'brightness(1.05)',
+              },
             }}
           >
             Dienst anlegen
@@ -98,142 +145,142 @@ export function QuickActions({
             variant="outlined"
             startIcon={<PersonAddIcon />}
             onClick={onAddStaff}
+            aria-label="Mitarbeiter hinzufügen"
             sx={{
-              borderRadius: 2,
+              borderRadius: radius.md,
               textTransform: 'none',
               fontWeight: 600,
               px: 3,
-              py: 1.25,
-              fontSize: '15px',
+              py: 1.5,
+              fontSize: '0.9375rem',
               borderWidth: 1.5,
               width: { xs: '100%', sm: 'auto' },
+              minWidth: { sm: 180 },
+              '&:hover': {
+                borderWidth: 1.5,
+                borderColor: 'primary.main',
+                color: 'primary.main',
+                backgroundColor: alpha(theme.palette.primary.main, 0.06),
+              },
             }}
           >
             Mitarbeiter hinzufügen
           </Button>
         </Stack>
 
-        {/* Secondary Actions */}
+        {/* Sekundäre Aktionen (Export, Menü) + Quick-Links als eine Gruppe */}
         <Stack
-          key="secondary-actions"
-          direction="row"
-          spacing={1}
-          sx={{ alignSelf: { xs: 'flex-start', lg: 'center' } }}
-        >
-          <Tooltip title="Bericht exportieren">
-            <IconButton
-              onClick={onExportReport}
-              sx={{
-                border: '1.5px solid',
-                borderColor: 'divider',
-                backgroundColor: 'transparent',
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                  borderColor: 'primary.main',
-                  color: 'primary.main',
-                },
-              }}
-            >
-              <ExportIcon />
-            </IconButton>
-          </Tooltip>
-
-          <Tooltip title="Weitere Aktionen">
-            <IconButton
-              onClick={handleClick}
-              sx={{
-                border: '1.5px solid',
-                borderColor: 'divider',
-                backgroundColor: 'transparent',
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                  borderColor: 'primary.main',
-                  color: 'primary.main',
-                },
-              }}
-            >
-              <MoreIcon />
-            </IconButton>
-          </Tooltip>
-        </Stack>
-
-        {/* Quick Links */}
-        <Stack
-          key="quick-links"
-          direction="row"
-          spacing={1}
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1.5}
           sx={{
             ml: { lg: 'auto' },
             flexWrap: 'wrap',
             alignItems: 'center',
+            gap: 1,
           }}
         >
-          <Box
-            key="quick-link-schichten"
-            component={Link}
-            href="/admin/schichten"
-            sx={{
-              textDecoration: 'none',
-              width: { xs: '100%', sm: 'auto' },
-            }}
-          >
-            <Chip
-              icon={<ScheduleIcon />}
-              label="Dienstplan"
-              variant="outlined"
-              sx={{
-                borderWidth: 1.5,
-                fontWeight: 500,
-                '&:hover': {
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+            <Tooltip title="Bericht exportieren">
+              <IconButton
+                onClick={onExportReport}
+                aria-label="Bericht exportieren"
+                size="medium"
+                sx={{
+                  width: 40,
+                  height: 40,
+                  border: '1.5px solid',
+                  borderColor: 'divider',
+                  borderRadius: radius.md,
                   backgroundColor: 'action.hover',
-                  borderColor: 'primary.main',
-                  color: 'primary.main',
-                },
-                width: '100%',
-                cursor: 'pointer',
-                transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
-            />
-          </Box>
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                  },
+                  transition: chipTransition,
+                }}
+              >
+                <ExportIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
 
-          <Box
-            key="quick-link-einstellungen"
-            component={Link}
-            href="/admin/einstellungen"
-            sx={{
-              textDecoration: 'none',
-              width: { xs: '100%', sm: 'auto' },
-            }}
-          >
-            <Chip
-              icon={<SettingsIcon />}
-              label="Einstellungen"
-              variant="outlined"
-              sx={{
-                '&:hover': { backgroundColor: 'action.hover' },
-                width: '100%',
-                cursor: 'pointer',
-              }}
-            />
-          </Box>
+            <Tooltip title="Weitere Aktionen">
+              <IconButton
+                onClick={handleClick}
+                aria-label="Weitere Aktionen"
+                size="medium"
+                sx={{
+                  width: 40,
+                  height: 40,
+                  border: '1.5px solid',
+                  borderColor: 'divider',
+                  borderRadius: radius.md,
+                  backgroundColor: 'action.hover',
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                  },
+                  transition: chipTransition,
+                }}
+              >
+                <MoreIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Box component={Link} href="/admin/schichten" sx={{ textDecoration: 'none' }}>
+              <Chip
+                icon={<ScheduleIcon sx={{ fontSize: 18 }} />}
+                label="Dienstplan"
+                variant="outlined"
+                clickable
+                sx={{
+                  borderWidth: 1.5,
+                  borderRadius: radius.md,
+                  fontWeight: 500,
+                  py: 1.25,
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                  },
+                  transition: chipTransition,
+                }}
+              />
+            </Box>
+            <Box component={Link} href="/admin/einstellungen" sx={{ textDecoration: 'none' }}>
+              <Chip
+                icon={<SettingsIcon sx={{ fontSize: 18 }} />}
+                label="Einstellungen"
+                variant="outlined"
+                clickable
+                sx={{
+                  borderWidth: 1.5,
+                  borderRadius: radius.md,
+                  fontWeight: 500,
+                  py: 1.25,
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                  },
+                  transition: chipTransition,
+                }}
+              />
+            </Box>
+          </Stack>
         </Stack>
+      </Stack>
 
-        {/* More Actions Menu */}
+      {/* More Actions Menu */}
         <Menu
           key="more-menu"
           anchorEl={anchorEl}
           open={open}
           onClose={handleClose}
-          PaperProps={{
-            sx: {
-              minWidth: 200,
-              mt: 1,
-              borderRadius: 2,
-              boxShadow: '0 12px 32px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.15)',
-              border: '1px solid rgba(0,95,115,0.08)',
-              backdropFilter: 'blur(20px) saturate(180%)',
-            },
-          }}
+          PaperProps={{ sx: menuPaperSx }}
         >
           <MenuItem onClick={() => handleAction(() => onCreateShift?.())}>
             <ListItemIcon>
@@ -276,7 +323,6 @@ export function QuickActions({
             </MenuItem>
           </Link>
         </Menu>
-      </Stack>
     </GlassCard>
   );
 }

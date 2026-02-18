@@ -1,0 +1,39 @@
+---
+description: npm install ENOTEMPTY bei next beheben
+alwaysApply: false
+globs: package.json,package-lock.json
+---
+
+# npm install ENOTEMPTY (next)
+
+Wenn `npm install` mit **ENOTEMPTY** fehlschlägt beim Umbenennen von `node_modules/next` nach `node_modules/.next-*`:
+
+## Ursache
+
+Ein früherer fehlgeschlagener Install hat ein temporäres Verzeichnis `node_modules/.next-XXXXXXXX` zurückgelassen. Beim nächsten Install will npm `next` dorthin umbenennen – der Ordner existiert bereits → ENOTEMPTY.
+
+## Vorgehen
+
+1. **Temp-Ordner löschen** (exakter Name kann variieren, mit Tab vervollständigen oder `ls node_modules/.next-*`):
+   ```bash
+   rm -rf node_modules/.next-Z73LUnIF
+   ```
+   oder alle solchen Ordner:
+   ```bash
+   rm -rf node_modules/.next-*
+   ```
+
+2. **Erneut installieren:**
+   ```bash
+   npm install
+   ```
+
+3. **Falls ENOTEMPTY weiterhin auftritt:** Komplett neu installieren (keine anderen Prozesse auf dem Projektordner, z. B. IDE/Editor schließen oder in externem Terminal ausführen):
+   ```bash
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+
+## Hinweis
+
+Nach einer Neuinstallation ggf. Dev-Server neu starten (siehe 09-dev-server-restart.mdc).

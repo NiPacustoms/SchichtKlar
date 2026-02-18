@@ -59,7 +59,7 @@ let storage: FirebaseStorage | null = null;
 let functions: Functions | null = null;
 // Messaging wird nicht mehr hier initialisiert, da es in pushNotifications.ts
 // eigenständig initialisiert wird. Dies verhindert Webpack-Chunk-Probleme.
-let messaging: Messaging | null = null;
+const messaging: Messaging | null = null;
 
 // Initialize Firebase services only in browser
 if (typeof window !== 'undefined' && app) {
@@ -110,18 +110,18 @@ if (typeof window !== 'undefined') {
   const isHarmlessFirestoreError = (errorText: string): boolean => {
     const lowerText = errorText.toLowerCase();
     
-    // Permission-Denied-Fehler unterdrücken
-    const isExpectedPermissionError = 
+    // Alle Firestore Permission-Denied-Fehler unterdrücken (Listener/Queries; Rules-Fallback läuft über User-Dokument)
+    const isExpectedPermissionError =
       (lowerText.includes('permission-denied') ||
        lowerText.includes('missing or insufficient permissions') ||
        lowerText.includes('[code=permission-denied]')) &&
-      (lowerText.includes('users/') || 
-       lowerText.includes('users') ||
-       lowerText.includes('snapshot listener') ||
-       lowerText.includes('authcontext') ||
-       lowerText.includes('getdoc') ||
+      (lowerText.includes('snapshot listener') ||
        lowerText.includes('@firebase/firestore') ||
-       lowerText.includes('firestore'));
+       lowerText.includes('firestore') ||
+       lowerText.includes('users/') ||
+       lowerText.includes('users') ||
+       lowerText.includes('authcontext') ||
+       lowerText.includes('getdoc'));
     
     // Harmlose Firestore-Verbindungsfehler beim Schließen von Listenern unterdrücken
     // Diese Fehler treten auf, wenn Listener versuchen, sich zu trennen, aber die Verbindung bereits geschlossen ist
@@ -145,8 +145,15 @@ if (typeof window !== 'undefined') {
   
   // Console.error Handler
   console.error = (...args: unknown[]) => {
-    const errorMessage = args[0]?.toString() || '';
-    const errorStack = args.length > 1 ? args[1]?.toString() || '' : '';
+    const first = args[0];
+    const errorMessage =
+      (first && typeof first === 'object' && 'message' in first
+        ? String((first as Error).message)
+        : first?.toString()) || '';
+    const errorStack =
+      (first && typeof first === 'object' && 'stack' in first
+        ? String((first as Error).stack)
+        : args.length > 1 ? args[1]?.toString() : '') || '';
     const allErrorText = `${errorMessage} ${errorStack}`;
     
     if (isHarmlessFirestoreError(allErrorText)) {

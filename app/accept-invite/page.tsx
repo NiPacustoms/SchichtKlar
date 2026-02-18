@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 /**
- * Redirect page: /accept-invite → /einladung-annehmen
- * This page redirects to the German accept invite route, preserving query parameters.
+ * Inner component that uses useSearchParams – must be wrapped in Suspense for static export.
  */
-export default function AcceptInviteRedirect() {
+function AcceptInviteRedirectInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -20,4 +19,16 @@ export default function AcceptInviteRedirect() {
   }, [router, searchParams]);
 
   return null;
+}
+
+/**
+ * Redirect page: /accept-invite → /einladung-annehmen
+ * This page redirects to the German accept invite route, preserving query parameters.
+ */
+export default function AcceptInviteRedirect() {
+  return (
+    <Suspense fallback={null}>
+      <AcceptInviteRedirectInner />
+    </Suspense>
+  );
 }

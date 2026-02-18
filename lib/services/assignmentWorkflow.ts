@@ -35,7 +35,16 @@ export const assignmentWorkflow = {
    * idToken: Firebase ID-Token (z. B. firebaseUser.getIdToken()).
    */
   createWithMatching: (payload: CreateWithMatchingInput & { selectedUserIds?: string[] }, idToken: string) =>
-    cloudFunctions.createAssignmentWithMatching(payload, idToken),
+    cloudFunctions.createAssignmentWithMatching(
+      payload as Record<string, unknown> & {
+        facilityId: string;
+        companyId: string;
+        startDate: string;
+        startTime: string;
+        endTime: string;
+      },
+      idToken
+    ),
 
   /**
    * Einsatz mit Grund und Signatur ablehnen (Mitarbeiter).

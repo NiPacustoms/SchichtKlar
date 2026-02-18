@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { settingsService } from '@/lib/services/settingsService';
 import { toast } from '@/lib/utils/toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/contexts/PermissionsContext';
 
 export interface BrandingSettings {
   id: string;
@@ -15,13 +16,14 @@ export interface BrandingSettings {
 
 export function useBrandingSettings(currentUserId?: string) {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin' || user?.role === 'dispatcher';
+  const { user: _user } = useAuth();
+  const { canAccessAdminArea } = usePermissions();
+  const isAdmin = canAccessAdminArea;
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['brandingSettings'],
     queryFn: async () => {
-      // Only try to load settings if user is admin/dispatcher
+      // Only try to load settings if user is admin
       // For non-admin users, return defaults immediately
       // showLogo defaults to true so logo is shown by default
       if (!isAdmin) {

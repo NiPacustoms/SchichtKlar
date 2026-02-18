@@ -376,9 +376,8 @@ export const settingsService = {
         await this.updateSection('email', settings.email);
       }
       
-      // TODO: Import user roles, document types, and email templates
-      // This would require more complex logic to handle conflicts
-      
+      // Optional V2: Rollen, Dokumenttypen, E-Mail-Vorlagen beim Import abgleichen.
+
     } catch (error) {
       throw error;
     }

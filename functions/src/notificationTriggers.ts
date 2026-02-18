@@ -15,7 +15,6 @@ const TEMPLATE_KEYS = {
   DOCUMENT_VERIFIED: 'document_verified',
   DOCUMENT_REJECTED: 'document_rejected',
   DOCUMENT_EXPIRY_WARNING: 'document_expiry_warning',
-  MESSAGE_NEW: 'new_message',
   SHIFT_REQUESTED_ADMIN: 'shift_requested_admin',
   ASSIGNMENT_ACCEPTED_ADMIN: 'assignment_accepted_admin',
   SHIFT_FULL_ADMIN: 'shift_full_admin',
@@ -270,7 +269,7 @@ export const onShiftAssigned = onDocumentUpdated('shifts/{shiftId}', async event
     await sendNotification({
       userId: after.assignedUserId,
       templateKey: TEMPLATE_KEYS.SHIFT_ASSIGNED,
-      actionUrl: '/schedule',
+      actionUrl: '/employee/dienstplan',
       payload: {
         shiftType: after.type || 'Dienst',
         shiftDate,
@@ -299,7 +298,7 @@ export const onAssignmentStatusChanged = onDocumentUpdated(
     await sendNotification({
       userId: after.userId,
       templateKey: TEMPLATE_KEYS.ASSIGNMENT_CONFIRMED,
-      actionUrl: '/schedule',
+      actionUrl: '/employee/dienstplan',
       payload: {
         assignmentId: event.params.assignmentId,
         shiftId: after.shiftId,
@@ -315,7 +314,7 @@ export const onAssignmentStatusChanged = onDocumentUpdated(
     await sendNotification({
       userId: after.userId,
       templateKey: TEMPLATE_KEYS.ASSIGNMENT_REJECTED,
-      actionUrl: '/schedule',
+      actionUrl: '/employee/dienstplan',
       payload: {
         assignmentId: event.params.assignmentId,
         shiftId: after.shiftId,
@@ -343,7 +342,7 @@ export const onDocumentVerified = onDocumentUpdated('documents/{documentId}', as
     await sendNotification({
       userId: after.userId,
       templateKey: TEMPLATE_KEYS.DOCUMENT_VERIFIED,
-      actionUrl: '/profile',
+      actionUrl: '/employee/profil',
       payload: {
         documentName: after.name,
         documentId: event.params.documentId,
@@ -358,7 +357,7 @@ export const onDocumentVerified = onDocumentUpdated('documents/{documentId}', as
     await sendNotification({
       userId: after.userId,
       templateKey: TEMPLATE_KEYS.DOCUMENT_REJECTED,
-      actionUrl: '/profile',
+      actionUrl: '/employee/profil',
       payload: {
         documentName: after.name,
         documentId: event.params.documentId,
@@ -389,7 +388,7 @@ export const checkDocumentExpiry = onDocumentCreated('documents/{documentId}', a
     await sendNotification({
       userId: data.userId as string,
       templateKey: TEMPLATE_KEYS.DOCUMENT_EXPIRY_WARNING,
-      actionUrl: '/profile',
+      actionUrl: '/employee/profil',
       payload: {
         documentName: data.name,
         documentId: event.params.documentId,
@@ -402,45 +401,6 @@ export const checkDocumentExpiry = onDocumentCreated('documents/{documentId}', a
         subject: 'Dokument läuft bald ab',
       },
     });
-  }
-});
-
-// New Message Notification
-export const onNewMessage = onDocumentCreated('messages/{messageId}', async event => {
-  const message = event.data?.data();
-  if (!message) return;
-
-  try {
-    // Get channel participants
-    const channelDoc = await db.collection('channels').doc(message.channelId).get();
-    const channelData = channelDoc.data();
-
-    if (!channelData?.participants) return;
-
-    // Notify all participants except the sender
-    const promises = channelData.participants
-      .filter((participantId: string) => participantId !== message.userId)
-      .map((participantId: string) =>
-        sendNotification({
-          userId: participantId,
-          templateKey: TEMPLATE_KEYS.MESSAGE_NEW,
-          actionUrl: `/unterhaltungen?channel=${message.channelId}`,
-          payload: {
-            channelId: message.channelId,
-            senderId: message.userId,
-            snippet: message.content?.substring(0, 120),
-          },
-          fallback: {
-            title: 'Neue Nachricht',
-            message: (message.content || '').substring(0, 100),
-            subject: 'Neue Nachricht',
-          },
-        })
-      );
-
-    await Promise.all(promises);
-  } catch (error) {
-    logger.error('Error sending message notifications:', error);
   }
 });
 

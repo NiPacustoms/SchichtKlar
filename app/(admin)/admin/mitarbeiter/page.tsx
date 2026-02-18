@@ -18,6 +18,7 @@ import { StaffStatusCard } from '@/components/admin/StaffStatusCard';
 import { StaffGroupCard } from '@/components/admin/StaffGroupCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { escapeHtml } from '@/lib/utils/sanitize';
 import { People, Add, Group, Edit, Delete, Visibility } from '@mui/icons-material';
 import {
@@ -45,7 +46,7 @@ import Pagination from '@mui/material/Pagination';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { auth } from '@/lib/firebase';
 import { sendSignInLinkToEmail } from 'firebase/auth';
-import { roleLabelMap } from '@/lib/validations/staff';
+import { roleLabelMap, type StaffUpdateInput } from '@/lib/validations/staff';
 import ConfirmDestructiveDialog from '@/components/ui/ConfirmDestructiveDialog';
 
 // Use User type from services instead of custom interface
@@ -364,11 +365,11 @@ export default function StaffManagementPage() {
     createStaffMutation.mutate(staffData);
   };
 
-  const handleEditStaff = (staffData: Partial<User>) => {
+  const handleEditStaff = (staffData: StaffUpdateInput) => {
     if (!selectedStaff) return;
 
-    // IBAN-Leerzeichen entfernen, falls vorhanden
-    const processedData = { ...staffData };
+    // IBAN-Leerzeichen entfernen, falls vorhanden; customRoleId null → undefined für User-Typ
+    const processedData = { ...staffData, customRoleId: staffData.customRoleId ?? undefined } as Partial<User>;
     if (processedData.bankAccount?.iban && typeof processedData.bankAccount.iban === 'string') {
       processedData.bankAccount = {
         ...processedData.bankAccount,
@@ -499,8 +500,6 @@ export default function StaffManagementPage() {
     switch (role) {
       case 'admin':
         return 'error';
-      case 'dispatcher':
-        return 'warning';
       case 'nurse':
         return 'success';
       default:
@@ -509,7 +508,7 @@ export default function StaffManagementPage() {
   };
 
   const getRoleLabel = (role: string) =>
-    roleLabelMap[(role as keyof typeof roleLabelMap) || 'nurse'] || 'Krankenschwester';
+    role === 'dispatcher' ? 'Administrator' : (roleLabelMap[(role as keyof typeof roleLabelMap) || 'nurse'] || 'Krankenschwester');
 
   if (authLoading || staffLoading) {
     return <LoadingSpinner message="Mitarbeiterverwaltung wird geladen..." />;
@@ -521,18 +520,18 @@ export default function StaffManagementPage() {
 
   if (!user?.companyId) {
     return (
-      <Box sx={{ p: 3 }}>
+      <PageContainer maxWidth="wide">
         <Alert severity="warning">
           Keine Unternehmens-ID gefunden. Bitte kontaktiere den Administrator, um dein Konto einem
           Unternehmen zuzuordnen.
         </Alert>
-      </Box>
+      </PageContainer>
     );
   }
 
   return (
     <>
-      <Box sx={{ maxWidth: 1400, mx: 'auto', p: 3 }}>
+      <PageContainer maxWidth="wide">
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Typography
@@ -579,10 +578,10 @@ export default function StaffManagementPage() {
           </Grid>
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <StaffGroupCard
-              title="Disponenten"
-              value={allStaff.filter(s => s.role === 'dispatcher').length}
+              title="Administratoren"
+              value={allStaff.filter(s => s.role === 'admin').length}
               icon={<People />}
-              color="warning"
+              color="error"
             />
           </Grid>
         </Grid>
@@ -748,7 +747,7 @@ export default function StaffManagementPage() {
                         />
                       </Box>
                       <input
-                        aria-label="select-staff"
+                        aria-label="Mitarbeiter auswählen"
                         type="checkbox"
                         checked={selectedIds.includes(member.id)}
                         onChange={() => toggleSelected(member.id)}
@@ -915,7 +914,7 @@ export default function StaffManagementPage() {
             </Button>
           </Box>
         )}
-      </Box>
+      </PageContainer>
       {/* Dialogs */}
       <StaffCreateDialog
         open={createDialogOpen}

@@ -122,10 +122,8 @@ export function validateLegalConfig(): void {
 }
 
 /**
- * Lädt Legal-Info aus SystemSettings oder verwendet Defaults
- * 
- * Clientseitig: Gibt sofort Defaults zurück
- * Serverseitig: Könnte aus SystemSettings laden (TODO für Produktion)
+ * Lädt Legal-Info aus SystemSettings oder verwendet Defaults.
+ * Optional Produktion: aus Firestore/SystemSettings laden.
  */
 export function getLegalInfo(): LegalInfo {
   // In Production: Validiere dass keine Mock-Daten verwendet werden

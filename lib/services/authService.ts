@@ -9,7 +9,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, getDb } from '../firebase';
 import { logger } from '@/lib/logging';
 
-type SupportedUserRole = 'admin' | 'dispatcher' | 'nurse';
+type SupportedUserRole = 'admin' | 'nurse';
 
 export interface UserProfile {
   uid: string;
@@ -83,20 +83,18 @@ class AuthService {
     return auth?.currentUser || null;
   }
 
-  /** Setzt __session-Cookie für Middleware (Zugriff auf /admin und /employee). */
+  /** Setzt __session-Cookie für Middleware (Zugriff auf /admin und /employee). Wirft bei Fehler, damit kein Redirect ohne Cookie erfolgt. */
   static async setSessionCookie(firebaseUser: User): Promise<void> {
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        credentials: 'include',
-      });
-      if (!res.ok) {
-        logger.warn('Session cookie set failed', {}, { status: res.status });
-      }
-    } catch (e) {
-      logger.warn('Session cookie set failed', {}, { error: e instanceof Error ? e.message : String(e) });
+    const token = await firebaseUser.getIdToken();
+    const res = await fetch('/api/auth/session', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      logger.warn('Session cookie set failed', {}, { status: res.status, body: text });
+      throw new Error(`Session fehlgeschlagen (${res.status}). Bitte erneut anmelden.`);
     }
   }
 

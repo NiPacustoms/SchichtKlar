@@ -79,7 +79,7 @@ export function renderAssignmentFormEmailHtml(payload: AssignmentFormEmailPayloa
 }
 
 export async function sendAssignmentFormEmail(payload: AssignmentFormEmailPayload): Promise<void> {
-  // TODO: Provider integrieren. Vorläufig nur Logging, um Flow zu schließen.
+  // Nur Logging, kein Versand. Optional V2: SendGrid/Resend o. Ä. integrieren.
   logger.info('[Email] Assignment Form', {}, { payload, html: renderAssignmentFormEmailHtml(payload) });
 }
 

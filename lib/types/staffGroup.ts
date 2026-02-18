@@ -21,6 +21,6 @@ export interface StaffGroupMember {
   userId: string;
   displayName: string;
   email: string;
-  role: 'nurse' | 'admin' | 'dispatcher';
+  role: 'nurse' | 'admin';
   addedAt: Date;
 }

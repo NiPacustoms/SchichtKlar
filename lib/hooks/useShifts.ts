@@ -5,8 +5,9 @@ import { assignmentService, cloudFunctions, shiftService } from '@/lib/services'
 import { Shift, ShiftFilters } from '@/lib/services/shifts';
 import { toast } from '@/lib/utils/toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { errorHandler } from '@/lib/errors';
-import { logger } from '@/lib/logging';
+import { getShiftDisplayStatus } from '@/lib/utils/shiftStatus';
+import { errorHandler as _errorHandler } from '@/lib/errors';
+import { logger as _logger } from '@/lib/logging';
 
 interface ShiftStats {
   total: number;
@@ -119,14 +120,12 @@ export function useShifts(filters: ShiftFilters = {}) {
     },
   });
 
-  // Calculate statistics
+  // Calculate statistics (Beendet = Schichtdatum+Endzeit vergangen)
   const getShiftStats = (): ShiftStats => {
-    // Ensure shifts is an array before processing
     const shiftsArray: Shift[] = Array.isArray(shifts) ? shifts : [];
-    
     const total = shiftsArray.length;
-    const open = shiftsArray.filter((s: Shift) => s.status === 'open').length;
-    const filled = shiftsArray.filter((s: Shift) => s.status === 'filled').length;
+    const open = shiftsArray.filter((s: Shift) => getShiftDisplayStatus(s) === 'open').length;
+    const filled = shiftsArray.filter((s: Shift) => getShiftDisplayStatus(s) === 'filled').length;
     const cancelled = shiftsArray.filter((s: Shift) => s.status === 'cancelled').length;
     const assignedCount = shiftsArray.reduce((sum, s) => sum + (s.assignedCount || 0), 0);
     const totalCapacity = shiftsArray.reduce((sum, s) => sum + (s.capacity || 1), 0);

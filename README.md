@@ -74,12 +74,22 @@ Konfiguration: `firebase.json` nutzt `frameworksBackend` (Region `europe-west1`)
 
 Eine moderne, DSGVO-konforme Zeitarbeits-App für medizinisches Personal mit Fokus auf Desktop-First Design und robuste Arbeitszeiterfassung.
 
+## Architektur
+
+Die App folgt einer **Domain-Driven-Design / Hexagonal-Architektur** (L8):
+
+- **Domain/Application/Infrastructure** unter `src/` (Entities, Use Cases, Repositories, EventBus, Plugins)
+- **Composition Root:** `src/composition.ts` – zentrale Verdrahtung aller Use Cases
+- **App-Anbindung:** Plugins starten automatisch via `PluginInit`; Lese-Zugriffe z. B. über `useDomainAssignments` aus `lib/hooks/useDomainAssignments`
+
+Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [ARCHITECTURE-HEALTH.md](ARCHITECTURE-HEALTH.md).
+
 ## 🚀 Features
 
 ### 🔐 Authentifizierung & RBAC
 
 - **Sichere Anmeldung** mit E-Mail/Passwort
-- **Rollenbasierte Zugriffskontrolle** (Admin/Mitarbeiter)
+- **Rollenbasierte Zugriffskontrolle** (Admin/Mitarbeiter). Betriebsmodell: Admin registriert Firma, lädt Mitarbeiter ein → Admin = admin, Mitarbeiter = nurse ([docs/ROLLEN-UND-EINLADUNGEN.md](docs/ROLLEN-UND-EINLADUNGEN.md))
 - **Session-Persistierung** und automatische Weiterleitung
 - **Account-Deaktivierung** für inaktive Benutzer
 

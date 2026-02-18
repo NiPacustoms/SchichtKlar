@@ -13,28 +13,38 @@ interface LoadingSpinnerProps {
   variant?: LoadingSpinnerVariant;
   showLogo?: boolean;
   color?: 'primary' | 'inherit' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
+  /** Für Screenreader; falls nicht gesetzt, wird `message` verwendet. */
+  'aria-label'?: string;
 }
 
 /**
- * Einheitliche LoadingSpinner Komponente
+ * Einheitliche LoadingSpinner Komponente (A11y, Reduced Motion)
  *
- * Verwendet konsistentes Branding (#005f73) und einheitliches Design
+ * - Verwendet konsistentes Branding und einheitliches Design
+ * - Accessibility: role="status", aria-live="polite", aria-label (aus message oder aria-label)
+ * - Inline/Button: aria-hidden (dekorativ, Button-Text wird angesagt)
+ * - prefers-reduced-motion: Puls/Breathe aus, MUI-Rotation verlangsamt
  *
- * @param message - Optionaler Text unter dem Spinner
+ * @param message - Optionaler Text unter dem Spinner (wird auch für aria-label genutzt)
  * @param size - Größe: 'small' (24px), 'medium' (40px), 'large' (64px) oder Zahl
  * @param variant - Variante: 'spinner' (Standard), 'skeleton', 'fullscreen', 'inline' (für Buttons)
  * @param showLogo - Logo im fullscreen Modus anzeigen
  * @param color - MUI Theme-Farbe (Standard: 'primary' = #005f73)
+ * @param aria-label - Überschreibt message für Screenreader
  */
+const DEFAULT_LOADING_LABEL = 'Wird geladen';
+
 export function LoadingSpinner({
   message = 'JobFlow wird geladen...',
   size = 'medium',
   variant = 'spinner',
   showLogo = true,
   color = 'primary',
+  'aria-label': ariaLabel,
 }: LoadingSpinnerProps) {
   const { branding } = useBrandingSettings();
   const theme = useTheme();
+  const statusLabel = ariaLabel ?? message ?? DEFAULT_LOADING_LABEL;
 
   // Größe berechnen
   const getSizeValue = (): number => {
@@ -62,6 +72,9 @@ export function LoadingSpinner({
 
     return (
       <Box
+        role="status"
+        aria-live="polite"
+        aria-label={statusLabel}
         sx={{
           position: 'fixed',
           top: 0,
@@ -108,6 +121,7 @@ export function LoadingSpinner({
             }}
           />
           <Box
+            className="loading-spinner-pulse loading-spinner-breathe"
             sx={{
               position: 'absolute',
               top: '50%',
@@ -117,7 +131,6 @@ export function LoadingSpinner({
               height: sizeValue * 0.4,
               borderRadius: '50%',
               background: `linear-gradient(135deg, ${spinnerColor} 0%, ${theme.palette.primary.dark || '#0a9396'} 100%)`,
-              animation: 'pulse 2s ease-in-out infinite',
             }}
           />
         </Box>
@@ -142,7 +155,7 @@ export function LoadingSpinner({
   // Skeleton Variante
   if (variant === 'skeleton') {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box role="status" aria-live="polite" aria-label={statusLabel} sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
           <Skeleton variant="circular" width={48} height={48} sx={{ mr: 2 }} />
           <Box>
@@ -156,13 +169,14 @@ export function LoadingSpinner({
     );
   }
 
-  // Inline Variante (für Buttons und kleine Bereiche)
+  // Inline Variante (für Buttons und kleine Bereiche) – dekorativ, Button-Text wird angesagt
   if (variant === 'inline') {
     return (
       <CircularProgress
         size={sizeValue}
         thickness={4}
         color={color}
+        aria-hidden
         sx={{
           '& .MuiCircularProgress-circle': {
             strokeLinecap: 'round',
@@ -175,6 +189,9 @@ export function LoadingSpinner({
   // Standard Spinner Variante
   return (
     <Box
+      role="status"
+      aria-live="polite"
+      aria-label={statusLabel}
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -204,6 +221,7 @@ export function LoadingSpinner({
           }}
         />
         <Box
+          className="loading-spinner-pulse loading-spinner-breathe"
           sx={{
             position: 'absolute',
             top: '50%',
@@ -213,7 +231,6 @@ export function LoadingSpinner({
             height: sizeValue * 0.3,
             borderRadius: '50%',
             background: `linear-gradient(135deg, ${spinnerColor} 0%, ${theme.palette.primary.dark || '#0a9396'} 100%)`,
-            animation: 'pulse 2s ease-in-out infinite',
           }}
         />
       </Box>
@@ -251,6 +268,7 @@ export function InlineSpinner({
       size={size}
       thickness={4}
       color={color}
+      aria-hidden
       sx={{
         '& .MuiCircularProgress-circle': {
           strokeLinecap: 'round',

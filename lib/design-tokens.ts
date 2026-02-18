@@ -1,10 +1,29 @@
 /**
  * JobFlow Design Tokens – Single Source of Truth
  * Genutzt von MUI-Theme (lib/theme.ts) und CSS (globals.css / TokenInjector).
- * Siehe docs/DESIGN_NEXT_LEVEL_PLAN.md und .cursor/rules/01-design-system.mdc
+ * Elite Design System: Apple HIG + Meta FTL + Linear; weltweit auf allen Endgeräten.
  */
 
 export const spacing = 8;
+
+/** Spacing scale (8px grid) – ersetzt Magic Numbers (4, 8, 16, 24, 32) */
+export const spacingScale = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+} as const;
+
+/** Breakpoints (px) – 320px Handys bis 4K; Desktop-First ab xl (1280) */
+export const breakpoints = {
+  xs: 0,
+  sm: 360,
+  md: 600,
+  lg: 900,
+  xl: 1280,
+  xxl: 1920,
+} as const;
 
 export const radius = {
   sm: 8,
@@ -120,6 +139,42 @@ export const shadows = {
   largeDark: '0 12px 32px rgba(0,0,0,0.35), 0 4px 12px rgba(0,0,0,0.4)',
 } as const;
 
+/** Elevation scale (0–24) für GlassCard und Lift-Effekte */
+export const elevation = {
+  0: 'none',
+  1: '0 1px 3px rgba(0,0,0,0.12)',
+  2: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.1)',
+  3: '0 4px 16px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.12)',
+  4: '0 12px 32px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.15)',
+} as const;
+
+export const elevationDark = {
+  0: 'none',
+  1: '0 1px 3px rgba(0,0,0,0.25)',
+  2: '0 2px 8px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.25)',
+  3: '0 4px 16px rgba(0,0,0,0.25), 0 2px 6px rgba(0,0,0,0.3)',
+  4: '0 12px 32px rgba(0,0,0,0.35), 0 4px 12px rgba(0,0,0,0.4)',
+} as const;
+
+/** Assignment-Status-Farben (StatusBadge + AssignmentCard) – weltweit konsistent */
+export const assignmentStatusColors: Record<string, string> = {
+  requested: '#ff9800',
+  pending: '#ff9800',
+  published: '#ff9800',
+  accepted: '#4caf50',
+  assigned: '#2196f3',
+  declined: '#f44336',
+  completed: '#2196f3',
+  done: '#2196f3',
+  cancelled: '#9e9e9e',
+  'pending-signature': '#9e9e9e',
+  secured: '#4caf50',
+  besichert: '#4caf50',
+};
+
+/** Alias für Lesbarkeit (Elite Design: requested/accepted/declined) */
+export const statusColors = assignmentStatusColors;
+
 // Gradient definitions (CSS-ready)
 export const gradients = {
   light: {
@@ -133,5 +188,15 @@ export const gradients = {
       'radial-gradient(ellipse 120% 100% at 50% 0%, rgba(0, 95, 115, 0.15), transparent 70%), radial-gradient(ellipse 80% 80% at 20% 50%, rgba(148, 210, 189, 0.06), transparent 60%), linear-gradient(180deg, #252422 0%, #1e1d1b 100%)',
   },
 } as const;
+
+/** Shimmer-Gradient (Petrol → Mustard) für Skeleton-Loading – in CSS keyframes nutzen */
+export const shimmerGradient =
+  'linear-gradient(90deg, transparent 0%, rgba(0,95,115,0.15) 40%, rgba(232,170,66,0.2) 60%, transparent 100%)';
+
+/** Mindest-Tap-Target (weltweit a11y): 48px */
+export const minTouchTargetPx = 48;
+
+/** BottomNav Höhe (px) */
+export const bottomNavHeightPx = 56;
 
 export type ThemeMode = 'light' | 'dark';

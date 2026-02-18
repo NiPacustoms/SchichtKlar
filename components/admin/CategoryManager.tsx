@@ -61,7 +61,7 @@ function TabPanel(props: TabPanelProps) {
 export function CategoryManager({ open, onClose, onSave }: CategoryManagerProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [categories, setCategories] = useState({
-    roles: ['nurse', 'dispatcher', 'admin'],
+    roles: ['nurse', 'admin'],
     groups: ['Intensivstation', 'Operationssaal', 'Geriatrie', 'Pädiatrie'],
     qualifications: ['Krankenpfleger', 'Intensivpflege', 'OP-Pflege', 'Geriatrie'],
     jobTitles: [
@@ -323,7 +323,7 @@ export function CategoryManager({ open, onClose, onSave }: CategoryManagerProps)
                 value={newItem}
                 onChange={e => setNewItem(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="z.B. nurse, dispatcher, admin"
+                placeholder="z.B. nurse, admin"
                 helperText="Nur fortgeschrittene Nutzung – verweist auf technische Rollen"
               />
               <Button

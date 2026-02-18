@@ -4,7 +4,11 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { shiftService, userService } from '@/lib/services';
 import { Shift } from '@/lib/types';
 import {
-  ContentCopy,
+  getShiftDisplayStatus,
+  getShiftStatusLabel,
+  type ShiftDisplayStatus,
+} from '@/lib/utils/shiftStatus';
+import {
   Delete,
   Edit,
   Info,
@@ -43,7 +47,6 @@ interface ShiftManagementCardProps {
   onEdit?: (shift: Shift) => void;
   onAssign?: (shift: Shift) => void;
   onDelete?: (shift: Shift) => void;
-  onDuplicate?: (shift: Shift) => void;
 }
 
 export function ShiftManagementCard({
@@ -51,7 +54,6 @@ export function ShiftManagementCard({
   onEdit,
   onAssign,
   onDelete,
-  onDuplicate,
 }: ShiftManagementCardProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -77,31 +79,23 @@ export function ShiftManagementCard({
   // Besetzungsgrad für Progress Bar
   const occupancyRate = (shift.assignedCount / shift.capacity) * 100;
 
-  const getStatusColor = (status: Shift['status']) => {
-    switch (status) {
+  const getStatusColor = (displayStatus: ShiftDisplayStatus) => {
+    switch (displayStatus) {
       case 'open':
         return 'info';
       case 'filled':
         return 'success';
       case 'cancelled':
         return 'error';
+      case 'ended':
+        return 'default';
       default:
         return 'default';
     }
   };
 
-  const getStatusLabel = (status: Shift['status']) => {
-    switch (status) {
-      case 'open':
-        return 'Offen';
-      case 'filled':
-        return 'Besetzt';
-      case 'cancelled':
-        return 'Abgesagt';
-      default:
-        return 'Unbekannt';
-    }
-  };
+  const displayStatus = getShiftDisplayStatus(shift);
+  const statusLabel = getShiftStatusLabel(displayStatus);
 
   const getShiftTypeColor = (type: Shift['type']) => {
     switch (type) {
@@ -161,12 +155,12 @@ export function ShiftManagementCard({
           >
             <Box sx={{ flex: 1 }}>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                {shift.type}
+                Schicht
               </Typography>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <Schedule sx={{ fontSize: 16, color: getShiftTypeColor(shift.type) }} />
-                <Typography variant="body2" sx={{ color: getShiftTypeColor(shift.type) }}>
+                <Schedule sx={{ fontSize: 16, color: 'primary.main' }} />
+                <Typography variant="body2" color="text.secondary">
                   {format(shift.date, 'dd.MM.yyyy', { locale: de })} • {shift.startTime} -{' '}
                   {shift.endTime}
                 </Typography>
@@ -182,8 +176,8 @@ export function ShiftManagementCard({
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Chip
-                label={getStatusLabel(shift.status)}
-                color={getStatusColor(shift.status) as 'default' | 'info' | 'success' | 'error'}
+                label={statusLabel}
+                color={getStatusColor(displayStatus) as 'default' | 'info' | 'success' | 'error'}
                 size="small"
               />
 
@@ -294,7 +288,7 @@ export function ShiftManagementCard({
               size="small"
               startIcon={<Edit />}
               onClick={handleEdit}
-              disabled={shift.status === 'cancelled'}
+              disabled={shift.status === 'cancelled' || displayStatus === 'ended'}
             >
               Bearbeiten
             </Button>
@@ -322,12 +316,6 @@ export function ShiftManagementCard({
           <PersonAdd sx={{ mr: 1 }} />
           Zuweisen
         </MenuItem>
-        {onDuplicate && (
-          <MenuItem onClick={() => onDuplicate(shift)}>
-            <ContentCopy sx={{ mr: 1 }} />
-            Duplizieren
-          </MenuItem>
-        )}
         <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
           <Delete sx={{ mr: 1 }} />
           Löschen

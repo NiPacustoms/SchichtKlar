@@ -98,13 +98,11 @@ export interface SettingsUpdateData {
   autoBackup?: boolean;
   backupFrequency?: 'daily' | 'weekly' | 'monthly';
   features?: {
-    enableChat?: boolean;
     enableReports?: boolean;
     enableAssignments?: boolean;
     enableAuditLogs?: boolean;
     enableDocumentTypes?: boolean;
     enableTemplates?: boolean;
-    enableEmployeeChat?: boolean;
     enableEmployeeDocuments?: boolean;
     enableEmployeeReports?: boolean;
     enableEmployeeAssignments?: boolean;

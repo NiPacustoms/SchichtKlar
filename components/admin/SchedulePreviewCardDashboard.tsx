@@ -2,6 +2,7 @@
 
 import { GlassCard } from '@/components/ui/GlassCard';
 import type { StaffingDayOverview } from '@/lib/admin/dashboardTypes';
+import { spacingScale } from '@/lib/design-tokens';
 import { Box, Chip, Typography } from '@mui/material';
 import {
   CalendarMonth as CalendarIcon,
@@ -47,7 +48,7 @@ export function SchedulePreviewCardDashboard({
   const getStatusLabel = (status: StaffingDayOverview['status']) => {
     switch (status) {
       case 'ok':
-        return 'OK';
+        return 'In Ordnung';
       case 'understaffed':
         return 'Unterbesetzt';
       case 'overstaffed':
@@ -72,10 +73,17 @@ export function SchedulePreviewCardDashboard({
   if (loading && days.length === 0) {
     return (
       <GlassCard>
-        <Box sx={{ p: 3, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            Planungsübersicht wird geladen...
-          </Typography>
+        <Box sx={{ p: 3 }}>
+          <Box className="shimmer-skeleton" sx={{ height: 24, width: 160, mb: 3 }} />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: spacingScale.sm }}>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Box
+                key={i}
+                className="shimmer-skeleton"
+                sx={{ height: 72, borderRadius: 1 }}
+              />
+            ))}
+          </Box>
         </Box>
       </GlassCard>
     );
@@ -97,7 +105,7 @@ export function SchedulePreviewCardDashboard({
     );
   }
 
-  const criticalDays = days.filter(d => d.status !== 'ok');
+  const _criticalDays = days.filter(d => d.status !== 'ok');
   const totalUnfilled = days.reduce((sum, d) => sum + d.unfilledShifts, 0);
 
   return (
@@ -118,7 +126,7 @@ export function SchedulePreviewCardDashboard({
           )}
         </Box>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: spacingScale.sm }}>
           {days.slice(0, 7).map(day => {
             const date = new Date(day.date);
             const isCritical = day.status !== 'ok';

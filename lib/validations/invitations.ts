@@ -9,7 +9,7 @@ import { z } from 'zod';
  */
 export const createInvitationSchema = z.object({
   email: z.string().email('Ungültige E-Mail-Adresse'),
-  role: z.enum(['employee', 'dispatcher', 'admin']),
+  role: z.enum(['employee', 'admin']),
   facilityIds: z.array(z.string()).optional(),
   expiresInDays: z.number().int().min(1).max(30).default(7),
 });
@@ -19,7 +19,7 @@ export const createInvitationSchema = z.object({
  */
 export const invitationsQuerySchema = z.object({
   status: z.enum(['pending', 'accepted', 'expired']).optional(),
-  role: z.enum(['employee', 'dispatcher', 'admin']).optional(),
+  role: z.enum(['employee', 'admin']).optional(),
   limit: z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().min(1).max(100)).optional().default(50),
   offset: z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().min(0)).optional().default(0),
 });

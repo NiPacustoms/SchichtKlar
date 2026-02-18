@@ -4,6 +4,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { settingsService } from '@/lib/services/settingsService';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import { FeatureFlags, DEFAULT_FEATURE_FLAGS, FeatureFlagName } from '@/lib/types/featureFlags';
 
 /**
@@ -23,7 +24,8 @@ import { FeatureFlags, DEFAULT_FEATURE_FLAGS, FeatureFlagName } from '@/lib/type
  */
 export function useFeatureFlags() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin' || user?.role === 'dispatcher';
+  const { canAccessAdminArea } = usePermissions();
+  const isAdmin = canAccessAdminArea;
   const isEmployee = user?.role === 'nurse';
 
   const {
@@ -60,7 +62,6 @@ export function useFeatureFlags() {
 
   // Admin Features
   const adminFeatures = {
-    chat: isFeatureEnabled('enableChat'),
     reports: isFeatureEnabled('enableReports'),
     assignments: isFeatureEnabled('enableAssignments'),
     auditLogs: isFeatureEnabled('enableAuditLogs'),
@@ -69,7 +70,6 @@ export function useFeatureFlags() {
 
   // Employee Features
   const employeeFeatures = {
-    chat: isFeatureEnabled('enableEmployeeChat'),
     documents: isFeatureEnabled('enableEmployeeDocuments'),
     reports: isFeatureEnabled('enableEmployeeReports'),
     assignments: isFeatureEnabled('enableEmployeeAssignments'),

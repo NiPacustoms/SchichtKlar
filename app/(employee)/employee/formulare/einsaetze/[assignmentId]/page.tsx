@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { assignmentService, shiftService, facilityService, documentService } from '@/lib/services';
+import { assignmentService, shiftService, facilityService, documentService, timesheetService } from '@/lib/services';
 import { documentGenerationService } from '@/lib/services/documentGeneration';
 import {
   Alert,
@@ -17,11 +17,14 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { AccessTime, LocationOn, Person } from '@mui/icons-material';
+import { AccessTime, LocationOn, Person, Description } from '@mui/icons-material';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from '@/lib/utils/toast';
 import { AppLogo } from '@/components/ui/AppLogo';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { useBrandingSettings } from '@/lib/hooks/useBrandingSettings';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -57,7 +60,7 @@ export default function AssignmentFormPage() {
   const [error, setError] = useState<string | null>(null);
   const [signatureOpen, setSignatureOpen] = useState(false);
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
-  const [signerName, setSignerName] = useState<string>('');
+  const [_signerName, setSignerName] = useState<string>('');
   const [stationName, setStationName] = useState<string>('');
 
   const [assignment, setAssignment] = useState<Awaited<
@@ -67,6 +70,10 @@ export default function AssignmentFormPage() {
   const [facility, setFacility] = useState<Awaited<
     ReturnType<typeof facilityService.getById>
   > | null>(null);
+  const [timesheetForShift, setTimesheetForShift] = useState<Awaited<
+    ReturnType<typeof timesheetService.getByDate>
+  > | null>(null);
+  const [assignmentPdfUrl, setAssignmentPdfUrl] = useState<string | null>(null);
 
   const {
     register,
@@ -116,6 +123,21 @@ export default function AssignmentFormPage() {
           }
         }
 
+        // Wenn Einsatz bereits angenommen: Zeiterfassung und PDF für Zusammenfassung laden
+        const isAccepted = a.status === 'accepted' || a.formStatus === 'acknowledged';
+        if (isAccepted && a.userId && s?.date) {
+          const shiftDate = typeof s.date === 'string' ? new Date(s.date) : s.date;
+          const ts = await timesheetService.getByDate(a.userId, shiftDate);
+          if (isMounted) setTimesheetForShift(ts);
+          try {
+            const docs = await documentService.getByUserId(a.userId);
+            const pdfDoc = docs.find(d => d.notes?.includes(a.id) || d.name?.toLowerCase().includes('einsatzmitteilung'));
+            if (isMounted && pdfDoc?.url) setAssignmentPdfUrl(pdfDoc.url);
+          } catch {
+            if ((a as { pdfUrl?: string }).pdfUrl) setAssignmentPdfUrl((a as { pdfUrl: string }).pdfUrl);
+          }
+        }
+
         reset({
           mode: 'acknowledge',
           notes: '',
@@ -137,7 +159,7 @@ export default function AssignmentFormPage() {
     [saving, loading, error, isSubmitting]
   );
 
-  // Generiere PDF und speichere als Dokument
+  // Generiere PDF und speichere als Dokument (Einsatzmitteilung mit Datumsangaben oben rechts, Unterschrift bei Annahme und Ablehnung)
   const generateAndSaveDocument = async (
     isDeclined: boolean,
     signatureDataUrl?: string,
@@ -152,8 +174,9 @@ export default function AssignmentFormPage() {
     const facilityAddress = facility?.address || '';
     const shiftTimes = `${shift.startTime} - ${shift.endTime}`;
     const currentDate = new Date();
+    const shiftDate =
+      typeof shift.date === 'string' ? new Date(shift.date) : (shift.date as Date);
 
-    // Generiere PDF mit Branding
     const pdfResult = await documentGenerationService.generateDocument({
       type: 'assignment-notification',
       assignmentId: assignment.id,
@@ -162,11 +185,16 @@ export default function AssignmentFormPage() {
         employeeName,
         facilityName,
         facilityAddress,
+        stationName: stationName || undefined,
         shiftTimes,
+        assignmentCreationDate: currentDate,
+        assignmentDate: shiftDate,
         date: currentDate,
         isDeclined,
         signatureDataUrl,
         declineReason,
+        shiftType: (shift as { type?: string }).type || undefined,
+        contactPerson: facility?.contactPerson || undefined,
         branding: {
           companyName: branding?.companyName,
           companyLogo: branding?.companyLogo,
@@ -185,9 +213,11 @@ export default function AssignmentFormPage() {
       notes: `Einsatzmitteilung für Assignment ${assignment.id}`,
     });
 
-    // Speichere auch für Admin (falls Admin-ID verfügbar)
-    // TODO: Admin-ID aus Assignment oder System holen
-    // Für jetzt: Dokument ist über getAll() für Admins verfügbar (filtert nach companyId)
+    // PDF-URL am Assignment speichern, damit der Admin die Einsatzmitteilung unter „Einsätze“ öffnen kann
+    await assignmentService.update(assignment.id, {
+      pdfUrl: pdfResult.url,
+      pdfGenerated: true,
+    });
 
     return pdfResult;
   };
@@ -199,7 +229,12 @@ export default function AssignmentFormPage() {
       setSaving(true);
 
       if (formValues.mode === 'acknowledge') {
-        // Bei Annahme: Keine Unterschrift erforderlich
+        // Bei Annahme: Unterschrift erforderlich (wie bei Ablehnung), dann auf Dokument
+        if (!signatureDataUrl) {
+          setSignatureOpen(true);
+          return;
+        }
+
         await assignmentService.update(assignment.id, {
           formStatus: 'acknowledged',
           formPlace: facility?.name || shift.facilityId || '',
@@ -212,9 +247,7 @@ export default function AssignmentFormPage() {
           decidedAt: new Date(),
         });
 
-        // Generiere PDF ohne Unterschrift
-        await generateAndSaveDocument(false);
-
+        await generateAndSaveDocument(false, signatureDataUrl);
         toast.success('Einsatzmitteilung bestätigt. Danke!');
       } else {
         // Bei Ablehnung: Unterschrift erforderlich
@@ -254,12 +287,37 @@ export default function AssignmentFormPage() {
     setSignerName(name || user?.displayName || '');
     setSignatureOpen(false);
 
-    // Nach Unterschrift automatisch absenden
+    // Nach Unterschrift automatisch absenden (Annahme und Ablehnung) – dataUrl aus Closure nutzen
+    if (!assignment || !shift || !user) return;
+    if (mode === 'acknowledge') {
+      setTimeout(async () => {
+        try {
+          setSaving(true);
+          await assignmentService.update(assignment.id, {
+            formStatus: 'acknowledged',
+            formPlace: facility?.name || shift.facilityId || '',
+            formTimes: `${shift.startTime} - ${shift.endTime}`,
+            formSignatureName: user.displayName || undefined,
+            formSignedAt: new Date(),
+            status: assignment.status === 'assigned' ? 'accepted' : assignment.status,
+            acceptedAt: new Date(),
+            decidedAt: new Date(),
+          });
+          await generateAndSaveDocument(false, dataUrl);
+          toast.success('Einsatzmitteilung bestätigt. Danke!');
+          router.back();
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : 'Fehler beim Speichern');
+        } finally {
+          setSaving(false);
+        }
+      }, 100);
+      return;
+    }
     if (mode === 'decline') {
       setTimeout(() => {
         handleSubmit(async formValues => {
           if (!assignment || !shift || !user) return;
-
           try {
             setSaving(true);
             await assignmentService.update(assignment.id, {
@@ -269,7 +327,6 @@ export default function AssignmentFormPage() {
               declinedAt: new Date(formValues.declineDate!),
               decidedAt: new Date(),
             });
-
             await generateAndSaveDocument(true, dataUrl, formValues.notes?.trim() || undefined);
             toast.success('Dienst wurde abgelehnt.');
             router.back();
@@ -281,6 +338,10 @@ export default function AssignmentFormPage() {
         })();
       }, 100);
     }
+  };
+
+  const handleOpenSignature = () => {
+    setSignatureOpen(true);
   };
 
   if (authLoading || loading) {
@@ -301,6 +362,121 @@ export default function AssignmentFormPage() {
     );
   }
 
+  const isAlreadyAccepted =
+    assignment?.status === 'accepted' || assignment?.formStatus === 'acknowledged';
+
+  // Einsatz-Zusammenfassung (wenn bereits angenommen und unterschrieben)
+  if (isAlreadyAccepted && assignment && shift) {
+    const shiftDate =
+      typeof shift.date === 'string' ? new Date(shift.date) : (shift.date as Date);
+    const employeeName = user?.displayName || user?.email || 'Unbekannt';
+    const facilityName = facility?.name || shift.facilityId || 'Unbekannt';
+    const facilityAddress = facility?.address || '';
+    const stationLabel = stationName || '–';
+
+    return (
+      <PageContainer maxWidth="narrow">
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
+          Einsatz-Zusammenfassung
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+          Dieser Einsatz wurde von Ihnen bereits angenommen und unterschrieben. Hier die Übersicht.
+        </Typography>
+
+        <Card className="glass" sx={{ mb: 3 }}>
+          <CardContent>
+            <Stack spacing={2}>
+              <Stack direction="row" alignItems="flex-start" spacing={1}>
+                <LocationOn sx={{ color: 'text.secondary', mt: 0.3 }} />
+                <Box>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Einsatzort
+                  </Typography>
+                  <Typography variant="body1">
+                    {facilityName}
+                    {facilityAddress ? `, ${facilityAddress}` : ''}
+                  </Typography>
+                </Box>
+              </Stack>
+              <Box>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  Station / Etage
+                </Typography>
+                <Typography variant="body1">{stationLabel}</Typography>
+              </Box>
+              <Stack direction="row" alignItems="flex-start" spacing={1}>
+                <AccessTime sx={{ color: 'text.secondary', mt: 0.3 }} />
+                <Box>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Einsatzdatum
+                  </Typography>
+                  <Typography variant="body1">
+                    {format(shiftDate, 'd.M.yyyy', { locale: de })}
+                  </Typography>
+                </Box>
+              </Stack>
+              <Box>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  Geplante Zeit
+                </Typography>
+                <Typography variant="body1">
+                  {shift.startTime} – {shift.endTime}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  Tatsächlich geleistete Zeit
+                </Typography>
+                <Typography variant="body1">
+                  {timesheetForShift
+                    ? `${timesheetForShift.startTime || '–'} – ${timesheetForShift.endTime || '–'} (${(timesheetForShift.totalHours ?? 0).toFixed(2)} h)`
+                    : 'Noch keine Zeiterfassung für diesen Einsatz.'}
+                </Typography>
+              </Box>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Person sx={{ color: 'text.secondary', fontSize: 20 }} />
+                <Box>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Mitarbeiter
+                  </Typography>
+                  <Typography variant="body1">{employeeName}</Typography>
+                </Box>
+              </Stack>
+            </Stack>
+          </CardContent>
+        </Card>
+
+        <Card className="glass" sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Einsatzmitteilung (PDF)
+            </Typography>
+            {assignmentPdfUrl ? (
+              <Button
+                variant="contained"
+                component="a"
+                href={assignmentPdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                startIcon={<Description />}
+              >
+                PDF anzeigen
+              </Button>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                Kein PDF für diese Einsatzmitteilung vorhanden.
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
+
+        <Button variant="contained" onClick={() => router.back()} fullWidth size="large">
+          Zurück
+        </Button>
+      </PageContainer>
+    );
+  }
+
   const employeeName = user?.displayName || user?.email || 'Unbekannt';
   const facilityName = facility?.name || shift?.facilityId || 'Unbekannt';
   const facilityAddress = facility?.address || '';
@@ -308,7 +484,7 @@ export default function AssignmentFormPage() {
   const currentDate = new Date().toLocaleDateString('de-DE');
 
   return (
-    <Box sx={{ maxWidth: 720, mx: 'auto', p: 3 }}>
+    <PageContainer maxWidth="form">
       {/* Branding-Logo oben */}
       <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
         <AppLogo
@@ -322,7 +498,7 @@ export default function AssignmentFormPage() {
         />
       </Box>
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-        Einsatzmitteilung nach § 11 Absatz 2 Satz 4 AÜG / Ablehnung
+        Einsatzmitteilung nach § 11 Absatz 2 Satz 4 AÜG
       </Typography>
 
       {shift && (
@@ -340,7 +516,7 @@ export default function AssignmentFormPage() {
             <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
               <AccessTime sx={{ fontSize: 16, color: 'text.secondary' }} />
               <Typography variant="body1">
-                {shift.type || 'Schicht'} •{' '}
+                Schicht •{' '}
                 {typeof shift.date === 'string'
                   ? shift.date
                   : (shift.date as Date)?.toLocaleDateString?.('de-DE') || String(shift.date)}{' '}
@@ -492,17 +668,17 @@ export default function AssignmentFormPage() {
               <Button
                 variant="contained"
                 onClick={onSubmit}
-                disabled={isDisabled || (mode === 'decline' && !signatureDataUrl)}
+                disabled={isDisabled || !signatureDataUrl}
               >
                 {mode === 'acknowledge' ? 'Bestätigen' : 'Ablehnen'}
               </Button>
             </Stack>
 
-            {mode === 'decline' && !signatureDataUrl && (
+            {!signatureDataUrl && (
               <Button
                 variant="outlined"
                 color="primary"
-                onClick={() => setSignatureOpen(true)}
+                onClick={handleOpenSignature}
                 disabled={isDisabled}
                 fullWidth
               >
@@ -515,13 +691,13 @@ export default function AssignmentFormPage() {
 
       <SignatureDialog
         open={signatureOpen}
-        title="Unterschrift zur Ablehnung"
+        title={mode === 'decline' ? 'Unterschrift zur Ablehnung' : 'Unterschrift zur Bestätigung'}
         onClose={() => setSignatureOpen(false)}
         onSave={handleSignatureSave}
         requireName={true}
         nameLabel="Ihr Name"
         initialName={user?.displayName || ''}
       />
-    </Box>
+    </PageContainer>
   );
 }

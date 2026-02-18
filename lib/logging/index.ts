@@ -248,12 +248,12 @@ class HealthMonitor {
 
 // Initialize health checks
 HealthMonitor.registerHealthCheck('database', async () => {
-  // TODO: echte Datenbank-Prüfung integrieren
+  // Nur App-Health. Optional: echte DB-/Firestore-Ping-Prüfung.
   return true;
 });
 
 HealthMonitor.registerHealthCheck('firebase', async () => {
-  // TODO: echte Firebase-Prüfung integrieren
+  // Nur App-Health. Optional: Firestore get() oder Auth-Check.
   return true;
 });
 

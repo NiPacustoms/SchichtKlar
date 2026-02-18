@@ -192,10 +192,14 @@ export function SignatureDialog({
             required={requireName}
             error={requireName && !signerName?.trim()}
             helperText={requireName && !signerName?.trim() ? 'Bitte geben Sie Ihren Namen ein' : ''}
+            inputProps={{ 'data-testid': 'signature-signer-name' }}
+            aria-label={nameLabel}
           />
           <Box ref={containerRef} sx={{ width: '100%', userSelect: 'none' }}>
             <canvas
               ref={canvasRef}
+              data-testid="signature-canvas"
+              aria-label="Unterschrift zeichnen"
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
@@ -214,7 +218,7 @@ export function SignatureDialog({
               }}
             />
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-              <Button onClick={handleClear} size="small">
+              <Button onClick={handleClear} size="small" data-testid="signature-clear" aria-label="Unterschrift zurücksetzen">
                 Zurücksetzen
               </Button>
             </Box>
@@ -227,6 +231,8 @@ export function SignatureDialog({
           onClick={handleSave}
           variant="contained"
           disabled={!hasStrokes || (requireName && !signerName?.trim())}
+          data-testid="signature-save"
+          aria-label="Unterschrift speichern"
         >
           Unterschrift speichern
         </Button>

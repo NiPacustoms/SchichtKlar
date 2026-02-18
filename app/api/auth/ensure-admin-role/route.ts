@@ -14,13 +14,13 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 export const runtime = 'nodejs';
 
+/** Standard-Admin für Entwicklung: admin@jobflow.de = Admin, nurse1@jobflow.de = Nurse. */
+const DEFAULT_ADMIN_BOOTSTRAP_EMAIL = 'admin@jobflow.de';
+
 /**
- * Setzt die Rolle des aktuellen Benutzers auf Admin, wenn seine E-Mail in der
- * Bootstrap-Allow-Liste steht. Nützlich, wenn admin@jobflow.de als Employee
- * erkannt wird (z. B. weil das User-Dokument fehlte oder role: 'nurse' hatte).
- *
- * Voraussetzung: ENABLE_ADMIN_BOOTSTRAP=true und ADMIN_BOOTSTRAP_EMAIL=admin@jobflow.de
- * Einmal aufrufen (z. B. aus der Browser-Konsole), dann Seite neu laden.
+ * Bootstrap: Setzt Rolle auf admin, wenn E-Mail der konfigurierten Bootstrap-E-Mail entspricht.
+ * Nur für Dev/erste Einrichtung. Im Betrieb: Admin = register-admin, Nurse = accept-invite.
+ * Siehe docs/ROLLEN-UND-EINLADUNGEN.md.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -35,8 +35,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const bootstrapEnabled = process.env.ENABLE_ADMIN_BOOTSTRAP === 'true';
-    const allowedEmail = (process.env.ADMIN_BOOTSTRAP_EMAIL || '').trim().toLowerCase();
+    const isDev = process.env.NODE_ENV === 'development';
+    const bootstrapEnabled =
+      process.env.ENABLE_ADMIN_BOOTSTRAP === 'true' || (isDev && process.env.ENABLE_ADMIN_BOOTSTRAP !== 'false');
+    const allowedEmail = (
+      process.env.ADMIN_BOOTSTRAP_EMAIL ||
+      (isDev ? DEFAULT_ADMIN_BOOTSTRAP_EMAIL : '')
+    )
+      .trim()
+      .toLowerCase();
     if (!bootstrapEnabled || !allowedEmail) {
       return createAuthErrorResponse('UNAUTHORIZED', route);
     }

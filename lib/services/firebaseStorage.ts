@@ -21,7 +21,7 @@ export interface FileMetadata {
 export interface ExportFile {
   id: string;
   name: string;
-  type: 'timesheet' | 'payroll' | 'report' | 'document' | 'other';
+  type: 'timesheet' | 'export' | 'report' | 'document' | 'other';
   userId?: string;
   url: string;
   size: number;
@@ -123,9 +123,9 @@ export class FirebaseStorageService {
   }
 
   /**
-   * Lädt eine Payroll-Export-Datei hoch
+   * Lädt eine periodenbezogene Export-Datei hoch
    */
-  async uploadPayrollExport(
+  async uploadPeriodExport(
     file: File,
     userId: string,
     period: { year: number; month: number },
@@ -134,10 +134,10 @@ export class FirebaseStorageService {
     const exportMetadata = {
       ...metadata,
       period: `${period.year}-${period.month.toString().padStart(2, '0')}`,
-      exportType: 'payroll',
+      exportType: 'export',
     };
 
-    return this.uploadExport(file, 'payroll', userId, exportMetadata);
+    return this.uploadExport(file, 'export', userId, exportMetadata);
   }
 
   /**

@@ -20,6 +20,8 @@ interface AuthContextType {
   user: (User & { facilityIds?: string[] }) | null;
   firebaseUser: FirebaseUser | null;
   loading: boolean;
+  /** Nach Login, wenn Session-Cookie fehlschlägt (z. B. Firebase Admin in Dev nicht aktiv) */
+  authError: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateUser: (data: Partial<User>) => Promise<void>;
@@ -27,23 +29,27 @@ interface AuthContextType {
   sendEmailVerificationEmail: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   const isE2ETestMode = typeof window !== 'undefined' && window.__E2E_TEST_MODE__ === true;
 
   const handleLoadingTimeout = useCallback(() => {
-    if (loading) {
-      logger.warn('Auth loading timeout reached, forcing loading to false');
-      setLoading(false);
-    }
-  }, [loading]);
+    setLoading((prev) => {
+      if (prev) {
+        logger.debug('Auth loading timeout reached, forcing loading to false');
+        return false;
+      }
+      return prev;
+    });
+  }, []);
 
   useEffect(() => {
-    const timeout = setTimeout(handleLoadingTimeout, 10000);
+    const timeout = setTimeout(handleLoadingTimeout, 20000);
     return () => clearTimeout(timeout);
   }, [handleLoadingTimeout]);
 
@@ -64,35 +70,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const unsubscribe = auth.onAuthStateChanged(async (fbUser: FirebaseUser | null) => {
-      try {
-        if (fbUser) {
-          const loadedUser = await authUserService.loadUserForAuth(fbUser);
-          if (loadedUser) {
-            await AuthService.setSessionCookie(fbUser);
-            setUser(loadedUser);
-          } else {
-            await AuthService.setSessionCookie(fbUser);
-            setUser(authUserService.buildFallbackUser(fbUser));
-          }
-          setFirebaseUser(fbUser);
-        } else {
-          await AuthService.clearSessionCookie();
-          setUser(null);
-          setFirebaseUser(null);
-        }
-      } catch (error) {
-        if (fbUser) {
-          await AuthService.setSessionCookie(fbUser);
-          setUser(authUserService.buildFallbackUser(fbUser));
-          setFirebaseUser(fbUser);
-        } else {
-          setUser(null);
-          setFirebaseUser(null);
-        }
-        logger.error('Error loading user data', error instanceof Error ? error : new Error(String(error)));
-      } finally {
+    const unsubscribe = auth.onAuthStateChanged((fbUser: FirebaseUser | null) => {
+      setAuthError(null);
+      if (fbUser) {
+        // Sofort anzeigen: App mit Fallback-User nutzbar machen, dann volles Profil im Hintergrund laden
+        setUser(authUserService.buildFallbackUser(fbUser));
+        setFirebaseUser(fbUser);
         setLoading(false);
+        (async () => {
+          try {
+            await AuthService.setSessionCookie(fbUser);
+            const loadedUser = await authUserService.loadUserForAuth(fbUser);
+            if (loadedUser) {
+              setUser(loadedUser);
+            }
+          } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error);
+            setAuthError(msg || 'Sitzung konnte nicht eingerichtet werden.');
+            logger.error('Session/User fehlgeschlagen', error instanceof Error ? error : new Error(String(error)));
+          }
+        })();
+      } else {
+        setUser(null);
+        setFirebaseUser(null);
+        setLoading(false);
+        void AuthService.clearSessionCookie();
       }
     });
 
@@ -100,15 +102,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [isE2ETestMode]);
 
   const signIn = useCallback(async (email: string, password: string) => {
+    setAuthError(null);
     if (isE2ETestMode) {
       if (!email?.trim() || !password?.trim()) {
         throw new Error('E-Mail und Passwort sind erforderlich');
       }
       const lower = email.toLowerCase();
-      let derivedRole: User['role'] = 'nurse';
-      if (lower.includes('admin') || lower.includes('dispatcher')) {
-        derivedRole = lower.includes('dispatcher') ? 'dispatcher' : 'admin';
-      }
+      const derivedRole: User['role'] = lower.includes('admin') ? 'admin' : 'nurse';
       const mock: User = {
         id: `e2e-${derivedRole}-user`,
         email,
@@ -147,7 +147,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       logger.info('Firebase authentication successful', {}, { email });
+      // Direkt nach Login: Session setzen und User übernehmen (nicht auf onAuthStateChanged warten)
+      const fbUser = auth.currentUser;
+      if (fbUser) {
+        try {
+          await AuthService.setSessionCookie(fbUser);
+          const loadedUser = await authUserService.loadUserForAuth(fbUser);
+          if (loadedUser) {
+            setUser(loadedUser);
+          } else {
+            setUser(authUserService.buildFallbackUser(fbUser));
+          }
+          setFirebaseUser(fbUser);
+        } catch (sessionError) {
+          const msg = sessionError instanceof Error ? sessionError.message : String(sessionError);
+          setAuthError(msg || 'Sitzung konnte nicht eingerichtet werden.');
+          setUser(null);
+          setFirebaseUser(null);
+          setLoading(false);
+          throw sessionError;
+        }
+      }
+      setLoading(false);
     } catch (error: unknown) {
+      setLoading(false);
       logger.error('Firebase authentication failed', error instanceof Error ? error : new Error(String(error)));
       const code = (error as { code?: string })?.code;
       const errorMessage =
@@ -228,13 +251,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       firebaseUser,
       loading,
+      authError,
       signIn,
       signOut: signOutUser,
       updateUser,
       sendPasswordReset,
       sendEmailVerificationEmail,
     }),
-    [user, firebaseUser, loading, signIn, signOutUser, updateUser, sendPasswordReset, sendEmailVerificationEmail]
+    [user, firebaseUser, loading, authError, signIn, signOutUser, updateUser, sendPasswordReset, sendEmailVerificationEmail]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

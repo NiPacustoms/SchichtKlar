@@ -2,14 +2,20 @@
 export const dynamic = 'force-dynamic';
 import { useAssignments } from '@/lib/hooks/useAssignments';
 import { useAuth } from '@/contexts/AuthContext';
+import { AssignShiftDialog } from '@/components/admin/AssignShiftDialog';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { shiftService } from '@/lib/services/shifts';
+import type { Shift as ShiftEntity } from '@/lib/services/shifts';
+import type { Shift as DomainShift } from '@/lib/types';
 import {
   Assignment as AssignmentIcon,
   Cancel,
   CheckCircle,
   Edit,
   Person,
+  PersonAdd,
   Schedule,
   FilterList,
   Refresh,
@@ -42,7 +48,39 @@ import { cloudFunctions } from '@/lib/services/cloudFunctions';
 import { SignatureDialog } from '@/components/ui/SignatureDialog';
 import { firebaseStorageService } from '@/lib/services/firebaseStorage';
 import { assignmentService } from '@/lib/services/assignments';
+import {
+  buildAssignmentCollectionPdf,
+  downloadCollectionPdf,
+  type AssignmentForCollection,
+} from '@/lib/services/assignmentCollectionPdf';
 import { toast } from '@/lib/utils/toast';
+
+function convertToDomainShift(shift: ShiftEntity): DomainShift {
+  const parsedDate =
+    typeof shift.date === 'string' ? new Date(shift.date) : (shift.date as unknown as Date);
+  const safeDate =
+    parsedDate instanceof Date && !Number.isNaN(parsedDate.getTime()) ? parsedDate : new Date();
+  return {
+    id: shift.id,
+    facilityId: shift.facilityId,
+    stationId: shift.stationId ?? '',
+    companyId: (shift as ShiftEntity & { companyId?: string }).companyId || '',
+    date: safeDate,
+    startTime: shift.startTime,
+    endTime: shift.endTime,
+    type: (shift.type as DomainShift['type']) || 'Frühdienst',
+    requiredQualifications: shift.requiredQualifications || [],
+    maxStaff: shift.maxStaff || shift.capacity || 1,
+    status: shift.status || 'open',
+    createdAt: shift.createdAt ?? new Date(),
+    updatedAt: shift.updatedAt ?? new Date(),
+    capacity: shift.capacity || shift.maxStaff || 1,
+    assignedCount: shift.assignedCount || 0,
+    tz: shift.timezone || 'Europe/Berlin',
+    notes: shift.notes,
+    createdBy: shift.createdBy || 'system',
+  };
+}
 
 export default function AssignmentsPage() {
   const { user } = useAuth();
@@ -54,6 +92,9 @@ export default function AssignmentsPage() {
   const [activeTab, setActiveTab] = useState(0);
   const [signatureOpenFor, setSignatureOpenFor] = useState<string | null>(null);
   const [generatingPDF, setGeneratingPDF] = useState<string | null>(null);
+  const [exportingCollection, setExportingCollection] = useState(false);
+  const [reassignShift, setReassignShift] = useState<DomainShift | null>(null);
+  const [loadingReassignId, setLoadingReassignId] = useState<string | null>(null);
 
   // Filter-Objekt für useAssignments
   const filters = useMemo(
@@ -99,6 +140,38 @@ export default function AssignmentsPage() {
   } = useAssignments(filters);
 
   const stats = getStats();
+
+  /** Einsätze mit Einsatzmitteilung (pdfUrl) für Sammel-PDF */
+  const assignmentsWithPdf = useMemo((): AssignmentForCollection[] => {
+    return assignments
+      .filter((a): a is typeof a & { pdfUrl: string } => Boolean(a.pdfUrl))
+      .map(a => ({ id: a.id, userId: a.userId, pdfUrl: a.pdfUrl! }));
+  }, [assignments]);
+
+  const handleExportCollectionPdf = async () => {
+    if (assignmentsWithPdf.length === 0) {
+      toast.error('Keine Einsätze mit Einsatzmitteilung vorhanden.');
+      return;
+    }
+    setExportingCollection(true);
+    try {
+      const bytes = await buildAssignmentCollectionPdf({
+        assignments: assignmentsWithPdf,
+        title: 'Einsatzmitteilungen mit Zeiterfassung',
+      });
+      downloadCollectionPdf(bytes);
+      toast.success(
+        `Sammel-PDF mit ${assignmentsWithPdf.length} Einsatzmitteilung(en) erstellt. Download gestartet.`
+      );
+    } catch (e) {
+      toast.error(
+        'Fehler beim Erstellen des Sammel-PDFs: ' +
+          (e instanceof Error ? e.message : 'Unbekannter Fehler')
+      );
+    } finally {
+      setExportingCollection(false);
+    }
+  };
 
   const getTabContent = () => {
     switch (activeTab) {
@@ -201,6 +274,28 @@ export default function AssignmentsPage() {
     deleteAssignment(assignmentId);
   };
 
+  const handleReassignClick = async (assignment: { id: string; shiftId?: string }) => {
+    if (!assignment.shiftId) {
+      toast.error('Keine Schicht mit diesem Einsatz verknüpft.');
+      return;
+    }
+    setLoadingReassignId(assignment.id);
+    try {
+      const shift = await shiftService.getById(assignment.shiftId);
+      if (!shift) {
+        toast.error('Schicht nicht gefunden.');
+        return;
+      }
+      setReassignShift(convertToDomainShift(shift));
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : 'Schicht konnte nicht geladen werden.'
+      );
+    } finally {
+      setLoadingReassignId(null);
+    }
+  };
+
   const clearFilters = () => {
     setStatusFilter('');
     setPriorityFilter('');
@@ -226,8 +321,8 @@ export default function AssignmentsPage() {
   const currentAssignments = getTabContent();
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <PageContainer maxWidth="standard">
+      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Box>
           <Typography
             variant="h4"
@@ -243,9 +338,22 @@ export default function AssignmentsPage() {
             Verwalte und überwache alle Einsätze und Schichtzuweisungen
           </Typography>
         </Box>
-        <IconButton onClick={() => refetch()} sx={{ color: 'text.primary' }}>
-          <Refresh />
-        </IconButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Button
+            variant="outlined"
+            size="medium"
+            startIcon={<PictureAsPdf />}
+            onClick={handleExportCollectionPdf}
+            disabled={exportingCollection || assignmentsWithPdf.length === 0}
+          >
+            {exportingCollection
+              ? 'Wird erstellt…'
+              : `Sammel-PDF (${assignmentsWithPdf.length})`}
+          </Button>
+          <IconButton onClick={() => refetch()} sx={{ color: 'text.primary' }} aria-label="Aktualisieren">
+            <Refresh />
+          </IconButton>
+        </Box>
       </Box>
 
       {/* Statistiken */}
@@ -560,38 +668,51 @@ export default function AssignmentsPage() {
                     </Box>
                   )}
 
-                  {/* PDF-Generierung Button */}
-                  {assignment.relievingSignatures && assignment.relievingSignatures.length > 0 && (
+                  {/* Einsatzmitteilung (PDF) – sichtbar, sobald Mitarbeiter das Formular unterschrieben hat (Annahme/Ablehnung) */}
+                  {assignment.pdfUrl ? (
                     <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                      {assignment.pdfGenerated && assignment.pdfUrl ? (
-                        <Button
-                          variant="outlined"
-                          color="success"
-                          size="small"
-                          startIcon={<PictureAsPdf />}
-                          onClick={() => window.open(assignment.pdfUrl, '_blank')}
-                          sx={{ flex: 1 }}
-                        >
-                          PDF öffnen
-                        </Button>
-                      ) : (
+                      <Button
+                        variant="outlined"
+                        color="success"
+                        size="small"
+                        startIcon={<PictureAsPdf />}
+                        onClick={() => window.open(assignment.pdfUrl, '_blank')}
+                        sx={{ flex: 1 }}
+                      >
+                        Einsatzmitteilung (PDF) öffnen
+                      </Button>
+                    </Box>
+                  ) : assignment.relievingSignatures && assignment.relievingSignatures.length > 0 ? (
+                    <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        size="small"
+                        startIcon={<PictureAsPdf />}
+                        onClick={() => handleGeneratePDF(assignment.id)}
+                        disabled={generatingPDF === assignment.id}
+                        sx={{ flex: 1 }}
+                      >
+                        {generatingPDF === assignment.id ? 'Generiere PDF...' : 'PDF generieren'}
+                      </Button>
+                    </Box>
+                  ) : null}
+
+                  {(assignment.status === 'declined' || assignment.status === 'completed') && (
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      {assignment.status === 'declined' && (
                         <Button
                           variant="contained"
                           color="primary"
                           size="small"
-                          startIcon={<PictureAsPdf />}
-                          onClick={() => handleGeneratePDF(assignment.id)}
-                          disabled={generatingPDF === assignment.id}
+                          startIcon={<PersonAdd />}
+                          onClick={() => handleReassignClick(assignment)}
+                          disabled={loadingReassignId === assignment.id}
                           sx={{ flex: 1 }}
                         >
-                          {generatingPDF === assignment.id ? 'Generiere PDF...' : 'PDF generieren'}
+                          {loadingReassignId === assignment.id ? 'Lade...' : 'Neu zuweisen'}
                         </Button>
                       )}
-                    </Box>
-                  )}
-
-                  {(assignment.status === 'declined' || assignment.status === 'completed') && (
-                    <Box sx={{ display: 'flex', gap: 1 }}>
                       <Button
                         variant="outlined"
                         color="error"
@@ -620,6 +741,17 @@ export default function AssignmentsPage() {
         requireName={true}
         nameLabel="Ihr Name"
       />
-    </Box>
+
+      {reassignShift && (
+        <AssignShiftDialog
+          open={!!reassignShift}
+          shift={reassignShift}
+          onClose={() => {
+            setReassignShift(null);
+            refetch();
+          }}
+        />
+      )}
+    </PageContainer>
   );
 }

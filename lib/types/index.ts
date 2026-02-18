@@ -11,11 +11,11 @@ export * from './shift';
 export * from './assignment';
 export * from './timesheet';
 export * from './document';
-export * from './message';
 export * from './notification';
 export * from './api';
 export * from './audit';
 export * from './template';
+export * from './weeklyLimit';
 
 // Cross-domain composite types (depend on multiple domains)
 import type { Shift } from './shift';

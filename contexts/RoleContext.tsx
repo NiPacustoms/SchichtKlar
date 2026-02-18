@@ -3,7 +3,7 @@
 import { useAuth } from './AuthContext';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type Role = 'nurse' | 'dispatcher' | 'admin';
+type Role = 'nurse' | 'admin';
 
 interface RoleContextType {
   currentRole: Role;
@@ -29,10 +29,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) {
       const savedRole = localStorage.getItem('currentRole') as Role;
-      if (
-        savedRole &&
-        (savedRole === 'nurse' || savedRole === 'dispatcher' || savedRole === 'admin')
-      ) {
+      if (savedRole && (savedRole === 'nurse' || savedRole === 'admin')) {
         setCurrentRole(savedRole);
       }
     }
@@ -43,7 +40,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('currentRole', currentRole);
   }, [currentRole]);
 
-  const isAdmin = currentRole === 'dispatcher' || currentRole === 'admin';
+  const isAdmin = currentRole === 'admin';
   const isNurse = currentRole === 'nurse';
 
   return (

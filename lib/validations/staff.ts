@@ -1,11 +1,10 @@
 import { z } from 'zod';
 
-export const roleOptions = ['nurse', 'dispatcher', 'admin'] as const;
-export type RoleOption = typeof roleOptions[number];
+export const roleOptions = ['nurse', 'admin'] as const;
+export type RoleOption = (typeof roleOptions)[number];
 
 export const roleLabelMap: Record<RoleOption, string> = {
   nurse: 'Krankenschwester',
-  dispatcher: 'Disponent',
   admin: 'Administrator',
 };
 
@@ -141,6 +140,7 @@ export type StaffCreateInput = z.infer<typeof staffCreateSchema>;
 export const staffUpdateSchema = staffCreateSchema.partial().extend({
   id: z.string().optional(),
   qualifications: z.array(qualificationItemSchema).optional(),
+  customRoleId: z.string().optional().nullable(),
 });
 
 export type StaffUpdateInput = z.infer<typeof staffUpdateSchema>;

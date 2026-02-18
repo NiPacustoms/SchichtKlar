@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { useEmployeeNotifications } from '@/lib/hooks/useEmployeeNotifications';
 import {
@@ -290,7 +291,7 @@ export default function EmployeeNotificationsPage() {
   }
 
   return (
-    <Box sx={{ maxWidth: 1400, mx: 'auto', p: 3 }}>
+    <PageContainer maxWidth="wide">
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography
@@ -577,9 +578,11 @@ export default function EmployeeNotificationsPage() {
                           size="small"
                           onClick={e => {
                             e.stopPropagation();
-                            notification.read
-                              ? handleMarkAsUnread(notification.id)
-                              : handleMarkAsRead(notification.id);
+                            if (notification.read) {
+                              handleMarkAsUnread(notification.id);
+                            } else {
+                              handleMarkAsRead(notification.id);
+                            }
                           }}
                         >
                           {notification.read ? <MarkEmailUnread /> : <MarkEmailRead />}
@@ -944,9 +947,11 @@ export default function EmployeeNotificationsPage() {
             <>
               <Button
                 onClick={() => {
-                  selectedNotification.read
-                    ? handleMarkAsUnread(selectedNotification.id)
-                    : handleMarkAsRead(selectedNotification.id);
+                  if (selectedNotification.read) {
+                    handleMarkAsUnread(selectedNotification.id);
+                  } else {
+                    handleMarkAsRead(selectedNotification.id);
+                  }
                   setDetailsDialogOpen(false);
                 }}
                 startIcon={selectedNotification.read ? <MarkEmailUnread /> : <MarkEmailRead />}
@@ -1050,6 +1055,6 @@ export default function EmployeeNotificationsPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </PageContainer>
   );
 }

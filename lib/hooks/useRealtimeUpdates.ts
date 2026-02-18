@@ -50,11 +50,9 @@ export function useRealtimeUpdates() {
             where('date', '>=', new Date())
           );
           const unsubShifts = onSnapshot(shiftsQuery, (snapshot) => {
-            // Filter client-seitig nach companyId (via facilityIds)
-            // Die Firestore Rules filtern bereits auf Document-Level
             logger.debug('Realtime: Shifts updated', snapshot.size, 'documents');
             queryClient.invalidateQueries({ queryKey: ['shifts'] });
-            queryClient.invalidateQueries({ queryKey: ['adminDashboard'] });
+            queryClient.invalidateQueries({ queryKey: ['admin'] });
           }, (error) => {
             // Permission errors are expected - suppress or log as debug
             const isPermissionError = error?.code === 'permission-denied' || 
@@ -78,6 +76,28 @@ export function useRealtimeUpdates() {
         logger.debug('Skipping shifts listener: No companyId available');
       }
 
+      // Listen to timesheets (admin dashboard: offene Zeiterfassungen, KPIs)
+      if (user.companyId) {
+        try {
+          const timesheetsQuery = query(
+            collection(db, 'timesheets'),
+            where('companyId', '==', user.companyId)
+          );
+          const unsubTimesheets = onSnapshot(timesheetsQuery, (snapshot) => {
+            logger.debug('Realtime: Timesheets updated', snapshot.size, 'documents');
+            queryClient.invalidateQueries({ queryKey: ['admin'] });
+          }, (error) => {
+            const isPermissionError = error?.code === 'permission-denied' ||
+              error?.message?.includes('permission') ||
+              error?.message?.includes('Permission');
+            if (!isPermissionError) logger.error('Error in timesheets listener:', error);
+          });
+          unsubscribers.push(unsubTimesheets);
+        } catch (error) {
+          logger.debug('Could not set up timesheets listener:', error);
+        }
+      }
+
       // Listen to user's assignments
       // Filter nach userId und companyId (falls verfügbar) für bessere Performance und Sicherheit
       const assignmentConstraints = [where('userId', '==', user.id)];
@@ -92,6 +112,7 @@ export function useRealtimeUpdates() {
         logger.debug('Realtime: Assignments updated', snapshot.size, 'documents');
         queryClient.invalidateQueries({ queryKey: ['assignments'] });
         queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+        queryClient.invalidateQueries({ queryKey: ['admin'] });
       }, (error) => {
         // Permission errors are expected in some cases - suppress or log as debug
         const isPermissionError = error?.code === 'permission-denied' || 

@@ -174,7 +174,7 @@ export const requestShift = functions.https.onCall(async (data, context) => {
         type: 'shift-requested',
         title: 'Schichtanfrage gesendet',
         message: 'Deine Schichtanfrage wurde erfolgreich gesendet',
-        actionUrl: '/schedule',
+        actionUrl: '/employee/dienstplan',
         read: false,
         priority: 'normal',
         createdAt: admin.firestore.FieldValue.serverTimestamp(),

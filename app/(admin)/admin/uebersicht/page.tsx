@@ -1,43 +1,19 @@
 'use client';
 
-// #region agent log – patch console.error at module load so we capture key warning before first paint
-if (typeof window !== 'undefined') {
-  const orig = console.error;
-  console.error = function (...args: unknown[]) {
-    const msg = args.map(a => (typeof a === 'string' ? a : String(a))).join(' ');
-    if (msg.includes('key') && (msg.includes('list') || msg.includes('unique'))) {
-      const arg1 = args.length > 1 ? String(args[1]) : '';
-      const arg2 = args.length > 2 ? String(args[2]) : '';
-      fetch('http://127.0.0.1:7243/ingest/772533d7-e058-439e-a00a-1be099111014', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          location: 'uebersicht:keyWarningCapture',
-          message: 'React key warning captured',
-          data: { fullMessage: msg, argsLength: args.length, arg1, arg2 },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          hypothesisId: 'H_capture',
-        }),
-      }).catch(() => {});
-    }
-    return orig.apply(console, args);
-  };
-}
-// #endregion
-
 import { useAuth } from '@/contexts/AuthContext';
-import { useQuery } from '@tanstack/react-query';
 import { useAdminDashboard } from '@/lib/hooks/useAdminDashboard';
 import { useRealtimeUpdates } from '@/lib/hooks/useRealtimeUpdates';
-import { timesheetService } from '@/lib/services/timesheets';
 import { AdminKPICard } from '@/components/admin/AdminKPICard';
+import { KPISlideshow } from '@/components/admin/KPISlideshow';
 import { QuickActions } from '@/components/admin/QuickActions';
+import { ExportReportDialog } from '@/components/admin/ExportReportDialog';
 import { AlertsPanel } from '@/components/admin/AlertsPanel';
 import { StatisticsTabs } from '@/components/admin/StatisticsTabs';
 import { RecentActivities } from '@/components/admin/RecentActivities';
+import { UpcomingShiftsCards } from '@/components/admin/UpcomingShiftsCards';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
+import { DashboardSkeleton } from '@/components/admin/DashboardSkeleton';
 import {
   People,
   Assignment as AssignmentIcon,
@@ -46,14 +22,15 @@ import {
   CheckCircle,
   Business,
   AccessTime,
+  Block,
 } from '@mui/icons-material';
 import { Box, Typography, Paper, Chip, Stack } from '@mui/material';
-import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { PageContainer } from '@/components/layout/PageContainer';
 
 export default function AdminDashboardPage() {
   const { loading: authLoading } = useAuth();
@@ -68,6 +45,7 @@ export default function AdminDashboardPage() {
     kpis,
     alerts,
     recentActivities,
+    allShifts,
     staff,
     weeklyHours,
     monthlyHours,
@@ -78,39 +56,29 @@ export default function AdminDashboardPage() {
     error,
     createShift,
     addStaff,
-    exportReport,
     openSettings,
   } = useAdminDashboard();
 
   const [showAlerts] = useState(true);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
-  if (authLoading || isLoading) {
-    return <LoadingSpinner message="Admin Dashboard wird geladen..." />;
+  if (authLoading) {
+    return <LoadingSpinner message="Anmeldung wird geprüft..." />;
   }
 
   if (error) {
     return <ErrorDisplay error={error} />;
   }
 
-  // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/772533d7-e058-439e-a00a-1be099111014', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      location: 'uebersicht/page.tsx:return',
-      message: 'UebersichtPage render',
-      data: { hasAlerts: alerts.length, hasActivities: recentActivities.length, hideStats },
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      hypothesisId: 'H5',
-    }),
-  }).catch(() => {});
-  // #endregion
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
+
   return (
-    <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
+    <PageContainer maxWidth="wide" withBottomNav>
       <PageHeader
         key="page-header"
-        title="Admin Dashboard"
+        title="Übersicht"
         subtitle={`Überblick über alle Bereiche und Verwaltung${isConnected ? ' • Echtzeit-Updates aktiv' : ''}`}
         actions={
           <Chip
@@ -120,26 +88,21 @@ export default function AdminDashboardPage() {
             icon={isConnected ? <CheckCircle /> : <Warning />}
           />
         }
-      >
-        <Button
-          size="small"
-          variant="text"
-          onClick={() => openSettings()}
-          sx={{ color: 'text.secondary', textDecoration: 'underline', textTransform: 'none' }}
-        >
-          Backup herunterladen
-        </Button>
-      </PageHeader>
+      />
 
       {/* Quick Actions */}
-      <Paper key="quick-actions" sx={{ mb: 4 }}>
+      <Box key="quick-actions" sx={{ mb: 4 }}>
         <QuickActions
           onCreateShift={createShift}
           onAddStaff={addStaff}
-          onExportReport={exportReport}
+          onExportReport={() => setExportDialogOpen(true)}
           onOpenSettings={openSettings}
         />
-      </Paper>
+      <ExportReportDialog
+        open={exportDialogOpen}
+        onClose={() => setExportDialogOpen(false)}
+      />
+      </Box>
 
       {/* Offene Zeiterfassungen */}
       {pendingWorkTimesheets.length > 0 && (
@@ -169,9 +132,9 @@ export default function AdminDashboardPage() {
         </Box>
       )}
 
-      {/* KPI Cards */}
-      <Grid key="kpi-grid" container spacing={3} sx={{ mb: 4 }}>
-        <Grid key="kpi-active-staff" size={{ xs: 12, sm: 6, md: 3 }}>
+      {/* KPI Cards – Slideshow */}
+      <Box key="kpi-slideshow" sx={{ mb: 4 }}>
+        <KPISlideshow autoAdvanceMs={5000}>
           <AdminKPICard
             title="Aktive Mitarbeiter"
             value={kpis.activeStaff}
@@ -181,8 +144,6 @@ export default function AdminDashboardPage() {
             trend={kpis.staffGrowth}
             onClick={() => router.push('/admin/mitarbeiter')}
           />
-        </Grid>
-        <Grid key="kpi-open-shifts" size={{ xs: 12, sm: 6, md: 3 }}>
           <AdminKPICard
             title="Offene Schichten"
             value={kpis.openShifts}
@@ -191,9 +152,8 @@ export default function AdminDashboardPage() {
             color="success.main"
             trend={kpis.shiftTrend}
             onClick={() => router.push('/admin/schichten?status=open')}
+            priority={kpis.openShifts > 0 ? 1 : 2}
           />
-        </Grid>
-        <Grid key="kpi-utilization" size={{ xs: 12, sm: 6, md: 3 }}>
           <AdminKPICard
             title="Auslastung"
             value={`${kpis.utilization}%`}
@@ -203,8 +163,6 @@ export default function AdminDashboardPage() {
             trend={kpis.utilizationTrend}
             onClick={() => router.push('/admin/berichte')}
           />
-        </Grid>
-        <Grid key="kpi-facilities" size={{ xs: 12, sm: 6, md: 3 }}>
           <AdminKPICard
             title="Einrichtungen"
             value={kpis.facilities}
@@ -214,8 +172,21 @@ export default function AdminDashboardPage() {
             trend={kpis.facilityTrend}
             onClick={() => router.push('/admin/berichte')}
           />
-        </Grid>
-      </Grid>
+          <AdminKPICard
+            title="Wochenlimit"
+            value={kpis.weeklyLimitBlocked > 0 ? `${kpis.weeklyLimitBlocked} überschritten` : 'OK'}
+            subtitle={
+              kpis.weeklyLimitBlocked > 0 || kpis.weeklyLimitWarning > 0
+                ? `${kpis.weeklyLimitBlocked} blockiert, ${kpis.weeklyLimitWarning} Warnung`
+                : 'ArbZG/MiLoG'
+            }
+            icon={<Block />}
+            color={kpis.weeklyLimitBlocked > 0 ? 'error.main' : kpis.weeklyLimitWarning > 0 ? 'warning.main' : 'success.main'}
+            priority={kpis.weeklyLimitBlocked > 0 ? 1 : kpis.weeklyLimitWarning > 0 ? 2 : 3}
+            onClick={() => router.push('/admin/mitarbeiter')}
+          />
+        </KPISlideshow>
+      </Box>
 
       {/* Statistics with Tabs – ?noStats=1 hides to isolate key warning */}
       <Box key="statistics-tabs" sx={{ mb: 4 }}>
@@ -232,17 +203,20 @@ export default function AdminDashboardPage() {
         )}
       </Box>
 
-      {/* Recent Activities */}
+      {/* Kommende Schichten + Aktivitäten */}
       <Grid key="recent-grid" container spacing={3}>
-        <Grid key="recent-activities" size={{ xs: 12, lg: 8 }}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+        <Grid key="upcoming-shifts" size={{ xs: 12, lg: 6 }}>
+          <UpcomingShiftsCards shifts={allShifts} maxItems={5} />
+        </Grid>
+        <Grid key="recent-activities" size={{ xs: 12, lg: 6 }}>
+          <Paper sx={{ p: 2, borderRadius: 2 }} elevation={0} variant="outlined">
+            <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Letzte Aktivitäten
             </Typography>
             <RecentActivities activities={recentActivities} />
           </Paper>
         </Grid>
       </Grid>
-    </Box>
+    </PageContainer>
   );
 }

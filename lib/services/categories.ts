@@ -16,7 +16,7 @@ export const categoriesService = {
   async get(): Promise<Categories> {
     if (!db) {
       const defaults: Categories = {
-        roles: ['nurse', 'dispatcher', 'admin'],
+        roles: ['nurse', 'admin'],
         groups: ['Intensivstation', 'Operationssaal', 'Geriatrie', 'Pädiatrie'],
         qualifications: ['Krankenpfleger', 'Intensivpflege', 'OP-Pflege', 'Geriatrie'],
         jobTitles: ['Pflegefachkraft', 'Stationsleitung', 'Praxisanleiter', 'Disponent', 'Pflegeassistenz'],
@@ -28,7 +28,7 @@ export const categoriesService = {
     const snap = await getDoc(ref);
     if (!snap.exists()) {
       const defaults: Categories = {
-        roles: ['nurse', 'dispatcher', 'admin'],
+        roles: ['nurse', 'admin'],
         groups: ['Intensivstation', 'Operationssaal', 'Geriatrie', 'Pädiatrie'],
         qualifications: ['Krankenpfleger', 'Intensivpflege', 'OP-Pflege', 'Geriatrie'],
         jobTitles: ['Pflegefachkraft', 'Stationsleitung', 'Praxisanleiter', 'Disponent', 'Pflegeassistenz'],

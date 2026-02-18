@@ -70,16 +70,20 @@ function createAppTheme(mode: PaletteMode) {
             'Arial',
             'sans-serif',
           ].join(','),
-          h1: { fontSize: 40, fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.02em' },
-          h2: { fontSize: 32, fontWeight: 600, lineHeight: 1.25, letterSpacing: '-0.01em' },
-          h3: { fontSize: 24, fontWeight: 600, lineHeight: 1.3, letterSpacing: '-0.01em' },
+          // Linear-scale: h1 32/40 700, h2 28/36 600, h3 24/32 600
+          h1: { fontSize: 32, fontWeight: 700, lineHeight: 40 / 32, letterSpacing: '-0.02em' },
+          h2: { fontSize: 28, fontWeight: 600, lineHeight: 36 / 28, letterSpacing: '-0.01em' },
+          h3: { fontSize: 24, fontWeight: 600, lineHeight: 32 / 24, letterSpacing: '-0.01em' },
           h4: { fontSize: 20, fontWeight: 600, lineHeight: 1.35 },
           h5: { fontSize: 18, fontWeight: 600, lineHeight: 1.4 },
           h6: { fontSize: 16, fontWeight: 600, lineHeight: 1.45 },
-          body1: { fontSize: 15, lineHeight: 1.6, letterSpacing: '0.01em' },
-          body2: { fontSize: 14, lineHeight: 1.5, letterSpacing: '0.01em' },
+          body1: { fontSize: 16, lineHeight: 24 / 16, fontWeight: 400, letterSpacing: '0.01em' },
+          body2: { fontSize: 14, lineHeight: 20 / 14, fontWeight: 400, letterSpacing: '0.01em' },
           button: { textTransform: 'none', fontWeight: 600, letterSpacing: '0.02em' },
-          caption: { fontSize: 12, lineHeight: 1.4, letterSpacing: '0.02em' },
+          caption: { fontSize: 12, lineHeight: 16 / 12, fontWeight: 400, letterSpacing: '0.02em' },
+          subtitle1: { fontSize: 16, lineHeight: 24 / 16, fontWeight: 500 },
+          subtitle2: { fontSize: 14, lineHeight: 20 / 14, fontWeight: 500 },
+          overline: { fontSize: 13, lineHeight: 16 / 13, fontWeight: 500, letterSpacing: '0.05em' },
         },
         components: {
           MuiCssBaseline: {
@@ -92,6 +96,12 @@ function createAppTheme(mode: PaletteMode) {
                 color: surf.text.primary,
               },
               '#root': { minHeight: '100%' },
+              // A11y AA++: Focus Visible 2px Petrol (weltweit)
+              'a:focus-visible, button:focus-visible, [role="button"]:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible': {
+                outline: `2px solid ${colors.petrol}`,
+                outlineOffset: 2,
+                borderRadius: 4,
+              },
               '.glass': {
                 background: surf.surface.main,
                 backdropFilter: 'blur(12px)',
@@ -113,6 +123,10 @@ function createAppTheme(mode: PaletteMode) {
                 textTransform: 'none',
                 transition: transitionBase,
                 willChange: 'transform, box-shadow',
+                '&:focus-visible': {
+                  outline: `2px solid ${colors.petrol}`,
+                  outlineOffset: 2,
+                },
                 '&:hover': { transform: 'translateY(-1px)' },
                 '@media (prefers-reduced-motion: reduce)': {
                   transition: 'none',
@@ -303,6 +317,10 @@ function createAppTheme(mode: PaletteMode) {
                 fontWeight: 500,
                 fontSize: '13px',
                 height: 28,
+                '&:focus-visible': {
+                  outline: `2px solid ${colors.petrol}`,
+                  outlineOffset: 2,
+                },
               },
               filledPrimary: {
                 backgroundColor: colors.petrol,

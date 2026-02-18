@@ -263,9 +263,9 @@ export const assignShift = functions.https.onCall(async (data, context) => {
 
       transaction.set(assignmentRef, assignmentData);
 
-      // 7. Shift-Status aktualisieren
+      // 7. Shift-Status aktualisieren (App erwartet 'open' | 'filled' | 'cancelled', nicht 'assigned')
       const newAssignedCount = assignedCount + 1;
-      const newStatus = newAssignedCount >= capacity ? 'assigned' : shift.status;
+      const newStatus = newAssignedCount >= capacity ? 'filled' : 'open';
 
       transaction.update(shiftRef, {
         assignedCount: newAssignedCount,
@@ -285,7 +285,7 @@ export const assignShift = functions.https.onCall(async (data, context) => {
         message: isRequest
           ? `Du hast eine Anfrage für eine Schicht gesendet`
           : `Dir wurde eine Schicht zugewiesen`,
-        actionUrl: `/schedule`,
+        actionUrl: '/employee/dienstplan',
         read: false,
         starred: false, // WICHTIG: employeeNotifications benötigt starred
         archived: false, // WICHTIG: employeeNotifications benötigt archived

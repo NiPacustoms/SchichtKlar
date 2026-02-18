@@ -35,6 +35,8 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { logger, PerformanceMonitor, UserActionTracker } from '@/lib/logging';
+import { SHIFT_COLOR_PRESETS, DEFAULT_SHIFT_COLOR } from '@/lib/constants/colorPresets';
+import { ColorPresetSwatches } from '@/components/ui/ColorPresetSwatches';
 
 // Validation Schema
 const shiftCreateSchema = z
@@ -47,7 +49,7 @@ const shiftCreateSchema = z
     useRange: z.boolean().optional(),
     startTime: z.string().min(1, 'Startzeit ist erforderlich'),
     endTime: z.string().min(1, 'Endzeit ist erforderlich'),
-    type: z.enum(['Frühdienst', 'Spätdienst', 'Nachtdienst', 'On-call']),
+    type: z.string().optional(),
     capacity: z.number().min(1, 'Kapazität muss mindestens 1 sein'),
     requiredQualifications: z.array(z.string()),
     notes: z.string().optional(),
@@ -112,14 +114,14 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
       facilityId: '',
       capacity: 1,
       requiredQualifications: [],
-      type: 'Frühdienst',
+      type: 'Frühdienst', // Backend erwartet type; in der UI nicht mehr auswählbar
       date: initialDate || new Date(),
       dateTo: initialDate || new Date(),
       useRange: false,
       startTime: '',
       endTime: '',
       notes: '',
-      color: '#4CAF50', // Standard-Farbe (Material Design Green)
+      color: DEFAULT_SHIFT_COLOR,
       assignedUserId: '', // Optional: Mitarbeiter direkt zuweisen
     },
   });
@@ -495,7 +497,7 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
                     ))}
                   </Select>
                   {errors.facilityId && (
-                    <FormHelperText>{errors.facilityId.message}</FormHelperText>
+                    <FormHelperText component="div">{errors.facilityId.message}</FormHelperText>
                   )}
                 </FormControl>
               </Grid>
@@ -557,24 +559,6 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
                 </Grid>
               )}
 
-              {/* Schichttyp */}
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth error={!!errors.type}>
-                  <InputLabel>Schichttyp</InputLabel>
-                  <Select
-                    value={watch('type') || 'Frühdienst'}
-                    label="Schichttyp"
-                    onChange={e => setValue('type', e.target.value as ShiftCreateFormData['type'])}
-                  >
-                    <MenuItem value="Frühdienst">Frühdienst</MenuItem>
-                    <MenuItem value="Spätdienst">Spätdienst</MenuItem>
-                    <MenuItem value="Nachtdienst">Nachtdienst</MenuItem>
-                    <MenuItem value="On-call">On-call</MenuItem>
-                  </Select>
-                  {errors.type && <FormHelperText>{errors.type.message}</FormHelperText>}
-                </FormControl>
-              </Grid>
-
               {/* Startzeit */}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
@@ -609,7 +593,7 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
               {isOvernight && (
                 <Grid size={{ xs: 12 }}>
                   <Alert severity="info">
-                    <Typography variant="body2">
+                    <Typography component="span" variant="body2">
                       <strong>Overnight-Schicht erkannt:</strong> Die Endzeit liegt vor der
                       Startzeit. Die Schicht geht über Mitternacht und wird automatisch korrekt
                       berechnet.
@@ -636,23 +620,14 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
               {/* Erforderliche Qualifikationen */}
               {/* Qualifikations-Auswahl entfällt ohne Stationsauswahl */}
 
-              {/* Farbe */}
+              {/* Farbe – nur 8 Vorauswahlen, keine Pipette */}
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
+                <ColorPresetSwatches
+                  presets={SHIFT_COLOR_PRESETS}
+                  value={watch('color') ?? DEFAULT_SHIFT_COLOR}
+                  onChange={c => setValue('color', c)}
                   label="Farbe"
-                  type="color"
-                  value={watch('color') ?? '#4CAF50'}
-                  onChange={e => setValue('color', e.target.value)}
-                  error={!!errors.color}
                   helperText={errors.color?.message || 'Farbe für die Schicht im Kalender'}
-                  InputLabelProps={{ shrink: true }}
-                  size={isMobile ? 'medium' : 'small'}
-                  slotProps={{
-                    htmlInput: {
-                      style: { height: isMobile ? 48 : 40 },
-                    },
-                  }}
                 />
               </Grid>
 
@@ -676,7 +651,7 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
                       </MenuItem>
                     ))}
                   </Select>
-                  <FormHelperText>
+                  <FormHelperText component="div">
                     Optional: Wählen Sie einen Mitarbeiter aus, der dieser Schicht direkt zugewiesen
                     werden soll.
                     {watch('useRange') &&

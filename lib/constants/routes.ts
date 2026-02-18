@@ -25,7 +25,6 @@ export const ROUTES = {
     EINRICHTUNGEN: '/employee/einrichtungen',
     BERICHTE: '/employee/berichte',
     BENACHRICHTIGUNGEN: '/employee/benachrichtigungen',
-    UNTERHALTUNGEN: '/employee/unterhaltungen',
   },
 
   // Admin-Routen
@@ -42,35 +41,18 @@ export const ROUTES = {
     EINSTELLUNGEN: '/admin/einstellungen',
     UEBERSICHT: '/admin/uebersicht',
     EINSAETZE: '/admin/einsaetze',
-    KOMMUNIKATION: '/admin/kommunikation',
-    PRÜFPROTOKOLLE: '/admin/pruefprotokolle',
     AKTIVITAETEN: '/admin/aktivitaeten',
+    PRÜFPROTOKOLLE: '/admin/pruefprotokolle',
     DOCUMENTE_VORLAGEN: '/admin/dokumente/vorlagen',
     PERSONAL_KOMPAKT: '/admin/personal-kompakt',
     STAFF_SIMPLE: '/admin/staff-simple',
   },
-
-  // Alias-Redirects (englisch → deutsch)
-  ALIASES: {
-    // Employee-Aliases
-    SCHEDULE: '/schedule', // → /employee/dienstplan
-    TIME: '/time', // → /employee/zeiterfassung
-    PROFILE: '/profile', // → /employee/profil
-    DOCUMENTS: '/documents', // → /employee/dokumente
-    FACILITIES: '/facilities', // → /employee/einrichtungen
-    REPORTS: '/reports', // → /employee/berichte
-    
-    // Admin-Aliases
-    ADMIN_SCHEDULE: '/admin/schedule', // → /admin/dienstplan
-    ADMIN_FACILITIES: '/admin/facilities', // → /admin/einrichtungen
-    ADMIN_REPORTS: '/admin/reports', // → /admin/berichte
-  },
 } as const;
 
-// Navigation-Konfiguration für verschiedene Rollen
+// Navigation-Konfiguration für verschiedene Rollen (alle Labels auf Deutsch)
 export const NAVIGATION = {
   NURSE: [
-    { href: ROUTES.EMPLOYEE.DASHBOARD, label: 'Home', icon: 'Home' },
+    { href: ROUTES.EMPLOYEE.DASHBOARD, label: 'Arbeitsplatz', icon: 'Home' },
     { href: ROUTES.EMPLOYEE.DIENSTPLAN, label: 'Dienstplan', icon: 'CalendarMonth' },
     { href: ROUTES.EMPLOYEE.ZEITERFASSUNG, label: 'Zeit', icon: 'AccessTime' },
     { href: ROUTES.EMPLOYEE.PROFIL, label: 'Profil', icon: 'Person' },

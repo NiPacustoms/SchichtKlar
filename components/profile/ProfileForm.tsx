@@ -108,9 +108,10 @@ export function ProfileForm({
   validateEmail: _validateEmail,
   validatePhone: _validatePhone,
 }: ProfileFormProps) {
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(true);
   const [showIban, setShowIban] = useState(false);
   const [newQualification, setNewQualification] = useState('');
+  const [customQualificationText, setCustomQualificationText] = useState('');
   const [_showPasswordDialog, _setShowPasswordDialog] = useState<boolean>(false);
 
   // IBAN-Validierung
@@ -468,6 +469,8 @@ export function ProfileForm({
                 startIcon={<Save />}
                 onClick={handleSubmit(handleFormSubmit)}
                 disabled={isLoading}
+                data-testid="profile-form-submit-button"
+                aria-label="Profil speichern"
                 sx={{
                   textTransform: 'none',
                   fontWeight: 600,
@@ -679,7 +682,7 @@ export function ProfileForm({
                         errors.bankAccount?.iban?.message ||
                         (isEditing
                           ? 'IBAN wird verschlüsselt gespeichert'
-                          : 'Zur Sicherheit maskiert')
+                          : 'Zur Sicherheit maskiert (Klick auf Auge zum Anzeigen)')
                       }
                       value={(() => {
                         const iban = watch('bankAccount.iban') || '';
@@ -829,14 +832,17 @@ export function ProfileForm({
 
                 {isEditing ? (
                   <Box sx={{ mb: 3 }}>
-                    <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                      <FormControl sx={{ minWidth: 200 }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'flex-start', mb: 2 }}>
+                      <FormControl sx={{ minWidth: 220 }}>
                         <InputLabel>Qualifikation hinzufügen</InputLabel>
                         <Select
                           value={newQualification}
                           onChange={e => setNewQualification(e.target.value)}
                           label="Qualifikation hinzufügen"
                         >
+                          <MenuItem value="">
+                            <em>Aus Liste wählen</em>
+                          </MenuItem>
                           {qualificationOptions.map(option => (
                             <MenuItem key={option} value={option}>
                               {option}
@@ -844,11 +850,35 @@ export function ProfileForm({
                           ))}
                         </Select>
                       </FormControl>
+                      <TextField
+                        size="small"
+                        placeholder="Qualifikation hinzufügen"
+                        label="Freitext"
+                        value={customQualificationText}
+                        onChange={e => setCustomQualificationText(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (customQualificationText.trim()) {
+                              setValue('qualifications', [...watchedQualifications, customQualificationText.trim()]);
+                              setCustomQualificationText('');
+                            }
+                          }
+                        }}
+                        sx={{ minWidth: 200 }}
+                      />
                       <Button
                         variant="outlined"
                         startIcon={<Add />}
-                        onClick={handleAddQualification}
-                        disabled={!newQualification}
+                        onClick={() => {
+                          if (newQualification) {
+                            handleAddQualification();
+                          } else if (customQualificationText.trim() && !watchedQualifications.includes(customQualificationText.trim())) {
+                            setValue('qualifications', [...watchedQualifications, customQualificationText.trim()]);
+                            setCustomQualificationText('');
+                          }
+                        }}
+                        disabled={!newQualification && !customQualificationText.trim()}
                       >
                         Hinzufügen
                       </Button>

@@ -33,6 +33,7 @@ import {
   roleLabelMap,
 } from '@/lib/validations/staff';
 import { categoriesService } from '@/lib/services/categories';
+import { adminSettingsService } from '@/lib/services/adminSettings';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { User } from '@/lib/types';
 
@@ -46,7 +47,8 @@ interface StaffEditDialogProps {
         displayName: string;
         email: string;
         phone: string;
-        role: 'nurse' | 'dispatcher' | 'admin';
+        role: 'nurse' | 'admin';
+        customRoleId?: string | null;
         qualifications: string[];
         active: boolean;
         createdAt: Date;
@@ -167,6 +169,12 @@ export function StaffEditDialog({ open, onClose, onSave, staff }: StaffEditDialo
     [categories]
   );
 
+  const { data: adminRoles = [] } = useQuery({
+    queryKey: ['adminRoles'],
+    queryFn: () => adminSettingsService.getRoles(),
+    enabled: open,
+  });
+
   const {
     control,
     handleSubmit,
@@ -181,6 +189,7 @@ export function StaffEditDialog({ open, onClose, onSave, staff }: StaffEditDialo
       email: '',
       phone: '',
       role: 'nurse',
+      customRoleId: null as string | null,
       jobTitle: '',
       qualifications: [],
       workingHoursPerWeek: undefined,
@@ -240,6 +249,7 @@ export function StaffEditDialog({ open, onClose, onSave, staff }: StaffEditDialo
         email: staff.email,
         phone: staff.phone,
         role: staff.role,
+        customRoleId: (staff as User & { customRoleId?: string | null }).customRoleId ?? null,
         jobTitle: fallbackJobTitle,
         qualifications: staff.qualifications || [],
         workingHoursPerWeek: staff.workingHoursPerWeek || undefined,
@@ -480,6 +490,34 @@ export function StaffEditDialog({ open, onClose, onSave, staff }: StaffEditDialo
                       </MenuItem>
                     ))}
                   </Select>
+                </FormControl>
+              )}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller
+              control={control}
+              name="customRoleId"
+              render={({ field }) => (
+                <FormControl fullWidth>
+                  <InputLabel>Benutzerdefinierte Rolle</InputLabel>
+                  <Select
+                    {...field}
+                    label="Benutzerdefinierte Rolle"
+                    value={field.value ?? ''}
+                    onChange={e => field.onChange(e.target.value === '' ? null : e.target.value)}
+                  >
+                    <MenuItem value="">Keine</MenuItem>
+                    {adminRoles.map(r => (
+                      <MenuItem key={r.id} value={r.id}>
+                        {r.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                    Optionale Zusatzberechtigungen (z. B. Zugang Admin-Bereich)
+                  </Typography>
                 </FormControl>
               )}
             />

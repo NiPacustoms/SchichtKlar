@@ -1,18 +1,38 @@
 'use client';
 
 import { Card, CardProps, useTheme, alpha } from '@mui/material';
-import { shadows } from '@/lib/design-tokens';
+import {
+  elevation,
+  elevationDark,
+  radius,
+  duration,
+  easing,
+} from '@/lib/design-tokens';
+
+type ElevationLevel = 0 | 1 | 2 | 3 | 4;
 
 interface GlassCardProps extends CardProps {
   children: React.ReactNode;
+  /** Hover: scale(1.02) + shadow lift – nur bei (hover: hover), reduced-motion beachtet */
   hover?: boolean;
+  /** Elevation 0–4 (Shadow-Stufe); Standard 2 = weicher Schatten */
+  elevation?: ElevationLevel;
 }
 
-export function GlassCard({ children, sx = {}, hover = true, ...props }: GlassCardProps) {
+const transitionBase = `all ${duration.base}ms ${easing}`;
+
+export function GlassCard({
+  children,
+  sx = {},
+  hover = true,
+  elevation: elevationLevel = 2,
+  ...props
+}: GlassCardProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const shadowSoft = isDark ? shadows.softDark : shadows.soft;
-  const shadowMedium = isDark ? shadows.mediumDark : shadows.medium;
+  const elevationMap = isDark ? elevationDark : elevation;
+  const shadowCurrent = elevationMap[elevationLevel];
+  const shadowLift = elevationLevel < 4 ? elevationMap[(elevationLevel + 1) as ElevationLevel] : elevationMap[4];
 
   return (
     <Card
@@ -22,16 +42,24 @@ export function GlassCard({ children, sx = {}, hover = true, ...props }: GlassCa
         backdropFilter: 'blur(20px) saturate(180%)',
         WebkitBackdropFilter: 'blur(20px) saturate(180%)',
         border: `1px solid ${theme.palette.divider}`,
-        borderRadius: 16,
-        boxShadow: shadowSoft,
-        transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+        borderRadius: radius.lg,
+        boxShadow: shadowCurrent,
+        transition: transitionBase,
         position: 'relative',
-        overflow: 'hidden',
+        overflow: 'visible',
         ...(hover && {
-          '&:hover': {
-            borderColor: theme.palette.divider,
-            boxShadow: shadowMedium,
-            transform: 'translateY(-2px)',
+          '@media (hover: hover)': {
+            '&:hover': {
+              borderColor: theme.palette.divider,
+              boxShadow: shadowLift,
+              transform: 'scale(1.02) translateY(-2px)',
+            },
+          },
+          '@media (prefers-reduced-motion: reduce)': {
+            '&:hover': {
+              transform: 'none',
+              boxShadow: shadowLift,
+            },
           },
         }),
         '&::before': {
@@ -43,10 +71,12 @@ export function GlassCard({ children, sx = {}, hover = true, ...props }: GlassCa
           height: '1px',
           background: `linear-gradient(90deg, transparent, ${alpha(theme.palette.primary.main, 0.12)}, transparent)`,
           opacity: 0,
-          transition: 'opacity 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: `opacity ${duration.base}ms ${easing}`,
         },
         ...(hover && {
-          '&:hover::before': { opacity: 1 },
+          '@media (hover: hover)': {
+            '&:hover::before': { opacity: 1 },
+          },
         }),
         ...sx,
       }}

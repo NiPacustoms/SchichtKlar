@@ -18,6 +18,7 @@ import { de } from 'date-fns/locale';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from '@/lib/utils/toast';
+import { PageContainer } from '@/components/layout/PageContainer';
 
 export default function AssignmentSummaryPage() {
   const { assignmentId } = useParams() as { assignmentId: string };
@@ -140,7 +141,7 @@ export default function AssignmentSummaryPage() {
   }
 
   return (
-    <Box sx={{ maxWidth: 840, mx: 'auto', p: 3 }}>
+    <PageContainer maxWidth="narrow">
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
         Finalzusammenfassung – Zeitenübersicht
       </Typography>
@@ -198,6 +199,6 @@ export default function AssignmentSummaryPage() {
           </Stack>
         </CardContent>
       </Card>
-    </Box>
+    </PageContainer>
   );
 }

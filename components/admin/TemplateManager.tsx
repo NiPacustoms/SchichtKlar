@@ -91,7 +91,7 @@ const channelLabels: Record<TemplateChannel, string> = {
 const statusLabels: Record<TemplateStatus, string> = {
   draft: 'Entwurf',
   active: 'Aktiv',
-  published: 'Live',
+  published: 'Veröffentlicht',
   archived: 'Archiviert',
 };
 
@@ -472,7 +472,7 @@ function TemplateEditorDialog({
                 control={
                   <Switch checked={form.status === 'published'} onChange={handleToggleStatus} />
                 }
-                label={form.status === 'published' ? 'Live (veröffentlicht)' : 'Entwurf'}
+                label={form.status === 'published' ? 'Veröffentlicht' : 'Entwurf'}
               />
 
               <Divider />
@@ -916,7 +916,7 @@ export function TemplateManager() {
                   >
                     <MenuItem value="all">Alle</MenuItem>
                     <MenuItem value="draft">Entwurf</MenuItem>
-                    <MenuItem value="published">Live</MenuItem>
+                    <MenuItem value="published">Veröffentlicht</MenuItem>
                   </Select>
                 </FormControl>
                 <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -945,7 +945,7 @@ export function TemplateManager() {
             >
               <Stack direction="row" spacing={1} flexWrap="wrap">
                 <Chip label={`Gesamt: ${statusCounts.total}`} />
-                <Chip label={`Live: ${statusCounts.published}`} color="success" />
+                <Chip label={`Veröffentlicht: ${statusCounts.published}`} color="success" />
                 <Chip label={`In-App: ${statusCounts.app}`} />
                 <Chip label={`E-Mail: ${statusCounts.email}`} />
               </Stack>
@@ -955,8 +955,8 @@ export function TemplateManager() {
 
         <Divider />
 
-        <TableContainer>
-          <Table>
+        <TableContainer sx={{ overflowX: 'auto' }}>
+          <Table stickyHeader size="medium">
             <TableHead>
               <TableRow>
                 <TableCell>Template</TableCell>

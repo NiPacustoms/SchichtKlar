@@ -22,9 +22,10 @@ export const runtime = 'nodejs';
 
 const ROUTE = '/api/auth/register-admin';
 
-// Hinweis: In Produktion sollte hier ein Firebase Admin SDK Token-Check erfolgen.
-// Aktuell wird erwartet, dass der Client bereits einen Firebase-Auth-User erstellt hat
-// und dessen uid in der Anfrage mitsendet. Die Rolle wird serverseitig auf 'admin' gesetzt.
+/**
+ * Betriebsmodell: Admin registriert seine Firma → Rolle admin.
+ * Siehe docs/ROLLEN-UND-EINLADUNGEN.md. Mitarbeiter werden per Einladung angelegt (accept-invite → nurse).
+ */
 
 export async function POST(req: NextRequest) {
   try {

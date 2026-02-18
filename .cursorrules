@@ -7,6 +7,7 @@
 - .cursor/rules/02-frontend.mdc
 - .cursor/rules/05-prompt-optimization.mdc
 - .cursor/rules/08-worktree-coordination.mdc
+- .cursor/rules/11-auto-followup.mdc
 
 # Auto-Attached Rules (automatisch bei relevanten Dateien)
 - .cursor/rules/03-services.mdc

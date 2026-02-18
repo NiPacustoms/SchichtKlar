@@ -18,8 +18,9 @@ import type { Assignment } from '@/lib/services/assignments';
 import type { Timesheet } from '@/lib/services/timesheets';
 import type { Document as Doc } from '@/lib/services/documents';
 import type { Activity } from '@/lib/services/activities';
-import { ArbZGValidationService } from '@/lib/services/payroll/arbzgValidation';
+import { ArbZGValidationService } from '@/lib/services/arbzgValidation';
 import { logger } from '@/lib/utils/logger';
+import { getShiftDisplayStatus } from '@/lib/utils/shiftStatus';
 
 interface TimesheetData {
   totalHours?: number;
@@ -35,7 +36,7 @@ export const useAdminDashboard = () => {
   const router = useRouter();
   const { alerts } = useAdminAlerts();
 
-  // Load all users - nur für die eigene Firma
+  // Load all users - nur für die eigene Firma (kritisch für KPIs)
   const { data: usersData, isLoading: loadingUsers } = useQuery<PaginatedResponse<User>>({
     queryKey: ['admin', 'users', _user?.companyId],
     queryFn: async () => {
@@ -46,11 +47,12 @@ export const useAdminDashboard = () => {
         return { data: [], total: 0, page: 1, limit: 100, hasMore: false };
       }
     },
-    enabled: !!_user?.companyId, // Nur laden, wenn companyId vorhanden ist
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!_user?.companyId,
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
-  // Load timesheets - nur für die eigene Firma
+  // Load timesheets - nachgeladen (nicht blockierend für erste Anzeige)
   const { data: timesheetsData, isLoading: loadingTimesheets } = useQuery<Timesheet[]>({
     queryKey: ['admin', 'timesheets', _user?.companyId],
     queryFn: async () => {
@@ -61,11 +63,12 @@ export const useAdminDashboard = () => {
         return [];
       }
     },
-    enabled: !!_user?.companyId, // Nur laden, wenn companyId vorhanden ist
+    enabled: !!_user?.companyId,
     staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
-  // Load assignments
+  // Load assignments (kritisch für KPIs)
   const { data: assignmentsData, isLoading: loadingAssignments } = useQuery<PaginatedResponse<Assignment>>({
     queryKey: ['admin', 'assignments'],
     queryFn: async () => {
@@ -77,9 +80,10 @@ export const useAdminDashboard = () => {
       }
     },
     staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
-  // Load shifts - nur für die eigene Firma
+  // Load shifts - nur für die eigene Firma (kritisch für KPIs)
   const { data: shiftsData, isLoading: loadingShifts } = useQuery<Shift[]>({
     queryKey: ['admin', 'shifts', _user?.companyId],
     queryFn: async () => {
@@ -91,11 +95,12 @@ export const useAdminDashboard = () => {
         return [];
       }
     },
-    enabled: !!_user?.companyId, // Nur laden, wenn companyId vorhanden ist
+    enabled: !!_user?.companyId,
     staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
-  // Load facilities - nur für die eigene Firma
+  // Load facilities - nur für die eigene Firma (kritisch für KPIs)
   const { data: facilitiesData, isLoading: loadingFacilities } = useQuery<Facility[]>({
     queryKey: ['admin', 'facilities', _user?.companyId],
     queryFn: async () => {
@@ -106,11 +111,12 @@ export const useAdminDashboard = () => {
         return [];
       }
     },
-    enabled: !!_user?.companyId, // Nur laden, wenn companyId vorhanden ist
+    enabled: !!_user?.companyId,
     staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
-  // Load documents
+  // Load documents - nachgeladen (nicht blockierend)
   const { data: documentsData, isLoading: loadingDocuments } = useQuery<Doc[]>({
     queryKey: ['admin', 'documents'],
     queryFn: async () => {
@@ -122,9 +128,10 @@ export const useAdminDashboard = () => {
       }
     },
     staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
-  // Load recent activities - nur für die eigene Firma
+  // Load recent activities - nachgeladen (nicht blockierend)
   const { data: activitiesData, isLoading: loadingActivities } = useQuery<Activity[]>({
     queryKey: ['admin', 'activities', _user?.companyId],
     queryFn: async () => {
@@ -135,11 +142,13 @@ export const useAdminDashboard = () => {
         return [];
       }
     },
-    enabled: !!_user?.companyId, // Nur laden, wenn companyId vorhanden ist
-    staleTime: 2 * 60 * 1000, // 2 minutes - activities change frequently
+    enabled: !!_user?.companyId,
+    staleTime: 2 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
   const allUsers = React.useMemo(() => usersData?.data ?? [], [usersData]);
+
   const weeklyTimesheets = React.useMemo(() => timesheetsData ?? [], [timesheetsData]);
   const allAssignments = React.useMemo(() => assignmentsData?.data ?? [], [assignmentsData]);
   const allShifts = React.useMemo(() => shiftsData ?? [], [shiftsData]);
@@ -151,14 +160,22 @@ export const useAdminDashboard = () => {
   const kpis = React.useMemo(() => ({
     totalStaff: allUsers.length,
     activeStaff: allUsers.filter(u => u.active).length,
-    openShifts: allShifts.filter(s => s.status === 'open').length,
-    utilization: allShifts.length > 0
-      ? Math.round((allShifts.filter(s => s.status === 'filled').length / allShifts.length) * 100)
-      : 0,
+    openShifts: allShifts.filter(s => getShiftDisplayStatus(s) === 'open').length,
+    utilization: (() => {
+      const active = allShifts.filter(s => getShiftDisplayStatus(s) !== 'ended');
+      return active.length > 0
+        ? Math.round((active.filter(s => getShiftDisplayStatus(s) === 'filled').length / active.length) * 100)
+        : 0;
+    })(),
     facilities: allFacilities.length,
     totalHours: weeklyTimesheets.reduce((sum: number, ts: TimesheetData) => sum + (ts.totalHours || 0), 0),
     pendingAssignments: allAssignments.filter(a => a.status === 'pending').length,
     expiringDocuments: allDocuments.filter(d => d.status === 'expiring').length,
+    /** Anzahl Mitarbeiter mit Wochenlimit überschritten (blocked) */
+    weeklyLimitBlocked: allUsers.filter(u => u.limitStatus === 'blocked').length,
+    /** Anzahl Mitarbeiter mit Wochenlimit-Warnung (≥90 %) */
+    weeklyLimitWarning: allUsers.filter(u => u.limitStatus === 'warning').length,
+    // Trends: optional V2 aus Vorwoche vs. diese Woche
     staffGrowth: { value: 0, isPositive: true },
     shiftTrend: { value: 0, isPositive: false },
     utilizationTrend: { value: 0, isPositive: true },
@@ -192,12 +209,12 @@ export const useAdminDashboard = () => {
   };
 
   const getTopPerformers = () => {
-    // TODO: Calculate based on completed assignments and hours
+    // Optional V2: Aus abgeschlossenen Einsätzen und Stunden aggregieren.
     return [];
   };
 
   const getTopFacilities = () => {
-    // TODO: Calculate based on shift completion rate
+    // Optional V2: Nach Schicht-Besetzungsquote sortieren.
     return [];
   };
 
@@ -244,26 +261,23 @@ export const useAdminDashboard = () => {
     }));
   }, [weeklyTimesheets]);
 
-  // Calculate staff activity
+  // Calculate staff activity (nur Aktiv/Verfügbar – keine Urlaub-/Abwesenheitspflege)
   const getStaffActivity = React.useCallback(() => {
     const activeUsers = allUsers.filter(u => u.active);
     const onDuty = activeUsers.filter(u => u.currentStatus === 'active').length;
-    const available = activeUsers.filter(u => u.currentStatus === 'inactive').length;
-    const onBreak = activeUsers.filter(u => u.currentStatus === 'on-leave').length;
-    const sick = activeUsers.filter(u => u.currentStatus === 'sick').length;
+    const available = activeUsers.filter(u => u.currentStatus !== 'active').length;
 
     return [
       { name: 'Im Dienst', value: onDuty, color: '#4caf50' },
       { name: 'Verfügbar', value: available, color: '#2196f3' },
-      { name: 'Pause', value: onBreak, color: '#ff9800' },
-      { name: 'Krank', value: sick, color: '#f44336' },
     ];
   }, [allUsers]);
 
-  // Calculate shift completion
+  // Calculate shift completion (nur aktive Schichten, keine beendeten)
   const getShiftCompletion = React.useCallback(() => {
-    const filled = allShifts.filter(s => s.status === 'filled').length;
-    const open = allShifts.filter(s => s.status === 'open').length;
+    const activeShifts = allShifts.filter(s => getShiftDisplayStatus(s) !== 'ended');
+    const filled = activeShifts.filter(s => getShiftDisplayStatus(s) === 'filled').length;
+    const open = activeShifts.filter(s => getShiftDisplayStatus(s) === 'open').length;
     const total = filled + open;
 
     return [
@@ -297,14 +311,12 @@ export const useAdminDashboard = () => {
     router.push('/admin/einstellungen');
   };
 
-  const isLoading = 
-    loadingUsers || 
-    loadingTimesheets || 
-    loadingAssignments || 
-    loadingShifts || 
-    loadingFacilities ||
-    loadingDocuments ||
-    loadingActivities;
+  // Nur kritische Daten blockieren die erste Anzeige (KPIs); Rest lädt im Hintergrund nach
+  const isLoading =
+    loadingUsers ||
+    loadingAssignments ||
+    loadingShifts ||
+    loadingFacilities;
 
   const memoWeeklyHours = React.useMemo(() => getWeeklyHours(), [getWeeklyHours]);
   const memoMonthlyHours = React.useMemo(() => getMonthlyHours(), [getMonthlyHours]);

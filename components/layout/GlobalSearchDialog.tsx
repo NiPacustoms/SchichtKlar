@@ -17,6 +17,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/contexts/PermissionsContext';
 
 interface GlobalSearchDialogProps {
   open: boolean;
@@ -33,6 +34,7 @@ export function GlobalSearchDialog({ open, onClose }: GlobalSearchDialogProps) {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'), { noSsr: true });
   const router = useRouter();
   const { user } = useAuth();
+  const { canAccessAdminArea } = usePermissions();
 
   const handleSubmit = useCallback(() => {
     const q = query.trim();
@@ -40,13 +42,13 @@ export function GlobalSearchDialog({ open, onClose }: GlobalSearchDialogProps) {
     onClose();
     setQuery('');
     const basePath =
-      user?.role === 'nurse'
+      user?.role === 'nurse' && !canAccessAdminArea
         ? '/employee/arbeitsplatz'
-        : user?.role === 'admin'
+        : canAccessAdminArea
           ? '/admin/uebersicht'
           : '/';
     router.push(`${basePath}?search=${encodeURIComponent(q)}`);
-  }, [query, onClose, router, user?.role]);
+  }, [query, onClose, router, user?.role, canAccessAdminArea]);
 
   const handleClose = useCallback(() => {
     setQuery('');

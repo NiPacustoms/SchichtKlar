@@ -147,8 +147,7 @@ export const employeeReportsService = {
   // Generate report data based on type - nur noch echte Daten, keine Mock-Daten
   async generateReportData(data: ReportGenerationRequest): Promise<Record<string, unknown>> {
     try {
-      // TODO: Implementiere echte Datenabfrage aus Firestore für jeden Report-Typ
-      // Für jetzt: Leere Objekte zurückgeben, keine Mock-Daten
+      // Placeholder: Echte Firestore-Abfrage pro Report-Typ geplant. Aktuell leere Strukturen.
       logger.warn(`generateReportData for type "${data.type}" not yet implemented - returning empty data`);
       
       switch (data.type) {

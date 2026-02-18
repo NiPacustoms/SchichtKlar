@@ -14,10 +14,9 @@ import type { NextRequest } from 'next/server';
  */
 
 /**
- * Zentrale Redirect-Map: Von (alte/englische/Doppel-URL) → Nach (kanonische Route).
- * Bestehende Links funktionieren weiter; Pages für diese Pfade wurden entfernt.
+ * Redirect-Map: Nur deutsche Kurz-URLs → kanonische Routen (keine englischen URLs).
  */
-const EN_TO_DE_REDIRECTS: Record<string, string> = {
+const DE_REDIRECTS: Record<string, string> = {
   // Root-Level → Employee
   '/zeiterfassung': '/employee/zeiterfassung',
   '/zeiten': '/employee/zeiten',
@@ -26,50 +25,25 @@ const EN_TO_DE_REDIRECTS: Record<string, string> = {
   '/dokumente': '/employee/dokumente',
   '/benachrichtigungen': '/employee/arbeitsplatz',
   '/nachrichten': '/employee/arbeitsplatz',
-  '/messenger': '/employee/arbeitsplatz',
-  // Englische URLs → Employee
-  '/schedule': '/employee/dienstplan',
-  '/time': '/employee/zeiten',
-  '/profile': '/employee/profil',
-  '/documents': '/employee/dokumente',
   // Root → Status/Wartung
   '/status': '/systemstatus',
-  '/maintenance': '/wartung',
   // Root → Admin
   '/einrichtungen': '/admin/einrichtungen',
-  '/facilities': '/admin/einrichtungen',
-  // Root /dashboard (Re-Export wurde entfernt)
-  '/dashboard': '/employee/arbeitsplatz',
   // Employee-Doppelungen → kanonisch
   '/employee/dashboard': '/employee/arbeitsplatz',
   '/employee/assignments': '/employee/einsaetze',
   // Auth/Legal
-  '/legal/privacy': '/recht/datenschutz',
-  '/legal/imprint': '/recht/impressum',
   '/admin-register': '/admin-registrieren',
   // Admin-Doppelungen
   '/admin/dashboard': '/admin/schichten',
-  '/admin/shifts': '/admin/schichten',
-  '/admin/assignments': '/admin/schichten',
-  // Debug
-  '/debug-umgebung': '/debug-env',
 };
 
-// Protected routes that require authentication
-const PROTECTED_ROUTES = [
-  '/admin',
-  '/employee',
-];
+const PROTECTED_ROUTES = ['/admin', '/employee'];
+const ADMIN_ROUTES = ['/admin'];
+const EMPLOYEE_ROUTES = ['/employee'];
 
-// Admin-only routes
-const ADMIN_ROUTES = [
-  '/admin',
-];
-
-// Employee-only routes
-const EMPLOYEE_ROUTES = [
-  '/employee',
-];
+/** Cookie, der serverseitig bei Session-Set gesetzt wird – nur "admin" oder "nurse". */
+const ROLE_COOKIE_NAME = 'jobflow_role';
 
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = [
@@ -150,7 +124,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Zentrale Redirects: alte/englische/Doppel-URLs → kanonische Routen
-  const redirectTarget = EN_TO_DE_REDIRECTS[pathname];
+  const redirectTarget = DE_REDIRECTS[pathname];
   if (redirectTarget) {
     return NextResponse.redirect(new URL(redirectTarget, request.url));
   }
@@ -176,28 +150,26 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  // Check protected routes
+  // Geschützte Routen: Auth + strikte Rollentrennung (niemand kann Routen übertreten)
   if (matchesRoute(pathname, PROTECTED_ROUTES)) {
-    // Basic auth check (token presence only)
-    // Full RBAC verification happens client-side via RoleGuard
     if (!hasAuthToken(request)) {
-      // Redirect to login if no auth token found
       const loginUrl = new URL('/anmelden', request.url);
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
     }
 
-    // Route-specific checks (basic - full RBAC in RoleGuard)
+    const roleCookie = request.cookies.get(ROLE_COOKIE_NAME)?.value;
+
     if (matchesRoute(pathname, ADMIN_ROUTES)) {
-      // Admin routes: Basic check only, full role check in RoleGuard
-      // In Edge Runtime, we can't verify the token's role claim
-      // This is handled by RoleGuard component on the client side
+      if (roleCookie !== 'admin') {
+        return NextResponse.redirect(new URL('/employee/arbeitsplatz', request.url));
+      }
     }
 
     if (matchesRoute(pathname, EMPLOYEE_ROUTES)) {
-      // Employee routes: Basic check only, full role check in RoleGuard
-      // In Edge Runtime, we can't verify the token's role claim
-      // This is handled by RoleGuard component on the client side
+      if (roleCookie === 'admin') {
+        return NextResponse.redirect(new URL('/admin/uebersicht', request.url));
+      }
     }
   }
 

@@ -159,7 +159,7 @@ export const declineAssignment = functions.https.onCall(async (data, context) =>
           type: 'assignment-declined',
           title: 'Schichtablehnung bestätigt',
           message: 'Deine Schichtablehnung wurde von einem Admin bestätigt.',
-          actionUrl: '/schedule',
+          actionUrl: '/employee/dienstplan',
           read: false,
           priority: 'normal',
           createdAt: admin.firestore.FieldValue.serverTimestamp(),

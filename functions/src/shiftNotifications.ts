@@ -3,7 +3,7 @@ import { logger } from 'firebase-functions';
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { getFirestore } from 'firebase-admin/firestore';
 const db = getFirestore();
-const DEFAULT_SHIFT_LINK = '/schedule';
+const DEFAULT_SHIFT_LINK = '/employee/dienstplan';
 
 type ShiftNotificationPayload = {
   userId: string;

@@ -108,29 +108,6 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
     },
   });
 
-  // Generate surcharge report
-  const generateSurchargeReportMutation = useMutation({
-    mutationFn: async (filters: {
-      startDate: Date;
-      endDate: Date;
-      surchargeTypes?: string[];
-    }) => {
-      if (!user?.id) throw new Error('No user ID');
-      return await reportService.generateSurchargeReport({
-        userId: user.id,
-        ...filters,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employeeTimesheets'] });
-      toast.success('Zuschlag-Bericht erfolgreich generiert');
-    },
-    onError: (error: Error) => {
-      logger.error('Error generating surcharge report:', error);
-      toast.error('Fehler beim Generieren des Zuschlag-Berichts');
-    },
-  });
-
   // Export functions
   const exportTimeAccountReportPDF = async (data: ExportData, filters: ExportFilters) => {
     try {
@@ -145,26 +122,6 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
   const exportTimeAccountReportExcel = async (data: ExportData, filters: ExportFilters) => {
     try {
       return await reportService.exportTimeAccountReportExcel(data, filters);
-    } catch (error) {
-      logger.error('Error exporting Excel:', error);
-      toast.error('Fehler beim Exportieren der Excel-Datei');
-      throw error;
-    }
-  };
-
-  const exportSurchargeReportPDF = async (data: ExportData, filters: ExportFilters) => {
-    try {
-      return await reportService.exportSurchargeReportPDF(data, filters);
-    } catch (error) {
-      logger.error('Error exporting PDF:', error);
-      toast.error('Fehler beim Exportieren der PDF');
-      throw error;
-    }
-  };
-
-  const exportSurchargeReportExcel = async (data: ExportData, filters: ExportFilters) => {
-    try {
-      return await reportService.exportSurchargeReportExcel(data, filters);
     } catch (error) {
       logger.error('Error exporting Excel:', error);
       toast.error('Fehler beim Exportieren der Excel-Datei');
@@ -190,8 +147,9 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
     total != null && total > 0 ? `${((value / total) * 100).toFixed(1)} %` : `${value.toFixed(1)} %`;
   const getStatusColor = (_status: string) => 'default' as const;
   const getStatusLabel = (status: string) => status;
-  const getTrendIcon = (_trend: number) => null;
-  const getTrendText = (_trend: number) => '';
+  type TrendValue = 'up' | 'down' | 'flat';
+  const getTrendIcon = (_trend: TrendValue) => null;
+  const getTrendText = (_trend: TrendValue) => '';
 
   const workTimeReport = useMemo(
     () => ({
@@ -203,23 +161,8 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
       averageHoursPerDay: 0,
       averageHoursPerWeek: 0,
       workingDays: 0,
-      trend: 0,
+      trend: 'flat' as TrendValue,
       hoursByDay: [] as unknown[],
-    }),
-    []
-  );
-  const surchargesReport = useMemo(
-    () => ({
-      data: [] as unknown[],
-      summary: {},
-      totalSurcharge: 0,
-      nightSurcharge: 0,
-      weekendSurcharge: 0,
-      holidaySurcharge: 0,
-      averageSurchargePerDay: 0,
-      averageSurchargePerWeek: 0,
-      surchargeTrend: 0,
-      surchargeByDay: [] as unknown[],
     }),
     []
   );
@@ -238,7 +181,6 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
   );
 
   const exportWorkTimeReport = async (_format: 'pdf' | 'excel') => { toast.info('Export wird vorbereitet'); };
-  const exportSurchargesReport = async (_format: 'pdf' | 'excel') => { toast.info('Export wird vorbereitet'); };
   const exportVacationReport = async (_format: 'pdf' | 'excel') => { toast.info('Export wird vorbereitet'); };
   const exportAllReports = async (_format: 'pdf' | 'excel') => { toast.info('Export wird vorbereitet'); };
 
@@ -246,10 +188,6 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
 
   const getTotalHours = () => {
     return timesheets.reduce((sum, ts) => sum + (ts.totalHours || 0), 0);
-  };
-
-  const getTotalSurcharge = () => {
-    return timesheets.reduce((sum, ts) => sum + (ts.surchargeAmount || 0), 0);
   };
 
   const getOvertimeHours = () => {
@@ -288,8 +226,7 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
   };
 
   const isLoading = loadingTimesheets || loadingTimeEntries ||
-    generateTimeAccountReportMutation.isPending ||
-    generateSurchargeReportMutation.isPending;
+    generateTimeAccountReportMutation.isPending;
 
   return {
     // Data
@@ -297,7 +234,6 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
     timeEntries,
     user,
     workTimeReport,
-    surchargesReport,
     vacationReport,
     // Loading states
     isLoading,
@@ -306,14 +242,10 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
     error,
     // Mutations
     generateTimeAccountReport: generateTimeAccountReportMutation.mutateAsync,
-    generateSurchargeReport: generateSurchargeReportMutation.mutateAsync,
     // Export functions
     exportTimeAccountReportPDF,
     exportTimeAccountReportExcel,
-    exportSurchargeReportPDF,
-    exportSurchargeReportExcel,
     exportWorkTimeReport,
-    exportSurchargesReport,
     exportVacationReport,
     exportAllReports,
     refetch,
@@ -331,11 +263,9 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
     getTrendIcon,
     getTrendText,
     getTotalHours,
-    getTotalSurcharge,
     getOvertimeHours,
     // Computed values
     totalHours: getTotalHours(),
-    totalSurcharge: getTotalSurcharge(),
     overtimeHours: getOvertimeHours(),
   };
 }

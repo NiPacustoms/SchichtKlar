@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useRef, useId } from 'react';
+import { useState, useRef, useId, useEffect } from 'react';
 import { logger } from '@/lib/logging';
 import { GlobalErrorBoundary } from '@/components/errors/GlobalErrorBoundary';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
+import { PageContainer } from '@/components/layout/PageContainer';
 import {
   useAdminSettings,
   Role,
@@ -54,6 +55,7 @@ import {
   Avatar,
   Switch,
   FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import {
   Settings,
@@ -76,6 +78,13 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import {
+  PERMISSION_OPTIONS,
+  PERMISSION_GROUPS,
+} from '@/lib/constants/permissions';
+
+const getPermissionLabel = (key: string) =>
+  PERMISSION_OPTIONS.find(p => p.key === key)?.label ?? key;
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -152,6 +161,27 @@ export default function AdminSettingsPage() {
   const [selectedItem, setSelectedItem] = useState<Role | AdminDocumentType | EmailTemplate | null>(
     null
   );
+  const [roleFormName, setRoleFormName] = useState('');
+  const [roleFormDescription, setRoleFormDescription] = useState('');
+  const [roleFormPermissions, setRoleFormPermissions] = useState<string[]>([]);
+  const [roleFormStatus, setRoleFormStatus] = useState<'active' | 'inactive' | 'pending'>('active');
+
+  useEffect(() => {
+    if (roleDialogOpen) {
+      if (selectedItem && 'permissions' in selectedItem) {
+        const role = selectedItem as Role;
+        setRoleFormName(role.name);
+        setRoleFormDescription(role.description);
+        setRoleFormPermissions(role.permissions ?? []);
+        setRoleFormStatus(role.status ?? 'active');
+      } else {
+        setRoleFormName('');
+        setRoleFormDescription('');
+        setRoleFormPermissions([]);
+        setRoleFormStatus('active');
+      }
+    }
+  }, [roleDialogOpen, selectedItem]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -230,6 +260,41 @@ export default function AdminSettingsPage() {
       await deleteRole(roleId);
     } catch (error) {
       // Error handling is done in the mutations
+    }
+  };
+
+  const toggleRolePermission = (key: string) => {
+    setRoleFormPermissions(prev =>
+      prev.includes(key) ? prev.filter(p => p !== key) : [...prev, key]
+    );
+  };
+
+  const handleRoleDialogClose = () => {
+    setRoleDialogOpen(false);
+    setSelectedItem(null);
+  };
+
+  const handleRoleSubmit = () => {
+    const name = roleFormName.trim();
+    if (!name) {
+      toast.error('Bitte einen Rollen-Namen angeben.');
+      return;
+    }
+    if (selectedItem && 'permissions' in selectedItem) {
+      handleUpdateRole({
+        name,
+        description: roleFormDescription.trim(),
+        permissions: roleFormPermissions,
+        status: roleFormStatus,
+      });
+    } else {
+      handleCreateRole({
+        name,
+        description: roleFormDescription.trim(),
+        permissions: roleFormPermissions,
+        userCount: 0,
+        status: roleFormStatus,
+      });
     }
   };
 
@@ -313,8 +378,6 @@ export default function AdminSettingsPage() {
     switch (role) {
       case 'admin':
         return 'error';
-      case 'dispatcher':
-        return 'warning';
       case 'nurse':
         return 'info';
       case 'employee':
@@ -355,7 +418,7 @@ export default function AdminSettingsPage() {
 
   return (
     <GlobalErrorBoundary component="AdminSettingsPage">
-      <Box sx={{ maxWidth: 1400, mx: 'auto', p: 3 }}>
+      <PageContainer maxWidth="wide">
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Typography
@@ -699,7 +762,10 @@ export default function AdminSettingsPage() {
                 <Button
                   variant="contained"
                   startIcon={<Add />}
-                  onClick={() => setRoleDialogOpen(true)}
+                  onClick={() => {
+                    setSelectedItem(null);
+                    setRoleDialogOpen(true);
+                  }}
                   disabled={isCreating}
                 >
                   {isCreating ? 'Erstelle...' : 'Neue Rolle'}
@@ -739,7 +805,7 @@ export default function AdminSettingsPage() {
                         <TableCell>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                             {role.permissions.slice(0, 3).map((permission, index) => (
-                              <Chip key={index} label={permission} size="small" />
+                              <Chip key={index} label={getPermissionLabel(permission)} size="small" />
                             ))}
                             {role.permissions.length > 3 && (
                               <Chip label={`+${role.permissions.length - 3}`} size="small" />
@@ -1485,18 +1551,20 @@ export default function AdminSettingsPage() {
         {/* Role Dialog */}
         <Dialog
           open={roleDialogOpen}
-          onClose={() => setRoleDialogOpen(false)}
-          maxWidth="sm"
+          onClose={handleRoleDialogClose}
+          maxWidth="md"
           fullWidth
         >
           <DialogTitle>{selectedItem ? 'Rolle bearbeiten' : 'Neue Rolle erstellen'}</DialogTitle>
           <DialogContent>
-            <Grid container spacing={3}>
+            <Grid container spacing={3} sx={{ pt: 1 }}>
               <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
                   label="Rollen-Name"
-                  placeholder="z.B. Admin, Disponent, Nurse"
+                  placeholder="z.B. Disponent, Teamleiter, Personalplaner"
+                  value={roleFormName}
+                  onChange={e => setRoleFormName(e.target.value)}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -1504,40 +1572,65 @@ export default function AdminSettingsPage() {
                   fullWidth
                   label="Beschreibung"
                   multiline
-                  rows={3}
-                  placeholder="Beschreibung der Rolle..."
+                  rows={2}
+                  placeholder="Kurze Beschreibung der Rolle und ihrer Aufgaben..."
+                  value={roleFormDescription}
+                  onChange={e => setRoleFormDescription(e.target.value)}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Berechtigungen</InputLabel>
-                  <Select multiple label="Berechtigungen" defaultValue={[]}>
-                    <MenuItem value="read">Lesen</MenuItem>
-                    <MenuItem value="write">Schreiben</MenuItem>
-                    <MenuItem value="delete">Löschen</MenuItem>
-                    <MenuItem value="admin">Administration</MenuItem>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    label="Status"
+                    value={roleFormStatus}
+                    onChange={e => setRoleFormStatus(e.target.value as 'active' | 'inactive' | 'pending')}
+                  >
+                    <MenuItem value="active">Aktiv</MenuItem>
+                    <MenuItem value="inactive">Inaktiv</MenuItem>
+                    <MenuItem value="pending">Ausstehend</MenuItem>
                   </Select>
                 </FormControl>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
+                  Berechtigungen
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Wählen Sie die Aktionen aus, die diese Rolle ausführen darf.
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {PERMISSION_GROUPS.map(group => (
+                    <Card key={group} variant="outlined" sx={{ p: 2 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
+                        {group}
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                        {PERMISSION_OPTIONS.filter(p => p.group === group).map(opt => (
+                          <FormControlLabel
+                            key={opt.key}
+                            control={
+                              <Checkbox
+                                checked={roleFormPermissions.includes(opt.key)}
+                                onChange={() => toggleRolePermission(opt.key)}
+                                size="small"
+                              />
+                            }
+                            label={opt.label}
+                            sx={{ mr: 2 }}
+                          />
+                        ))}
+                      </Box>
+                    </Card>
+                  ))}
+                </Box>
               </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setRoleDialogOpen(false)}>Abbrechen</Button>
+            <Button onClick={handleRoleDialogClose}>Abbrechen</Button>
             <Button
-              onClick={() =>
-                selectedItem
-                  ? handleUpdateRole({
-                      name: 'Updated Role',
-                      description: 'Updated Description',
-                    })
-                  : handleCreateRole({
-                      name: 'Test Role',
-                      description: 'Test Description',
-                      permissions: ['read'],
-                      userCount: 0,
-                      status: 'active',
-                    })
-              }
+              onClick={handleRoleSubmit}
               variant="contained"
               disabled={isCreating || isUpdating}
             >
@@ -1756,7 +1849,7 @@ export default function AdminSettingsPage() {
             </Button>
           </DialogActions>
         </Dialog>
-      </Box>
+      </PageContainer>
     </GlobalErrorBoundary>
   );
 }

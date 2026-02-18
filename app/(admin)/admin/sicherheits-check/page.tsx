@@ -1,7 +1,8 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { Box, Button, Typography, Alert } from '@mui/material';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Button, Typography, Alert } from '@mui/material';
 
 export default function AdminSecureSetupPage() {
   const { firebaseUser } = useAuth();
@@ -13,13 +14,12 @@ export default function AdminSecureSetupPage() {
   );
 
   const goToAccountSecurity = () => {
-    // In Firebase Hosting/Console you typically trigger MFA enrollment via UI flow;
-    // here we link to account/profile page where enrollment is available.
-    window.location.href = '/profile/security';
+    // Weiterleitung zum Profil (Sicherheit), wo 2FA eingerichtet werden kann.
+    window.location.href = '/employee/profil';
   };
 
   return (
-    <Box sx={{ maxWidth: 640, mx: 'auto', p: 3 }}>
+    <PageContainer maxWidth="narrow">
       <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
         Sicherheitseinrichtung erforderlich
       </Typography>
@@ -39,6 +39,6 @@ export default function AdminSecureSetupPage() {
       <Button variant="contained" onClick={goToAccountSecurity}>
         2FA jetzt einrichten
       </Button>
-    </Box>
+    </PageContainer>
   );
 }

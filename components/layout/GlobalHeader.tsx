@@ -12,7 +12,9 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useBrandingSettings } from '@/lib/hooks/useBrandingSettings';
 import { NotificationBell } from '@/components/layout/NotificationBell';
+import { BackButton } from '@/components/layout/BackButton';
 import { useThemeMode } from '@/contexts/ThemeModeContext';
+import { usePermissions } from '@/contexts/PermissionsContext';
 
 export function GlobalHeader() {
   const { user, signOut } = useAuth();
@@ -33,8 +35,9 @@ export function GlobalHeader() {
     showLogo: true,
   };
 
+  const { canAccessAdminArea } = usePermissions();
   const homeHref = user
-    ? user.role === 'admin' || user.role === 'dispatcher'
+    ? canAccessAdminArea
       ? '/admin/uebersicht'
       : user.role === 'nurse'
         ? '/employee/arbeitsplatz'
@@ -70,10 +73,10 @@ export function GlobalHeader() {
               textDecoration: 'none',
               px: 2,
               py: 0.75,
-              width: 96,
-              height: 64,
-              maxWidth: 96,
-              maxHeight: 64,
+              width: 128,
+              height: 85,
+              maxWidth: 128,
+              maxHeight: 85,
               flexShrink: 0,
             }}
             aria-label="Zur Startseite"
@@ -81,8 +84,8 @@ export function GlobalHeader() {
             <AppLogo
               branding={brandingData}
               showLogo
-              width={96}
-              height={64}
+              width={128}
+              height={85}
               sx={{ width: '100%', height: '100%', borderRadius: 0 }}
               showSkeleton={false}
               fallbackBgColor="transparent"
@@ -91,7 +94,10 @@ export function GlobalHeader() {
           </Box>
         )}
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 0 }}>
+          {user && !isOnDashboard && (
+            <BackButton iconOnly size="small" variant="outlined" />
+          )}
           {user && (
             <Typography
               variant="body2"
@@ -132,7 +138,7 @@ export function GlobalHeader() {
                 },
               }}
             >
-              Dashboard
+              Start
             </Button>
           )}
 
@@ -163,7 +169,7 @@ export function GlobalHeader() {
             data-testid="logout-button"
             aria-label="Abmelden"
           >
-            {loggingOut ? 'Abmelden…' : 'Logout'}
+            {loggingOut ? 'Abmelden…' : 'Abmelden'}
           </Button>
         </Box>
       </Toolbar>

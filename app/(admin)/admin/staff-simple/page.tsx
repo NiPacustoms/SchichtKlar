@@ -1,12 +1,13 @@
 'use client';
 
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { useRole } from '@/contexts/RoleContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { userService } from '@/lib/services';
 import { User } from '@/lib/types';
 import { toast } from '@/lib/utils/toast';
-import { Add, Delete, Edit, Email, People, Phone, Work, Visibility } from '@mui/icons-material';
+import { Add, Delete, Email, People, Phone, Work } from '@mui/icons-material';
 import {
   AppBar,
   Avatar,
@@ -21,8 +22,6 @@ import {
   Select,
   Toolbar,
   Typography,
-  IconButton,
-  Tooltip,
   TextField,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -46,12 +45,11 @@ export default function StaffSimplePage() {
     queryFn: () => userService.getAll(),
   });
 
-  const allStaff = staffResponse?.data || [];
-
+  const allStaff = useMemo(() => staffResponse?.data || [], [staffResponse?.data]);
   const queryClient = useQueryClient();
 
   // Mutations für CRUD-Operationen
-  const updateUserMutation = useMutation({
+  const _updateUserMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<User> }) => userService.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -170,7 +168,7 @@ export default function StaffSimplePage() {
           <FormControl size="small">
             <Select
               value={currentRole}
-              onChange={e => setCurrentRole(e.target.value as 'nurse' | 'dispatcher')}
+              onChange={e => setCurrentRole(e.target.value as 'nurse' | 'admin')}
               aria-label="Rolle auswählen"
               sx={{
                 color: isDark ? 'rgba(255,255,255,0.92)' : 'rgba(0,0,0,0.95)',
@@ -192,13 +190,13 @@ export default function StaffSimplePage() {
               }}
             >
               <MenuItem value="nurse">Krankenschwester</MenuItem>
-              <MenuItem value="dispatcher">Disponent (Admin)</MenuItem>
+              <MenuItem value="admin">Administrator</MenuItem>
             </Select>
           </FormControl>
         </Toolbar>
       </AppBar>
 
-      <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3, pt: 8, mt: 4 }}>
+      <PageContainer maxWidth="standard" sx={{ pt: 8, mt: 4 }}>
         <Box sx={{ mb: 4 }}>
           <Typography
             variant="h4"
@@ -281,7 +279,7 @@ export default function StaffSimplePage() {
                         >
                           {member.role === 'nurse'
                             ? 'Pflegekraft'
-                            : member.role === 'admin'
+                            : member.role === 'admin' || !!member.customRoleId
                               ? 'Administrator'
                               : 'Disponent'}
                         </Typography>
@@ -383,7 +381,7 @@ export default function StaffSimplePage() {
             </Grid>
           ))}
         </Grid>
-      </Box>
+      </PageContainer>
     </Box>
   );
 }

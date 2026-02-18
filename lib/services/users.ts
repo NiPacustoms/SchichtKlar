@@ -36,14 +36,13 @@ import { getCompanyIdFromAuth, refreshTokenAndGetCompanyId } from '@/lib/utils/c
 
 const COLLECTION_NAME = 'users';
 
-/** Notification-Einstellungen (inkl. chatEnabled für Chat-Benachrichtigungen) */
+/** Notification-Einstellungen */
 export type UserNotificationSettings = Partial<{
   emailNotifications: boolean;
   pushNotifications: boolean;
   shiftReminders: boolean;
   documentExpiry: boolean;
   systemAnnouncements: boolean;
-  chatEnabled: boolean;
 }>;
 
 export interface ActiveEmployee {
@@ -55,7 +54,6 @@ export interface ActiveEmployee {
   paymentFrequency: 'monatlich' | 'stündlich';
   employmentType?: string;
   companyId?: string;
-  payrollSettingsId?: string;
 }
 
 export const userService = {
@@ -86,6 +84,7 @@ export const userService = {
         email: data.email,
         displayName: data.displayName,
         role: data.role,
+        customRoleId: (data.customRoleId as string) || undefined,
         jobTitle: data.jobTitle || '',
         group: data.group || '',
         phone: data.phone,
@@ -149,6 +148,9 @@ export const userService = {
           documentExpiry: true,
           systemAnnouncements: true,
         },
+        wochenstundenLimit: typeof data.wochenstundenLimit === 'number' ? data.wochenstundenLimit : undefined,
+        aktuelleWochenstunden: typeof data.aktuelleWochenstunden === 'number' ? data.aktuelleWochenstunden : undefined,
+        limitStatus: data.limitStatus === 'normal' || data.limitStatus === 'warning' || data.limitStatus === 'blocked' ? data.limitStatus : undefined,
         createdAt: getDate(data.createdAt),
         updatedAt: getDate(data.updatedAt),
       };
@@ -244,7 +246,6 @@ export const userService = {
           paymentFrequency,
           employmentType: undefined,
           companyId: (data.companyId as string) || undefined,
-          payrollSettingsId: undefined,
         } satisfies ActiveEmployee;
       });
 
@@ -258,7 +259,7 @@ export const userService = {
       }
 
       if (error instanceof Error) {
-        if (error.message.startsWith('Fehlende Lohnsätze') || error.message.startsWith('Mindestlohn-Verstoß')) {
+        if (error.message.startsWith('Fehlende Stammdaten') || error.message.startsWith('Daten-Verstoß')) {
           throw error;
         }
         throw new Error(`Fehler beim Laden aktiver Mitarbeiter: ${error.message}`);
@@ -402,6 +403,7 @@ export const userService = {
             email: row.email as string,
             displayName: row.displayName as string,
             role: row.role as User['role'],
+            customRoleId: (row.customRoleId as string) || undefined,
             jobTitle: (row.jobTitle as string) || '',
             group: (row.group as string) || '',
             phone: row.phone as string,
@@ -428,6 +430,9 @@ export const userService = {
               documentExpiry: true,
               systemAnnouncements: true,
             },
+            wochenstundenLimit: typeof row.wochenstundenLimit === 'number' ? row.wochenstundenLimit : undefined,
+            aktuelleWochenstunden: typeof row.aktuelleWochenstunden === 'number' ? row.aktuelleWochenstunden : undefined,
+            limitStatus: row.limitStatus === 'normal' || row.limitStatus === 'warning' || row.limitStatus === 'blocked' ? row.limitStatus : undefined,
             createdAt: (row as { createdAt?: { toDate?: () => Date } | Date }).createdAt && (row as { createdAt?: { toDate?: () => Date } }).createdAt?.toDate ? (row as { createdAt: { toDate: () => Date } }).createdAt.toDate() : ((row as { createdAt?: Date }).createdAt || new Date()),
             updatedAt: (row as { updatedAt?: { toDate?: () => Date } | Date }).updatedAt && (row as { updatedAt?: { toDate?: () => Date } }).updatedAt?.toDate ? (row as { updatedAt: { toDate: () => Date } }).updatedAt.toDate() : ((row as { updatedAt?: Date }).updatedAt || new Date()),
           } as User));
@@ -478,6 +483,9 @@ export const userService = {
                   documentExpiry: true,
                   systemAnnouncements: true,
                 },
+                wochenstundenLimit: typeof row.wochenstundenLimit === 'number' ? row.wochenstundenLimit : undefined,
+                aktuelleWochenstunden: typeof row.aktuelleWochenstunden === 'number' ? row.aktuelleWochenstunden : undefined,
+                limitStatus: row.limitStatus === 'normal' || row.limitStatus === 'warning' || row.limitStatus === 'blocked' ? row.limitStatus : undefined,
                 createdAt: (row.createdAt && typeof row.createdAt === 'object' && 'toDate' in row.createdAt) ? (row.createdAt as { toDate: () => Date }).toDate() : (row.createdAt ? new Date(row.createdAt as string | Date) : new Date()),
                 updatedAt: (row.updatedAt && typeof row.updatedAt === 'object' && 'toDate' in row.updatedAt) ? (row.updatedAt as { toDate: () => Date }).toDate() : (row.updatedAt ? new Date(row.updatedAt as string | Date) : new Date()),
               } as User));
@@ -522,11 +530,15 @@ export const userService = {
         email: row.email as string,
         displayName: row.displayName as string,
         role: row.role as User['role'],
+        customRoleId: (row.customRoleId as string) || undefined,
         jobTitle: (row.jobTitle as string) || '',
         group: (row.group as string) || '',
         phone: row.phone as string,
         qualifications: (row.qualifications as string[]) || [],
         workingHoursPerWeek: (row.workingHoursPerWeek as number) || undefined,
+        wochenstundenLimit: typeof row.wochenstundenLimit === 'number' ? row.wochenstundenLimit : undefined,
+        aktuelleWochenstunden: typeof row.aktuelleWochenstunden === 'number' ? row.aktuelleWochenstunden : undefined,
+        limitStatus: row.limitStatus === 'normal' || row.limitStatus === 'warning' || row.limitStatus === 'blocked' ? row.limitStatus : undefined,
         documents: (row.documents as string[]) || [],
         active: row.active !== undefined && row.active !== null ? Boolean(row.active) : true,
         address: (row.address as Record<string, unknown>) || undefined,
@@ -587,6 +599,7 @@ export const userService = {
           email: data.email,
           displayName: data.displayName,
           role: data.role,
+          customRoleId: (data.customRoleId as string) || undefined,
           jobTitle: data.jobTitle || '',
           group: data.group || '',
           phone: data.phone,
@@ -641,6 +654,7 @@ export const userService = {
           email: data.email,
           displayName: data.displayName,
           role: data.role,
+          customRoleId: (data.customRoleId as string) || undefined,
           phone: data.phone,
         qualifications: data.qualifications || [],
           workingHoursPerWeek: data.workingHoursPerWeek || undefined,
@@ -737,9 +751,7 @@ export const userService = {
         );
       }
 
-      // TODO: Implement excludeAssigned logic
-      // This would require checking assignments collection
-      // For now, return all filtered users
+      // Optional V2: excludeAssigned – bereits zugewiesene User für Zeitfenster aus Assignments filtern.
 
       return filteredUsers;
     } catch (error) {

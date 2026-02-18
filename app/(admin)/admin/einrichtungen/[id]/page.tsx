@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { facilityService } from '@/lib/services/facilities';
 import { shiftService, type Shift } from '@/lib/services/shifts';
 import { assignmentService, type Assignment } from '@/lib/services/assignments';
@@ -74,7 +75,7 @@ export default function AdminFacilityDetailPage() {
   };
 
   return (
-    <Box sx={{ maxWidth: 1400, mx: 'auto', p: 3 }}>
+    <PageContainer maxWidth="wide">
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" sx={{ fontWeight: 700 }}>
           {facility.name || 'Einrichtung'}
@@ -248,6 +249,6 @@ export default function AdminFacilityDetailPage() {
           </CardContent>
         </Card>
       )}
-    </Box>
+    </PageContainer>
   );
 }

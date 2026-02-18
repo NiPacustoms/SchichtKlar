@@ -3,7 +3,6 @@
  */
 
 export * from './templates';
-export * from './chat';
 export * from './admin';
 export * from './auth';
 export * from './authForms'; // Frontend-Form-Schemas (Login, Register, Password)

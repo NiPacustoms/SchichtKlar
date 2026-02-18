@@ -8,10 +8,9 @@ export default function AuthCallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Hier würde normalerweise die OAuth-Callback-Verarbeitung stattfinden
-    // Für jetzt leiten wir einfach zum Dashboard weiter
+    // OAuth-Callback: Weiterleitung zur Startseite (nach Rolle → Arbeitsplatz/Übersicht)
     const timer = setTimeout(() => {
-      router.push('/dashboard');
+      router.push('/');
     }, 2000);
 
     return () => clearTimeout(timer);

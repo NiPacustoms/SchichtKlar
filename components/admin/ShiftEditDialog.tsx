@@ -4,6 +4,13 @@ import { Shift } from '@/lib/services/shifts';
 import type { Facility, Station } from '@/lib/types';
 import { shiftService, facilityService } from '@/lib/services';
 import {
+  SHIFT_COLOR_PRESETS,
+  DEFAULT_SHIFT_COLOR,
+  normalizeShiftColor,
+} from '@/lib/constants/colorPresets';
+import { ColorPresetSwatches } from '@/components/ui/ColorPresetSwatches';
+import { FacilityCreateDialog } from '@/components/admin/FacilityCreateDialog';
+import {
   Box,
   Button,
   Dialog,
@@ -11,6 +18,7 @@ import {
   DialogContent,
   DialogTitle,
   Grid,
+  IconButton,
   MenuItem,
   Select,
   TextField,
@@ -18,14 +26,14 @@ import {
   FormControl,
   InputLabel,
   Chip,
-  FormGroup,
-  FormControlLabel,
-  Checkbox,
   Divider,
+  Tooltip,
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Autocomplete } from '@mui/material';
+import { toast } from '@/lib/utils/toast';
 
 interface ShiftEditDialogProps {
   open: boolean;
@@ -47,14 +55,16 @@ export default function ShiftEditDialog({ open, shift, onClose, onUpdated }: Shi
     capacity: 1,
     status: 'open' as Shift['status'],
     notes: '',
-    color: '#4CAF50' as string,
-    surchargeNight: false,
-    surchargeWeekend: false,
-    surchargeHoliday: false,
-    surchargeOnCall: false,
+    color: DEFAULT_SHIFT_COLOR as string,
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [createFacilityOpen, setCreateFacilityOpen] = useState(false);
+  const [addStationOpen, setAddStationOpen] = useState(false);
+  const [newStationName, setNewStationName] = useState('');
+  const [addingStation, setAddingStation] = useState(false);
+
+  const queryClient = useQueryClient();
 
   // Load facilities
   const { data: facilities = [] } = useQuery<Facility[]>({
@@ -67,8 +77,20 @@ export default function ShiftEditDialog({ open, shift, onClose, onUpdated }: Shi
     [facilities, form.facilityId]
   );
 
+  const validShiftStatuses = ['open', 'filled', 'cancelled'] as const;
+
   useEffect(() => {
     if (open && shift) {
+      const rawType = (shift as unknown as { type?: string }).type || 'Frühdienst';
+      const rawStatus = (shift as unknown as { status?: string }).status || 'open';
+      const type = rawType;
+      const status =
+        rawStatus === 'assigned'
+          ? 'filled'
+          : validShiftStatuses.includes(rawStatus as (typeof validShiftStatuses)[number])
+            ? rawStatus
+            : 'open';
+
       setForm({
         title: shift.title || '',
         facilityId: (shift as unknown as { facilityId?: string }).facilityId || '',
@@ -80,23 +102,13 @@ export default function ShiftEditDialog({ open, shift, onClose, onUpdated }: Shi
           : '',
         startTime: (shift as unknown as { startTime?: string }).startTime || '',
         endTime: (shift as unknown as { endTime?: string }).endTime || '',
-        type: (shift as unknown as { type?: Shift['type'] }).type || '',
+        type: type as Shift['type'] | '',
         requiredQualifications:
           (shift as unknown as { requiredQualifications?: string[] }).requiredQualifications || [],
         capacity: (shift as unknown as { capacity?: number }).capacity || 1,
-        status: (shift as unknown as { status?: Shift['status'] }).status || 'open',
+        status: status as Shift['status'],
         notes: (shift as unknown as { notes?: string }).notes || '',
-        color: (shift as unknown as { color?: string }).color || '#4CAF50',
-        surchargeNight: Boolean((shift as unknown as { surchargeNight?: boolean }).surchargeNight),
-        surchargeWeekend: Boolean(
-          (shift as unknown as { surchargeWeekend?: boolean }).surchargeWeekend
-        ),
-        surchargeHoliday: Boolean(
-          (shift as unknown as { surchargeHoliday?: boolean }).surchargeHoliday
-        ),
-        surchargeOnCall: Boolean(
-          (shift as unknown as { surchargeOnCall?: boolean }).surchargeOnCall
-        ),
+        color: normalizeShiftColor((shift as unknown as { color?: string }).color),
       });
     }
   }, [open, shift]);
@@ -109,12 +121,10 @@ export default function ShiftEditDialog({ open, shift, onClose, onUpdated }: Shi
     const v: Record<string, string> = {};
     if (!form.title.trim()) v.title = 'Titel erforderlich';
     if (!form.facilityId) v.facilityId = 'Einrichtung auswählen';
-    if (!form.stationId) v.stationId = 'Station auswählen';
+    // stationId ist optional (Einrichtung kann ohne Station genutzt werden)
     if (!form.date) v.date = 'Datum erforderlich';
     if (!form.startTime) v.startTime = 'Startzeit erforderlich';
     if (!form.endTime) v.endTime = 'Endzeit erforderlich';
-    if (!form.type) v.type = 'Schichttyp auswählen';
-
     // Zeitfenster validieren
     if (form.startTime && form.endTime) {
       const [sh, sm] = form.startTime.split(':').map(Number);
@@ -162,64 +172,102 @@ export default function ShiftEditDialog({ open, shift, onClose, onUpdated }: Shi
   const disabled =
     !form.title ||
     !form.facilityId ||
-    !form.stationId ||
     !form.date ||
     !form.startTime ||
-    !form.endTime ||
-    !form.type;
+    !form.endTime;
+
+  const handleAddStation = async () => {
+    const name = newStationName.trim();
+    if (!name || !form.facilityId) return;
+    setAddingStation(true);
+    try {
+      const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `station-${Date.now()}`;
+      await facilityService.addStation(form.facilityId, {
+        id,
+        name,
+        requiredQualifications: [],
+        maxStaff: 1,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['facilities'] });
+      handleChange('stationId', id);
+      setAddStationOpen(false);
+      setNewStationName('');
+      toast.success('Station hinzugefügt.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Station konnte nicht hinzugefügt werden.');
+    } finally {
+      setAddingStation(false);
+    }
+  };
 
   return (
+    <>
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Schicht bearbeiten</DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 2 }}>
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth error={!!errors.facilityId}>
-                <InputLabel>Einrichtung</InputLabel>
-                <Select
-                  label="Einrichtung"
-                  value={form.facilityId}
-                  onChange={e => handleChange('facilityId', e.target.value)}
-                >
-                  {facilities.map(f => (
-                    <MenuItem key={f.id} value={f.id}>
-                      {f.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
+                <FormControl fullWidth error={!!errors.facilityId} sx={{ flex: 1 }}>
+                  <InputLabel>Einrichtung</InputLabel>
+                  <Select
+                    label="Einrichtung"
+                    value={form.facilityId}
+                    onChange={e => handleChange('facilityId', e.target.value)}
+                  >
+                    {facilities.map(f => (
+                      <MenuItem key={f.id} value={f.id}>
+                        {f.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Tooltip title="Neue Einrichtung anlegen">
+                  <IconButton
+                    onClick={() => setCreateFacilityOpen(true)}
+                    color="primary"
+                    aria-label="Neue Einrichtung anlegen"
+                    sx={{ mt: 1 }}
+                  >
+                    <AddIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth error={!!errors.stationId} disabled={!selectedFacility}>
-                <InputLabel>Station</InputLabel>
-                <Select
-                  label="Station"
-                  value={form.stationId}
-                  onChange={e => handleChange('stationId', e.target.value)}
-                >
-                  {(selectedFacility?.stations || []).map((s: Station) => (
-                    <MenuItem key={s.id} value={s.id}>
-                      {s.name}
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
+                <FormControl fullWidth error={!!errors.stationId} disabled={!selectedFacility} sx={{ flex: 1 }}>
+                  <InputLabel>Station (optional)</InputLabel>
+                  <Select
+                    label="Station (optional)"
+                    value={form.stationId}
+                    onChange={e => handleChange('stationId', e.target.value)}
+                  >
+                    <MenuItem value="">
+                      <em>Keine</em>
                     </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth error={!!errors.type}>
-                <InputLabel>Schichttyp</InputLabel>
-                <Select
-                  label="Schichttyp"
-                  value={form.type}
-                  onChange={e => handleChange('type', e.target.value)}
-                >
-                  <MenuItem value="Frühdienst">Frühdienst</MenuItem>
-                  <MenuItem value="Spätdienst">Spätdienst</MenuItem>
-                  <MenuItem value="Nachtdienst">Nachtdienst</MenuItem>
-                  <MenuItem value="On-call">On-call</MenuItem>
-                </Select>
-              </FormControl>
+                    {(selectedFacility?.stations || []).map((s: Station) => (
+                      <MenuItem key={s.id} value={s.id}>
+                        {s.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Tooltip title={selectedFacility ? 'Neue Station anlegen' : 'Zuerst Einrichtung wählen'}>
+                  <span>
+                    <IconButton
+                      onClick={() => setAddStationOpen(true)}
+                      color="primary"
+                      disabled={!selectedFacility}
+                      aria-label="Neue Station anlegen"
+                      sx={{ mt: 1 }}
+                    >
+                      <AddIcon />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </Box>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <Autocomplete
@@ -254,50 +302,6 @@ export default function ShiftEditDialog({ open, shift, onClose, onUpdated }: Shi
                   })
                 }
               />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <Divider sx={{ my: 1 }} />
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                Zuschläge
-              </Typography>
-              <FormGroup row>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={form.surchargeNight}
-                      onChange={e => handleChange('surchargeNight', e.target.checked)}
-                    />
-                  }
-                  label="Nacht"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={form.surchargeWeekend}
-                      onChange={e => handleChange('surchargeWeekend', e.target.checked)}
-                    />
-                  }
-                  label="Wochenende"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={form.surchargeHoliday}
-                      onChange={e => handleChange('surchargeHoliday', e.target.checked)}
-                    />
-                  }
-                  label="Feiertag"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={form.surchargeOnCall}
-                      onChange={e => handleChange('surchargeOnCall', e.target.checked)}
-                    />
-                  }
-                  label="Rufbereitschaft"
-                />
-              </FormGroup>
             </Grid>
             <Grid size={{ xs: 12 }}>
               <TextField
@@ -372,13 +376,11 @@ export default function ShiftEditDialog({ open, shift, onClose, onUpdated }: Shi
               </FormControl>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Farbe"
-                type="color"
+              <ColorPresetSwatches
+                presets={SHIFT_COLOR_PRESETS}
                 value={form.color}
-                onChange={e => handleChange('color', e.target.value)}
-                InputLabelProps={{ shrink: true }}
+                onChange={c => handleChange('color', c)}
+                label="Farbe"
                 helperText="Farbe für die Schicht im Kalender"
               />
             </Grid>
@@ -402,5 +404,38 @@ export default function ShiftEditDialog({ open, shift, onClose, onUpdated }: Shi
         </Button>
       </DialogActions>
     </Dialog>
+
+    <FacilityCreateDialog
+      open={createFacilityOpen}
+      onClose={() => setCreateFacilityOpen(false)}
+      onCreated={(id) => {
+        handleChange('facilityId', id);
+        setCreateFacilityOpen(false);
+      }}
+    />
+
+    <Dialog open={addStationOpen} onClose={() => { setAddStationOpen(false); setNewStationName(''); }} maxWidth="xs" fullWidth>
+      <DialogTitle>Neue Station</DialogTitle>
+      <DialogContent>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Station zur Einrichtung „{selectedFacility?.name}“ hinzufügen.
+        </Typography>
+        <TextField
+          fullWidth
+          label="Name der Station"
+          value={newStationName}
+          onChange={e => setNewStationName(e.target.value)}
+          placeholder="z. B. Station Nord"
+          onKeyDown={e => e.key === 'Enter' && handleAddStation()}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => { setAddStationOpen(false); setNewStationName(''); }}>Abbrechen</Button>
+        <Button variant="contained" onClick={handleAddStation} disabled={!newStationName.trim() || addingStation}>
+          {addingStation ? 'Wird hinzugefügt…' : 'Hinzufügen'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  </>
   );
 }

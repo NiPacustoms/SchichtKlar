@@ -87,9 +87,6 @@ export const ariaLabels = {
   goToProfile: 'Zum Profil',
   goToDocuments: 'Zu den Dokumenten',
   goToTimeTracking: 'Zur Zeiterfassung',
-  goToPayroll: 'Zur Lohnabrechnung',
-  goToChat: 'Zum Chat',
-  
   // JobFlow specific actions
   startShift: 'Schicht beginnen',
   endShift: 'Schicht beenden',

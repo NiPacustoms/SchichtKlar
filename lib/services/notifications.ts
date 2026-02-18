@@ -45,7 +45,6 @@ export interface NotificationSettings {
   smsEnabled: boolean;
   reminderEnabled: boolean;
   alertEnabled: boolean;
-  chatEnabled?: boolean; // Chat-Notifications (Standard: true)
   quietHours: {
     enabled: boolean;
     start: string;

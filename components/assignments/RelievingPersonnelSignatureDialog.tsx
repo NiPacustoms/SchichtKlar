@@ -323,6 +323,8 @@ export function RelievingPersonnelSignatureDialog({
             onClick={handleSign}
             variant="contained"
             disabled={isSubmitting || !signerName.trim()}
+            data-testid="relieving-signature-submit"
+            aria-label="Unterschrift durch ablösendes Personal abgeben"
           >
             Unterschreiben
           </Button>

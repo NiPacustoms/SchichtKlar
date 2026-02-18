@@ -41,7 +41,7 @@ const rangeSchema = z
     dateTo: z.coerce.date(),
     startTime: z.string().min(1, 'Startzeit ist erforderlich'),
     endTime: z.string().min(1, 'Endzeit ist erforderlich'),
-    type: z.enum(['Frühdienst', 'Spätdienst', 'Nachtdienst', 'On-call']),
+    type: z.string().optional(),
     capacity: z.number().min(1),
   })
   .superRefine((val, ctx) => {
@@ -293,21 +293,6 @@ export function ShiftRangeDialog({ open, onClose, initialFrom, initialTo }: Shif
                 />
               </Grid>
 
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth error={!!errors.type}>
-                  <InputLabel>Schichttyp</InputLabel>
-                  <Select
-                    value={watch('type') || 'Frühdienst'}
-                    label="Schichttyp"
-                    onChange={e => setValue('type', e.target.value as RangeFormData['type'])}
-                  >
-                    <MenuItem value="Frühdienst">Frühdienst</MenuItem>
-                    <MenuItem value="Spätdienst">Spätdienst</MenuItem>
-                    <MenuItem value="Nachtdienst">Nachtdienst</MenuItem>
-                    <MenuItem value="On-call">On-call</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth

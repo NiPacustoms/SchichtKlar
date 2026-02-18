@@ -1,6 +1,7 @@
 'use client';
 
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { userService } from '@/lib/services';
 import { User } from '@/lib/types';
 import { toast } from '@/lib/utils/toast';
@@ -133,7 +134,7 @@ export default function StaffSimplePage() {
 
   return (
     <Box className="min-height-viewport" sx={{ backgroundColor: 'background.default' }}>
-      <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
+      <PageContainer maxWidth="standard">
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <People sx={{ color: 'primary.main', mr: 1 }} />
           <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600 }}>
@@ -226,7 +227,7 @@ export default function StaffSimplePage() {
                           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                             {member.role === 'nurse'
                               ? 'Pflegekraft'
-                              : member.role === 'admin'
+                              : member.role === 'admin' || !!member.customRoleId
                                 ? 'Administrator'
                                 : 'Disponent'}
                           </Typography>
@@ -320,7 +321,7 @@ export default function StaffSimplePage() {
             ))}
           </Grid>
         </Box>
-      </Box>
+      </PageContainer>
       <ConfirmDestructiveDialog
         open={confirmOpen}
         title="Mitarbeiter löschen"

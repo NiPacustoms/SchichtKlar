@@ -173,7 +173,8 @@ export const AccessibilityProvider = memo<AccessibilityFeaturesProps>(
           {children}
         </Box>
 
-        {/* Global accessibility styles */}
+        {/* Global accessibility styles (styled-jsx) */}
+        {/* eslint-disable-next-line react/no-unknown-property */}
         <style jsx global>{`
           .keyboard-navigation *:focus {
             outline: 2px solid var(--mui-palette-primary-main);

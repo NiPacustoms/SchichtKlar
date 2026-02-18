@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminSettingsService } from '@/lib/services/adminSettings';
 import { toast } from '@/lib/utils/toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/contexts/PermissionsContext';
 
 export interface SystemSettings {
   systemName: string;
@@ -71,8 +72,9 @@ export interface SystemInfo {
 
 export function useAdminSettings() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin' || user?.role === 'dispatcher';
+  const { user: _user } = useAuth();
+  const { canAccessAdminArea } = usePermissions();
+  const isAdmin = canAccessAdminArea;
 
   // Get system settings
   const {
@@ -82,7 +84,7 @@ export function useAdminSettings() {
   } = useQuery({
     queryKey: ['adminSettings'],
     queryFn: () => adminSettingsService.getSettings(),
-    enabled: isAdmin, // Only fetch if user is admin/dispatcher
+    enabled: isAdmin, // Only fetch if user is admin
     retry: false, // Don't retry on permission errors
   });
 
@@ -94,7 +96,7 @@ export function useAdminSettings() {
   } = useQuery({
     queryKey: ['adminRoles'],
     queryFn: () => adminSettingsService.getRoles(),
-    enabled: isAdmin, // Only fetch if user is admin/dispatcher
+    enabled: isAdmin, // Only fetch if user is admin
     retry: false, // Don't retry on permission errors
   });
 
@@ -106,7 +108,7 @@ export function useAdminSettings() {
   } = useQuery({
     queryKey: ['adminDocumentTypes'],
     queryFn: () => adminSettingsService.getDocumentTypes(),
-    enabled: isAdmin, // Only fetch if user is admin/dispatcher
+    enabled: isAdmin, // Only fetch if user is admin
     retry: false, // Don't retry on permission errors
   });
 
@@ -118,7 +120,7 @@ export function useAdminSettings() {
   } = useQuery({
     queryKey: ['adminEmailTemplates'],
     queryFn: () => adminSettingsService.getEmailTemplates(),
-    enabled: isAdmin, // Only fetch if user is admin/dispatcher
+    enabled: isAdmin, // Only fetch if user is admin
     retry: false, // Don't retry on permission errors
   });
 
@@ -130,7 +132,7 @@ export function useAdminSettings() {
   } = useQuery({
     queryKey: ['adminSystemInfo'],
     queryFn: () => adminSettingsService.getSystemInfo(),
-    enabled: isAdmin, // Only fetch if user is admin/dispatcher
+    enabled: isAdmin, // Only fetch if user is admin
     retry: false, // Don't retry on permission errors
   });
 

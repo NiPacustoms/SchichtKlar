@@ -56,7 +56,7 @@
 
 - NIE: Direct Firestore in Components
 - NIE: Business Logic in UI
-- NIE: >150 Zeilen/Datei (Ziel; lib/services noch nicht aufgeteilt)
+- NIE: >150 Zeilen/Datei (Phase 1 erfüllt: assignments, timesheets, shifts aufgeteilt)
 - IMMER: Domain → Application → Infrastructure
 - IMMER: 1 Commit = 1 Atomic Change
 
@@ -79,11 +79,26 @@
 - **E2E:** admin/login.spec.ts + bestehende Specs; 90% Pass-Ziel.
 - **Assignment-Split (Backlog):** lib/services/assignments/ → domain/assignment/ + application/useCases/ (Phase 4).
 
+## Phase 1 Service Split – 100 % Complete ✅
+
+- **assignments:** 10 Module (types, mapDoc, read–read5, write, writeSignatures, conflicts, pdf, pdfGenerate, index), alle &lt;150 Zeilen.
+- **timesheets:** 9 Module (types, mapDoc, validation, read–read4, write, write2, write3, index), alle &lt;150 Zeilen.
+- **shifts:** 15 Module (types, mapDoc, helpers, read–read7, write, write2, write3, subscribe, index), shiftsLegacy.ts entfernt, alle &lt;150 Zeilen.
+- **Typecheck:** 0 Errors. **Regel „NIE &gt;150 Zeilen/Datei“** in allen drei Kern-Services erfüllt.
+
 ## TAG 1 (Day 1) – Shifts Legacy Eliminated ✅
 
-- **shiftsLegacy.ts:** ELIMINATED – Logik bereits in read3, read4, write2, helpers aufgeteilt.
+- **shiftsLegacy.ts:** ELIMINATED – Logik in read3–read7, write2, write3, helpers aufgeteilt.
 - **Typecheck:** 0 Errors.
 - **Production Readiness:** 85%.
+
+## TAG 2–3 (E2E Critical Paths) – 8 Specs ✅
+
+- **e2e/admin/assignment-create.spec.ts**, **timesheet-approval.spec.ts**, **document-upload.spec.ts**
+- **e2e/employee/shift-start.spec.ts**, **timesheet-submit.spec.ts**, **notifications.spec.ts**
+- **e2e/dispatcher/assignment-workflow.spec.ts**, **e2e/rbac/permissions.spec.ts**
+
+Prüfen: Redirect auf `/anmelden` ohne Auth, Redirect-Param, Login-Seite (Heading „Anmelden“). Playwright: timeout 60s, navigationTimeout 30s, webServer 120s.
 
 ## Phase 4 – Letzte 10% (Roadmap)
 

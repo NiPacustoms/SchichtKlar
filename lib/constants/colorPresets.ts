@@ -37,3 +37,25 @@ export const COLOR_PRESETS: ColorPreset[] = [
 
 /** Standardfarbe (erste der Liste), z. B. für neue Schichten/Gruppen/Einrichtungen */
 export const DEFAULT_PRESET_COLOR = COLOR_PRESETS[0].value;
+
+/** Genau 8 Vorauswahlen für Schichtfarben – keine Pipette, nur diese Farben. */
+export const SHIFT_COLOR_PRESETS: ColorPreset[] = [
+  { value: '#005f73', label: 'Petrol' },
+  { value: '#0a9396', label: 'Teal' },
+  { value: '#388e3c', label: 'Grün' },
+  { value: '#1976d2', label: 'Blau' },
+  { value: '#7b1fa2', label: 'Lila' },
+  { value: '#e8aa42', label: 'Senf' },
+  { value: '#f57c00', label: 'Orange' },
+  { value: '#d32f2f', label: 'Rot' },
+];
+
+export const DEFAULT_SHIFT_COLOR = SHIFT_COLOR_PRESETS[0].value;
+
+/** Liefert eine der 8 Schichtfarben (z. B. bei bestehender Schicht mit alter Farbe). */
+export function normalizeShiftColor(color: string | undefined): string {
+  if (!color) return DEFAULT_SHIFT_COLOR;
+  const normalized = color.toLowerCase().trim();
+  const found = SHIFT_COLOR_PRESETS.find(p => p.value.toLowerCase() === normalized);
+  return found ? found.value : DEFAULT_SHIFT_COLOR;
+}

@@ -1,8 +1,9 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AppLogo } from '@/components/ui/AppLogo';
@@ -16,7 +17,6 @@ import {
   Zoom,
   Fab,
 } from '@mui/material';
-import { LoadingSpinner, InlineSpinner } from '@/components/ui/LoadingSpinner';
 import {
   ArrowForward,
   KeyboardArrowUp,
@@ -24,7 +24,7 @@ import {
   Assessment,
   Security,
   PhoneAndroid,
-  Support,
+  Schedule,
 } from '@mui/icons-material';
 import { useBrandingSettings } from '@/lib/hooks/useBrandingSettings';
 
@@ -36,7 +36,7 @@ function ScrollToTop() {
       <Fab
         color="primary"
         size="medium"
-        aria-label="scroll back to top"
+        aria-label="Nach oben scrollen"
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         sx={{ position: 'fixed', right: 24, bottom: 24, zIndex: 1000 }}
       >
@@ -48,8 +48,11 @@ function ScrollToTop() {
 
 export default function HomePage() {
   const { user, loading } = useAuth();
-  const { branding, isLoading: brandingLoading } = useBrandingSettings();
+  const { canAccessAdminArea } = usePermissions();
+  const { branding, isLoading: _brandingLoading } = useBrandingSettings();
   const router = useRouter();
+  const featuresRef = useRef<HTMLDivElement>(null);
+  const [featuresInView, setFeaturesInView] = useState(false);
 
   // Fallback für branding, falls es undefined ist
   const brandingData = branding || {
@@ -60,22 +63,72 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!loading && user) {
-      if (user.role === 'admin' || user.role === 'dispatcher') router.push('/admin/uebersicht');
+      if (canAccessAdminArea) router.push('/admin/uebersicht');
       else if (user.role === 'nurse') router.push('/employee/arbeitsplatz');
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, canAccessAdminArea]);
 
+  useEffect(() => {
+    const el = featuresRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) setFeaturesInView(true);
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  // Minimales Loading/Weiterleitung ohne LoadingSpinner (vermeidet Absturz durch Branding/Theme)
   if (loading) {
-    return <LoadingSpinner message="Lade..." variant="fullscreen" />;
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '80vh',
+          gap: 2,
+        }}
+      >
+        <Typography variant="h6">JobFlow wird geladen…</Typography>
+        <Button component={Link} href="/anmelden" variant="outlined">
+          Zur Anmeldung
+        </Button>
+      </Box>
+    );
   }
 
   if (user) {
-    return <LoadingSpinner message="Weiterleitung..." variant="fullscreen" />;
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '80vh',
+          gap: 2,
+        }}
+      >
+        <Typography variant="h6">Weiterleitung…</Typography>
+        <Button
+          component={Link}
+          href={canAccessAdminArea ? '/admin/uebersicht' : '/employee/arbeitsplatz'}
+          variant="contained"
+        >
+          Zum Dashboard
+        </Button>
+      </Box>
+    );
   }
 
   return (
     <Box>
-      {/* Hero */}
+      {/* Hero mit Motion Graphics */}
       <Box
         sx={{
           position: 'relative',
@@ -84,6 +137,74 @@ export default function HomePage() {
           pb: 0,
         }}
       >
+        {/* Animierter Hintergrund: schwebende Formen (Brand-Farben) */}
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            zIndex: 0,
+          }}
+        >
+          <Box
+            className="landing-blob"
+            sx={{
+              position: 'absolute',
+              width: 320,
+              height: 320,
+              borderRadius: '50%',
+              background: (t) =>
+                `radial-gradient(circle, ${t.palette.primary.main}08 0%, transparent 70%)`,
+              top: '10%',
+              left: '5%',
+              animationDelay: '0s',
+            }}
+          />
+          <Box
+            className="landing-blob-slow"
+            sx={{
+              position: 'absolute',
+              width: 240,
+              height: 240,
+              borderRadius: '50%',
+              background: (t) =>
+                `radial-gradient(circle, ${t.palette.secondary?.main || '#e8aa42'}0c 0%, transparent 65%)`,
+              top: '50%',
+              right: '8%',
+              animationDelay: '-4s',
+            }}
+          />
+          <Box
+            className="landing-blob"
+            sx={{
+              position: 'absolute',
+              width: 180,
+              height: 180,
+              borderRadius: '50%',
+              background: (t) =>
+                `radial-gradient(circle, ${t.palette.primary.main}0a 0%, transparent 60%)`,
+              bottom: '15%',
+              left: '25%',
+              animationDelay: '-8s',
+            }}
+          />
+          <Box
+            className="landing-blob-slow"
+            sx={{
+              position: 'absolute',
+              width: 120,
+              height: 120,
+              borderRadius: '50%',
+              background: (t) =>
+                `radial-gradient(circle, ${t.palette.secondary?.main || '#e8aa42'}08 0%, transparent 55%)`,
+              top: '25%',
+              right: '25%',
+              animationDelay: '-2s',
+            }}
+          />
+        </Box>
+
         {/* zentriertes, großes Logo ohne Layout-Verschiebung */}
         <Box
           sx={{
@@ -134,6 +255,7 @@ export default function HomePage() {
               </Typography>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
                 <Button
+                  key="admin-registrieren"
                   component={Link}
                   href="/admin-registrieren"
                   variant="contained"
@@ -142,7 +264,7 @@ export default function HomePage() {
                 >
                   Firma registrieren
                 </Button>
-                <Button component={Link} href="/anmelden" size="large" variant="outlined">
+                <Button key="login" component={Link} href="/anmelden" size="large" variant="outlined">
                   Login
                 </Button>
               </Stack>
@@ -152,12 +274,13 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* Features */}
+      {/* Features mit Scroll-Animation */}
       <Container
         maxWidth="xl"
         sx={{ maxWidth: '1280px', pt: { xs: 16, md: 24 }, pb: { xs: 8, md: 12 } }}
       >
         <Box
+          ref={featuresRef}
           sx={{
             display: 'grid',
             gap: 3,
@@ -168,33 +291,40 @@ export default function HomePage() {
             {
               icon: <People />,
               title: 'Mitarbeiterverwaltung',
-              desc: 'Profile, Qualifikationen und Nachweise sicher und zentral verwalten.',
+              desc: 'Profile, Qualifikationen und Nachweise zentral verwalten.',
+            },
+            {
+              icon: <Schedule />,
+              title: 'Schichtplanung & Einsätze',
+              desc: 'Dienstplan erstellen, Schichten anlegen und Einsätze zuweisen.',
             },
             {
               icon: <Assessment />,
-              title: 'Berichte & KPIs',
-              desc: 'Transparente Leistungskennzahlen und Exportfunktionen für Controlling.',
+              title: 'Berichte & Auswertungen',
+              desc: 'KPIs, Berichte und Export für Stunden und Auslastung.',
             },
             {
               icon: <Security />,
               title: 'Sicherheit & DSGVO',
-              desc: 'Verschlüsselung, Rollen & Rechte, DSGVO-konforme Datenhaltung.',
+              desc: 'Rollen & Rechte, Datenexport und -löschung, Datenschutz-Seiten.',
             },
             {
               icon: <PhoneAndroid />,
-              title: 'Mobile ready',
-              desc: 'Auf allen Geräten nutzbar - von der Station bis unterwegs.',
+              title: 'Mobil nutzbar',
+              desc: 'Responsive Web-App – auf allen Geräten nutzbar.',
             },
-            {
-              icon: <Support />,
-              title: 'Support, wenn er gebraucht wird',
-              desc: 'Begleitung bei Einführung, Migration und laufendem Betrieb.',
-            },
-          ].map((f, i) => (
+          ].map((f, index) => (
             <GlassCard
+              key={f.title}
               sx={{
                 p: 3,
                 height: '100%',
+                opacity: featuresInView ? 1 : 0,
+                transform: featuresInView ? 'translateY(0)' : 'translateY(24px)',
+                ...(featuresInView && {
+                  animation: 'landing-fade-in-up 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+                  animationDelay: `${index * 80}ms`,
+                }),
                 transition: 'transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease',
                 '&:hover': {
                   transform: 'translateY(-6px) scale(1.02)',
@@ -203,7 +333,6 @@ export default function HomePage() {
                     theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)',
                 },
               }}
-              key={i}
             >
               <Stack direction="row" spacing={2} alignItems="flex-start">
                 <Box color="primary.main">{f.icon}</Box>
@@ -235,10 +364,10 @@ export default function HomePage() {
             © {new Date().getFullYear()} JobFlow
           </Typography>
           <Stack direction="row" spacing={3}>
-            <Button component={Link} href="/recht/impressum" color="inherit" size="small">
+            <Button key="impressum" component={Link} href="/recht/impressum" color="inherit" size="small">
               Impressum
             </Button>
-            <Button component={Link} href="/recht/datenschutz" color="inherit" size="small">
+            <Button key="datenschutz" component={Link} href="/recht/datenschutz" color="inherit" size="small">
               Datenschutz
             </Button>
           </Stack>

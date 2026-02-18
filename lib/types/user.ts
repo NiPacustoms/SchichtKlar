@@ -1,3 +1,5 @@
+import type { WeeklyLimitStatus } from './weeklyLimit';
+
 /**
  * User & Profile Types
  */
@@ -6,11 +8,19 @@ export interface User {
   id: string;
   email: string;
   displayName: string;
-  role: 'nurse' | 'admin' | 'dispatcher';
+  role: 'nurse' | 'admin';
+  /** ID einer benutzerdefinierten Rolle aus adminRoles; Berechtigungen kommen aus dieser Rolle. */
+  customRoleId?: string;
   companyId?: string;
   phone?: string;
   qualifications: string[];
   workingHoursPerWeek?: number;
+  /** Wochenstunden-Limit (Admin, 20–80h) für ArbZG/MiLoG */
+  wochenstundenLimit?: number;
+  /** Live Mo–So Summe (Cloud Function) */
+  aktuelleWochenstunden?: number;
+  /** normal | warning | blocked (Auto-Calc) */
+  limitStatus?: WeeklyLimitStatus;
   documents: string[];
   active: boolean;
   currentStatus?: 'active' | 'inactive' | 'on-leave' | 'sick';
@@ -92,7 +102,16 @@ export interface UserUpdateForm {
   displayName: string;
   phone?: string;
   active?: boolean;
-  notificationSettings: User['notificationSettings'];
+  role?: User['role'];
+  /** ID einer benutzerdefinierten Rolle aus adminRoles; leer = keine Custom-Rolle */
+  customRoleId?: string | null;
+  notificationSettings?: User['notificationSettings'];
   preferences?: { [key: string]: unknown };
   currentStatus?: 'active' | 'inactive' | 'on-leave' | 'sick';
+  /** Profil-Bereiche (Mitarbeiter kann selbst ausfüllen) */
+  address?: User['address'];
+  contact?: User['contact'];
+  emergencyContact?: User['emergencyContact'];
+  bankAccount?: User['bankAccount'];
+  qualifications?: string[];
 }

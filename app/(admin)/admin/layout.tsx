@@ -18,7 +18,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       }}
     >
       <AuthGuard requireAdmin={true}>
-        <RoleGuard allowedRoles={['admin', 'dispatcher']}>
+        <RoleGuard allowedRoles={['admin']}>
           <AppLayout hideHeader={false}>
             {children}
             <BottomNav />

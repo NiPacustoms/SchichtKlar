@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { TimeAccountReport, SurchargeReport, EmployeeStatistics, reportService } from '@/lib/services/reports';
+import { TimeAccountReport, EmployeeStatistics, reportService } from '@/lib/services/reports';
 import { useAuth } from '@/contexts/AuthContext';
 
 
@@ -85,61 +85,6 @@ export const useAdminReports = (filters: AdminReportFilters) => {
     staleTime: 30000,
   });
 
-  // Zuschläge-Bericht
-  const {
-    data: surchargeReport,
-    isLoading: isLoadingSurcharge,
-    error: errorSurcharge,
-  } = useQuery<SurchargeReport>({
-    queryKey: ['admin-reports', 'surcharge', filters],
-    queryFn: async () => {
-      const reports = await reportService.generateSurchargeReport(filters);
-      if (reports.length === 0) {
-        return {
-          totalSurcharge: 0,
-          nightSurcharge: 0,
-          weekendSurcharge: 0,
-          holidaySurcharge: 0,
-          overtimeSurcharge: 0,
-          averageSurchargePerDay: 0,
-          averageSurchargePerWeek: 0,
-          surchargeTrend: 'flat' as const,
-          surchargeByDay: []
-        };
-      }
-      
-      // Aggregiere alle Reports zu einem einzelnen Objekt
-      const totalSurcharge = reports.reduce((sum, r) => sum + r.totalSurcharge, 0);
-      const nightSurcharge = reports.reduce((sum, r) => sum + r.nightSurcharge, 0);
-      const weekendSurcharge = reports.reduce((sum, r) => sum + r.weekendSurcharge, 0);
-      const holidaySurcharge = reports.reduce((sum, r) => sum + r.holidaySurcharge, 0);
-      const overtimeSurcharge = reports.reduce((sum, r) => sum + r.overtimeSurcharge, 0);
-      
-      // Berechne korrekte Durchschnittswerte basierend auf Arbeitstagen
-      const daysCount = reports[0]?.surchargeByDay?.length ?? 0;
-      const averageSurchargePerDay = daysCount > 0 ? totalSurcharge / daysCount : 0;
-      const averageSurchargePerWeek = totalSurcharge / Math.max(1, Math.ceil(daysCount / 7));
-      
-      // Bestimme Trend basierend auf Vergleich mit vorherigem Zeitraum
-      const surchargeTrend = reports.length > 1 && reports[0].totalSurcharge > reports[1].totalSurcharge ? 'up' as const : 
-                            reports.length > 1 && reports[0].totalSurcharge < reports[1].totalSurcharge ? 'down' as const : 'flat' as const;
-      
-      return {
-        totalSurcharge,
-        nightSurcharge,
-        weekendSurcharge,
-        holidaySurcharge,
-        overtimeSurcharge,
-        averageSurchargePerDay,
-        averageSurchargePerWeek,
-        surchargeTrend,
-        surchargeByDay: reports[0]?.surchargeByDay || []
-      };
-    },
-    enabled: !!user?.id,
-    staleTime: 30000,
-  });
-
   // Mitarbeiter-Statistiken
   const {
     data: employeeStatistics,
@@ -202,32 +147,12 @@ export const useAdminReports = (filters: AdminReportFilters) => {
         format,
         userId: user.id,
       });
-      return reportService.exportTimeAccountReport({ reportId }, filters);
+      return format === 'pdf'
+        ? reportService.exportTimeAccountReportPDF({ reportId }, filters)
+        : reportService.exportTimeAccountReportExcel({ reportId }, filters);
     },
     onSuccess: () => {
       toast.success('Zeitkonten-Bericht exportiert');
-    },
-    onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error('Export fehlgeschlagen: ' + msg);
-    },
-  });
-
-  const exportSurchargeMutation = useMutation({
-    mutationFn: async (format: 'pdf' | 'excel') => {
-      if (!user?.id) {
-        throw new Error('Benutzer nicht authentifiziert');
-      }
-      const reportId = await reportService.generateReport({
-        type: 'allowances',
-        period: 'current-month',
-        format,
-        userId: user.id,
-      });
-      return reportService.exportSurchargeReport({ reportId }, filters);
-    },
-    onSuccess: () => {
-      toast.success('Zuschläge-Bericht exportiert');
     },
     onError: (err: unknown) => {
       const msg = err instanceof Error ? err.message : String(err);
@@ -246,7 +171,7 @@ export const useAdminReports = (filters: AdminReportFilters) => {
         format,
         userId: user.id,
       });
-      return reportService.exportEmployeeStatistics({ reportId }, filters);
+      return reportService.exportReport(reportId, format);
     },
     onSuccess: () => {
       toast.success('Mitarbeiter-Statistiken exportiert');
@@ -268,7 +193,9 @@ export const useAdminReports = (filters: AdminReportFilters) => {
         format,
         userId: user.id,
       });
-      return reportService.exportAllReports({ reportId }, filters);
+      return format === 'pdf'
+        ? reportService.exportAllReportsPDF({ reportId }, filters)
+        : reportService.exportAllReportsExcel({ reportId }, filters);
     },
     onSuccess: () => {
       toast.success('Alle Berichte exportiert');
@@ -388,13 +315,9 @@ export const useAdminReports = (filters: AdminReportFilters) => {
     }
   };
 
-  // Export-Funktionen
+  // Export-Funktionen (fire-and-forget mit Toast)
   const exportTimeAccountReport = (format: 'pdf' | 'excel') => {
     exportTimeAccountMutation.mutate(format);
-  };
-
-  const exportSurchargeReport = (format: 'pdf' | 'excel') => {
-    exportSurchargeMutation.mutate(format);
   };
 
   const exportEmployeeStatistics = (format: 'pdf' | 'excel') => {
@@ -405,6 +328,14 @@ export const useAdminReports = (filters: AdminReportFilters) => {
     exportAllMutation.mutate(format);
   };
 
+  // Async-Export (gibt URL zurück, z. B. für Dialog mit Download-Link)
+  const exportTimeAccountReportAsync = (format: 'pdf' | 'excel') =>
+    exportTimeAccountMutation.mutateAsync(format);
+  const exportEmployeeStatisticsAsync = (format: 'pdf' | 'excel') =>
+    exportEmployeeMutation.mutateAsync(format);
+  const exportAllReportsAsync = (format: 'pdf' | 'excel') =>
+    exportAllMutation.mutateAsync(format);
+
   const refetch = () => {
     queryClient.invalidateQueries({ queryKey: ['admin-reports'] });
   };
@@ -412,14 +343,17 @@ export const useAdminReports = (filters: AdminReportFilters) => {
   return {
     // Data
     timeAccountReport,
-    surchargeReport,
     employeeStatistics,
     
     // Loading states
-    isLoading: isLoadingTime || isLoadingSurcharge || isLoadingEmployee,
+    isLoading: isLoadingTime || isLoadingEmployee,
+    isExporting:
+      exportTimeAccountMutation.isPending ||
+      exportEmployeeMutation.isPending ||
+      exportAllMutation.isPending,
     
     // Error
-    error: errorTime || errorSurcharge || errorEmployee,
+    error: errorTime || errorEmployee,
     
     // Helper functions
     formatDate,
@@ -435,12 +369,14 @@ export const useAdminReports = (filters: AdminReportFilters) => {
     getTrendIcon,
     getTrendText,
     
-    // Export functions
+// Export functions
     exportTimeAccountReport,
-    exportSurchargeReport,
     exportEmployeeStatistics,
     exportAllReports,
-    
+    exportTimeAccountReportAsync,
+    exportEmployeeStatisticsAsync,
+    exportAllReportsAsync,
+
     // Actions
     refetch,
   };

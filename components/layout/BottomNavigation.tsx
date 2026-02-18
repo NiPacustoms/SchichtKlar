@@ -1,20 +1,17 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { useFeatureFlags } from '@/lib/hooks/useFeatureFlags';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import { logger } from '@/lib/logging';
 import {
   AccessTime,
-  Assignment as AssignmentIcon,
   Business,
   CalendarMonth,
-  Dashboard,
   Description,
   Home,
   MoreHoriz,
   People,
   Person,
-  Schedule,
 } from '@mui/icons-material';
 import {
   BottomNavigation,
@@ -28,11 +25,13 @@ import {
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { bottomNavHeightPx, minTouchTargetPx } from '@/lib/design-tokens';
 
-// Pflegekraft Navigation - Reduziert auf 4 Haupttabs
-const nurseTabs = [
+// Mitarbeiter-Navigation – genau 5 Reiter (wie gewünscht), kein Mehr-Button
+const employeeTabs: NavigationTab[] = [
   { href: '/employee/arbeitsplatz', icon: <Home />, label: 'Arbeitsplatz' },
   { href: '/employee/dienstplan', icon: <CalendarMonth />, label: 'Dienstplan' },
+  { href: '/employee/einsaetze', icon: <Description />, label: 'Einsatzmitteilungen' },
   { href: '/employee/zeiterfassung', icon: <AccessTime />, label: 'Zeit' },
   { href: '/employee/profil', icon: <Person />, label: 'Profil' },
 ];
@@ -54,35 +53,13 @@ interface NavigationTab {
   feature?: FeatureFlagCheck;
 }
 
-// Pflegekraft Zusatz-Menü (wird dynamisch gefiltert)
-const nurseMoreTabsBase: NavigationTab[] = [
-  { href: '/employee/einsaetze', icon: <AssignmentIcon />, label: 'Meine Einsätze' },
-  {
-    href: '/employee/dokumente',
-    icon: <Description />,
-    label: 'Nachweise',
-    feature: 'canAccessEmployeeDocuments',
-  },
-];
-
-// Admin Navigation - Genau 4 Haupttabs + 1 Mehr-Button = 5 Tabs
+// Admin Navigation – genau 5 Reiter (wie gewünscht), kein Mehr-Button
 const adminTabs: NavigationTab[] = [
-  { href: '/admin/uebersicht', icon: <Dashboard />, label: 'Übersicht' },
-  { href: '/admin/schichten', icon: <CalendarMonth />, label: 'Schichten' },
+  { href: '/admin/einrichtungen', icon: <Business />, label: 'Einrichtungen' },
   { href: '/admin/mitarbeiter', icon: <People />, label: 'Personal' },
-  { href: '/admin/einrichtungen', icon: <Business />, label: 'Standorte' },
-];
-
-// Admin Zusatz-Menü (über Mehr-Button, wird dynamisch gefiltert)
-const adminMoreTabsBase: NavigationTab[] = [
-  {
-    href: '/admin/einsaetze',
-    icon: <AssignmentIcon />,
-    label: 'Einsätze',
-    feature: 'canAccessAssignments',
-  },
-  { href: '/admin/stunden', icon: <Schedule />, label: 'Stundenübersicht' },
-  { href: '/admin/einstellungen', icon: <Person />, label: 'Einstellungen' },
+  { href: '/admin/schichten', icon: <CalendarMonth />, label: 'Schichten' },
+  { href: '/admin/stunden', icon: <AccessTime />, label: 'Zeiterfassung' },
+  { href: '/admin/dokumente/vorlagen', icon: <Description />, label: 'Dokumente' },
 ];
 
 export function BottomNav() {
@@ -91,7 +68,6 @@ export function BottomNav() {
   const theme = useTheme();
   const _isMobile = useMediaQuery(theme.breakpoints.down('lg'), { noSsr: true });
   const { user } = useAuth();
-  const featureFlags = useFeatureFlags();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -101,34 +77,24 @@ export function BottomNav() {
     logger.debug('BottomNav user role', {}, { role: user.role, userId: user.id, email: user.email });
   }
 
-  const isNurse = user?.role === 'nurse';
-  const isAdmin = user?.role === 'admin' || user?.role === 'dispatcher';
+  const _isNurse = user?.role === 'nurse';
+  const { canAccessAdminArea } = usePermissions();
+  const isAdmin = canAccessAdminArea;
 
-  // Filter tabs based on feature flags with type safety
-  const nurseMoreTabs = nurseMoreTabsBase.filter((tab): tab is NavigationTab => {
-    if (!tab.feature) return true; // Always show tabs without feature flag
-    const featureValue = featureFlags[tab.feature];
-    return featureValue === true; // Explicitly check for true
-  });
+  // Mitarbeiter und Admin haben je 5 Reiter, kein Mehr-Button
+  const mainTabs = isAdmin ? adminTabs : employeeTabs;
+  const moreTabs: NavigationTab[] = [];
 
-  const adminMoreTabs = adminMoreTabsBase.filter((tab): tab is NavigationTab => {
-    if (!tab.feature) return true; // Always show tabs without feature flag
-    const featureValue = featureFlags[tab.feature];
-    return featureValue === true; // Explicitly check for true
-  });
-
-  // Verwende explizite Prüfung: Wenn Admin/Dispatcher, dann adminTabs, sonst nurseTabs
-  // Fallback: Wenn keine Rolle erkannt wird, zeige adminTabs (für bessere UX)
-  const mainTabs = isNurse ? nurseTabs : isAdmin ? adminTabs : adminTabs;
-  const moreTabs = isNurse ? nurseMoreTabs : isAdmin ? adminMoreTabs : adminMoreTabs;
-
-  // Finde den aktuellen Tab Index
+  // Finde den aktuellen Tab Index (nur unter mainTabs, kein separater "Mehr"-Index)
   const currentIndex = mainTabs.findIndex(
     tab => pathname === tab.href || (pathname?.startsWith(`${tab.href}/`) ?? false)
   );
-  const isMoreActive = moreTabs.some(
-    tab => pathname === tab.href || (pathname?.startsWith(`${tab.href}/`) ?? false)
-  );
+  const isMoreActive =
+    moreTabs.length > 0 &&
+    moreTabs.some(
+      tab => pathname === tab.href || (pathname?.startsWith(`${tab.href}/`) ?? false)
+    );
+  const showMoreButton = moreTabs.length > 0;
 
   const handleMoreClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -152,6 +118,7 @@ export function BottomNav() {
           left: 0,
           right: 0,
           zIndex: 1000,
+          minHeight: bottomNavHeightPx,
           background: 'rgba(255,255,255,0.85)',
           backdropFilter: 'blur(20px) saturate(180%)',
           WebkitBackdropFilter: 'blur(20px) saturate(180%)',
@@ -163,13 +130,14 @@ export function BottomNav() {
         elevation={0}
       >
         <BottomNavigation
-          value={currentIndex}
+          value={showMoreButton && isMoreActive ? mainTabs.length : Math.max(0, currentIndex)}
           showLabels
           sx={{
+            minHeight: bottomNavHeightPx,
             '& .MuiBottomNavigationAction-root': {
               color: 'rgba(15,23,42,0.6)',
-              minWidth: 44,
-              minHeight: 44,
+              minWidth: minTouchTargetPx,
+              minHeight: minTouchTargetPx,
               paddingTop: 'env(safe-area-inset-top)',
               transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
               '&.Mui-selected': {
@@ -214,22 +182,24 @@ export function BottomNav() {
             />
           ))}
 
-          {/* Mehr-Button */}
-          <BottomNavigationAction
-            label="Mehr"
-            icon={<MoreHoriz />}
-            value={4}
-            onClick={handleMoreClick}
-            sx={{
-              color: isMoreActive ? '#005f73' : 'rgba(0,0,0,0.6)',
-              '&.Mui-selected': {
-                color: '#005f73',
-                '& .MuiSvgIcon-root': {
+          {/* Mehr-Button nur für Pflegekräfte (Admin hat nur die 5 Reiter) */}
+          {showMoreButton && (
+            <BottomNavigationAction
+              label="Mehr"
+              icon={<MoreHoriz />}
+              value={mainTabs.length}
+              onClick={handleMoreClick}
+              sx={{
+                color: isMoreActive ? '#005f73' : 'rgba(0,0,0,0.6)',
+                '&.Mui-selected': {
                   color: '#005f73',
+                  '& .MuiSvgIcon-root': {
+                    color: '#005f73',
+                  },
                 },
-              },
-            }}
-          />
+              }}
+            />
+          )}
         </BottomNavigation>
       </Paper>
 

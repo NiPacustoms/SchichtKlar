@@ -3,6 +3,7 @@
 import { logger } from '@/lib/logging';
 
 import { GlassCard } from '@/components/ui/GlassCard';
+import { assignmentStatusColors } from '@/lib/design-tokens';
 import { Assignment } from '@/lib/types';
 import { Cancel, CheckCircle, AccessTime, Person } from '@mui/icons-material';
 import { Box, Button, Chip, Typography, Stack } from '@mui/material';
@@ -66,21 +67,6 @@ export function AssignmentCard({
     };
   }, [assignment?.shiftId]);
 
-  const getStatusColor = (status: Assignment['status']) => {
-    switch (status) {
-      case 'pending':
-        return 'warning';
-      case 'accepted':
-        return 'success';
-      case 'declined':
-        return 'error';
-      case 'completed':
-        return 'info';
-      default:
-        return 'default';
-    }
-  };
-
   const getStatusLabel = (status: Assignment['status']) => {
     switch (status) {
       case 'pending':
@@ -111,8 +97,10 @@ export function AssignmentCard({
     }
   };
 
+  const statusHex = assignmentStatusColors[assignment.status] ?? assignmentStatusColors.pending;
+
   return (
-    <GlassCard>
+    <GlassCard hover>
       <Box sx={{ p: 3 }}>
         <Box
           sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}
@@ -149,12 +137,13 @@ export function AssignmentCard({
           </Box>
           <Chip
             label={getStatusLabel(assignment.status)}
-            color={getStatusColor(assignment.status)}
             size="small"
             sx={{
               fontWeight: 600,
               fontSize: '12px',
               height: 28,
+              backgroundColor: statusHex,
+              color: '#fff',
             }}
           />
         </Box>

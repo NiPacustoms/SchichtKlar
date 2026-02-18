@@ -17,8 +17,12 @@ export const runtime = 'nodejs';
 
 const ROUTE = '/api/auth/accept-invite';
 
+/**
+ * Betriebsmodell: Eingeladene Mitarbeiter erhalten Rolle nurse.
+ * Admin registriert Firma (register-admin → admin), lädt ein; Annahme hier → nurse. Siehe docs/ROLLEN-UND-EINLADUNGEN.md.
+ */
 // POST /api/auth/accept-invite
-// Body: { token: string, password: string, displayName?: string }
+// Body: { token: string, password: string, displayName?: string, firstName?, lastName? }
 export async function POST(req: NextRequest) {
   try {
     // Rate Limiting prüfen (IP-basiert für Auth-Routen)

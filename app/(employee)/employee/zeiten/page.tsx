@@ -4,9 +4,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { logger } from '@/lib/logging';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner, InlineSpinner } from '@/components/ui/LoadingSpinner';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { useTimes, type TimeEntry } from '@/lib/hooks/useTimes';
-import { assignmentService } from '@/lib/services/assignments';
+import { getMyActiveAssignments } from '@/src/composition';
 import { shiftService } from '@/lib/services/shifts';
 import { facilityService } from '@/lib/services/facilities';
 import { useQuery } from '@tanstack/react-query';
@@ -238,7 +239,7 @@ export default function EmployeeTimesPage() {
     queryFn: async () => {
       if (!user?.id) return [];
       try {
-        const assignments = await assignmentService.getMyActiveAssignments(user.id);
+        const assignments = await getMyActiveAssignments.execute(user.id);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -402,7 +403,7 @@ export default function EmployeeTimesPage() {
   }
 
   return (
-    <Box sx={{ maxWidth: 1400, mx: 'auto', p: 3 }}>
+    <PageContainer maxWidth="wide">
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography
@@ -1222,7 +1223,7 @@ export default function EmployeeTimesPage() {
                       {facility?.name || 'Unbekannte Einrichtung'}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {shift.startTime} - {shift.endTime} · {shift.type}
+                      {shift.startTime} - {shift.endTime}
                     </Typography>
                     {shift.notes && (
                       <Typography variant="caption" color="text.secondary">
@@ -1320,6 +1321,6 @@ export default function EmployeeTimesPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </PageContainer>
   );
 }

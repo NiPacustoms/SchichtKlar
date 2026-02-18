@@ -16,6 +16,8 @@ interface AdminKPICardProps {
   };
   progress?: number;
   onClick?: () => void;
+  /** Priority 1 = kritisch (Rotrahmen, erste Zeile); 2 = Standard; 3 = dezent */
+  priority?: 1 | 2 | 3;
 }
 
 function AdminKPICardBase({
@@ -27,6 +29,7 @@ function AdminKPICardBase({
   trend,
   progress,
   onClick,
+  priority = 2,
 }: AdminKPICardProps) {
   return (
     <GlassCard
@@ -34,6 +37,12 @@ function AdminKPICardBase({
       aria-label={`KPI ${title}`}
       sx={{
         cursor: onClick ? 'pointer' : 'default',
+        borderRadius: 1.5,
+        overflow: 'visible',
+        ...(priority === 1 && {
+          border: '2px solid',
+          borderColor: 'error.main',
+        }),
       }}
     >
       <Box

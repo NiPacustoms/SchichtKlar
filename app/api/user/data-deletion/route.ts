@@ -15,7 +15,7 @@ const ROUTE = '/api/user/data-deletion';
  * DSGVO Art. 17: Recht auf Löschung
  * Löscht oder anonymisiert personenbezogene Daten eines Users
  *
- * WICHTIG: GoBD-konforme Daten (Lohnabrechnungen) werden nicht gelöscht,
+ * WICHTIG: GoBD-konforme Daten werden nicht gelöscht,
  * sondern anonymisiert (10 Jahre Aufbewahrungspflicht)
  */
 export async function POST(req: NextRequest) {
@@ -28,8 +28,7 @@ export async function POST(req: NextRequest) {
 
     const userId = decoded.uid;
 
-    // Rate Limiting: Max 1 Löschung pro Tag (vereinfacht, da checkRateLimit keine custom config unterstützt)
-    // TODO: Erweitere checkRateLimit um custom configs oder verwende separate Rate-Limiter
+    // Rate Limiting: checkRateLimit begrenzt Anfragen. Optional V2: eigener Limiter (z. B. 1 Löschung/Tag).
     const rateLimitResponse = checkRateLimit(req, userId);
     if (rateLimitResponse) {
       // Zusätzliche Prüfung: Max 1 Löschung pro Tag
@@ -94,14 +93,6 @@ export async function POST(req: NextRequest) {
       .get();
     assignmentsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
     deleteCount += assignmentsSnapshot.docs.length;
-
-    // Messages
-    const messagesSnapshot = await adminDb
-      .collection('messages')
-      .where('userId', '==', userId)
-      .get();
-    messagesSnapshot.docs.forEach(doc => batch.delete(doc.ref));
-    deleteCount += messagesSnapshot.docs.length;
 
     // Documents (außer GoBD-relevante)
     const documentsSnapshot = await adminDb
@@ -174,7 +165,7 @@ export async function POST(req: NextRequest) {
       message: 'Daten wurden gelöscht oder anonymisiert',
       deletedCount: deleteCount,
       anonymizedCount: anonymizeCount,
-      note: 'GoBD-konforme Daten (Lohnabrechnungen, approved Timesheets) wurden anonymisiert statt gelöscht (10 Jahre Aufbewahrungspflicht)',
+      note: 'GoBD-konforme Daten (approved Timesheets u. Ä.) wurden anonymisiert statt gelöscht (10 Jahre Aufbewahrungspflicht)',
     });
   } catch (error) {
     logger.error(

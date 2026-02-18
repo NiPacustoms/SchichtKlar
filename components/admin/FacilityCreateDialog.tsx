@@ -36,9 +36,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 interface FacilityCreateDialogProps {
   open: boolean;
   onClose: () => void;
+  /** Wird mit der neuen Einrichtungs-ID aufgerufen, falls gewünscht (z. B. zum sofortigen Auswählen). */
+  onCreated?: (facilityId: string) => void;
 }
 
-export function FacilityCreateDialog({ open, onClose }: FacilityCreateDialogProps) {
+export function FacilityCreateDialog({ open, onClose, onCreated }: FacilityCreateDialogProps) {
   const [formData, setFormData] = useState<FacilityFormData>(
     createInitialFacilityFormData(DEFAULT_PRESET_COLOR)
   );
@@ -84,9 +86,10 @@ export function FacilityCreateDialog({ open, onClose }: FacilityCreateDialogProp
       } as Omit<Facility, 'id' | 'createdAt' | 'updatedAt'>;
       return facilityService.create(payload);
     },
-    onSuccess: () => {
+    onSuccess: (newId: string) => {
       queryClient.invalidateQueries({ queryKey: ['facilities'] });
       toast.success('Einrichtung erfolgreich erstellt!');
+      onCreated?.(newId);
       closeRef.current();
     },
     onError: (error: unknown) => {

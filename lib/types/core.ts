@@ -40,6 +40,9 @@ export interface Customer {
  * Represents an employee/staff member
  * Note: This extends the User type from index.ts for consistency
  */
+/** Status für Wochenstunden-Limit (ArbZG/MiLoG) */
+export type EmployeeWeeklyLimitStatus = 'normal' | 'warning' | 'blocked';
+
 export interface Employee {
   id: string;
   name: string;
@@ -50,6 +53,12 @@ export interface Employee {
   status: 'active' | 'inactive';
   createdAt: Date;
   updatedAt?: Date;
+  /** Admin setzt: 40, 48, 60 (20–80h) */
+  wochenstundenLimit?: number;
+  /** Live Mo–So Summe aus Timesheets */
+  aktuelleWochenstunden?: number;
+  /** Auto-Calc aus Limit + aktuelleWochenstunden */
+  limitStatus?: EmployeeWeeklyLimitStatus;
 }
 
 /**

@@ -1,27 +1,32 @@
 /**
  * Offline Queue Service für Zeiterfassung
- * Speichert Zeiterfassungs-Daten lokal, wenn offline, und synchronisiert bei Online-Wiederkehr
+ * Persistiert in IndexedDB, synchronisiert bei Online-Wiederkehr.
+ * Sync-Status für UI: getPendingCount(), isSyncing(), notifySyncStatus().
  */
 
 import { db, getDb } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { logger } from '@/lib/logging';
 import { createAppError, ErrorCode } from '@/lib/errors';
+import * as offlineStorage from './offlineStorage';
 
-const QUEUE_STORAGE_KEY = 'jobflow_offline_queue';
-const SYNC_IN_PROGRESS_KEY = 'jobflow_sync_in_progress';
+export const OFFLINE_SYNC_STATUS_EVENT = 'jobflow-offline-sync-status';
+const SYNC_STATUS_EVENT = OFFLINE_SYNC_STATUS_EVENT;
 
 export interface OfflineQueueItem {
   id: string;
   type: 'timesheet' | 'sick' | 'break' | 'assignment' | 'timeEntry' | 'signature';
-  action: 'create' | 'update' | 'delete'; // CRUD operation type
+  action: 'create' | 'update' | 'delete';
   data: Record<string, unknown>;
   timestamp: number;
   retries: number;
 }
 
+export type OfflineSyncStatus = 'idle' | 'syncing' | 'offline';
+
 class OfflineQueueService {
   private queue: OfflineQueueItem[] = [];
+  private syncing = false;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -30,11 +35,18 @@ class OfflineQueueService {
     }
   }
 
-  private loadQueue(): void {
+  private notifyStatus(): void {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(SYNC_STATUS_EVENT, { detail: this.getStatus() }));
+    }
+  }
+
+  private async loadQueue(): Promise<void> {
     try {
-      const stored = localStorage.getItem(QUEUE_STORAGE_KEY);
-      if (stored) {
-        this.queue = JSON.parse(stored);
+      this.queue = (await offlineStorage.getAllQueueItems()) as OfflineQueueItem[];
+      this.notifyStatus();
+      if (typeof navigator !== 'undefined' && navigator.onLine && this.queue.length > 0) {
+        void this.syncQueue();
       }
     } catch (error) {
       logger.error('Error loading offline queue', error instanceof Error ? error : new Error(String(error)));
@@ -42,11 +54,27 @@ class OfflineQueueService {
     }
   }
 
-  private saveQueue(): void {
+  private async persistItem(item: OfflineQueueItem): Promise<void> {
     try {
-      localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(this.queue));
+      await offlineStorage.addQueueItem(item);
     } catch (error) {
-      logger.error('Error saving offline queue', error instanceof Error ? error : new Error(String(error)));
+      logger.error('Error persisting queue item', error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  private async removePersistedItem(id: string): Promise<void> {
+    try {
+      await offlineStorage.removeQueueItem(id);
+    } catch (error) {
+      logger.error('Error removing queue item', error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  private async updatePersistedRetries(id: string, retries: number): Promise<void> {
+    try {
+      await offlineStorage.updateQueueItem(id, { retries });
+    } catch (error) {
+      logger.error('Error updating queue item retries', error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -59,7 +87,7 @@ class OfflineQueueService {
   }
 
   /**
-   * Fügt ein Item zur Offline-Queue hinzu
+   * Fügt ein Item zur Offline-Queue hinzu (persistiert in IndexedDB)
    */
   async addToQueue(
     type: OfflineQueueItem['type'],
@@ -76,9 +104,9 @@ class OfflineQueueService {
     };
 
     this.queue.push(item);
-    this.saveQueue();
+    await this.persistItem(item);
+    this.notifyStatus();
 
-    // Versuche sofort zu synchronisieren, wenn online
     if (navigator.onLine) {
       await this.syncQueue();
     }
@@ -86,53 +114,71 @@ class OfflineQueueService {
     return item.id;
   }
 
+  /** Anzahl ausstehender Einträge */
+  getPendingCount(): number {
+    return this.queue.length;
+  }
+
+  /** Ob gerade synchronisiert wird */
+  isSyncing(): boolean {
+    return this.syncing;
+  }
+
+  /** Status für UI (Sync-Status-Indikator) */
+  getStatus(): { pendingCount: number; isSyncing: boolean; status: OfflineSyncStatus } {
+    const status: OfflineSyncStatus = this.syncing ? 'syncing' : !navigator.onLine ? 'offline' : 'idle';
+    return {
+      pendingCount: this.queue.length,
+      isSyncing: this.syncing,
+      status,
+    };
+  }
+
+
   /**
-   * Synchronisiert die Queue mit Firestore
+   * Synchronisiert die Queue mit Firestore (liest aus IndexedDB, entfernt synced Items dort)
    */
   async syncQueue(): Promise<void> {
     if (!navigator.onLine || !db) {
       return;
     }
+    if (this.syncing) return;
 
-    // Verhindere parallele Syncs
-    if (localStorage.getItem(SYNC_IN_PROGRESS_KEY) === 'true') {
-      return;
-    }
-
-    localStorage.setItem(SYNC_IN_PROGRESS_KEY, 'true');
+    this.syncing = true;
+    this.notifyStatus();
 
     try {
+      await this.loadQueue();
       const itemsToSync = [...this.queue];
-      const syncedItems: string[] = [];
+      const syncedIds: string[] = [];
       const failedItems: OfflineQueueItem[] = [];
 
       for (const item of itemsToSync) {
         try {
-          // Versuche Item zu synchronisieren
           await this.syncItem(item);
-          syncedItems.push(item.id);
+          syncedIds.push(item.id);
+          await this.removePersistedItem(item.id);
         } catch (error) {
           logger.error(`Error syncing item ${item.id}`, error instanceof Error ? error : new Error(String(error)));
           item.retries += 1;
-          
-          // Nach 3 Versuchen aus Queue entfernen
           if (item.retries < 3) {
             failedItems.push(item);
+            await this.updatePersistedRetries(item.id, item.retries);
+          } else {
+            await this.removePersistedItem(item.id);
           }
         }
       }
 
-      // Entferne synchronisierte Items
       this.queue = failedItems;
-      this.saveQueue();
-
-      if (syncedItems.length > 0) {
-        logger.info(`Successfully synced ${syncedItems.length} items`);
+      if (syncedIds.length > 0) {
+        logger.info(`Successfully synced ${syncedIds.length} items`);
       }
     } catch (error) {
       logger.error('Error syncing queue', error instanceof Error ? error : new Error(String(error)));
     } finally {
-      localStorage.removeItem(SYNC_IN_PROGRESS_KEY);
+      this.syncing = false;
+      this.notifyStatus();
     }
   }
 
@@ -158,8 +204,9 @@ class OfflineQueueService {
             syncedFromOffline: true,
           });
         } else if (item.action === 'update' && item.data.id) {
-          await updateDoc(doc(getDb(), 'timesheets', item.data.id as string), {
-            ...item.data,
+          const { id: _docId, ...updatePayload } = item.data;
+          await updateDoc(doc(getDb(), 'timesheets', _docId as string), {
+            ...updatePayload,
             updatedAt: serverTimestamp(),
             syncedFromOffline: true,
           });
@@ -221,11 +268,16 @@ class OfflineQueueService {
   }
 
   /**
-   * Löscht die Queue
+   * Löscht die Queue (Speicher + IndexedDB)
    */
-  clearQueue(): void {
+  async clearQueue(): Promise<void> {
     this.queue = [];
-    this.saveQueue();
+    try {
+      await offlineStorage.clearQueue();
+    } catch (error) {
+      logger.error('Error clearing offline queue', error instanceof Error ? error : new Error(String(error)));
+    }
+    this.notifyStatus();
   }
 }
 

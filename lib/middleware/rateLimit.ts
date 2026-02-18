@@ -9,10 +9,6 @@ export const RATE_LIMIT_CONFIGS = {
     windowMs: 60 * 1000, // 1 Minute
     max: 5, // 5 Requests pro Minute pro IP
   },
-  chat: {
-    windowMs: 60 * 1000, // 1 Minute
-    max: 60, // 60 Requests pro Minute pro User
-  },
   admin: {
     windowMs: 60 * 1000, // 1 Minute
     max: 30, // 30 Requests pro Minute pro User
@@ -40,9 +36,6 @@ function getRateLimitType(pathname: string): RateLimitConfigType {
   if (pathname.startsWith('/api/auth/')) {
     return 'auth';
   }
-  if (pathname.startsWith('/api/chat/')) {
-    return 'chat';
-  }
   if (pathname.startsWith('/api/admin/')) {
     return 'admin';
   }
@@ -65,8 +58,8 @@ function getRateLimitKey(
   type: RateLimitConfigType,
   userId?: string
 ): string {
-  // Für User-basierte Limits (chat, admin, templates)
-  if ((type === 'chat' || type === 'admin' || type === 'templates') && userId) {
+  // Für User-basierte Limits (admin, templates)
+  if ((type === 'admin' || type === 'templates') && userId) {
     return `${type}:user:${userId}`;
   }
 

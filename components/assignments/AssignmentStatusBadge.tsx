@@ -1,8 +1,19 @@
 'use client';
 
+import React from 'react';
 import { Chip } from '@mui/material';
+import {
+  Schedule,
+  CheckCircle,
+  Person,
+  Cancel,
+  Done,
+  Block,
+  Edit,
+  HelpOutline,
+} from '@mui/icons-material';
 
-const STATUS_COLORS: Record<
+const STATUS_MUI_COLORS: Record<
   string,
   'default' | 'primary' | 'success' | 'warning' | 'error' | 'info'
 > = {
@@ -31,8 +42,23 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: 'Storniert',
   'pending-signature': 'Unterschrift ausstehend',
   requested: 'Angefragt',
-  secured: 'Angenommen', // API-Fallback: nicht „Besichert“ anzeigen
-  besichert: 'Angenommen',
+  secured: 'Besetzt',
+  besichert: 'Besetzt',
+};
+
+const STATUS_ICONS: Record<string, React.ReactElement> = {
+  pending: <Schedule fontSize="small" />,
+  published: <Schedule fontSize="small" />,
+  requested: <Schedule fontSize="small" />,
+  accepted: <CheckCircle fontSize="small" />,
+  secured: <CheckCircle fontSize="small" />,
+  besichert: <CheckCircle fontSize="small" />,
+  assigned: <Person fontSize="small" />,
+  declined: <Cancel fontSize="small" />,
+  completed: <Done fontSize="small" />,
+  done: <Done fontSize="small" />,
+  cancelled: <Block fontSize="small" />,
+  'pending-signature': <Edit fontSize="small" />,
 };
 
 interface AssignmentStatusBadgeProps {
@@ -41,12 +67,26 @@ interface AssignmentStatusBadgeProps {
 }
 
 export function AssignmentStatusBadge({ status, size = 'small' }: AssignmentStatusBadgeProps) {
-  const color = STATUS_COLORS[status?.toLowerCase()] ?? STATUS_COLORS[status] ?? 'default';
-  const label =
-    STATUS_LABELS[status?.toLowerCase()] ??
+  const normalized = status?.toLowerCase() ?? '';
+  const muiColor = STATUS_MUI_COLORS[normalized] ?? STATUS_MUI_COLORS[status] ?? 'default';
+  const displayLabel =
+    STATUS_LABELS[normalized] ??
     STATUS_LABELS[status] ??
-    (status && status !== 'Besichert' ? status : 'Unbekannt');
-  // „Besichert“ nie anzeigen, stattdessen „Angenommen“
-  const displayLabel = label === 'Besichert' || label === 'besichert' ? 'Angenommen' : label;
-  return <Chip label={displayLabel} color={color} size={size} />;
+    (status && String(status).trim() ? status : 'Unbekannt');
+  const iconNode = STATUS_ICONS[normalized] ?? STATUS_ICONS[status] ?? <HelpOutline fontSize="small" />;
+  const icon = React.isValidElement(iconNode) ? iconNode : <HelpOutline fontSize="small" />;
+  return (
+    <Chip
+      icon={icon}
+      label={displayLabel}
+      color={muiColor}
+      size={size}
+      aria-label={`Status: ${displayLabel}`}
+      sx={{
+        fontWeight: 500,
+        fontSize: '11px',
+        lineHeight: '14px',
+      }}
+    />
+  );
 }

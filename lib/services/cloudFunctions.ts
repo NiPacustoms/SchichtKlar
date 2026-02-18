@@ -233,12 +233,6 @@ export const cloudFunctions = {
     return result.data as { success: boolean };
   },
 
-  async createChatChannelForAssignment(assignmentId: string): Promise<{ channelId?: string }> {
-    const fn = httpsCallable(getFunctionsOrThrow(), 'createChatChannelForAssignment');
-    const result = await fn({ assignmentId });
-    return result.data as { channelId?: string };
-  },
-
   async declineAssignmentWithSignature(payload: { assignmentId: string; reason: string; signatureDataUrl: string }): Promise<{ success: boolean }> {
     const fn = httpsCallable(getFunctionsOrThrow(), 'declineAssignmentWithSignature');
     const result = await fn(payload);

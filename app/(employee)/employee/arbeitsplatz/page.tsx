@@ -3,16 +3,17 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { ComponentErrorBoundary } from '@/components/errors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboard } from '@/lib/hooks/useDashboard';
 import { useEmployeeNotifications } from '@/lib/hooks/useEmployeeNotifications';
-import { useFeatureFlags } from '@/lib/hooks/useFeatureFlags';
 import { useTimesheet } from '@/lib/hooks/useTimesheet';
 import {
   AccessTime,
   CalendarMonth,
   Description,
+  Event,
   Place,
   NotificationsActive,
   Person,
@@ -45,7 +46,6 @@ function DashboardPageContent() {
     todayFacility,
   } = useDashboard();
   const { notifications } = useEmployeeNotifications();
-  const { canAccessEmployeeVacation } = useFeatureFlags();
   const { isLoading: timesheetLoading } = useTimesheet();
 
   // Alle Hooks müssen vor bedingten Returns aufgerufen werden
@@ -56,17 +56,14 @@ function DashboardPageContent() {
     todayHours: 0,
     weekHours: 0,
     monthHours: 0,
-    vacationDays: 0,
-    usedVacationDays: 0,
   };
-  const remainingVacationDays = (safeKpis.vacationDays ?? 0) - (safeKpis.usedVacationDays ?? 0);
   const upcomingAssignmentsPreview = useMemo(
     () => upcomingAssignmentDetails?.slice(0, 4) || [],
     [upcomingAssignmentDetails]
   );
 
   if (authLoading || isLoading || timesheetLoading) {
-    return <LoadingSpinner message="Dashboard wird geladen..." />;
+    return <LoadingSpinner message="Arbeitsplatz wird geladen..." />;
   }
 
   if (!user) {
@@ -108,7 +105,7 @@ function DashboardPageContent() {
   const formatAssignmentStatus = (status: string | undefined) => {
     switch (status) {
       case 'accepted':
-        return 'Bestätigt';
+        return 'Angenommen';
       case 'declined':
         return 'Abgelehnt';
       case 'completed':
@@ -122,7 +119,7 @@ function DashboardPageContent() {
       case 'assigned':
         return 'Zugewiesen';
       default:
-        return 'Unbekannt';
+        return status ?? 'Unbekannt';
     }
   };
 
@@ -131,10 +128,10 @@ function DashboardPageContent() {
     : todayAssignment?.assignedAt || null;
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
-      <Box sx={{ textAlign: 'center', mb: 4 }}>
-        <Typography variant="h3" sx={{ color: 'text.primary', fontWeight: 700, mb: 1 }}>
-          {isNurse ? 'Willkommen zurück!' : 'Dashboard'}
+    <PageContainer maxWidth="standard">
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ color: 'text.primary', fontWeight: 700, mb: 0.5 }}>
+          {isNurse ? 'Willkommen zurück!' : 'Übersicht'}
         </Typography>
         <Typography variant="body1" sx={{ color: 'text.secondary' }}>
           {isNurse ? 'Hier ist dein Überblick für heute' : 'Aktuelle Kennzahlen im Überblick'}
@@ -142,23 +139,25 @@ function DashboardPageContent() {
       </Box>
 
       {isNurse ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <GlassCard>
-            <CardContent>
-              <Stack direction="row" spacing={2} flexWrap="wrap">
-                <Chip icon={<AccessTime />} label={`Heute: ${safeKpis.todayHours.toFixed(1)} h`} />
-                <Chip
-                  icon={<CalendarMonth />}
-                  label={`Woche: ${safeKpis.weekHours.toFixed(1)} h`}
-                />
-                <Chip icon={<Description />} label={`Monat: ${safeKpis.monthHours.toFixed(1)} h`} />
-              </Stack>
-            </CardContent>
-          </GlassCard>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', py: 1.5, px: 0 }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <AccessTime sx={{ color: 'text.secondary', fontSize: 20 }} />
+              <Typography variant="body1">Heute: <strong>{safeKpis.todayHours.toFixed(1)} h</strong></Typography>
+            </Stack>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <CalendarMonth sx={{ color: 'text.secondary', fontSize: 20 }} />
+              <Typography variant="body1">Woche: <strong>{safeKpis.weekHours.toFixed(1)} h</strong></Typography>
+            </Stack>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Description sx={{ color: 'text.secondary', fontSize: 20 }} />
+              <Typography variant="body1">Monat: <strong>{safeKpis.monthHours.toFixed(1)} h</strong></Typography>
+            </Stack>
+          </Box>
 
           <Grid container spacing={3}>
-            <Grid size={{ xs: 12, md: 8 }}>
-              <Stack spacing={3}>
+            <Grid size={{ xs: 12, md: 7 }}>
+              <Stack spacing={0}>
                 <GlassCard>
                   <CardContent>
                     <Stack spacing={2}>
@@ -167,15 +166,16 @@ function DashboardPageContent() {
                         {todayAssignment?.status && (
                           <Chip
                             size="small"
-                            color="primary"
+                            color="success"
                             label={formatAssignmentStatus(todayAssignment.status)}
+                            sx={{ fontWeight: 600 }}
                           />
                         )}
                       </Stack>
                       {todayAssignment && todayShift ? (
-                        <Stack spacing={1}>
+                        <Stack spacing={1.5}>
                           <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                            {todayShift.title || 'Dienst'}
+                            {todayShift.title || 'Schicht'} – {todayShift.startTime}
                           </Typography>
                           <Stack direction="row" alignItems="center" spacing={1}>
                             <AccessTime fontSize="small" sx={{ color: 'text.secondary' }} />
@@ -210,6 +210,15 @@ function DashboardPageContent() {
                               Hinweis: {todayAssignment.notes}
                             </Typography>
                           )}
+                          <Button
+                            component={Link}
+                            href={todayAssignment.id ? `/employee/formulare/einsaetze/${todayAssignment.id}` : '/employee/einsaetze'}
+                            variant="contained"
+                            size="medium"
+                            sx={{ mt: 1, alignSelf: 'flex-start' }}
+                          >
+                            Einsatzdetails
+                          </Button>
                         </Stack>
                       ) : (
                         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -219,7 +228,9 @@ function DashboardPageContent() {
                     </Stack>
                   </CardContent>
                 </GlassCard>
-
+              </Stack>
+            </Grid>
+            <Grid size={{ xs: 12, md: 5 }}>
                 <GlassCard>
                   <CardContent>
                     <Stack spacing={2}>
@@ -260,11 +271,13 @@ function DashboardPageContent() {
                     </Stack>
                   </CardContent>
                 </GlassCard>
+            </Grid>
+          </Grid>
 
-                <GlassCard>
-                  <CardContent>
-                    <Stack spacing={2}>
-                      <Typography variant="h6">Kommende Einsätze</Typography>
+          <GlassCard>
+            <CardContent>
+              <Stack spacing={2}>
+                <Typography variant="h6">Kommende Einsätze</Typography>
                       {upcomingAssignmentDetails.length > 0 ? (
                         <List disablePadding>
                           {upcomingAssignmentsPreview.map(
@@ -304,41 +317,11 @@ function DashboardPageContent() {
                           Keine weiteren Einsätze geplant.
                         </Typography>
                       )}
-                    </Stack>
-                  </CardContent>
-                </GlassCard>
               </Stack>
-            </Grid>
+            </CardContent>
+          </GlassCard>
 
-            {canAccessEmployeeVacation && (
-              <Grid size={{ xs: 12, md: 4 }}>
-                <Stack spacing={3}>
-                  <GlassCard>
-                    <CardContent>
-                      <Stack spacing={1.5}>
-                        <Typography variant="h6">Urlaub &amp; Abwesenheiten</Typography>
-                        <Typography variant="body2">
-                          Geplante Urlaubstage: {safeKpis.usedVacationDays?.toFixed(1) ?? '0.0'} von{' '}
-                          {safeKpis.vacationDays?.toFixed(1) ?? '0.0'} Tagen
-                        </Typography>
-                        <Typography variant="body2">
-                          Verfügbar: <strong>{remainingVacationDays.toFixed(1)} Tage</strong>
-                        </Typography>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          component={Link}
-                          href="/employee/zeiten"
-                        >
-                          Urlaub beantragen
-                        </Button>
-                      </Stack>
-                    </CardContent>
-                  </GlassCard>
-                </Stack>
-              </Grid>
-            )}
-
+          <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 4 }}>
               <Stack spacing={3}>
                 <GlassCard>
@@ -413,14 +396,6 @@ function DashboardPageContent() {
                       >
                         Dokumente abrufen
                       </Button>
-                      <Button
-                        component={Link}
-                        href="/employee/unterhaltungen"
-                        variant="outlined"
-                        size="small"
-                      >
-                        Nachrichten
-                      </Button>
                     </Stack>
                   </CardContent>
                 </GlassCard>
@@ -433,13 +408,13 @@ function DashboardPageContent() {
           <GlassCard>
             <CardContent>
               <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                Für administrative Rollen befindet sich dieses Dashboard noch im Aufbau.
+                Für administrative Rollen befindet sich diese Übersicht noch im Aufbau.
               </Typography>
             </CardContent>
           </GlassCard>
         </Box>
       )}
-    </Box>
+    </PageContainer>
   );
 }
 

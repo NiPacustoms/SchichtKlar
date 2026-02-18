@@ -8,12 +8,13 @@ export interface PageContainerProps {
   children: ReactNode;
   /** standard 1200 | wide 1400 | narrow 800 | form 720 */
   maxWidth?: PageMaxWidthPreset;
-  /** Zusätzliches Padding unten (z. B. für BottomNavigation: pb: 10) */
+  /** Zusätzliches Padding unten (z. B. für BottomNavigation: pb: 14 ≈ 112px) */
   withBottomNav?: boolean;
   sx?: SxProps<Theme>;
 }
 
 const PADDING_RESPONSIVE = { px: { xs: 2, sm: 3 }, py: 3 };
+const BOTTOM_NAV_PADDING = 14; // 112px – ausreichend Abstand, damit keine Card von der Nav überlappt wird
 
 /**
  * Einheitlicher Seiten-Container: maxWidth, zentriert, responsives Padding (DS: px xs 2, sm 3; py 3).
@@ -32,7 +33,7 @@ export function PageContainer({
         maxWidth: width,
         mx: 'auto',
         ...PADDING_RESPONSIVE,
-        ...(withBottomNav && { pb: 10 }),
+        ...(withBottomNav && { pb: BOTTOM_NAV_PADDING }),
         ...sx,
       }}
     >

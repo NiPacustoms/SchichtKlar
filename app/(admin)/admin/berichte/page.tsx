@@ -2,7 +2,7 @@
 
 import { logger } from '@/lib/logging';
 
-import { AppLayout } from '@/components/layout/AppLayout';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { useAdminReports } from '@/lib/hooks/useAdminReports';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -11,24 +11,10 @@ import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { toast } from '@/lib/utils/toast';
 import {
   Assessment,
-  TrendingUp,
-  TrendingDown,
-  TrendingFlat,
   Download,
   Refresh,
-  Euro,
-  Schedule,
   Work,
-  DarkMode as Night,
-  Weekend,
-  Event as Holiday,
-  Flight as Vacation,
   BarChart,
-  PieChart,
-  TrendingUp as LineChart,
-  People,
-  Business,
-  Assignment,
 } from '@mui/icons-material';
 import {
   Box,
@@ -49,7 +35,6 @@ import {
   Chip,
   Alert,
   IconButton,
-  Tooltip,
   FormControl,
   InputLabel,
   Select,
@@ -59,7 +44,7 @@ import {
   Divider,
   CircularProgress,
 } from '@mui/material';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -81,8 +66,7 @@ import {
 
 export default function AdminBerichtePage() {
   const { user } = useAuth();
-  const { mode } = useTheme();
-  const isDark = mode === 'dark';
+  useTheme();
 
   const [filters, setFilters] = useState({
     startDate: undefined as Date | undefined,
@@ -91,29 +75,19 @@ export default function AdminBerichtePage() {
     userId: undefined as string | undefined,
   });
   const [activeTab, setActiveTab] = useState(0);
-  const [reportType, setReportType] = useState<'time' | 'surcharge' | 'employee' | 'all'>('all');
+  const [reportType, setReportType] = useState<'time' | 'employee' | 'all'>('all');
   const [isExporting, setIsExporting] = useState(false);
 
   const {
     timeAccountReport,
-    surchargeReport,
     employeeStatistics,
     isLoading,
     error,
-    formatDate,
-    formatTime,
-    formatDateTime,
-    formatWeek,
-    formatMonth,
     formatCurrency,
     formatHours,
-    formatPercentage,
-    getStatusColor,
-    getStatusLabel,
     getTrendIcon,
     getTrendText,
     exportTimeAccountReport,
-    exportSurchargeReport,
     exportEmployeeStatistics,
     exportAllReports,
     refetch,
@@ -129,9 +103,6 @@ export default function AdminBerichtePage() {
       switch (reportType) {
         case 'time':
           await exportTimeAccountReport(format);
-          break;
-        case 'surcharge':
-          await exportSurchargeReport(format);
           break;
         case 'employee':
           await exportEmployeeStatistics(format);
@@ -149,31 +120,10 @@ export default function AdminBerichtePage() {
     }
   };
 
-  const getCurrentReportData = () => {
-    switch (reportType) {
-      case 'time':
-        return timeAccountReport;
-      case 'surcharge':
-        return surchargeReport;
-      case 'employee':
-        return employeeStatistics;
-      case 'all':
-        return {
-          timeAccount: timeAccountReport,
-          surcharge: surchargeReport,
-          employee: employeeStatistics,
-        };
-      default:
-        return timeAccountReport;
-    }
-  };
-
-  const getReportTitle = () => {
+  const _getReportTitle = () => {
     switch (reportType) {
       case 'time':
         return 'Zeitkonten-Bericht';
-      case 'surcharge':
-        return 'Zuschläge-Bericht';
       case 'employee':
         return 'Mitarbeiter-Statistiken';
       case 'all':
@@ -193,18 +143,15 @@ export default function AdminBerichtePage() {
 
   if (!user) {
     return (
-      <AppLayout>
-        <Box sx={{ p: 3 }}>
-          <Alert severity="error">Bitte melde dich an, um Berichte zu sehen.</Alert>
-        </Box>
-      </AppLayout>
+      <PageContainer maxWidth="wide">
+        <Alert severity="error">Bitte melde dich an, um Berichte zu sehen.</Alert>
+      </PageContainer>
     );
   }
 
   return (
-    <AppLayout>
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+    <PageContainer maxWidth="wide">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h4" sx={{ fontWeight: 600 }}>
             Admin-Berichte
           </Typography>
@@ -269,10 +216,9 @@ export default function AdminBerichtePage() {
                 <Select
                   value={reportType}
                   label="Berichtstyp"
-                  onChange={e => setReportType((e.target.value || 'all') as 'time' | 'surcharge' | 'employee' | 'all')}
+                  onChange={e => setReportType((e.target.value || 'all') as 'time' | 'employee' | 'all')}
                 >
                   <MenuItem value="time">Zeitkonten</MenuItem>
-                  <MenuItem value="surcharge">Zuschläge</MenuItem>
                   <MenuItem value="employee">Mitarbeiter</MenuItem>
                   <MenuItem value="all">Alle</MenuItem>
                 </Select>
@@ -300,7 +246,7 @@ export default function AdminBerichtePage() {
         <Paper className="glass" sx={{ mb: 3 }}>
           <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
             <Tab label="Übersicht" icon={<Assessment />} iconPosition="start" />
-            <Tab label="Charts" icon={<BarChart />} iconPosition="start" />
+            <Tab label="Diagramme" icon={<BarChart />} iconPosition="start" />
             <Tab label="Details" icon={<Work />} iconPosition="start" />
           </Tabs>
         </Paper>
@@ -379,83 +325,6 @@ export default function AdminBerichtePage() {
                     <Typography variant="body2">Arbeitstage</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
                       {timeAccountReport?.workingDays ?? 0}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Zuschläge-Statistiken */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card className="glass">
-                <CardContent>
-                  <Typography variant="h6" sx={{ mb: 2 }}>
-                    Zuschläge-Übersicht
-                  </Typography>
-
-                  <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Gesamtzuschläge</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {formatCurrency(surchargeReport?.totalSurcharge ?? 0)}
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={100}
-                      sx={{ height: 6, borderRadius: 3 }}
-                    />
-                  </Box>
-
-                  <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Nachtzuschläge</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {formatCurrency(surchargeReport?.nightSurcharge ?? 0)}
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={
-                        (surchargeReport?.totalSurcharge ?? 0) > 0
-                          ? ((surchargeReport?.nightSurcharge ?? 0) / (surchargeReport?.totalSurcharge ?? 1)) * 100
-                          : 0
-                      }
-                      sx={{ height: 6, borderRadius: 3 }}
-                    />
-                  </Box>
-
-                  <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Wochenendzuschläge</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {formatCurrency(surchargeReport?.weekendSurcharge ?? 0)}
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={
-                        (surchargeReport?.totalSurcharge ?? 0) > 0
-                          ? ((surchargeReport?.weekendSurcharge ?? 0) / (surchargeReport?.totalSurcharge ?? 1)) * 100
-                          : 0
-                      }
-                      sx={{ height: 6, borderRadius: 3 }}
-                    />
-                  </Box>
-
-                  <Divider sx={{ my: 2 }} />
-
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2">Durchschnitt pro Tag</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {formatCurrency(surchargeReport?.averageSurchargePerDay ?? 0)}
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2">Durchschnitt pro Woche</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {formatCurrency(surchargeReport?.averageSurchargePerWeek ?? 0)}
                     </Typography>
                   </Box>
                 </CardContent>
@@ -569,29 +438,6 @@ export default function AdminBerichtePage() {
                     </Box>
                   </Box>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <Avatar
-                      sx={{
-                        bgcolor:
-                          surchargeReport?.surchargeTrend === 'up'
-                            ? 'success.main'
-                            : surchargeReport?.surchargeTrend === 'down'
-                              ? 'error.main'
-                              : 'info.main',
-                      }}
-                    >
-                      {getTrendIcon(surchargeReport?.surchargeTrend ?? 'flat')}
-                    </Avatar>
-                    <Box>
-                      <Typography variant="h6">
-                        Zuschläge: {getTrendText(surchargeReport?.surchargeTrend ?? 'flat')}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {formatCurrency(surchargeReport?.averageSurchargePerWeek ?? 0)} pro Woche
-                      </Typography>
-                    </Box>
-                  </Box>
-
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Avatar
                       sx={{
@@ -676,56 +522,6 @@ export default function AdminBerichtePage() {
               </Card>
             </Grid>
 
-            {/* Zuschläge-Chart */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card className="glass">
-                <CardContent>
-                  <Typography variant="h6" sx={{ mb: 2 }}>
-                    Zuschläge pro Tag
-                  </Typography>
-                  <Box sx={{ height: 300 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsBarChart data={surchargeReport?.surchargeByDay}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis
-                          dataKey="day"
-                          tickFormatter={value =>
-                            new Date(value).toLocaleDateString('de-DE', {
-                              day: '2-digit',
-                              month: '2-digit',
-                            })
-                          }
-                        />
-                        <YAxis />
-                        <RechartsTooltip
-                          formatter={(value, name) => [formatCurrency(Number(value)), name]}
-                          labelFormatter={value => new Date(value).toLocaleDateString('de-DE')}
-                        />
-                        <Bar dataKey="nightSurcharge" stackId="a" fill="#9c27b0" name="Nacht" />
-                        <Bar
-                          dataKey="weekendSurcharge"
-                          stackId="a"
-                          fill="#f44336"
-                          name="Wochenende"
-                        />
-                        <Bar
-                          dataKey="holidaySurcharge"
-                          stackId="a"
-                          fill="#ff9800"
-                          name="Feiertag"
-                        />
-                        <Bar
-                          dataKey="overtimeSurcharge"
-                          stackId="a"
-                          fill="#4caf50"
-                          name="Überstunden"
-                        />
-                      </RechartsBarChart>
-                    </ResponsiveContainer>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
 
             {/* Mitarbeiter-Chart */}
             <Grid size={{ xs: 12, md: 6 }}>
@@ -853,7 +649,6 @@ export default function AdminBerichtePage() {
             </Grid>
           </Grid>
         )}
-      </Box>
-    </AppLayout>
+    </PageContainer>
   );
 }

@@ -4,7 +4,7 @@ import {
   createAuthErrorResponse,
   createValidationErrorResponse,
 } from '@/lib/errors/apiErrorResponse';
-import { createAppError, ErrorCode } from '@/lib/errors/ErrorTypes';
+import { ErrorCode } from '@/lib/errors/ErrorTypes';
 import { logger, errorHandler, createErrorResponse, isAppError } from '@/lib/errors';
 
 export const runtime = 'nodejs';
@@ -15,7 +15,7 @@ const ROUTE = '/api/admin/user/[userId]/data-deletion';
  * POST /api/admin/user/[userId]/data-deletion
  *
  * DSGVO Art. 17: Admin löst Datenlöschung/Anonymisierung für einen Nutzer aus.
- * Nur admin/dispatcher dürfen für andere User auslösen.
+ * Nur admin darf für andere User auslösen (Legacy: dispatcher-Token wird wie admin behandelt).
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   try {
@@ -30,7 +30,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ use
     }
 
     const role = getRoleFromToken(decoded);
-    if (role !== 'admin' && role !== 'dispatcher') {
+    const isAdmin = role === 'admin' || role === 'dispatcher'; // Legacy
+    if (!isAdmin) {
       return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
     }
 

@@ -15,12 +15,14 @@ import {
   FormHelperText,
   Grid,
   InputLabel,
+  LinearProgress,
   MenuItem,
   Select,
   TextField,
   Typography,
   CircularProgress,
 } from '@mui/material';
+import WarningAmber from '@mui/icons-material/WarningAmber';
 import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -28,6 +30,10 @@ import { getRequiredBreakMinutes } from '@/lib/utils/time';
 import { facilityService } from '@/lib/services/facilities';
 import { Facility } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { spacingScale } from '@/lib/design-tokens';
+import { useWeeklyLimit } from '@/lib/hooks/useWeeklyLimit';
+import { LimitWarningBanner } from '@/components/timesheets/LimitWarningBanner';
+import { LimitRequestModal } from '@/components/timesheets/LimitRequestModal';
 
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
@@ -73,7 +79,7 @@ export function TimesheetForm({
   initialData,
   onSubmit,
   isLoading = false,
-  isEdit = false,
+  isEdit: _isEdit = false,
   disabled = false,
 }: TimesheetFormProps) {
   const { user } = useAuth();
@@ -81,6 +87,8 @@ export function TimesheetForm({
   const [calculatedBreakMinutes, setCalculatedBreakMinutes] = useState(0);
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [facilitiesLoading, setFacilitiesLoading] = useState(true);
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+  const { data: limitData, refetch: refetchLimit } = useWeeklyLimit(user?.id);
 
   const {
     register,
@@ -180,25 +188,76 @@ export function TimesheetForm({
     setValue(field, timeString);
   };
 
+  const requiredFields = ['date', 'startTime', 'endTime', 'facilityId'] as const;
+  const filled = requiredFields.filter(
+    f => watch(f) && String(watch(f)).trim().length > 0
+  ).length;
+  const progressPercent = Math.round((filled / requiredFields.length) * 100);
+
   return (
     <GlassCard>
-      <CardContent>
-        <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-          {isEdit ? 'Zeiterfassung bearbeiten' : 'Neue Zeiterfassung'}
+      <CardContent sx={{ pt: spacingScale.md }}>
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+          Zeiterfassung bearbeiten
         </Typography>
+        <Box sx={{ mb: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography variant="caption" color="text.secondary">
+              Fortschritt
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {progressPercent}%
+            </Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={progressPercent}
+            sx={{
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: 'action.hover',
+              '& .MuiLinearProgress-bar': {
+                borderRadius: 3,
+              },
+            }}
+            aria-label={`Formularfortschritt ${progressPercent} Prozent`}
+          />
+        </Box>
+
+        {(limitData?.status === 'blocked' || limitData?.status === 'warning') && (
+          <Box sx={{ mb: 3 }}>
+            <LimitWarningBanner
+              limit={limitData}
+              onRequestIncrease={() => setLimitModalOpen(true)}
+              variant={limitData.status === 'blocked' ? 'blocked' : 'warning'}
+            />
+          </Box>
+        )}
 
         <Box component="form" onSubmit={handleSubmit(handleFormSubmit)}>
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 {...register('date')}
-                label="Datum"
+                label="Startdatum"
                 type="date"
                 fullWidth
                 InputLabelProps={{ shrink: true }}
                 error={!!errors.date}
                 helperText={errors.date?.message}
                 disabled={disabled}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Enddatum"
+                type="date"
+                fullWidth
+                value={watch('date')}
+                InputLabelProps={{ shrink: true }}
+                disabled
+                sx={{ '& .MuiInputBase-input': { color: 'text.secondary' } }}
               />
             </Grid>
 
@@ -215,10 +274,10 @@ export function TimesheetForm({
                   disabled={disabled}
                 />
                 <Button
-                  variant="outlined"
+                  variant="contained"
                   size="small"
                   onClick={() => setCurrentTime('startTime')}
-                  sx={{ minWidth: 'auto', px: 1 }}
+                  sx={{ minWidth: 70, textTransform: 'none' }}
                   disabled={disabled}
                 >
                   Jetzt
@@ -239,10 +298,10 @@ export function TimesheetForm({
                   disabled={disabled}
                 />
                 <Button
-                  variant="outlined"
+                  variant="contained"
                   size="small"
                   onClick={() => setCurrentTime('endTime')}
-                  sx={{ minWidth: 'auto', px: 1 }}
+                  sx={{ minWidth: 70, textTransform: 'none' }}
                   disabled={disabled}
                 >
                   Jetzt
@@ -252,7 +311,7 @@ export function TimesheetForm({
 
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth error={!!errors.facilityId} required>
-                <InputLabel>Einrichtung *</InputLabel>
+                <InputLabel>Einrichtung **</InputLabel>
                 <Controller
                   name="facilityId"
                   control={control}
@@ -260,7 +319,7 @@ export function TimesheetForm({
                     <Select
                       {...field}
                       value={field.value || ''}
-                      label="Einrichtung *"
+                      label="Einrichtung **"
                       disabled={disabled || facilitiesLoading}
                     >
                       {facilitiesLoading ? (
@@ -286,6 +345,24 @@ export function TimesheetForm({
               </FormControl>
             </Grid>
 
+            {watchedStartTime && watchedEndTime && calculatedBreakMinutes > 0 && (
+              <Grid size={{ xs: 12 }}>
+                <Alert
+                  severity="warning"
+                  icon={<WarningAmber fontSize="small" />}
+                  sx={{
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'warning.main',
+                  }}
+                  aria-label="Hinweis Arbeitszeitgesetz Pausenregel"
+                >
+                  <Typography variant="body2" fontWeight={600}>
+                    Gemäß ArbZG ist eine Pause von mind. {calculatedBreakMinutes} Minuten erforderlich.
+                  </Typography>
+                </Alert>
+              </Grid>
+            )}
             {watchedStartTime && watchedEndTime && (
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
@@ -365,23 +442,39 @@ export function TimesheetForm({
                 <Button
                   type="submit"
                   variant="contained"
-                  disabled={disabled || isLoading}
+                  disabled={disabled || isLoading || limitData?.status === 'blocked'}
+                  data-testid="timesheet-submit"
+                  aria-label={_isEdit ? 'Zeiterfassung aktualisieren' : 'Zeiterfassung speichern'}
                   sx={{
-                    minWidth: 120,
+                    minWidth: 140,
                     textTransform: 'none',
                     fontWeight: 600,
                     borderRadius: 2,
                     px: 3,
+                    bgcolor: 'primary.main',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
                   }}
                 >
-                  {isLoading ? 'Speichern...' : isEdit ? 'Aktualisieren' : 'Erstellen'}
+                  {isLoading
+                    ? _isEdit
+                      ? 'Aktualisieren...'
+                      : 'Speichern...'
+                    : _isEdit
+                      ? 'Aktualisieren'
+                      : 'Speichern'}
                 </Button>
               </Box>
             </Grid>
           </Grid>
         </Box>
       </CardContent>
+      <LimitRequestModal
+        open={limitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        limit={limitData ?? null}
+        mitarbeiterId={user?.id ?? ''}
+        onSuccess={() => refetchLimit()}
+      />
     </GlassCard>
   );
 }

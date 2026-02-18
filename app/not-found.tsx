@@ -20,7 +20,7 @@ export default function NotFound() {
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 520 }}>
         Die angeforderte Seite existiert nicht oder wurde verschoben. Bitte prüfen Sie die URL oder
-        kehren Sie zum Dashboard zurück.
+        kehren Sie zur Startseite zurück.
       </Typography>
       <Button component={Link} href="/" variant="contained" sx={{ mt: 2 }}>
         Zur Startseite

@@ -221,6 +221,29 @@ export const adminSettingsService = {
     }
   },
 
+  // Get single role by id (für Berechtigungsprüfung; Nutzer mit customRoleId dürfen ihre Rolle lesen)
+  async getRoleById(id: string): Promise<Role | null> {
+    if (!db) return null;
+    try {
+      const roleRef = doc(db, ROLES_COLLECTION, id);
+      const snap = await getDoc(roleRef);
+      if (!snap.exists()) return null;
+      const data = snap.data();
+      return {
+        id: snap.id,
+        name: data.name,
+        description: data.description,
+        permissions: data.permissions || [],
+        userCount: data.userCount || 0,
+        status: data.status || 'active',
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      };
+    } catch {
+      return null;
+    }
+  },
+
   // Get all roles
   async getRoles(): Promise<Role[]> {
     if (!db) {
@@ -508,33 +531,6 @@ export const adminSettingsService = {
 
       // In a real app, you would restore the data to Firestore here
       logger.info('Restoring data', {}, { backupData });
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // Get role by ID
-  async getRoleById(roleId: string): Promise<Role | null> {
-    if (!db) {
-      return null;
-    }
-    try {
-      const roleDoc = await getDoc(doc(db, ROLES_COLLECTION, roleId));
-      if (!roleDoc.exists()) {
-        return null;
-      }
-
-      const data = roleDoc.data();
-      return {
-        id: roleDoc.id,
-        name: data.name,
-        description: data.description,
-        permissions: data.permissions || [],
-        userCount: data.userCount || 0,
-        status: data.status || 'active',
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-      };
     } catch (error) {
       throw error;
     }

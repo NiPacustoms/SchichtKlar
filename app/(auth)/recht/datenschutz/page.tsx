@@ -118,14 +118,11 @@ export default function PrivacyPage() {
             </li>
             <li>
               <Typography variant="body2">
-                Zeiterfassungsdaten (Arbeitszeiten, Pausen, Urlaub, Krankheit)
+                Zeiterfassungsdaten (Arbeitszeiten, Pausen)
               </Typography>
             </li>
             <li>
               <Typography variant="body2">Schichtzuweisungen und Einsatzdaten</Typography>
-            </li>
-            <li>
-              <Typography variant="body2">Chat-Nachrichten und Datei-Uploads</Typography>
             </li>
             <li>
               <Typography variant="body2">
@@ -133,7 +130,7 @@ export default function PrivacyPage() {
               </Typography>
             </li>
             <li>
-              <Typography variant="body2">Lohnabrechnungsdaten (für Mitarbeiter)</Typography>
+              <Typography variant="body2">Abrechnungsrelevante Daten (für Mitarbeiter)</Typography>
             </li>
           </Box>
 
@@ -189,12 +186,7 @@ export default function PrivacyPage() {
               </Typography>
             </li>
             <li>
-              <Typography variant="body2">Zeiterfassung und Lohnabrechnung</Typography>
-            </li>
-            <li>
-              <Typography variant="body2">
-                Kommunikation zwischen Benutzern (Chat-Funktion)
-              </Typography>
+              <Typography variant="body2">Zeiterfassung und Abrechnungsgrundlagen</Typography>
             </li>
             <li>
               <Typography variant="body2">Erstellung von Berichten und Dokumenten</Typography>
@@ -278,7 +270,7 @@ export default function PrivacyPage() {
             <li>
               <Typography variant="body2">
                 <strong>Firebase Storage:</strong> Speicherung von Dateien (Dokumente,
-                Unterschriften, Chat-Uploads)
+                Unterschriften)
               </Typography>
             </li>
             <li>
@@ -352,7 +344,7 @@ export default function PrivacyPage() {
             </li>
             <li>
               <Typography variant="body2">
-                Bei DATEV-Export (Lohnabrechnungsdaten) an DATEV eG, wenn Sie diesen Service nutzen
+                Bei Exporten an Drittdienste (z. B. Buchhaltung), wenn Sie diese nutzen
               </Typography>
             </li>
           </Box>
@@ -386,14 +378,8 @@ export default function PrivacyPage() {
             </li>
             <li>
               <Typography variant="body2">
-                <strong>Lohnabrechnungsdaten:</strong> Mindestens 10 Jahre (gesetzliche
+                <strong>GoBD-pflichtige Daten:</strong> Mindestens 10 Jahre (gesetzliche
                 Aufbewahrungspflicht)
-              </Typography>
-            </li>
-            <li>
-              <Typography variant="body2">
-                <strong>Chat-Nachrichten:</strong> Solange der Chat-Channel existiert, danach 90
-                Tage
               </Typography>
             </li>
             <li>

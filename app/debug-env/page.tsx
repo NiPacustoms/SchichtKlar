@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/contexts/PermissionsContext';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Typography } from '@mui/material';
 
 export default function DebugEnvPage() {
   const { user, loading } = useAuth();
@@ -12,21 +15,26 @@ export default function DebugEnvPage() {
     setMounted(true);
   }, []);
 
-  const hasAccess = user?.role === 'admin';
+  const { canAccessAdminArea } = usePermissions();
+  const hasAccess = canAccessAdminArea;
 
   if (loading || !mounted) {
     return (
-      <div style={{ padding: '20px', fontFamily: 'monospace' }}>
-        <h1>Environment Variables Debug</h1>
-        <p>Lade...</p>
-      </div>
+      <PageContainer maxWidth="standard">
+        <Typography variant="h5" component="h1" sx={{ fontFamily: 'monospace', mb: 2 }}>
+          Environment Variables Debug
+        </Typography>
+        <Typography>Lade...</Typography>
+      </PageContainer>
     );
   }
 
   if (!user) {
     return (
-      <div style={{ padding: '20px', fontFamily: 'monospace' }}>
-        <h1>Environment Variables Debug</h1>
+      <PageContainer maxWidth="standard">
+        <Typography variant="h5" component="h1" sx={{ fontFamily: 'monospace', mb: 2 }}>
+          Environment Variables Debug
+        </Typography>
         <p style={{ color: '#b91c1c', marginBottom: 16 }}>
           Du musst angemeldet sein, um diese Seite zu sehen.
         </p>
@@ -44,18 +52,20 @@ export default function DebugEnvPage() {
         >
           Zum Login →
         </Link>
-      </div>
+      </PageContainer>
     );
   }
 
   if (!hasAccess) {
     return (
-      <div style={{ padding: '20px', fontFamily: 'monospace' }}>
-        <h1>Environment Variables Debug</h1>
-        <p style={{ color: '#b91c1c' }}>
+      <PageContainer maxWidth="standard">
+        <Typography variant="h5" component="h1" sx={{ fontFamily: 'monospace', mb: 2 }}>
+          Environment Variables Debug
+        </Typography>
+        <Typography color="error">
           Zugriff verweigert. Nur Administratoren dürfen diese Seite aufrufen.
-        </p>
-      </div>
+        </Typography>
+      </PageContainer>
     );
   }
 
@@ -69,8 +79,10 @@ export default function DebugEnvPage() {
   ];
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'monospace' }}>
-      <h1>Environment Variables Debug (Client-Side)</h1>
+    <PageContainer maxWidth="standard">
+      <Typography variant="h5" component="h1" sx={{ fontFamily: 'monospace', mb: 2 }}>
+        Environment Variables Debug (Client-Side)
+      </Typography>
       <p style={{ color: 'orange' }}>
         ⚠️ Diese Seite zeigt die Variablen, wie sie im Browser verfügbar sind.
       </p>
@@ -116,6 +128,6 @@ export default function DebugEnvPage() {
           })}
         </tbody>
       </table>
-    </div>
+    </PageContainer>
   );
 }

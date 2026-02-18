@@ -66,9 +66,9 @@ export const unassignShift = functions.https.onCall(async (data, context) => {
         });
       }
 
-      // 5. Shift-Kapazität aktualisieren
+      // 5. Shift-Kapazität aktualisieren (Status: 'open' | 'filled' | 'cancelled')
       const newAssignedCount = Math.max(0, (shift.assignedCount || 0) - 1);
-      const newStatus = newAssignedCount === 0 ? 'open' : shift.status;
+      const newStatus = newAssignedCount === 0 ? 'open' : 'filled';
 
       transaction.update(shiftRef, {
         assignedCount: newAssignedCount,
@@ -88,7 +88,7 @@ export const unassignShift = functions.https.onCall(async (data, context) => {
         type: 'shift-removed',
         title: 'Schichtzuweisung zurückgenommen',
         message: 'Deine Schichtzuweisung wurde zurückgenommen',
-        actionUrl: '/schedule',
+        actionUrl: '/employee/dienstplan',
         read: false,
         priority: 'normal',
         createdAt: admin.firestore.FieldValue.serverTimestamp(),

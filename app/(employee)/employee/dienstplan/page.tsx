@@ -1,24 +1,27 @@
 'use client';
 
 import { NurseScheduleView } from '@/components/schedule/NurseScheduleView';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import { Alert, Box, CircularProgress, Typography } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function SchedulePage() {
   const { user, loading: authLoading } = useAuth();
+  const { canAccessAdminArea } = usePermissions();
   const router = useRouter();
 
   useEffect(() => {
     if (!authLoading && user) {
-      // Redirect Admins/Dispatchers to admin shifts page
-      if (user.role === 'admin' || user.role === 'dispatcher') {
+      // Redirect users with admin area access to admin shifts page
+      if (canAccessAdminArea) {
         router.push('/admin/schichten');
         return;
       }
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, canAccessAdminArea]);
 
   // Show loading while checking auth
   if (authLoading) {
@@ -47,8 +50,8 @@ export default function SchedulePage() {
     );
   }
 
-  // Show error if user is admin/dispatcher (should be redirected)
-  if (user.role === 'admin' || user.role === 'dispatcher') {
+  // Show error if user is admin (should be redirected)
+  if (canAccessAdminArea) {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="info">
@@ -64,5 +67,9 @@ export default function SchedulePage() {
   }
 
   // Show nurse schedule view
-  return <NurseScheduleView />;
+  return (
+    <PageContainer maxWidth="wide">
+      <NurseScheduleView />
+    </PageContainer>
+  );
 }

@@ -2,6 +2,7 @@
 
 import { FacilityCreateDialog } from '@/components/admin/FacilityCreateDialog';
 import { FacilityEditDialog } from '@/components/admin/FacilityEditDialog';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { facilityService } from '@/lib/services';
 import { Facility } from '@/lib/types';
@@ -111,14 +112,15 @@ export default function AdminEinrichtungenPage() {
   }
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <PageContainer maxWidth="wide">
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
-          p: 3,
+          mb: 3,
           borderBottom: 1,
           borderColor: 'divider',
+          pb: 2,
         }}
       >
         <Business sx={{ mr: 1 }} />
@@ -138,9 +140,26 @@ export default function AdminEinrichtungenPage() {
         </Button>
       </Box>
 
-      <Box sx={{ p: 3 }}>
-        <Grid container spacing={3}>
-          {facilities.map(facility => (
+      <Grid container spacing={3}>
+          {facilities.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 8, width: '100%' }}>
+            <Business sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+            <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+              Keine Einrichtungen vorhanden
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Erstellen Sie Ihre erste Einrichtung, um zu beginnen.
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => setCreateDialogOpen(true)}
+            >
+              Erste Einrichtung erstellen
+            </Button>
+          </Box>
+        ) : (
+          facilities.map(facility => (
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={facility.id}>
               <Card
                 sx={{
@@ -248,28 +267,9 @@ export default function AdminEinrichtungenPage() {
                 </CardContent>
               </Card>
             </Grid>
-          ))}
-        </Grid>
-
-        {facilities.length === 0 && (
-          <Box sx={{ textAlign: 'center', py: 8 }}>
-            <Business sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-              Keine Einrichtungen vorhanden
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Erstellen Sie Ihre erste Einrichtung, um zu beginnen.
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={() => setCreateDialogOpen(true)}
-            >
-              Erste Einrichtung erstellen
-            </Button>
-          </Box>
+          ))
         )}
-      </Box>
+      </Grid>
 
       {/* Create Dialog */}
       <FacilityCreateDialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} />
@@ -302,6 +302,6 @@ export default function AdminEinrichtungenPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </PageContainer>
   );
 }

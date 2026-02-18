@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import { Box, Typography, Button, Paper, Alert, CircularProgress } from '@mui/material';
 import { Email as EmailIcon } from '@mui/icons-material';
 import { toast } from '@/lib/utils/toast';
@@ -10,6 +11,7 @@ import { ROUTES } from '@/lib/constants/routes';
 
 export default function EmailVerifyPage() {
   const { user, firebaseUser, loading, sendEmailVerificationEmail } = useAuth();
+  const { canAccessAdminArea } = usePermissions();
   const router = useRouter();
   const [resendLoading, setResendLoading] = useState(false);
 
@@ -20,10 +22,10 @@ export default function EmailVerifyPage() {
       return;
     }
     if (firebaseUser.emailVerified) {
-      const target = user.role === 'admin' ? ROUTES.ADMIN.SHIFTS : ROUTES.EMPLOYEE.DASHBOARD;
+      const target = canAccessAdminArea ? ROUTES.ADMIN.SHIFTS : ROUTES.EMPLOYEE.DASHBOARD;
       router.replace(target);
     }
-  }, [loading, user, firebaseUser, router]);
+  }, [loading, user, firebaseUser, router, canAccessAdminArea]);
 
   const handleResend = async () => {
     setResendLoading(true);

@@ -1,31 +1,29 @@
 # 🎨 Designsystem Vorgaben
 
 ## Grundprinzipien
-- Desktop-First (≥1280px optimiert), Mobile voll funktionsfähig als Fallback
+- Desktop-First (≥1280px optimiert), Mobile voll funktionsfähig; **weltweit auf allen Endgeräten** (320px–4K, Touch/Maus/Tastatur, RTL-ready)
 - Klar, modern, professionell. Fokus: Übersicht & Produktivität
 - Einheitliche Abstände, Typografie und Interaktionen
-- **Framework:** ausschließlich Material-UI (MUI 5)
+- **Framework:** Material-UI (MUI 7) + Tailwind 4; Tokens in `lib/design-tokens.ts`
 
 ## Farbpalette
 - Primary (Branding): Petrol `#005f73`
 - Secondary (Akzent): Mustard `#e8aa42`
-- Error: `#D32F2F`, Warning: `#ED6C02`, Info: `#0288D1`, Success: `#2E7D32`
-- Text: `rgba(255,255,255,0.92)` (dark)
-- Hintergrund: App `#252422`, Cards `rgba(255,255,255,0.08)`
+- Error/Warning/Info/Success: siehe `lib/design-tokens.ts` (semanticColors)
+- Text: `rgba(255,255,255,0.92)` (dark), Hintergrund App `#252422`, Cards `rgba(255,255,255,0.08)`
 
-## Typografie
-- Font: "Inter", System-Fallback
-- Desktop-Hierarchie:
-  - h1 32/40 bold, h2 24/32 semibold, h3 20/28 semibold
-  - body1 14/20, body2 13/18, button 14/20 semibold (kein Uppercase)
+## Typografie (Linear-Skala, Inter)
+- **Überschriften:** h1 32/40 700, h2 28/36 600, h3 24/32 600
+- **Fließtext:** body1 16/24 400, body2 14/20 400, caption 12/16 400
+- **Labels:** overline 13/16 500; Status-Badge 11/14 500
+- Theme: `lib/theme.ts`
 
 ## Layout & Spacing
-- 8px-Grid
+- 8px-Grid; **Spacing-Skala:** `spacingScale` (xs 4, sm 8, md 16, lg 24, xl 32) aus `lib/design-tokens.ts`
 - Container max-width: 1440px; Content-Ziel 1200px
 - Desktop: Sidebar 280px, Topbar 56–64px
-- Mobile: kompakte Topbar, Aktionen via Drawer/SpeedDial
-- Cards: Radius 16px, dezenter Shadow, **Glasmorphism**:
-  - Hintergrund `rgba(255,255,255,0.08)`, Border `1px solid rgba(255,255,255,0.2)`, `backdropFilter: blur(12px)`
+- Mobile: BottomNav **56px** Höhe, Tap Targets **48×48px** (minTouchTargetPx); Safe Area `env(safe-area-inset-*)`
+- Cards: **GlassCard** (radius.lg 16px), **Glasmorphism**; optional `elevation` 0–4 für Shadow-Stufen
 
 ## Mobile Patterns (≤600px)
 - Toolbars & Button-Gruppen stapeln (`Stack direction={{ xs:'column', sm:'row' }}`), Buttons `width: { xs: '100%', sm: 'auto' }`
@@ -57,8 +55,11 @@
 - Topbar: Suche, globale Aktionen, User-Menü
 - Detailseiten: Breadcrumbs; Tabs nur für sekundäre Unterbereiche
 
-## Barrierefreiheit
-- WCAG AA, Fokuszustände sichtbar, ARIA-Labels für IconButtons, Hit‑Area ≥ 40x40px
+## Barrierefreiheit (AA++)
+- **Focus Visible:** 2px Petrol Ring (Theme + globals.css) für alle interaktiven Elemente
+- ARIA-Labels für IconButtons, KPICards, StatusBadges; Keyboard Nav (Tab, Enter, Escape)
+- **Hit-Area:** mind. **48×48px** (minTouchTargetPx); Kontrast 4.5:1
+- Siehe auch `DESIGN-HEALTH.md`
 
 ## Qualitätssicherung
 - Mobile Smoke-Tests auf 320/360/414 px (Playwright Screenshot oder Percy) vor Releases

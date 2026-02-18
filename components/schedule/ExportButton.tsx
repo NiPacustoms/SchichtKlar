@@ -1,20 +1,12 @@
 'use client';
 
 import { Assignment, Shift } from '@/lib/types';
-import { Download, FileDownload, TableChart } from '@mui/icons-material';
-import {
-  Box,
-  Button,
-  Divider,
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
-  Typography,
-} from '@mui/material';
+import { PictureAsPdf } from '@mui/icons-material';
+import { Box, Button } from '@mui/material';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { useState } from 'react';
+import { getShiftDisplayStatus, getShiftStatusLabel } from '@/lib/utils/shiftStatus';
 
 interface ExportButtonProps {
   shifts: Shift[];
@@ -22,255 +14,135 @@ interface ExportButtonProps {
   dateFrom?: Date;
   dateTo?: Date;
   facilityName?: string;
-  onExport?: (format: 'csv' | 'excel', data: Record<string, unknown>[]) => void;
+  onExport?: (format: 'pdf') => void;
+}
+
+function calculateDuration(startTime: string, endTime: string): number {
+  const [startHours, startMinutes] = startTime.split(':').map(Number);
+  const [endHours, endMinutes] = endTime.split(':').map(Number);
+  const startTotal = startHours * 60 + startMinutes;
+  let endTotal = endHours * 60 + endMinutes;
+  if (endTotal < startTotal) endTotal += 24 * 60;
+  return Math.round(((endTotal - startTotal) / 60) * 10) / 10;
 }
 
 export function ExportButton({
   shifts,
   assignments = [],
-  dateFrom: _dateFrom,
-  dateTo: _dateTo,
   facilityName,
-  onExport: _onExport,
+  onExport,
 }: ExportButtonProps) {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
+  const [loading, setLoading] = useState(false);
 
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const generateCSV = () => {
-    const csvData = shifts.map(shift => {
-      // Find assignments for this shift
+  const getTableRows = (): string[][] => {
+    return shifts.map(shift => {
       const shiftAssignments = assignments.filter(a => a.shiftId === shift.id);
       const assignedUsers = shiftAssignments
         .filter(a => a.status === 'accepted' || a.status === 'assigned')
-        .map(a => `User-${a.userId}`) // Would need to resolve to actual names
+        .map(a => `User-${a.userId}`)
         .join('; ');
-
-      return {
-        Datum: format(shift.date, 'dd.MM.yyyy', { locale: de }),
-        Wochentag: format(shift.date, 'EEEE', { locale: de }),
-        Einrichtung: facilityName || 'Unbekannte Einrichtung',
-        Station: 'Unbekannte Station', // Sollte über stationId aufgelöst werden
-        Schichttyp: shift.type,
-        Startzeit: shift.startTime,
-        Endzeit: shift.endTime,
-        Status: getStatusLabel(shift.status),
-        Kapazität: shift.capacity || 1,
-        Zugewiesen: shift.assignedCount || 0,
-        'Belegung %': Math.round(((shift.assignedCount || 0) / (shift.capacity || 1)) * 100),
-        'Zugewiesene Mitarbeiter': assignedUsers,
-        'Erforderliche Qualifikationen': (shift.requiredQualifications || []).join('; '),
-        Notizen: shift.notes || '',
-        'Erstellt am': format(shift.createdAt, 'dd.MM.yyyy HH:mm', { locale: de }),
-        'Zuletzt geändert': format(shift.updatedAt, 'dd.MM.yyyy HH:mm', { locale: de }),
-      };
+      return [
+        format(shift.date, 'dd.MM.yyyy', { locale: de }),
+        format(shift.date, 'EEEE', { locale: de }),
+        facilityName || 'Unbekannte Einrichtung',
+        shift.startTime,
+        shift.endTime,
+        String(calculateDuration(shift.startTime, shift.endTime)),
+        getShiftStatusLabel(getShiftDisplayStatus(shift)),
+        String(shift.capacity ?? 1),
+        String(shift.assignedCount ?? 0),
+        String(Math.round(((shift.assignedCount || 0) / (shift.capacity || 1)) * 100) + '%'),
+        assignedUsers,
+        (shift.requiredQualifications || []).join('; '),
+        shift.notes || '',
+      ];
     });
-
-    return csvData;
   };
 
-  const generateExcelData = () => {
-    // For Excel export, we can include more detailed information
-    const excelData = shifts.map(shift => {
-      const _shiftAssignments = assignments.filter(a => a.shiftId === shift.id);
+  const handlePdfExport = async () => {
+    if (shifts.length === 0) return;
+    setLoading(true);
+    try {
+      const [{ default: jsPDF }, autoTableModule] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
+      const autoTable = (autoTableModule as { default: (doc: unknown, options: unknown) => void }).default;
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const margin = 14;
+      let y = 18;
 
-      return {
-        Datum: format(shift.date, 'dd.MM.yyyy', { locale: de }),
-        Wochentag: format(shift.date, 'EEEE', { locale: de }),
-        Einrichtung: facilityName || 'Unbekannte Einrichtung',
-        Station: 'Unbekannte Station',
-        Schichttyp: shift.type,
-        Startzeit: shift.startTime,
-        Endzeit: shift.endTime,
-        'Dauer (Stunden)': calculateDuration(shift.startTime, shift.endTime),
-        Status: getStatusLabel(shift.status),
-        Kapazität: shift.capacity || 1,
-        Zugewiesen: shift.assignedCount || 0,
-        Frei: (shift.capacity || 1) - (shift.assignedCount || 0),
-        'Belegung %': Math.round(((shift.assignedCount || 0) / (shift.capacity || 1)) * 100),
-        'Erforderliche Qualifikationen': (shift.requiredQualifications || []).join('; '),
-        Notizen: shift.notes || '',
-        'Erstellt am': format(shift.createdAt, 'dd.MM.yyyy HH:mm', { locale: de }),
-        'Zuletzt geändert': format(shift.updatedAt, 'dd.MM.yyyy HH:mm', { locale: de }),
-      };
-    });
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Schichten-Export', margin, y);
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const totalCapacity = shifts.reduce((s, sh) => s + (sh.capacity || 1), 0);
+      const totalAssigned = shifts.reduce((s, sh) => s + (sh.assignedCount || 0), 0);
+      doc.text(
+        `${shifts.length} Schichten • ${totalAssigned}/${totalCapacity} belegt (${Math.round((totalAssigned / totalCapacity) * 100)}%)`,
+        margin,
+        y
+      );
+      y += 10;
 
-    return excelData;
-  };
+      const headers = [
+        'Datum',
+        'Wochentag',
+        'Einrichtung',
+        'Start',
+        'Ende',
+        'Dauer (h)',
+        'Status',
+        'Kapazität',
+        'Zugewiesen',
+        'Belegung',
+        'Zugewiesene',
+        'Qualifikationen',
+        'Notizen',
+      ];
+      const body = getTableRows();
 
-  const getStatusLabel = (status: Shift['status']) => {
-    switch (status) {
-      case 'open':
-        return 'Offen';
-      case 'filled':
-        return 'Besetzt';
-      case 'cancelled':
-        return 'Abgesagt';
-      default:
-        return 'Unbekannt';
+      autoTable(doc, {
+        head: [headers],
+        body,
+        startY: y,
+        styles: { fontSize: 7 },
+        headStyles: { fillColor: [66, 139, 202] },
+        theme: 'striped',
+        margin: { left: margin, right: margin },
+        tableWidth: 'auto',
+      });
+
+      const blob = doc.output('blob');
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `schichten_${format(new Date(), 'yyyy-MM-dd', { locale: de })}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      onExport?.('pdf');
+    } finally {
+      setLoading(false);
     }
   };
-
-  const calculateDuration = (startTime: string, endTime: string): number => {
-    const [startHours, startMinutes] = startTime.split(':').map(Number);
-    const [endHours, endMinutes] = endTime.split(':').map(Number);
-
-    let startTotal = startHours * 60 + startMinutes;
-    let endTotal = endHours * 60 + endMinutes;
-
-    // Handle overnight shifts
-    if (endTotal < startTotal) {
-      endTotal += 24 * 60; // Add 24 hours
-    }
-
-    return Math.round(((endTotal - startTotal) / 60) * 10) / 10; // Round to 1 decimal
-  };
-
-  const handleCSVExport = () => {
-    const csvData = generateCSV();
-    const csvContent = convertToCSV(csvData);
-    downloadFile(csvContent, 'schichten.csv', 'text/csv');
-    handleClose();
-  };
-
-  const handleExcelExport = () => {
-    const excelData = generateExcelData();
-    const csvContent = convertToCSV(excelData);
-    downloadFile(
-      csvContent,
-      'schichten.xlsx',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    handleClose();
-  };
-
-  const convertToCSV = (data: Record<string, unknown>[]): string => {
-    if (data.length === 0) return '';
-
-    const headers = Object.keys(data[0]);
-    const csvRows = [
-      headers.join(','),
-      ...data.map(row =>
-        headers
-          .map(header => {
-            const value = row[header];
-            // Escape commas and quotes in CSV
-            if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-              return `"${value.replace(/"/g, '""')}"`;
-            }
-            return value;
-          })
-          .join(',')
-      ),
-    ];
-
-    return csvRows.join('\n');
-  };
-
-  const downloadFile = (content: string, filename: string, mimeType: string) => {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const getExportSummary = () => {
-    const totalShifts = shifts.length;
-    const openShifts = shifts.filter(s => s.status === 'open').length;
-    const assignedShifts = shifts.filter(s => s.status === 'filled').length;
-    const totalCapacity = shifts.reduce((sum, s) => sum + (s.capacity || 1), 0);
-    const totalAssigned = shifts.reduce((sum, s) => sum + (s.assignedCount || 0), 0);
-
-    return {
-      totalShifts,
-      openShifts,
-      assignedShifts,
-      totalCapacity,
-      totalAssigned,
-      occupancyRate: Math.round((totalAssigned / totalCapacity) * 100),
-    };
-  };
-
-  const summary = getExportSummary();
 
   return (
     <Box>
       <Button
         variant="outlined"
-        startIcon={<Download />}
-        onClick={handleClick}
-        disabled={shifts.length === 0}
+        startIcon={<PictureAsPdf />}
+        onClick={handlePdfExport}
+        disabled={shifts.length === 0 || loading}
       >
-        Export ({shifts.length} Schichten)
+        {loading ? 'PDF wird erstellt…' : `Als PDF exportieren (${shifts.length} Schichten)`}
       </Button>
-
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-      >
-        <Box sx={{ p: 2, minWidth: 200 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Export-Optionen
-          </Typography>
-          <Typography variant="caption" color="text.secondary" gutterBottom>
-            {summary.totalShifts} Schichten • {summary.occupancyRate}% belegt
-          </Typography>
-        </Box>
-
-        <Divider />
-
-        <MenuItem onClick={handleCSVExport}>
-          <ListItemIcon>
-            <FileDownload />
-          </ListItemIcon>
-          <ListItemText primary="CSV Export" secondary="Einfache Tabelle für Excel" />
-        </MenuItem>
-
-        <MenuItem onClick={handleExcelExport}>
-          <ListItemIcon>
-            <TableChart />
-          </ListItemIcon>
-          <ListItemText primary="Excel Export" secondary="Erweiterte Formatierung" />
-        </MenuItem>
-
-        <Divider />
-
-        <Box sx={{ p: 2 }}>
-          <Typography variant="caption" color="text.secondary">
-            <strong>Export enthält:</strong>
-            <br />• {summary.totalShifts} Schichten
-            <br />• {summary.openShifts} offene Schichten
-            <br />• {summary.assignedShifts} besetzte Schichten
-            <br />• {summary.totalAssigned}/{summary.totalCapacity} Belegung
-          </Typography>
-        </Box>
-      </Menu>
     </Box>
   );
 }
 
-// Bulk export component for multiple date ranges
+// Bulk export component for multiple date ranges (nur PDF)
 interface BulkExportButtonProps {
   dateRanges: Array<{
     label: string;
@@ -278,109 +150,110 @@ interface BulkExportButtonProps {
     assignments: Assignment[];
     dateFrom: Date;
     dateTo: Date;
+    facilityName?: string;
   }>;
-  onBulkExport?: (format: 'csv' | 'excel', data: Record<string, unknown>[]) => void;
+  onBulkExport?: (format: 'pdf') => void;
 }
 
 export function BulkExportButton({
   dateRanges,
-  onBulkExport: _onBulkExport,
+  onBulkExport,
 }: BulkExportButtonProps) {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
-
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleBulkCSVExport = () => {
-    const allData = dateRanges.flatMap(range =>
-      range.shifts.map(shift => ({
-        Zeitraum: range.label,
-        Datum: format(shift.date, 'dd.MM.yyyy', { locale: de }),
-        Schichttyp: shift.type,
-        Status: shift.status,
-        Kapazität: shift.capacity || 1,
-        Zugewiesen: shift.assignedCount || 0,
-        // ... other fields
-      }))
-    );
-
-    const csvContent = convertToCSV(allData);
-    downloadFile(csvContent, 'schichten_bulk.csv', 'text/csv');
-    handleClose();
-  };
-
-  const convertToCSV = (data: Record<string, unknown>[]): string => {
-    if (data.length === 0) return '';
-
-    const headers = Object.keys(data[0]);
-    const csvRows = [
-      headers.join(','),
-      ...data.map(row =>
-        headers
-          .map(header => {
-            const value = row[header];
-            if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-              return `"${value.replace(/"/g, '""')}"`;
-            }
-            return value;
-          })
-          .join(',')
-      ),
-    ];
-
-    return csvRows.join('\n');
-  };
-
-  const downloadFile = (content: string, filename: string, mimeType: string) => {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
+  const [loading, setLoading] = useState(false);
   const totalShifts = dateRanges.reduce((sum, range) => sum + range.shifts.length, 0);
+
+  const handleBulkPdfExport = async () => {
+    if (totalShifts === 0) return;
+    setLoading(true);
+    try {
+      const [{ default: jsPDF }, autoTableModule] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
+      const autoTable = (autoTableModule as { default: (doc: unknown, options: unknown) => void }).default;
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const margin = 14;
+      let y = 18;
+
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Schichten Bulk-Export', margin, y);
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${dateRanges.length} Zeiträume • ${totalShifts} Schichten`, margin, y);
+      y += 10;
+
+      const headers = [
+        'Zeitraum',
+        'Datum',
+        'Wochentag',
+        'Start',
+        'Ende',
+        'Dauer (h)',
+        'Status',
+        'Kapazität',
+        'Zugewiesen',
+        'Belegung',
+        'Notizen',
+      ];
+      const body: string[][] = [];
+      for (const range of dateRanges) {
+        for (const shift of range.shifts) {
+          const shiftAssignments = range.assignments.filter(a => a.shiftId === shift.id);
+          const assigned = shiftAssignments.filter(
+            a => a.status === 'accepted' || a.status === 'assigned'
+          ).length;
+          body.push([
+            range.label,
+            format(shift.date, 'dd.MM.yyyy', { locale: de }),
+            format(shift.date, 'EEEE', { locale: de }),
+            shift.startTime,
+            shift.endTime,
+            String(calculateDuration(shift.startTime, shift.endTime)),
+            getShiftStatusLabel(getShiftDisplayStatus(shift)),
+            String(shift.capacity ?? 1),
+            String(shift.assignedCount ?? 0),
+            String(Math.round(((shift.assignedCount || 0) / (shift.capacity || 1)) * 100) + '%'),
+            shift.notes || '',
+          ]);
+        }
+      }
+
+      autoTable(doc, {
+        head: [headers],
+        body,
+        startY: y,
+        styles: { fontSize: 7 },
+        headStyles: { fillColor: [66, 139, 202] },
+        theme: 'striped',
+        margin: { left: margin, right: margin },
+        tableWidth: 'auto',
+      });
+
+      const blob = doc.output('blob');
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `schichten_bulk_${format(new Date(), 'yyyy-MM-dd', { locale: de })}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      onBulkExport?.('pdf');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Box>
       <Button
         variant="outlined"
-        startIcon={<Download />}
-        onClick={handleClick}
-        disabled={totalShifts === 0}
+        startIcon={<PictureAsPdf />}
+        onClick={handleBulkPdfExport}
+        disabled={totalShifts === 0 || loading}
       >
-        Bulk Export ({totalShifts} Schichten)
+        {loading ? 'PDF wird erstellt…' : `Als PDF exportieren (${totalShifts} Schichten)`}
       </Button>
-
-      <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
-        <Box sx={{ p: 2, minWidth: 200 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Bulk Export
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {dateRanges.length} Zeiträume • {totalShifts} Schichten
-          </Typography>
-        </Box>
-
-        <Divider />
-
-        <MenuItem onClick={handleBulkCSVExport}>
-          <ListItemIcon>
-            <FileDownload />
-          </ListItemIcon>
-          <ListItemText primary="Alle Zeiträume als CSV" secondary="Kombinierter Export" />
-        </MenuItem>
-      </Menu>
     </Box>
   );
 }

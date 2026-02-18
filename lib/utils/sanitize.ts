@@ -84,7 +84,14 @@ export function sanitizeUserUpdate(data: Record<string, unknown>) {
 
   // preferences are safe - they only contain simple strings (language, timezone, dateFormat, timeFormat)
   // No sanitization needed for preferences
-  
+
+  // customRoleId: Firestore document id or empty to clear
+  if ('customRoleId' in sanitized) {
+    const v = sanitized.customRoleId;
+    sanitized.customRoleId =
+      typeof v === 'string' ? v.trim() : v === null || v === undefined ? null : undefined;
+  }
+
   return sanitized;
 }
 

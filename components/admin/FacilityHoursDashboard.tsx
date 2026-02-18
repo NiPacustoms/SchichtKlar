@@ -243,8 +243,11 @@ export function FacilityHoursDashboard({ facilityId }: FacilityHoursDashboardPro
         ) : summaries.length === 0 ? (
           <Alert severity="info">Keine Daten für den ausgewählten Zeitraum gefunden.</Alert>
         ) : (
-          <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden' }}>
-            <Table>
+          <TableContainer
+            component={Paper}
+            sx={{ borderRadius: 2, overflow: 'hidden', overflowX: 'auto' }}
+          >
+            <Table stickyHeader size="medium">
               <TableHead>
                 <TableRow sx={{ backgroundColor: 'primary.main' }}>
                   <TableCell sx={{ color: 'white', fontWeight: 600 }}>Einrichtung</TableCell>

@@ -3,6 +3,7 @@ import { TimesheetForm } from '@/components/time/TimesheetForm';
 import { TimesheetHistory } from '@/components/time/TimesheetHistory';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTimesheet } from '@/lib/hooks/useTimesheet';
 import { TimesheetForm as TimesheetFormType, Timesheet } from '@/lib/types';
@@ -12,13 +13,38 @@ import { DailySignatureDialog } from '@/components/admin/DailySignatureDialog';
 import { RelievingPersonnelSignatureDialog } from '@/components/assignments/RelievingPersonnelSignatureDialog';
 import { useState } from 'react';
 import { logger } from '@/lib/logging';
-import { assignmentService } from '@/lib/services/assignments';
+import { Pause, Stop } from '@mui/icons-material';
+import { getTodayAssignment, listAssignmentsForUser } from '@/src/composition';
 import { shiftService } from '@/lib/services/shifts';
 import { facilityService } from '@/lib/services/facilities';
 import { isSignatureRequiredToday } from '@/lib/utils/signatureSchedule';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { AccessTime, LocationOn, Person, Phone, Email } from '@mui/icons-material';
+import { SyncStatusIndicator } from '@/components/ui/SyncStatusIndicator';
+
+/** Zeit "HH:MM" in Minuten seit Mitternacht (0–1439) */
+function timeToMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number);
+  return (h ?? 0) * 60 + (m ?? 0);
+}
+
+/** Minuten seit Mitternacht in "HH:MM" */
+function minutesToTime(minutes: number): string {
+  const m = ((minutes % 60) + 60) % 60;
+  const h = Math.floor((minutes / 60 + 24) % 24);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/** Früheste erlaubte Startzeit = 15 Min vor Schichtbeginn */
+function earliestStartMinutes(shiftStartHHMM: string): number {
+  return Math.max(0, timeToMinutes(shiftStartHHMM) - 15);
+}
+
+/** Für Abrechnung: Startzeit ist mindestens Schichtbeginn (gezählt wird ab Schichtbeginn) */
+function effectiveStartTime(enteredStart: string, shiftStart: string): string {
+  return timeToMinutes(enteredStart) < timeToMinutes(shiftStart) ? shiftStart : enteredStart;
+}
 
 export default function TimePage() {
   const { user, loading: authLoading } = useAuth();
@@ -32,7 +58,7 @@ export default function TimePage() {
     queryKey: ['todayAssignment', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      return await assignmentService.getTodayAssignment(user.id);
+      return await getTodayAssignment.execute(user.id);
     },
     enabled: !!user?.id,
     staleTime: 2 * 60 * 1000, // 2 minutes
@@ -94,8 +120,33 @@ export default function TimePage() {
         return;
       }
 
+      const dataDate = data.date instanceof Date ? data.date : new Date(data.date);
+      const shift = assignmentDetails?.shift;
+      const shiftDate = shift?.date ? new Date(shift.date) : null;
+      const isSameDay = shiftDate && dataDate && shiftDate.toDateString() === dataDate.toDateString();
+
+      // Regel: Zeiterfassung erst ab 15 Min vor Schichtbeginn
+      if (shift?.startTime && isSameDay) {
+        const earliestMin = earliestStartMinutes(shift.startTime);
+        const startMin = timeToMinutes(data.startTime);
+        if (startMin < earliestMin) {
+          const earliestStr = minutesToTime(earliestMin);
+          toast.error(
+            `Zeiterfassung kann frühestens 15 Minuten vor Schichtbeginn gestartet werden (heute ab ${earliestStr}).`
+          );
+          return;
+        }
+      }
+
+      // Gezählt wird erst ab Schichtbeginn: effektive Startzeit für Speicherung
+      const startTimeForStorage =
+        shift?.startTime && isSameDay
+          ? effectiveStartTime(data.startTime, shift.startTime)
+          : data.startTime;
+
       const timesheetData = {
         ...data,
+        startTime: startTimeForStorage,
       };
 
       if (editingTimesheet && timesheet) {
@@ -122,7 +173,7 @@ export default function TimePage() {
             today.setHours(0, 0, 0, 0);
 
             // Finde aktives Assignment für diesen User
-            const assignments = await assignmentService.getByUserId(user.id);
+            const assignments = await listAssignmentsForUser.execute({ userId: user.id });
 
             // Prüfe jedes Assignment synchron
             let activeAssignment = null;
@@ -240,7 +291,7 @@ export default function TimePage() {
   // Prüfe ob ein akzeptiertes Assignment vorhanden ist
   if (!hasAcceptedAssignment && !timesheet) {
     return (
-      <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
+      <PageContainer maxWidth="standard">
         <Box sx={{ mb: 4 }}>
           <Typography
             variant="h4"
@@ -286,34 +337,40 @@ export default function TimePage() {
             <TimesheetHistory timesheets={recentTimesheets} onEdit={handleEditTimesheet} />
           </Box>
         )}
-      </Box>
+      </PageContainer>
     );
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            color: 'text.primary',
-            fontWeight: 700,
-            mb: 1,
-          }}
-        >
-          Arbeitszeit erfassen
-        </Typography>
-        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-          Erfasse deine Arbeitszeiten manuell
-        </Typography>
+    <PageContainer maxWidth="standard">
+      <Box sx={{ mb: 4, display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+        <Box>
+          <Typography
+            variant="h4"
+            sx={{
+              color: 'text.primary',
+              fontWeight: 700,
+              mb: 1,
+            }}
+          >
+            Arbeitszeit erfassen
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+            Erfasse deine Arbeitszeiten manuell
+          </Typography>
+        </Box>
+        <SyncStatusIndicator />
       </Box>
 
-      {/* Assignment-Informationen */}
+      {/* Einsatz-Informationen */}
       {hasAcceptedAssignment && assignmentDetails && (
-        <Card sx={{ mb: 3, bgcolor: 'background.paper' }}>
+        <Card sx={{ mb: 3, bgcolor: 'background.paper', borderRadius: 2 }} elevation={0}>
           <CardContent>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
               Einsatz-Informationen
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Die Arbeitszeiterfassung ist an Datum und Uhrzeiten dieses Einsatzes gekoppelt. Das Formular wird mit den Einsatzzeiten vorausgefüllt.
             </Typography>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -405,8 +462,79 @@ export default function TimePage() {
         </Card>
       )}
 
+      {/* Schnell-Erfassung */}
+      {hasAcceptedAssignment && (
+        <Card sx={{ mb: 3, bgcolor: 'background.paper', borderRadius: 2 }} elevation={0}>
+          <CardContent>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              Schnell-Erfassung
+            </Typography>
+            {timesheet && timesheet.status === 'draft' && (!timesheet.endTime || timesheet.endTime === timesheet.startTime) ? (
+              <>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                  Gestartet um {timesheet.startTime} – Schicht läuft
+                </Typography>
+                <Stack direction="row" spacing={2} flexWrap="wrap">
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    startIcon={<Pause />}
+                    size="medium"
+                    sx={{ textTransform: 'none' }}
+                    data-testid="pause-button"
+                    aria-label="Pause erfassen (in zukünftiger Version)"
+                    onClick={() => toast.info('Pause wird in einer zukünftigen Version unterstützt. Bitte erfassen Sie Pausen im Formular unten.')}
+                  >
+                    II Pause
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="error"
+                    startIcon={<Stop />}
+                    size="medium"
+                    sx={{ textTransform: 'none' }}
+                    data-testid="end-shift-button"
+                    aria-label="Schicht beenden"
+                    disabled={updateTimesheet.isPending}
+                    onClick={async () => {
+                      const now = new Date();
+                      const endTime = now.toTimeString().slice(0, 5);
+                      try {
+                        await updateTimesheet.mutateAsync({
+                          id: timesheet.id,
+                          data: {
+                            date: timesheet.date,
+                            startTime: timesheet.startTime,
+                            endTime,
+                            breakMinutes: timesheet.breakMinutes ?? 0,
+                            notes: timesheet.notes,
+                          },
+                        });
+                        toast.success('Schicht beendet.');
+                      } catch (e) {
+                        toast.error(e instanceof Error ? e.message : 'Fehler beim Beenden');
+                      }
+                    }}
+                  >
+                    Schicht beenden
+                  </Button>
+                </Stack>
+              </>
+            ) : (
+              <Typography variant="body1" color="text.secondary">
+                Keine laufende Schicht. Nutzen Sie das Formular unten, um Zeiten zu erfassen oder zu starten.
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Zeiten manuell eintragen */}
+      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+        Zeiten manuell eintragen
+      </Typography>
+
       <Grid container spacing={3}>
-        {/* Formular für manuelle Zeiteingabe */}
         <Grid size={{ xs: 12, md: 6 }}>
           {!hasAcceptedAssignment && timesheet && (
             <Alert severity="warning" sx={{ mb: 2 }}>
@@ -464,6 +592,6 @@ export default function TimePage() {
           }}
         />
       )}
-    </Box>
+    </PageContainer>
   );
 }

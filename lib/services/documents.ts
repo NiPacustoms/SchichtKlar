@@ -180,11 +180,7 @@ export const documentService = {
         constraints.push(where('verified', '==', filters.verified));
       }
 
-      // Sortierung nach Erstellungsdatum (neueste zuerst)
-      // WICHTIG: orderBy muss nach allen where-Constraints kommen
-      // Temporär: Sortierung entfernt, um Index-Fehler zu vermeiden
-      // Die Sortierung wird clientseitig durchgeführt
-      // TODO: Sobald der Index fertig ist, kann orderBy wieder aktiviert werden
+      // Sortierung: clientseitig. Wartet auf Firestore-Index (z. B. companyId, verified, createdAt desc).
       // constraints.push(orderBy('createdAt', 'desc'));
 
       const q = query(collection(getDb(), COLLECTION_NAME), ...constraints);

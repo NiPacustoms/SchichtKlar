@@ -19,8 +19,8 @@ const DEFAULT_NOTIFICATION_SETTINGS = {
   systemAnnouncements: true,
 } as const;
 
-/** Legacy-Rolle, wird bei Lese-/Migrationslogik zu admin gemappt. */
-const LEGACY_ADMIN_ROLE = 'dispatcher';
+/** Legacy-Rolle aus Firestore (wird bei Lesen zu admin gemappt, nicht mehr anlegen). */
+const LEGACY_DISPATCHER_ROLE = 'dispatcher';
 
 function getFirestoreErrorCode(error: unknown): string | undefined {
   if (typeof error === 'object' && error !== null && 'code' in error) {
@@ -189,13 +189,13 @@ export async function getOrCreateAuthUser(firebaseUser: FirebaseUser): Promise<U
   const userData = userDoc.data() as Record<string, unknown>;
   const rawRole = userData.role as string;
   const effectiveRole: User['role'] =
-    rawRole === LEGACY_ADMIN_ROLE
+    rawRole === LEGACY_DISPATCHER_ROLE
       ? 'admin'
       : rawRole === 'admin' || rawRole === 'nurse'
         ? (rawRole as User['role'])
         : 'nurse';
 
-  if (rawRole === LEGACY_ADMIN_ROLE || (effectiveRole !== rawRole && rawRole !== 'admin' && rawRole !== 'nurse')) {
+  if (rawRole === LEGACY_DISPATCHER_ROLE || (effectiveRole !== rawRole && rawRole !== 'admin' && rawRole !== 'nurse')) {
     try {
       await updateDoc(doc(getDb(), 'users', firebaseUser.uid), {
         role: effectiveRole,
@@ -220,11 +220,14 @@ export async function getOrCreateAuthUser(firebaseUser: FirebaseUser): Promise<U
     }
   }
 
+  const customRoleId = (userData.customRoleId as string) || undefined;
+
   const finalUser: User = {
     id: userDoc.id,
     email: (userData.email as string) || '',
     displayName: (userData.displayName as string) || '',
     role: effectiveRole,
+    customRoleId,
     companyId,
     qualifications: (userData.qualifications as string[]) || [],
     documents: (userData.documents as string[]) || [],
@@ -239,7 +242,7 @@ export async function getOrCreateAuthUser(firebaseUser: FirebaseUser): Promise<U
   return finalUser;
 }
 
-const ALLOWED_ROLES: Array<User['role']> = ['admin', 'dispatcher', 'nurse'];
+const ALLOWED_ROLES: Array<User['role']> = ['admin', 'nurse'];
 
 /**
  * Lädt den Auth-User inkl. Token-Claims (Rolle, companyId).
@@ -268,8 +271,10 @@ export async function loadUserForAuth(firebaseUser: FirebaseUser): Promise<User 
   }
 
   let effectiveRole: User['role'] = user.role;
-  const claimsRole = latestTokenResult?.claims?.role;
-  if (claimsRole && ALLOWED_ROLES.includes(claimsRole as User['role'])) {
+  const claimsRole = latestTokenResult?.claims?.role as string | undefined;
+  if (claimsRole === LEGACY_DISPATCHER_ROLE) {
+    effectiveRole = 'admin';
+  } else if (claimsRole && ALLOWED_ROLES.includes(claimsRole as User['role'])) {
     effectiveRole = claimsRole as User['role'];
   } else if (!ALLOWED_ROLES.includes(user.role)) {
     effectiveRole = 'nurse';

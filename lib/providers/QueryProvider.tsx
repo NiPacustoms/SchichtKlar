@@ -15,6 +15,7 @@ export function QueryProvider({ children }: QueryProviderProps) {
           queries: {
             staleTime: 5 * 60 * 1000, // 5 minutes
             gcTime: 10 * 60 * 1000, // 10 minutes
+            placeholderData: (prev: unknown) => prev, // Alte Daten beim Refetch anzeigen, weniger Lade-Flackern
             retry: (failureCount, error: unknown) => {
               // Don't retry on 4xx errors
               if (typeof error === 'object' && error !== null && 'status' in (error as Record<string, unknown>)) {

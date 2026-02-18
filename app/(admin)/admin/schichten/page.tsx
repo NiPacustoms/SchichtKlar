@@ -9,6 +9,7 @@ import AdminCalendarView from '@/components/schedule/AdminCalendarView';
 import { AdminListView } from '@/components/schedule/AdminListView';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { useShifts } from '@/lib/hooks/useShifts';
 import type { Shift as ShiftEntity } from '@/lib/services/shifts';
 import type { Shift as DomainShift } from '@/lib/types';
@@ -43,6 +44,7 @@ import {
 import Grid from '@mui/material/Grid';
 import { useState, useMemo, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { getShiftDisplayStatus } from '@/lib/utils/shiftStatus';
 
 const convertToDomainShift = (shift: ShiftEntity): DomainShift => {
   const parsedDate =
@@ -69,10 +71,6 @@ const convertToDomainShift = (shift: ShiftEntity): DomainShift => {
     tz: shift.timezone || 'Europe/Berlin',
     notes: shift.notes,
     createdBy: shift.createdBy || 'system',
-    surchargeNight: undefined,
-    surchargeWeekend: undefined,
-    surchargeHoliday: undefined,
-    surchargeOnCall: undefined,
   };
 };
 
@@ -96,11 +94,14 @@ function AdminShiftsPageContent() {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [facilityFilter, setFacilityFilter] = useState<string>('all');
 
-  // Filter object for useShifts
+  // Filter object for useShifts (bei "Beendet" keinen Status mitschicken – alle laden, clientseitig filtern)
   const filters = useMemo(
     () => ({
-      status: statusFilter === 'all' ? undefined : (statusFilter as ShiftEntity['status']),
-      type: typeFilter === 'all' ? undefined : (typeFilter as ShiftEntity['type']),
+      status:
+        statusFilter === 'all' || statusFilter === 'ended'
+          ? undefined
+          : (statusFilter as ShiftEntity['status']),
+      type: typeFilter === 'all' ? undefined : typeFilter,
       facilityId: facilityFilter === 'all' ? undefined : facilityFilter,
     }),
     [statusFilter, typeFilter, facilityFilter]
@@ -125,26 +126,36 @@ function AdminShiftsPageContent() {
   );
 
   // Apply client-side search filter
-  const filteredShiftEntities = useMemo(() => {
+  const afterSearch = useMemo(() => {
     if (!searchTerm) return shiftEntities;
     const searchLower = searchTerm.toLowerCase();
     return shiftEntities.filter(
       shift =>
         shift.title?.toLowerCase().includes(searchLower) ||
-        shift.type?.toLowerCase().includes(searchLower) ||
         shift.notes?.toLowerCase().includes(searchLower) ||
         shift.facilityId?.toLowerCase().includes(searchLower) ||
         shift.stationId?.toLowerCase().includes(searchLower)
     );
   }, [shiftEntities, searchTerm]);
 
-  // Calculate stats from filtered shifts (client-side filtered)
+  // Nach Anzeige-Status filtern: Beendete Schichten nicht unter "Besetzt", nur unter "Beendet"
+  const filteredShiftEntities = useMemo(() => {
+    if (statusFilter === 'all') return afterSearch;
+    if (statusFilter === 'ended') return afterSearch.filter(s => getShiftDisplayStatus(s) === 'ended');
+    if (statusFilter === 'filled') return afterSearch.filter(s => getShiftDisplayStatus(s) === 'filled');
+    if (statusFilter === 'open') return afterSearch.filter(s => getShiftDisplayStatus(s) === 'open');
+    if (statusFilter === 'cancelled') return afterSearch.filter(s => s.status === 'cancelled');
+    return afterSearch;
+  }, [afterSearch, statusFilter]);
+
+  // Calculate stats from filtered shifts (Beendet = Datum+Endzeit vergangen)
   const stats = useMemo(() => {
     const shiftsArray = filteredShiftEntities;
     return {
       total: shiftsArray.length,
-      open: shiftsArray.filter(s => s.status === 'open').length,
-      filled: shiftsArray.filter(s => s.status === 'filled').length,
+      open: shiftsArray.filter(s => getShiftDisplayStatus(s) === 'open').length,
+      filled: shiftsArray.filter(s => getShiftDisplayStatus(s) === 'filled').length,
+      ended: shiftsArray.filter(s => getShiftDisplayStatus(s) === 'ended').length,
       cancelled: shiftsArray.filter(s => s.status === 'cancelled').length,
       assignedCount: shiftsArray.reduce((sum, s) => sum + (s.assignedCount || 0), 0),
       totalCapacity: shiftsArray.reduce((sum, s) => sum + (s.capacity || 1), 0),
@@ -161,15 +172,18 @@ function AdminShiftsPageContent() {
     [shiftEntities]
   );
 
-  // Check for create query parameter
+  // Check for create query parameter – URL-Cleanup erst im nächsten Tick,
+  // damit React den Dialog fertig mounten kann (vermeidet removeChild-Fehler).
   useEffect(() => {
     if (searchParams && searchParams.get('create') === 'true') {
       setCreateDialogOpen(true);
-      // Clean up URL
       if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('create');
-        window.history.replaceState({}, '', url.toString());
+        const timeoutId = window.setTimeout(() => {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('create');
+          window.history.replaceState({}, '', url.toString());
+        }, 0);
+        return () => window.clearTimeout(timeoutId);
       }
     }
   }, [searchParams]);
@@ -193,59 +207,14 @@ function AdminShiftsPageContent() {
     setAssignDialogOpen(true);
   };
 
-  const handleDeleteShift = async (shift: { id: string; type?: string }) => {
-    if (confirm(`Schicht "${shift.type}" wirklich löschen?`)) {
+  const handleDeleteShift = async (shift: { id: string }) => {
+    if (confirm('Schicht wirklich löschen?')) {
       try {
         await deleteShift(shift.id);
         toast.success('Schicht erfolgreich gelöscht');
       } catch (error) {
         toast.error('Fehler beim Löschen der Schicht');
       }
-    }
-  };
-
-  const handleDuplicateShift = async (shift: { id: string }) => {
-    try {
-      const entity = getShiftEntityById(shift.id);
-      if (!entity) {
-        toast.error('Schicht nicht gefunden');
-        return;
-      }
-
-      const {
-        id: _id,
-        createdAt: _createdAt,
-        updatedAt: _updatedAt,
-        assignedCount: _assignedCount,
-        assignedTo: _assignedTo,
-        title,
-        ...rest
-      } = entity;
-
-      const baseDate = new Date(entity.date);
-      baseDate.setDate(baseDate.getDate() + 1);
-      const nextDate = baseDate.toISOString().split('T')[0];
-
-      const baseNotes = entity.notes?.trim() ?? '';
-      const duplicateNotes = baseNotes
-        ? `${baseNotes} (Kopie)`
-        : `${entity.title || entity.type || 'Schicht'} (Kopie)`;
-
-      const duplicatedShift = {
-        ...rest,
-        title: `${title || entity.type || 'Schicht'} (Kopie)`,
-        date: nextDate,
-        startTime: entity.startTime,
-        endTime: entity.endTime,
-        notes: duplicateNotes,
-        status: 'open' as const,
-        assignedCount: 0,
-      } satisfies Omit<ShiftEntity, 'id' | 'createdAt' | 'updatedAt'>;
-
-      await createShift(duplicatedShift);
-      toast.success('Schicht erfolgreich dupliziert');
-    } catch (error) {
-      toast.error('Fehler beim Duplizieren der Schicht');
     }
   };
 
@@ -296,7 +265,7 @@ function AdminShiftsPageContent() {
 
   return (
     <>
-      <Box sx={{ maxWidth: 1400, mx: 'auto', p: 3 }}>
+      <PageContainer maxWidth="wide">
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Typography
@@ -364,6 +333,18 @@ function AdminShiftsPageContent() {
               </CardContent>
             </Card>
           </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card className="glass">
+              <CardContent sx={{ textAlign: 'center' }}>
+                <Typography variant="h4" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                  {stats.ended}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Beendet
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
 
         {/* Actions and Filters */}
@@ -421,6 +402,7 @@ function AdminShiftsPageContent() {
                   <MenuItem value="all">Alle</MenuItem>
                   <MenuItem value="open">Offen</MenuItem>
                   <MenuItem value="filled">Besetzt</MenuItem>
+                  <MenuItem value="ended">Beendet</MenuItem>
                   <MenuItem value="cancelled">Abgesagt</MenuItem>
                 </Select>
               </FormControl>
@@ -479,7 +461,11 @@ function AdminShiftsPageContent() {
         {viewMode === 'calendar' && (
           <AdminCalendarView
             shifts={domainShifts}
+            companyId={user?.companyId}
             onShiftClick={handleShiftClick}
+            onEdit={handleEditShift}
+            onAssign={handleAssignShift}
+            onDelete={handleDeleteShift}
             onDayClick={(d: Date) => {
               setSelectedCreateDate(d);
               setCreateDialogOpen(true);
@@ -494,12 +480,11 @@ function AdminShiftsPageContent() {
             onEdit={handleEditShift}
             onAssign={handleAssignShift}
             onDelete={handleDeleteShift}
-            onDuplicate={handleDuplicateShift}
           />
         )}
 
         {viewMode === 'grid' && (
-          <Grid container spacing={3}>
+          <Grid container spacing={3} alignItems="flex-start">
             {domainShifts.map(shift => (
               <Grid key={shift.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
                 <ShiftManagementCard
@@ -507,7 +492,6 @@ function AdminShiftsPageContent() {
                   onEdit={handleEditShift}
                   onAssign={handleAssignShift}
                   onDelete={handleDeleteShift}
-                  onDuplicate={handleDuplicateShift}
                 />
               </Grid>
             ))}
@@ -532,10 +516,11 @@ function AdminShiftsPageContent() {
             </Button>
           </Box>
         )}
-      </Box>
+      </PageContainer>
 
-      {/* Dialogs */}
+      {/* Dialogs – key erzwingt Remount bei open-Wechsel, verhindert removeChild-Fehler */}
       <ShiftCreateDialog
+        key={createDialogOpen ? 'create-open' : 'create-closed'}
         open={createDialogOpen}
         onClose={() => {
           setCreateDialogOpen(false);
@@ -551,6 +536,7 @@ function AdminShiftsPageContent() {
             setEditDialogOpen(false);
             setSelectedShift(null);
           }}
+          onUpdated={() => refetch()}
           shift={
             {
               ...selectedShift,

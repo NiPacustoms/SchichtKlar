@@ -5,7 +5,6 @@ import { adminDb } from '@/lib/server/firebaseAdmin';
 import { checkRateLimit, addRateLimitHeaders } from '@/lib/middleware/rateLimit';
 import { validateRequest, shiftsQuerySchema, createShiftSchema } from '@/lib/validations';
 import { logger } from '@/lib/errors';
-
 export const runtime = 'nodejs';
 
 /**
@@ -242,7 +241,7 @@ export async function POST(request: NextRequest) {
           : 'open',
       notes: body.notes,
       timezone: body.timezone || 'Europe/Berlin',
-      color: body.color || '#4CAF50',
+      color: body.color || '#005f73', // DEFAULT_SHIFT_COLOR aus lib/constants/colorPresets
       createdBy: body.createdBy || decoded.uid,
       stationId: body.stationId,
     });

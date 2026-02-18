@@ -13,7 +13,6 @@ JobFlow ist eine **DSGVO-konforme Webanwendung** für Zeitarbeitsfirmen im **med
 
 - **Personalplanung** für Pflegekräfte, Ärzte etc.
 - **Zeiterfassung** mit GPS, ArbZG-Compliance, Pausen und Nettozeit
-- **Lohnabrechnung** nach deutschem Steuerrecht (BMF-Lohnsteuertabelle 2025, MiLoG, GoBD)
 - **Schichtverwaltung** mit Konfliktprüfung, Zuweisungen, Verfügbarkeit
 - **Dokumentenverwaltung** für Qualifikationen, Ablaufverfolgung, Verifizierung
 - **Benachrichtigungen** (Push/FCM, E-Mail, In-App)
@@ -25,8 +24,8 @@ JobFlow ist eine **DSGVO-konforme Webanwendung** für Zeitarbeitsfirmen im **med
 
 | Rolle        | Zugriff |
 |-------------|---------|
-| **Admin**   | Vollzugriff: Mitarbeiter, Einrichtungen, Schichten, Lohnabrechnung, Berichte, Einstellungen, Audit-Logs |
-| **Dispatcher** | Schichtverwaltung, Mitarbeiterübersicht, Stunden, Dokumente; keine Lohnabrechnung, keine Systemeinstellungen |
+| **Admin**   | Vollzugriff: Mitarbeiter, Einrichtungen, Schichten, Berichte, Einstellungen, Audit-Logs |
+| **Dispatcher** | Schichtverwaltung, Mitarbeiterübersicht, Stunden, Dokumente; keine Systemeinstellungen |
 | **Nurse** (Mitarbeiter) | Eigene Zeiterfassung, Dienstplan, Dokumente, Profil, Berichte, Benachrichtigungen |
 
 RBAC über Firebase Custom Claims; Mandanten-Isolation über `companyId`/`tenantId` in Firestore Rules und API.
@@ -47,8 +46,8 @@ RBAC über Firebase Custom Claims; Mandanten-Isolation über `companyId`/`tenant
 
 - **App-Shell:** `app/layout.tsx` – Emotion, GlobalErrorBoundary, QueryProvider, AuthProvider, MUITheme, ConditionalHeader, InstallPrompt, CookieBanner
 - **Routen:** `(auth)` Login/Registrierung/Rechtliches, `(admin)/admin/*` Admin-Backend, `(employee)/employee/*` Mitarbeiter-App; Ziel laut Architektur-Roadmap: **einheitlich deutsche Routen** (z. B. `/anmelden`, `/admin/schichten`, `/admin/dokumenttypen`), englische als 301-Redirects
-- **API:** `app/api/*` – Auth, Chat (API bleibt, UI entfernt), Invitations, Payroll, Health/Debug etc.
-- **Services:** `lib/services/*` – User, Auth, Shifts, Assignments, Timesheet, Documents, Payroll, Reports, Audit, API-Monitoring; Ziel: **keine direkten Firestore-Imports in Komponenten**
+- **API:** `app/api/*` – Auth, Invitations, Health/Debug etc.
+- **Services:** `lib/services/*` – User, Auth, Shifts, Assignments, Timesheet, Documents, Reports, Audit, API-Monitoring; Ziel: **keine direkten Firestore-Imports in Komponenten**
 - **Contexts:** AuthContext (User, Rolle, Loading), RoleContext, ThemeContext; Ziel: schlanker AuthContext, Auth-Logik in `lib/services/authService.ts`
 - **Validierung:** Eine Quelle `lib/validations/`; kein `lib/validation/`
 - **Typen:** Domänenorientiert in `lib/types/*.ts`, `index.ts` nur Re-Exports
@@ -61,16 +60,15 @@ RBAC über Firebase Custom Claims; Mandanten-Isolation über `companyId`/`tenant
 ### 4.1 Vollständig implementiert (laut Doku)
 
 - Authentifizierung (E-Mail/Passwort, optional OIDC-SSO), RBAC, Session, Passwort-Reset
-- Admin: Dashboard, Mitarbeiter, Einrichtungen, Schichten, Dienstplan, Stundenübersicht, Lohnabrechnung, Berichte, Dokumenttypen, Einstellungen, Audit-Logs
-- Mitarbeiter: Dashboard, Dienstplan, Zeiterfassung (Start/Stop/Pause, GPS, ArbZG-Pausen), Zeiten-Historie, Dokumente, Einsätze, Signatur-Workflow, Profil, Gehaltsabrechnungen, Benachrichtigungen
+- Admin: Dashboard, Mitarbeiter, Einrichtungen, Schichten, Dienstplan, Stundenübersicht, Berichte, Dokumenttypen, Einstellungen, Audit-Logs
+- Mitarbeiter: Dashboard, Dienstplan, Zeiterfassung (Start/Stop/Pause, GPS, ArbZG-Pausen), Zeiten-Historie, Dokumente, Einsätze, Signatur-Workflow, Profil, Benachrichtigungen
 - Zeiterfassung: ArbZG (30 min nach 6 h, 45 min nach 9 h), Ruhezeiten, Nettozeit, Offline-Queue, Sync
-- Lohnabrechnung: BMF 2025, Kirchensteuer, Soli, SV, Minijob/Midijob, MiLoG, GoBD, PDF/DATEV/Excel, Status-Workflow (open → calculating → ready → approved → paid → locked)
 - Dokumentenverwaltung: Upload, Preview, Ablauf, Verifizierung
 - PWA, Offline, FCM-Push, Security Headers, Rate Limiting, Audit-Logging
 
-### 4.2 Eingeschränkt / Entfernt
+### 4.2 Entfernt / Geplant
 
-- **Chat:** Aus UI entfernt; API-Endpunkte bleiben, nicht über UI erreichbar
+- **Chat und Payroll:** Vollständig aus der App entfernt (keine API, keine UI, keine Referenzen).
 - Geplant/optional: Scheduled Reports, Custom Report Builder, erweiterte DSGVO-Features
 
 ---
@@ -80,7 +78,7 @@ RBAC über Firebase Custom Claims; Mandanten-Isolation über `companyId`/`tenant
 - **RBAC & Mandanten:** Firestore/Storage Rules mit `tenantId`/`companyId`; deny-by-default
 - **DSGVO:** Cookie-Banner, Datenschutzerklärung, Datenexport (Art. 15), Datenlöschung (Art. 17), Anonymisierung für GoBD-relevante Daten
 - **Rechtliches:** Impressum konfigurierbar über ENV; Mock-Daten mit Warnung
-- **Sicherheit:** Keine Secrets im Repo; Gitleaks/Pre-Commit; Security Headers (CSP, HSTS etc.) in Middleware; Rate Limiting; XSS-Schutz (DOMPurify bei Chat-Text); serverseitige Validierung; Sentry optional
+- **Sicherheit:** Keine Secrets im Repo; Gitleaks/Pre-Commit; Security Headers (CSP, HSTS etc.) in Middleware; Rate Limiting; XSS-Schutz; serverseitige Validierung; Sentry optional
 - **ArbZG:** Pausen-, Arbeitszeit- und Ruhezeiten-Prüfung sowie Dokumentation
 - **GoBD:** Unveränderliche Lohn-/Timesheet-Berechnungen, Audit-Logging
 
@@ -97,14 +95,14 @@ RBAC über Firebase Custom Claims; Mandanten-Isolation über `companyId`/`tenant
 
 ### 6.2 Marktreife-Analyse (Stand 27.01.2026)
 
-- **Blockierer (historisch):** Build fehlgeschlagen, 50+ TypeScript-Fehler, ESLint/Parsing-Fehler. **Korrektur:** Das Modul `@/lib/services/facilities` **existiert**; fehlend sind u. a. `@/lib/services/payrollSettings`, `@/lib/config/payrollRules` (nur .js.map in lib, Quelle in `functions/src/config/`), `@/lib/services/payroll/arbzgValidation` (siehe Abschnitt 11).
+- **Blockierer (historisch):** Build fehlgeschlagen, TypeScript-Fehler, ESLint/Parsing-Fehler. Chat und Payroll sind entfernt; fehlende Module beziehen sich auf den historischen Stand.
 - **Wichtig:** Keine Unit-Tests flächendeckend; Performance nicht verifiziert
 - **Positiv:** Features implementiert, Security/DSGVO gut bewertet, E2E-Tests vorhanden
 
 ### 6.3 Sales Readiness Re-Audit (27.01.2026)
 
 - **Ergebnis:** 95/100 – verkaufsfertig
-- **Behoben:** TypeScript 0 Fehler, Build erfolgreich, Next.js 15 params-Promise, fehlende Types, eval() entfernt, XSS-Schutz, Chat-Upload-Prüfung, API-Validierung, Impressum/DSGVO/Cookie-Banner/Datenexport/-löschung
+- **Behoben (historisch):** TypeScript 0 Fehler, Build erfolgreich, Next.js 15 params-Promise, fehlende Types, eval() entfernt, XSS-Schutz, API-Validierung, Impressum/DSGVO/Cookie-Banner/Datenexport/-löschung
 - **Rest:** ESLint-Command-Warnung, Impressum Mock (ENV-konfigurierbar), Storage Rules nur Kommentar (serverseitige Prüfung vorhanden)
 
 **Hinweis:** Der aktuelle Abgleich (Abschnitt 11) zeigt: Build und TypeScript schlagen fehl, ESLint-Konfiguration ist defekt.
@@ -118,21 +116,16 @@ Dieser Abschnitt dokumentiert das Ergebnis der Prüfung **vor Ort** (Build, Type
 ### 11.1 Build
 
 - **Ergebnis:** ❌ **Fehlgeschlagen**
-- **Ursache:** Fehlende Module (Webpack/Next.js):
-  - `@/lib/services/payrollSettings` – wird in `app/(admin)/admin/mitarbeiter/[uid]/page.tsx` und `lib/services/users.ts` genutzt; existiert nur unter `functions/src/services/payrollSettings.ts`, nicht in `lib/services/`.
-  - `@/lib/config/payrollRules` – wird in `lib/services/users.ts` genutzt; unter `lib/config/` existiert nur `payrollRules.js.map`, keine TypeScript-Quelle (Quelle in `functions/src/config/payrollRules.ts`).
+- **Ursache (historisch):** Fehlende Module; Chat und Payroll sind inzwischen vollständig entfernt.
 
 ### 11.2 TypeScript (`npm run typecheck`)
 
 - **Ergebnis:** ❌ **Viele Fehler** (ca. 90+)
 - **Kategorien:**
-  - **Fehlende Module:** `@/lib/services/payrollSettings`, `@/lib/config/payrollRules`, `./payrollSettings` (in users.ts), `@/lib/services/payroll/arbzgValidation` (in useAdminDashboard.ts; Ordner `lib/services/payroll/` fehlt), ggf. `./payroll`/`./employeePayslips` (je nach Cache/Version in index).
-  - **Fehlende/veraltete Routen in .next/types:** Verweise auf nicht vorhandene Seiten (z. B. `admin/lohnabrechnung/page.js`, `admin/mitarbeiter/[uid]/gehalt/page.js`, `admin/urlaubsantraege/page.js`, `employee/gehaltsabrechnungen/page.js`, `api/payroll/items/[itemId]/route.js`).
+  - **Fehlende/veraltete Module oder Routen in .next/types** (historisch; Chat/Payroll entfernt).
   - **Typen/Interfaces:** `User` ohne `lastActive`; `Assignment` ohne `facilityId`, `startDate`, `startTime`, `endTime`, `qualification`, `candidateUserIds`; Dashboard-Hooks ohne `vacationDays`, `usedVacationDays`, `workTimeReport`, `surchargesReport`, `vacationReport`, `formatTime`, `formatWeek`, etc.; `Facility` ohne `billingName`, `billingZip`, `billingCity`; `ErrorContext` ohne `companyId`, `reportId`, `shiftId`.
-  - **Services:** `assignmentService` ohne Methoden wie `runScheduledReportsNow`, `getAvailableEmployeeIdsForSlot`, `notifyFacilityForAssignment`, `createChatChannelForAssignment`, `declineAssignmentWithSignature`, `createAssignmentWithMatching`; `assignmentWorkflow` nutzt diese; `useFormStatus` erwartet `notifyAdminsAboutFormStatus`.
-  - **MUI/UI:** Grid-Props (xs/sm/md) in `AdminKpiGrid` inkompatibel (MUI-Version); `LinearProgress` ohne `size`; MUI-Icons `Night`, `Holiday`, `Vacation`, `LineChart` nicht gefunden.
-  - **TipTap:** `@tiptap/extension-table` und `insertTable` in `EmailTemplateEditor`.
-  - **Chat:** `Timestamp` vs. `Date` in `chatMappers.ts` und Chat-Komponenten; `Channel`-Typ inkompatibel (`createdAt`).
+  - **Services:** ggf. fehlende assignmentService-Methoden oder Aufrufer.
+  - **MUI/UI:** Grid-Props (xs/sm/md) in `AdminKpiGrid` inkompatibel (MUI-Version); `LinearProgress` ohne `size`; MUI-Icons ggf. nicht gefunden.
   - **Sonstiges:** Doppeltes JSX-Attribut in `StaffEditDialog`; Implicit `any` in employee/berichte.
 
 ### 11.3 ESLint
@@ -144,27 +137,22 @@ Dieser Abschnitt dokumentiert das Ergebnis der Prüfung **vor Ort** (Build, Type
 
 - **Routen-Redirects:** `next.config.js` enthält die deutschen Redirects (login→anmelden, register→registrieren, forgot-password→passwort-vergessen, profile→profil, documents→dokumente, facilities→einrichtungen, time→zeiten, schedule→dienstplan, messenger→nachrichten, accept-invite→einladung-annehmen, admin/shifts→admin/schichten).
 - **Modul `facilities`:** `lib/services/facilities.ts` **existiert** und wird korrekt exportiert (Marktreife-Analyse nannte fälschlich „facilities“ als fehlend).
-- **Services-Struktur:** `lib/services/index.ts` exportiert u. a. authService, assignmentService, facilityService, userService, shiftService, timesheetService, reportService – **ohne** payroll/payrollSettings/employeePayslips; fehlende Referenzen kommen aus anderen Dateien (users.ts, mitarbeiter/[uid]/page.tsx, useAdminDashboard).
+- **Services-Struktur:** `lib/services/index.ts` exportiert u. a. authService, assignmentService, facilityService, userService, shiftService, timesheetService, reportService.
 
 ### 11.5 Empfohlene nächste Schritte (Priorität)
 
-1. **Build wiederherstellen:**  
-   - `lib/config/payrollRules.ts` anlegen (oder aus `functions/src/config/payrollRules.ts` übernehmen/teilen).  
-   - `lib/services/payrollSettings.ts` anlegen (oder Frontend auf API/Cloud Function umstellen, die auf `functions` zugreift).  
-   - `lib/services/payroll/arbzgValidation.ts` anlegen bzw. Import in `useAdminDashboard` auf vorhandenen Service umstellen.
+1. **Build wiederherstellen:** Fehlende Module beheben, TypeScript-Fehler bereinigen.
 
 2. **TypeScript bereinigen:**  
    - Fehlende Properties in `User`, `Assignment`, `Facility`, `ErrorContext` und in Dashboard-/Report-Hooks ergänzen oder Referenzen anpassen.  
    - assignmentService-Methoden implementieren oder Aufrufer anpassen.  
-   - MUI/TipTap-Imports und -Typen an installierte Versionen anpassen.  
-   - Chat-Typen (Timestamp/Date, Channel) vereinheitlichen.
+   - MUI/TipTap-Imports und -Typen an installierte Versionen anpassen.
 
 3. **ESLint:**  
    - `lint`-Script auf Flat Config umstellen (ohne `--ext`).  
    - `eslint.config.mjs` so anpassen, dass keine nicht exportierten ESLint-Subpaths verwendet werden (oder ESLint-Version prüfen).
 
-4. **Routen aufräumen:**  
-   - Entweder fehlende Seiten anlegen (lohnabrechnung, gehalt, urlaubsantraege, gehaltsabrechnungen, payroll/items) oder `.next` löschen und nur tatsächlich genutzte Routen bauen, damit `.next/types/validator.ts` keine toten Referenzen enthält.
+4. **Routen aufräumen:** `.next` ggf. löschen und nur tatsächlich genutzte Routen bauen, damit `.next/types/validator.ts` keine toten Referenzen enthält.
 
 ---
 
@@ -197,8 +185,8 @@ Dieser Abschnitt dokumentiert das Ergebnis der Prüfung **vor Ort** (Build, Type
 - **Setup:** ENVIRONMENT_SETUP, ENV_EXAMPLE, FIREBASE_SETUP, FIREBASE_SETUP_GUIDE, FCM_SETUP
 - **Deployment/Ops:** GO_LIVE_CHECKLIST, PRODUCTION_READY_CHECKLIST, DISASTER_RECOVERY, INCIDENT_RUNBOOKS, SLO_SLA, API_MONITORING, ERROR_HANDLING
 - **Compliance/Security:** ASVS_CHECKLIST, DSGVO_PROZESSE, release/02_SECURITY_LEGAL_AUDIT
-- **Entwicklung:** README, ADMIN_GUIDE, LOHNABRECHNUNG_USER_GUIDE, IMPLEMENTATION_GUIDE, CHANGELOG, TESTS, PAYROLL_API_KONFIGURATION, SERVICE_INTEGRATION
-- **Features:** ZEITERFASSUNG_IMPLEMENTIERUNG, LOHNABRECHNUNG_IMPLEMENTATION, RECHTSKONFORMITÄT_ZEITERFASSUNG_2025
+- **Entwicklung:** README, ADMIN_GUIDE, IMPLEMENTATION_GUIDE, CHANGELOG, TESTS, SERVICE_INTEGRATION
+- **Features:** ZEITERFASSUNG_IMPLEMENTIERUNG, RECHTSKONFORMITÄT_ZEITERFASSUNG_2025
 
 ### 8.2 Vollständige Doku
 
@@ -211,10 +199,10 @@ Dieser Abschnitt dokumentiert das Ergebnis der Prüfung **vor Ort** (Build, Type
 
 ```
 app/           – (auth), (admin)/admin, (employee)/employee, api/*
-components/    – admin, chat, common, layout, documents, schedule, time, ui, errors, …
+components/    – admin, common, layout, documents, schedule, time, ui, errors, …
 contexts/      – AuthContext, RoleContext, ThemeContext
 lib/           – config, constants, errors, hooks, services, types, utils, validations
-functions/     – Firebase Cloud Functions (u. a. Payroll, Backoffice)
+functions/     – Firebase Cloud Functions (Auth, Audit, Notifications, …)
 docs/          – Dokumentation, Audits, Checklisten, release/*
 tests/e2e/     – Playwright (admin, dispatcher, nurse, shared)
 scripts/       – Backup, Env, Secret-Scan, Split-Docs, …

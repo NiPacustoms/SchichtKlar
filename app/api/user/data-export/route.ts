@@ -25,8 +25,7 @@ export async function GET(req: NextRequest) {
 
     const userId = decoded.uid;
 
-    // Rate Limiting: Max 1 Export pro Stunde (vereinfacht, da checkRateLimit keine custom config unterstützt)
-    // TODO: Erweitere checkRateLimit um custom configs oder verwende separate Rate-Limiter
+    // Rate Limiting: checkRateLimit begrenzt Anfragen. Optional V2: eigener Limiter (z. B. 1 Export/Stunde).
     const rateLimitResponse = checkRateLimit(req, userId);
     if (rateLimitResponse) {
       // Zusätzliche Prüfung: Max 1 Export pro Stunde
@@ -54,16 +53,6 @@ export async function GET(req: NextRequest) {
       .where('userId', '==', userId)
       .get();
     const assignments = assignmentsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    // Messages (nur eigene)
-    const messagesSnapshot = await adminDb
-      .collection('messages')
-      .where('userId', '==', userId)
-      .get();
-    const messages = messagesSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
     }));
@@ -106,7 +95,6 @@ export async function GET(req: NextRequest) {
         user: userData,
         timesheets,
         assignments,
-        messages,
         documents,
         notifications,
         fcmTokens,

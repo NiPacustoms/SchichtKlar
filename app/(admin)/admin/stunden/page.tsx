@@ -2,14 +2,14 @@
 
 import { RoleGuard } from '@/components/auth/RoleGuard';
 import { FacilityHoursDashboard } from '@/components/admin/FacilityHoursDashboard';
-import { Container } from '@mui/material';
+import { PageContainer } from '@/components/layout/PageContainer';
 
 export default function AdminStundenPage() {
   return (
-    <RoleGuard allowedRoles={['admin', 'dispatcher']}>
-      <Container maxWidth="xl" sx={{ py: 4 }}>
+    <RoleGuard allowedRoles={['admin']}>
+      <PageContainer maxWidth="wide">
         <FacilityHoursDashboard />
-      </Container>
+      </PageContainer>
     </RoleGuard>
   );
 }

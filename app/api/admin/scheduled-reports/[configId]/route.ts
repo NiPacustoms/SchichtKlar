@@ -11,7 +11,7 @@ import {
   createNotFoundErrorResponse,
   createValidationErrorResponse,
 } from '@/lib/errors/apiErrorResponse';
-import { createAppError, ErrorCode } from '@/lib/errors/ErrorTypes';
+import { ErrorCode } from '@/lib/errors/ErrorTypes';
 import { logger, errorHandler, isAppError } from '@/lib/errors';
 import type { ScheduledReportConfigUpdate } from '@/lib/types/scheduledReportConfig';
 
@@ -36,7 +36,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ conf
     }
 
     const role = getRoleFromToken(decoded);
-    if (role !== 'admin' && role !== 'dispatcher') {
+    const isAdmin = role === 'admin' || role === 'dispatcher'; // Legacy
+    if (!isAdmin) {
       return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
     }
 
@@ -89,7 +90,8 @@ export async function PATCH(
     }
 
     const role = getRoleFromToken(decoded);
-    if (role !== 'admin' && role !== 'dispatcher') {
+    const isAdmin = role === 'admin' || role === 'dispatcher'; // Legacy
+    if (!isAdmin) {
       return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
     }
 
@@ -196,7 +198,8 @@ export async function DELETE(
     }
 
     const role = getRoleFromToken(decoded);
-    if (role !== 'admin' && role !== 'dispatcher') {
+    const isAdmin = role === 'admin' || role === 'dispatcher'; // Legacy
+    if (!isAdmin) {
       return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
     }
 

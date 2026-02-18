@@ -4,16 +4,16 @@ Diese Datei enthält den vollständigen Inhalt aller Projekt-Markdown-Dateien, z
 
 **Aufteilung in Teile (max. 20.000 Zeichen):** Siehe [ALLE_DOKUMENTATION_INDEX.md](./ALLE_DOKUMENTATION_INDEX.md) und Ordner [ALLE_DOKUMENTATION_PARTS](./ALLE_DOKUMENTATION_PARTS/). Erneutes Aufteilen: `node scripts/split-docs.js`
 
+**Hinweis (Stand 2026-02-16):** Chat und Payroll sind **vollständig aus der App entfernt** (UI, API, Services, Firestore-Rules). Alle Erwähnungen von Chat- oder Lohnabrechnungs-Features in dieser konsolidierten Doku sind **historisch** und beziehen sich auf entfernte oder nie fertig integrierte Bestandteile.
+
 ## Inhaltsverzeichnis (Quelldateien)
 
 - .cursor/AGENT1-PROMPT.md
 - .cursor/AGENT2-PROMPT.md
 - .cursor/AGENT3-PROMPT.md
 - .cursor/README-WORKTREE.md
-- .cursor/chat-optimization-analysis.md
 - .cursor/plans/code-bereinigung-jobflow-b40dd7ba.plan.md
 - .cursor/plans/jobflow-vollst-ndige-implementierung-1bf43c8e.plan.md
-- .cursor/plans/payroll-547c5e-97f79f44.plan.md
 - .cursor/plans/static-templates.plan.md
 - .cursor/rules/README.md
 - .cursor/worktree-prompt.md
@@ -56,13 +56,10 @@ Diese Datei enthält den vollständigen Inhalt aller Projekt-Markdown-Dateien, z
 - docs/IMPLEMENTATION_GUIDE.md
 - docs/INCIDENT_RUNBOOKS.md
 - docs/KONSOLIDIERTE_DOKUMENTATION.md
-- docs/LOHNABRECHNUNG_IMPLEMENTATION.md
-- docs/LOHNABRECHNUNG_USER_GUIDE.md
 - docs/MARKTREIFE_ANALYSE.md
 - docs/NOTEBOOKLM_APP_DOKUMENTATION.md
 - docs/NOTIFICATION_BELL_VARIANTS.md
 - docs/NOTIFICATION_COVERAGE_ANALYSIS.md
-- docs/PAYROLL_API_KONFIGURATION.md
 - docs/PRODUCTION_BACKUP.md
 - docs/PRODUCTION_ENVIRONMENT.md
 - docs/PRODUCTION_MONITORING.md
@@ -2244,13 +2241,13 @@ git checkout -b agent3-type-system-fixes
 
 ## 📋 Übersicht
 
-**JobFlow** ist eine moderne, DSGVO-konforme Webanwendung für die Verwaltung von Zeitarbeitsfirmen im medizinischen Bereich. Die App ermöglicht die vollständige Verwaltung von Personal, Schichten, Zeiterfassung, Lohnabrechnung und Kommunikation.
+**JobFlow** ist eine moderne, DSGVO-konforme Webanwendung für die Verwaltung von Zeitarbeitsfirmen im medizinischen Bereich. Die App ermöglicht die vollständige Verwaltung von Personal, Schichten, Zeiterfassung und Kommunikation. (Lohnabrechnung und Chat sind entfernt.)
 
 ### Kernzweck
 
 - **Personalplanung** für medizinisches Personal (Pflegekräfte, Ärzte, etc.)
 - **Zeiterfassung** mit GPS-Tracking und ArbZG-Compliance
-- **Lohnabrechnung** nach deutschem Steuerrecht (BMF-Lohnsteuertabelle 2025)
+- *(Lohnabrechnung entfernt)*
 - **Schichtverwaltung** mit Konfliktprüfung und Verfügbarkeitsmanagement
 - **Dokumentenverwaltung** für Qualifikationen und Nachweise
 
@@ -2616,7 +2613,7 @@ Eingeschränkter Zugriff:
 
 #### 6.1 Chat-System
 
-**⚠️ HINWEIS:** Das Chat-System wurde aus der UI entfernt (2025-01-XX). Die API-Endpunkte bleiben bestehen, sind aber nicht mehr über die UI erreichbar.
+**⚠️ HINWEIS:** Chat und Payroll sind vollständig aus der App entfernt (siehe Hinweis am Anfang dieser Doku).
 
 **Ehemalige Funktionen:**
 
@@ -2836,7 +2833,7 @@ JobFlow/
 │   └── layout.tsx                 # Root Layout
 ├── components/                    # React-Komponenten
 │   ├── admin/                     # Admin-Komponenten
-│   ├── chat/                      # Chat-Komponenten
+│   ├── (chat entfernt)
 │   ├── common/                    # Gemeinsame Komponenten
 │   ├── dashboard/                 # Dashboard-Komponenten
 │   ├── documents/                 # Dokumenten-Komponenten
@@ -2855,7 +2852,7 @@ JobFlow/
 │   ├── errors/                    # Error-Handling
 │   ├── hooks/                     # Custom Hooks
 │   ├── services/                  # Services
-│   │   ├── payroll/               # Lohnabrechnung
+│   │   ├── (payroll entfernt)
 │   │   └── encryption/            # Verschlüsselung
 │   ├── types/                     # TypeScript-Typen
 │   ├── utils/                     # Utilities
@@ -2937,7 +2934,7 @@ Siehe `docs/ESSENTIELLE_DOKUMENTATION.md` für eine vollständige Liste.
 
 ### ⚠️ Teilweise implementiert
 
-- Chat-System (aus UI entfernt, API bleibt)
+- Chat (vollständig entfernt)
 - Erweiterte Reporting-Features
 - Bulk-Import/Export
 
@@ -3274,7 +3271,7 @@ import { getDoc, getDocs, collection } from 'firebase/firestore';
 **Recommendation:**
 
 - Consolidate into `lib/validations/`
-- Organize by domain (auth, payroll, admin, etc.)
+- Organize by domain (auth, admin, etc.)
 - Create index file for easy imports
 
 ---
@@ -4249,13 +4246,13 @@ npm run lint
 
 ### 1.1 Was ist JobFlow?
 
-JobFlow ist eine moderne, DSGVO-konforme Webanwendung für die Verwaltung von Zeitarbeitsfirmen im medizinischen Bereich. Die App ermöglicht die vollständige Verwaltung von Personal, Schichten, Zeiterfassung, Lohnabrechnung und Kommunikation.
+JobFlow ist eine moderne, DSGVO-konforme Webanwendung für die Verwaltung von Zeitarbeitsfirmen im medizinischen Bereich. Die App ermöglicht die vollständige Verwaltung von Personal, Schichten, Zeiterfassung und Kommunikation. (Lohnabrechnung und Chat sind entfernt.)
 
 ### 1.2 Kernzweck
 
 - **Personalplanung** für medizinisches Personal (Pflegekräfte, Ärzte, etc.)
 - **Zeiterfassung** mit GPS-Tracking und ArbZG-Compliance
-- **Lohnabrechnung** nach deutschem Steuerrecht (BMF-Lohnsteuertabelle 2025)
+- *(Lohnabrechnung entfernt)*
 - **Schichtverwaltung** mit Konfliktprüfung und Verfügbarkeitsmanagement
 - **Dokumentenverwaltung** für Qualifikationen und Nachweise
 
@@ -4335,7 +4332,7 @@ JobFlow ist eine moderne, DSGVO-konforme Webanwendung für die Verwaltung von Ze
 - `/admin/schichten` - Schichtverwaltung
 - `/admin/dienstplan` - Dienstplan
 - `/admin/stunden` - Stundenübersicht
-- `/admin/lohnabrechnung` - Lohnabrechnung
+- `/admin/lohnabrechnung` - (entfernt)
 - `/admin/berichte` - Berichte
 - `/admin/einstellungen` - Systemeinstellungen
 - `/admin/audit-logs` - Audit-Logs
@@ -4377,7 +4374,7 @@ JobFlow ist eine moderne, DSGVO-konforme Webanwendung für die Verwaltung von Ze
 - `/employee/einsaetze` - Einsätze
 - `/employee/berichte` - Berichte
 - `/employee/profil` - Profil
-- `/employee/gehaltsabrechnungen` - Gehaltsabrechnungen
+- `/employee/gehaltsabrechnungen` - (entfernt)
 
 ---
 
@@ -4877,7 +4874,7 @@ JobFlow ist eine moderne, DSGVO-konforme Webanwendung für die Verwaltung von Ze
 - `POST /api/user/data-export` - Datenexport (DSGVO)
 - `POST /api/user/data-deletion` - Datenlöschung (DSGVO)
 
-### 9.3 Chat (API vorhanden, UI entfernt)
+### 9.3 Chat (entfernt)
 
 - `GET /api/chat/channels` - Channels abrufen
 - `POST /api/chat/channels` - Channel erstellen
@@ -5184,7 +5181,7 @@ JobFlow/
 │   └── layout.tsx                 # Root Layout
 ├── components/                    # React-Komponenten
 │   ├── admin/                     # Admin-Komponenten
-│   ├── chat/                      # Chat-Komponenten
+│   ├── (chat entfernt)
 │   ├── common/                    # Gemeinsame Komponenten
 │   ├── dashboard/                 # Dashboard-Komponenten
 │   ├── documents/                 # Dokumenten-Komponenten
@@ -5203,7 +5200,7 @@ JobFlow/
 │   ├── errors/                    # Error-Handling
 │   ├── hooks/                     # Custom Hooks
 │   ├── services/                  # Services
-│   │   ├── payroll/               # Lohnabrechnung
+│   │   ├── (payroll entfernt)
 │   │   └── encryption/            # Verschlüsselung
 │   ├── types/                     # TypeScript-Typen
 │   ├── utils/                     # Utilities
@@ -5264,7 +5261,7 @@ JobFlow/
 
 ### 17.2 ⚠️ Teilweise implementiert
 
-- Chat-System (aus UI entfernt, API bleibt)
+- Chat (vollständig entfernt)
 - Erweiterte Reporting-Features
 - Bulk-Import/Export
 
@@ -6767,7 +6764,7 @@ import { getDoc, getDocs, collection } from 'firebase/firestore';
 **Recommendation:**
 
 - Consolidate into `lib/validations/`
-- Organize by domain (auth, payroll, admin, etc.)
+- Organize by domain (auth, admin, etc.)
 - Create index file for easy imports
 
 ---
@@ -7736,14 +7733,14 @@ Abschlusskriterium: Alle kritischen/high Findings geschlossen; mittlere binnen 1
 
 ### Removed
 
-- **Chat-System komplett aus UI entfernt** (2025-01-XX)
-  - Alle Chat-Routen (`/chat`, `/admin/chat`, `/employee/chat`, `/messenger`) leiten jetzt auf Dashboard/Homepage um
-  - Chat-Navigation aus BottomNavigation entfernt
+- **Chat und Payroll vollständig entfernt**
+  - Ehemalige Chat-Routen leiten auf Dashboard/Arbeitsplatz um
+  - Keine Chat-/Payroll-Navigation oder -API mehr
   - Chat-Feature-Flags (`canAccessAdminChat`, `canAccessEmployeeChat`) entfernt
   - Chat-Einstellungen aus Admin-Einstellungen entfernt
   - Chat-Schnellzugriff aus Employee-Dashboard entfernt
   - Chat-Tests (`tests/e2e/nurse/chat.spec.ts`, `tests/e2e/admin/chat-system.spec.ts`) entfernt
-  - **Hinweis:** Chat-API-Endpunkte und -Services bleiben im Code, sind aber nicht mehr über die UI erreichbar
+  - **Hinweis:** Chat und Payroll sind vollständig entfernt (keine API, keine Services).
 
 
 
@@ -10089,14 +10086,14 @@ Diese Datei listet die **essentiellen Dokumentationsdateien** auf, die für den 
 
 - **`README.md`** - Projekt-Übersicht (Hauptdokumentation)
 - **`ADMIN_GUIDE.md`** - Admin-Benutzerhandbuch
-- **`LOHNABRECHNUNG_USER_GUIDE.md`** - Lohnabrechnung Benutzerhandbuch
+- *(LOHNABRECHNUNG_USER_GUIDE entfernt)*
 - **`IMPLEMENTATION_GUIDE.md`** - Implementation Guide
 
 ### API & Services
 
-- **`PAYROLL_API_KONFIGURATION.md`** - Payroll API Konfiguration
+- *(PAYROLL_API_KONFIGURATION entfernt)*
 - **`SERVICE_INTEGRATION.md`** - Service-Integration Guide
-- **`CHAT_REQUIREMENTS.md`** - Chat-System Anforderungen ⚠️ **ENTFERNT** (siehe CHANGELOG.md)
+- *(CHAT_REQUIREMENTS entfernt – Chat vollständig aus App entfernt)*
 
 ### Code-Qualität & Standards
 
@@ -10242,10 +10239,10 @@ docs/
 ├── IMPLEMENTATION_GUIDE.md            # Implementation
 ├── CHANGELOG.md                       # Changelog
 ├── TESTS.md                           # Tests
-├── PAYROLL_API_KONFIGURATION.md       # API Docs
+├── (PAYROLL_API entfernt)       # API Docs
 ├── SERVICE_INTEGRATION.md             # Service Integration
 ├── ZEITERFASSUNG_IMPLEMENTIERUNG.md   # Features
-├── LOHNABRECHNUNG_IMPLEMENTATION.md   # Features
+├── (LOHNABRECHNUNG entfernt)   # Features
 └── release/
     ├── PRODUCTION_READINESS_AUDIT_RE_RUN.md
     └── CONSOLE_LOG_CLEANUP_PLAN.md
@@ -92914,13 +92911,13 @@ npm run lint
 
 ### 1.1 Was ist JobFlow?
 
-JobFlow ist eine moderne, DSGVO-konforme Webanwendung für die Verwaltung von Zeitarbeitsfirmen im medizinischen Bereich. Die App ermöglicht die vollständige Verwaltung von Personal, Schichten, Zeiterfassung, Lohnabrechnung und Kommunikation.
+JobFlow ist eine moderne, DSGVO-konforme Webanwendung für die Verwaltung von Zeitarbeitsfirmen im medizinischen Bereich. Die App ermöglicht die vollständige Verwaltung von Personal, Schichten, Zeiterfassung und Kommunikation. (Lohnabrechnung und Chat sind entfernt.)
 
 ### 1.2 Kernzweck
 
 - **Personalplanung** für medizinisches Personal (Pflegekräfte, Ärzte, etc.)
 - **Zeiterfassung** mit GPS-Tracking und ArbZG-Compliance
-- **Lohnabrechnung** nach deutschem Steuerrecht (BMF-Lohnsteuertabelle 2025)
+- *(Lohnabrechnung entfernt)*
 - **Schichtverwaltung** mit Konfliktprüfung und Verfügbarkeitsmanagement
 - **Dokumentenverwaltung** für Qualifikationen und Nachweise
 
@@ -93000,7 +92997,7 @@ JobFlow ist eine moderne, DSGVO-konforme Webanwendung für die Verwaltung von Ze
 - `/admin/schichten` - Schichtverwaltung
 - `/admin/dienstplan` - Dienstplan
 - `/admin/stunden` - Stundenübersicht
-- `/admin/lohnabrechnung` - Lohnabrechnung
+- `/admin/lohnabrechnung` - (entfernt)
 - `/admin/berichte` - Berichte
 - `/admin/einstellungen` - Systemeinstellungen
 - `/admin/audit-logs` - Audit-Logs
@@ -93042,7 +93039,7 @@ JobFlow ist eine moderne, DSGVO-konforme Webanwendung für die Verwaltung von Ze
 - `/employee/einsaetze` - Einsätze
 - `/employee/berichte` - Berichte
 - `/employee/profil` - Profil
-- `/employee/gehaltsabrechnungen` - Gehaltsabrechnungen
+- `/employee/gehaltsabrechnungen` - (entfernt)
 
 ---
 
@@ -93542,7 +93539,7 @@ JobFlow ist eine moderne, DSGVO-konforme Webanwendung für die Verwaltung von Ze
 - `POST /api/user/data-export` - Datenexport (DSGVO)
 - `POST /api/user/data-deletion` - Datenlöschung (DSGVO)
 
-### 9.3 Chat (API vorhanden, UI entfernt)
+### 9.3 Chat (entfernt)
 
 - `GET /api/chat/channels` - Channels abrufen
 - `POST /api/chat/channels` - Channel erstellen
@@ -93849,7 +93846,7 @@ JobFlow/
 │   └── layout.tsx                 # Root Layout
 ├── components/                    # React-Komponenten
 │   ├── admin/                     # Admin-Komponenten
-│   ├── chat/                      # Chat-Komponenten
+│   ├── (chat entfernt)
 │   ├── common/                    # Gemeinsame Komponenten
 │   ├── dashboard/                 # Dashboard-Komponenten
 │   ├── documents/                 # Dokumenten-Komponenten
@@ -93868,7 +93865,7 @@ JobFlow/
 │   ├── errors/                    # Error-Handling
 │   ├── hooks/                     # Custom Hooks
 │   ├── services/                  # Services
-│   │   ├── payroll/               # Lohnabrechnung
+│   │   ├── (payroll entfernt)
 │   │   └── encryption/            # Verschlüsselung
 │   ├── types/                     # TypeScript-Typen
 │   ├── utils/                     # Utilities
@@ -93929,7 +93926,7 @@ JobFlow/
 
 ### 17.2 ⚠️ Teilweise implementiert
 
-- Chat-System (aus UI entfernt, API bleibt)
+- Chat (vollständig entfernt)
 - Erweiterte Reporting-Features
 - Bulk-Import/Export
 

@@ -4,6 +4,7 @@ import { DocumentUpload } from '@/components/documents/DocumentUpload';
 import { DocumentGenerator } from '@/components/documents/DocumentGenerator';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDocuments } from '@/lib/hooks/useDocuments';
 import { Document } from '@/lib/types';
@@ -196,7 +197,7 @@ export default function DocumentsPage() {
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
+    <PageContainer maxWidth="standard">
       <Box sx={{ mb: 4 }}>
         <Box
           sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}
@@ -413,6 +414,6 @@ export default function DocumentsPage() {
           // Optional: Dokument zur Liste hinzufügen oder Seite neu laden
         }}
       />
-    </Box>
+    </PageContainer>
   );
 }

@@ -19,7 +19,7 @@ interface NavigationItem {
   label: string;
   href: string;
   icon: React.ReactNode;
-  roles: ('nurse' | 'dispatcher' | 'admin')[];
+  roles: ('nurse' | 'admin')[];
 }
 
 const navigationItems: NavigationItem[] = [
@@ -51,7 +51,7 @@ const navigationItems: NavigationItem[] = [
     label: 'Nachweise',
     href: '/employee/dokumente',
     icon: <Description />,
-    roles: ['nurse', 'dispatcher'],
+    roles: ['nurse'],
   },
   {
     label: 'Mitarbeiter',
@@ -63,7 +63,7 @@ const navigationItems: NavigationItem[] = [
     label: 'Stundenübersicht',
     href: '/admin/stunden',
     icon: <Schedule />,
-    roles: ['admin', 'dispatcher'],
+    roles: ['admin'],
   },
   {
     label: 'Admin',
@@ -72,7 +72,7 @@ const navigationItems: NavigationItem[] = [
     roles: ['admin'],
   },
   {
-    label: 'Templates',
+    label: 'Vorlagen',
     href: '/admin/dokumente/vorlagen',
     icon: <DynamicFeed />,
     roles: ['admin'],

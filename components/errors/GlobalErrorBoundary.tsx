@@ -46,28 +46,38 @@ export class GlobalErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoun
   }
 
   static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
-    // Update state so the next render will show the fallback UI
-    return {
-      hasError: true,
-      error: createAppError(error),
-    };
+    try {
+      return {
+        hasError: true,
+        error: createAppError(error),
+      };
+    } catch (e) {
+      return {
+        hasError: true,
+        error: createAppError(new Error(String(e))),
+      };
+    }
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    const appError = createAppError(error, ErrorCode.UNKNOWN_ERROR);
-
-    this.setState({
-      error: appError,
-      errorInfo,
-    });
-
-    // Call error handler if provided
-    if (this.props.onError) {
-      this.props.onError(appError, errorInfo);
+    try {
+      const appError = createAppError(error, ErrorCode.UNKNOWN_ERROR);
+      this.setState({
+        error: appError,
+        errorInfo,
+      });
+      if (this.props.onError) this.props.onError(appError, errorInfo);
+      try {
+        logger.error('Global Error Boundary caught an error:', appError.toObject());
+      } catch {
+        console.error('Error boundary:', error);
+      }
+    } catch (e) {
+      this.setState({
+        error: createAppError(new Error(String(e))),
+        errorInfo,
+      });
     }
-
-    // Log error
-    logger.error('Global Error Boundary caught an error:', appError.toObject());
   }
 
   componentWillUnmount() {
@@ -251,13 +261,16 @@ export class GlobalErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoun
                       )}
 
                     <Typography variant="body2" sx={{ mb: 1 }}>
-                      <strong>Zeitstempel:</strong> {error.context.timestamp.toLocaleString()}
+                      <strong>Zeitstempel:</strong>{' '}
+                      {error.context?.timestamp != null
+                        ? error.context.timestamp.toLocaleString()
+                        : '—'}
                     </Typography>
 
                     {error.stack && (
                       <Box sx={{ mt: 2 }}>
                         <Typography variant="body2" sx={{ mb: 1 }}>
-                          <strong>Stack Trace:</strong>
+                          <strong>Aufrufstack:</strong>
                         </Typography>
                         <Box
                           component="pre"

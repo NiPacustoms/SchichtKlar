@@ -1,9 +1,11 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import { AdminListView } from '@/components/schedule/AdminListView';
 import AdminCalendarView from '@/components/schedule/AdminCalendarView';
 import { AssignShiftDialog } from '@/components/admin/AssignShiftDialog';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { ShiftCreateDialog } from '@/components/admin/ShiftCreateDialog';
 import ShiftEditDialog from '@/components/admin/ShiftEditDialog';
 import { toast } from '@/lib/utils/toast';
@@ -22,10 +24,6 @@ import {
   Tabs,
   Typography,
   Alert,
-  FormGroup,
-  FormControlLabel,
-  Checkbox,
-  Chip,
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -39,20 +37,14 @@ import { MenuItem, Select } from '@mui/material';
 import { facilityService } from '@/lib/services/facilities';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
+import { getShiftDisplayStatus } from '@/lib/utils/shiftStatus';
 
 export default function AdminDienstplanPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
-  const [filterSurcharges, setFilterSurcharges] = useState({
-    night: false,
-    weekend: false,
-    holiday: false,
-    onCall: false,
-  });
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
   const [dateTo, setDateTo] = useState<Date | null>(null);
-  const [statusFilter, setStatusFilter] = useState<ServiceShift['status'] | ''>('');
-  const [typeFilter, setTypeFilter] = useState<ServiceShift['type'] | ''>('');
+  const [statusFilter, setStatusFilter] = useState<ServiceShift['status'] | 'ended' | ''>('');
   const [facilityFilter, setFacilityFilter] = useState<string>('');
   const { data: facilities = [] } = useQuery({
     queryKey: ['facilities', user?.companyId],
@@ -78,16 +70,14 @@ export default function AdminDienstplanPage() {
       dateFrom?.toISOString() || null,
       dateTo?.toISOString() || null,
       statusFilter || null,
-      typeFilter || null,
       facilityFilter || null,
     ],
     queryFn: () =>
       shiftService.getAll({
-        companyId: user?.companyId, // Filter nach Firma
+        companyId: user?.companyId,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
-        status: statusFilter || undefined,
-        type: typeFilter || undefined,
+        status: statusFilter === 'ended' ? undefined : (statusFilter || undefined),
         facilityId: facilityFilter || undefined,
       }),
     enabled: !!user?.companyId, // Nur laden, wenn companyId vorhanden ist
@@ -100,8 +90,7 @@ export default function AdminDienstplanPage() {
       {
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
-        status: statusFilter || undefined,
-        type: typeFilter || undefined,
+        status: statusFilter === 'ended' ? undefined : (statusFilter || undefined),
         facilityId: facilityFilter || undefined,
       },
       newShifts => {
@@ -111,7 +100,6 @@ export default function AdminDienstplanPage() {
             dateFrom?.toISOString() || null,
             dateTo?.toISOString() || null,
             statusFilter || null,
-            typeFilter || null,
             facilityFilter || null,
           ],
           newShifts
@@ -122,7 +110,7 @@ export default function AdminDienstplanPage() {
       }
     );
     return () => unsubscribe();
-  }, [queryClient, dateFrom, dateTo, statusFilter, typeFilter, facilityFilter]);
+  }, [queryClient, dateFrom, dateTo, statusFilter, facilityFilter]);
 
   // Load filters from localStorage
   useEffect(() => {
@@ -130,19 +118,11 @@ export default function AdminDienstplanPage() {
       const raw = typeof window !== 'undefined' ? window.localStorage.getItem(storageKey) : null;
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (
-          typeof parsed === 'object' &&
-          parsed &&
-          ['night', 'weekend', 'holiday', 'onCall'].every(k => k in parsed)
-        ) {
-          setFilterSurcharges({
-            night: Boolean(parsed.night),
-            weekend: Boolean(parsed.weekend),
-            holiday: Boolean(parsed.holiday),
-            onCall: Boolean(parsed.onCall),
-          });
+        if (typeof parsed === 'object' && parsed) {
           if (parsed.dateFrom) setDateFrom(new Date(parsed.dateFrom));
           if (parsed.dateTo) setDateTo(new Date(parsed.dateTo));
+          if (parsed.statusFilter != null) setStatusFilter(parsed.statusFilter);
+          if (parsed.facilityFilter != null) setFacilityFilter(parsed.facilityFilter);
         }
       }
     } catch (_e) {
@@ -157,16 +137,17 @@ export default function AdminDienstplanPage() {
         window.localStorage.setItem(
           storageKey,
           JSON.stringify({
-            ...filterSurcharges,
             dateFrom: dateFrom ? dateFrom.toISOString() : undefined,
             dateTo: dateTo ? dateTo.toISOString() : undefined,
+            statusFilter: statusFilter || undefined,
+            facilityFilter: facilityFilter || undefined,
           })
         );
       }
     } catch (_e) {
       // ignore quota errors
     }
-  }, [storageKey, filterSurcharges, dateFrom, dateTo]);
+  }, [storageKey, dateFrom, dateTo, statusFilter, facilityFilter]);
 
   // Dialog/Action State
   const [assignOpen, setAssignOpen] = useState(false);
@@ -174,7 +155,8 @@ export default function AdminDienstplanPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [selectedCreateDate, setSelectedCreateDate] = useState<Date | null>(null);
   const [selectedShift, setSelectedShift] = useState<ServiceShift | null>(null);
-  const canManage = user?.role === 'admin' || user?.role === 'dispatcher';
+  const { hasPermission } = usePermissions();
+  const canManage = hasPermission('manage_shifts');
   const theme = useTheme();
   const _isMobile = useMediaQuery(theme.breakpoints.down('sm'), { noSsr: true });
   const [sendingReminders, setSendingReminders] = useState(false);
@@ -213,39 +195,6 @@ export default function AdminDienstplanPage() {
     }
   };
 
-  const handleDuplicate = async (shift: ServiceShift) => {
-    try {
-      const duplicatePayload: Omit<ServiceShift, 'id' | 'createdAt' | 'updatedAt'> & {
-        color?: string;
-      } = {
-        title: `${shift.title || shift.type || 'Schicht'} (Kopie)`,
-        description: shift.description || '',
-        startTime: shift.startTime,
-        endTime: shift.endTime,
-        date: shift.date,
-        facilityId: shift.facilityId,
-        stationId: shift.stationId,
-        type: shift.type,
-        requiredQualifications: shift.requiredQualifications || [],
-        capacity: shift.capacity || 1,
-        maxStaff: shift.maxStaff || 1,
-        assignedCount: shift.assignedCount || 0,
-        status: 'open',
-        assignedTo: shift.assignedTo || [],
-        notes: shift.notes,
-        timezone: shift.timezone || 'Europe/Berlin',
-        color: (shift as unknown as { color?: string }).color || '#4CAF50',
-        createdBy: shift.createdBy || user?.id || 'system',
-      };
-      await shiftService.create(duplicatePayload);
-      toast.success('Schicht dupliziert');
-      refetch();
-    } catch (err: unknown) {
-      const message = (err as { message?: string })?.message || 'Duplizieren fehlgeschlagen';
-      toast.error(message);
-    }
-  };
-
   const handleEdit = (shift: ServiceShift) => {
     if (process.env.NODE_ENV === 'development') {
       PerformanceMonitor.startTimer('dialog.edit.open');
@@ -255,15 +204,7 @@ export default function AdminDienstplanPage() {
     setEditOpen(true);
   };
 
-  type ServiceShiftExt = ServiceShift & {
-    surchargeNight?: boolean;
-    surchargeWeekend?: boolean;
-    surchargeHoliday?: boolean;
-    surchargeOnCall?: boolean;
-  };
-
   const filteredShifts = useMemo(() => {
-    const shiftsExt = shifts as unknown as ServiceShiftExt[];
     const dayStart = dateFrom
       ? new Date(dateFrom.getFullYear(), dateFrom.getMonth(), dateFrom.getDate(), 0, 0, 0, 0)
       : null;
@@ -271,25 +212,21 @@ export default function AdminDienstplanPage() {
       ? new Date(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999)
       : null;
 
-    return shiftsExt.filter(s => {
-      const { night, weekend, holiday, onCall } = filterSurcharges;
+    let list = shifts.filter(s => {
       const date = s?.date ? new Date(s.date) : null;
       if (dayStart && date && date < dayStart) return false;
       if (dayEnd && date && date > dayEnd) return false;
-      if (!night && !weekend && !holiday && !onCall) return true;
-      const flags = {
-        night: Boolean(s.surchargeNight),
-        weekend: Boolean(s.surchargeWeekend),
-        holiday: Boolean(s.surchargeHoliday),
-        onCall: Boolean(s.surchargeOnCall),
-      };
-      if (night && !flags.night) return false;
-      if (weekend && !flags.weekend) return false;
-      if (holiday && !flags.holiday) return false;
-      if (onCall && !flags.onCall) return false;
       return true;
     });
-  }, [shifts, filterSurcharges, dateFrom, dateTo]);
+
+    // Nach Anzeige-Status: Beendete Schichten nicht unter "Besetzt"
+    if (statusFilter === 'filled') list = list.filter(s => getShiftDisplayStatus(s) === 'filled');
+    else if (statusFilter === 'open') list = list.filter(s => getShiftDisplayStatus(s) === 'open');
+    else if (statusFilter === 'ended') list = list.filter(s => getShiftDisplayStatus(s) === 'ended');
+    else if (statusFilter === 'cancelled') list = list.filter(s => s.status === 'cancelled');
+
+    return list;
+  }, [shifts, dateFrom, dateTo, statusFilter]);
 
   if (!user) {
     return (
@@ -300,30 +237,12 @@ export default function AdminDienstplanPage() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <PageContainer maxWidth="wide">
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" sx={{ fontWeight: 600 }}>
           Admin-Dienstplan
         </Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          {(filterSurcharges.night ||
-            filterSurcharges.weekend ||
-            filterSurcharges.holiday ||
-            filterSurcharges.onCall) && (
-            <Chip
-              size="small"
-              color="info"
-              label={`Filter aktiv: ${
-                [
-                  filterSurcharges.night,
-                  filterSurcharges.weekend,
-                  filterSurcharges.holiday,
-                  filterSurcharges.onCall,
-                ].filter(Boolean).length
-              }`}
-              variant="outlined"
-            />
-          )}
           <IconButton onClick={() => refetch()} aria-label="Aktualisieren">
             <Refresh />
           </IconButton>
@@ -365,53 +284,6 @@ export default function AdminDienstplanPage() {
 
       <Paper className="glass" sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
-          <Typography variant="subtitle2">Filter Zuschläge:</Typography>
-          <FormGroup row>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={filterSurcharges.night}
-                  onChange={e =>
-                    setFilterSurcharges(prev => ({ ...prev, night: e.target.checked }))
-                  }
-                />
-              }
-              label="Nacht"
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={filterSurcharges.weekend}
-                  onChange={e =>
-                    setFilterSurcharges(prev => ({ ...prev, weekend: e.target.checked }))
-                  }
-                />
-              }
-              label="Wochenende"
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={filterSurcharges.holiday}
-                  onChange={e =>
-                    setFilterSurcharges(prev => ({ ...prev, holiday: e.target.checked }))
-                  }
-                />
-              }
-              label="Feiertag"
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={filterSurcharges.onCall}
-                  onChange={e =>
-                    setFilterSurcharges(prev => ({ ...prev, onCall: e.target.checked }))
-                  }
-                />
-              }
-              label="Rufbereitschaft"
-            />
-          </FormGroup>
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={de}>
             <DatePicker
               label="Von Datum"
@@ -430,28 +302,15 @@ export default function AdminDienstplanPage() {
             size="small"
             displayEmpty
             value={statusFilter}
-            onChange={e => setStatusFilter((e.target.value as ServiceShift['status']) || '')}
+            onChange={e => setStatusFilter((e.target.value as ServiceShift['status'] | 'ended') || '')}
           >
             <MenuItem value="">
               <em>Status: Alle</em>
             </MenuItem>
             <MenuItem value="open">Offen</MenuItem>
             <MenuItem value="filled">Besetzt</MenuItem>
+            <MenuItem value="ended">Beendet</MenuItem>
             <MenuItem value="cancelled">Abgesagt</MenuItem>
-          </Select>
-          <Select
-            size="small"
-            displayEmpty
-            value={typeFilter}
-            onChange={e => setTypeFilter((e.target.value as ServiceShift['type']) || '')}
-          >
-            <MenuItem value="">
-              <em>Typ: Alle</em>
-            </MenuItem>
-            <MenuItem value="Frühdienst">Frühdienst</MenuItem>
-            <MenuItem value="Spätdienst">Spätdienst</MenuItem>
-            <MenuItem value="Nachtdienst">Nachtdienst</MenuItem>
-            <MenuItem value="On-call">Rufbereitschaft</MenuItem>
           </Select>
           <Select
             size="small"
@@ -504,27 +363,11 @@ export default function AdminDienstplanPage() {
             </Button>
             <Button
               size="small"
-              sx={{ mr: 1 }}
-              onClick={() =>
-                setFilterSurcharges({ night: true, weekend: true, holiday: true, onCall: true })
-              }
-            >
-              Alle auswählen
-            </Button>
-            <Button
-              size="small"
               variant="outlined"
               onClick={() => {
-                setFilterSurcharges({
-                  night: false,
-                  weekend: false,
-                  holiday: false,
-                  onCall: false,
-                });
                 setDateFrom(null);
                 setDateTo(null);
                 setStatusFilter('');
-                setTypeFilter('');
                 setFacilityFilter('');
                 try {
                   if (typeof window !== 'undefined') window.localStorage.removeItem(storageKey);
@@ -578,13 +421,6 @@ export default function AdminDienstplanPage() {
                   }
                   handleDelete(s as unknown as ServiceShift);
                 }}
-                onDuplicate={(s: UiShift) => {
-                  if (!canManage) {
-                    toast.error('Keine Berechtigung zum Duplizieren');
-                    return;
-                  }
-                  handleDuplicate(s as unknown as ServiceShift);
-                }}
               />
             </Grid>
           )}
@@ -613,13 +449,6 @@ export default function AdminDienstplanPage() {
                     return;
                   }
                   handleDelete(s as unknown as ServiceShift);
-                }}
-                onDuplicate={(s: UiShift) => {
-                  if (!canManage) {
-                    toast.error('Keine Berechtigung zum Duplizieren');
-                    return;
-                  }
-                  handleDuplicate(s as unknown as ServiceShift);
                 }}
                 onDayClick={(d: Date) => {
                   if (!canManage) {
@@ -670,6 +499,6 @@ export default function AdminDienstplanPage() {
         initialDate={selectedCreateDate}
       />
       {/* Kein FAB/Speeddial auf Mobil gemäß Anforderung */}
-    </Box>
+    </PageContainer>
   );
 }

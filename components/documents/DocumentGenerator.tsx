@@ -134,6 +134,7 @@ export function DocumentGenerator({ open, onClose, onDocumentGenerated }: Docume
     'custom-report': 'Benutzerdefinierter Bericht',
     'assignment-notification': 'Einsatzmitteilung',
     'assignment-signatures': 'Einsatz mit Signaturen',
+    'admin-report': 'Bericht',
   };
 
   const documentTypeDescriptions: Record<DocumentType, string> = {
@@ -145,6 +146,7 @@ export function DocumentGenerator({ open, onClose, onDocumentGenerated }: Docume
     'custom-report': 'Erstellt einen benutzerdefinierten Bericht mit eigenen Daten',
     'assignment-notification': 'Einsatzmitteilung nach § 11 Absatz 2 Satz 4 AÜG',
     'assignment-signatures': 'Generiert ein Dokument mit allen Signaturen eines Einsatzes',
+    'admin-report': 'Admin-Bericht (High-End-PDF mit Firmenlogo)',
   };
 
   const requiresDateRange = ['timesheet-report', 'shift-summary', 'monthly-report'].includes(

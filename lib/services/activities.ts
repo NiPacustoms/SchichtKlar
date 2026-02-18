@@ -19,7 +19,7 @@ export interface Activity {
   id: string;
   userId: string;
   userName: string;
-  userRole: 'admin' | 'dispatcher' | 'nurse';
+  userRole: 'admin' | 'nurse';
   type: 'user' | 'shift' | 'assignment' | 'timesheet' | 'document' | 'facility' | 'system';
   action: 'created' | 'updated' | 'deleted' | 'verified' | 'rejected' | 'accepted' | 'declined' | 'completed';
   entityType: string; // 'User', 'Shift', 'Assignment', etc.

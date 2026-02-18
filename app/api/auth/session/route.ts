@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, verifyIdToken } from '@/lib/server/firebaseAdmin';
+import { adminAuth, adminDb, verifyIdToken } from '@/lib/server/firebaseAdmin';
 import { logger } from '@/lib/errors';
 import { createAuthErrorResponse, createErrorResponse } from '@/lib/errors/apiErrorResponse';
 import { createAppError, ErrorCode } from '@/lib/errors/ErrorTypes';
@@ -7,13 +7,34 @@ import { createAppError, ErrorCode } from '@/lib/errors/ErrorTypes';
 export const runtime = 'nodejs';
 
 const SESSION_COOKIE_NAME = '__session';
-const SESSION_MAX_AGE_MS = 5 * 24 * 60 * 60 * 1000; // 5 Tage (Firebase max 2 Wochen)
+const ROLE_COOKIE_NAME = 'jobflow_role';
+const SESSION_MAX_AGE_MS = 5 * 24 * 60 * 60 * 1000; // 5 Tage
 const ROUTE = '/api/auth/session';
+
+export type RouteRole = 'admin' | 'nurse';
+
+/**
+ * Ermittelt die Routen-Rolle serverseitig (User-Dokument + ggf. Custom-Rolle mit access_admin_area).
+ * Nur admin oder nurse – niemand kann Routen des anderen Bereichs betreten.
+ */
+async function resolveRouteRole(uid: string): Promise<RouteRole> {
+  if (!adminDb) return 'nurse';
+  const userDoc = await adminDb.collection('users').doc(uid).get();
+  if (!userDoc.exists) return 'nurse';
+  const data = userDoc.data() as { role?: string; customRoleId?: string } | undefined;
+  const role = data?.role === 'admin' ? 'admin' : 'nurse';
+  if (role === 'admin') return 'admin';
+  const customRoleId = data?.customRoleId;
+  if (!customRoleId) return 'nurse';
+  const roleDoc = await adminDb.collection('adminRoles').doc(customRoleId).get();
+  if (!roleDoc.exists) return 'nurse';
+  const permissions = (roleDoc.data() as { permissions?: string[] } | undefined)?.permissions ?? [];
+  return permissions.includes('access_admin_area') ? 'admin' : 'nurse';
+}
 
 /**
  * POST: Session-Cookie setzen (nach Login).
- * Client sendet Firebase ID Token im Authorization-Header.
- * Setzt __session Cookie, damit die Middleware geschützte Routen erlaubt.
+ * Setzt __session und jobflow_role (admin|nurse) – Middleware erzwingt strikte Routentrennung.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -45,14 +66,18 @@ export async function POST(req: NextRequest) {
       expiresIn: SESSION_MAX_AGE_MS,
     });
 
+    const routeRole: RouteRole = await resolveRouteRole(decoded.uid);
+
     const res = NextResponse.json({ success: true });
-    res.cookies.set(SESSION_COOKIE_NAME, sessionCookie, {
+    const cookieOpts = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'lax' as const,
       path: '/',
       maxAge: Math.floor(SESSION_MAX_AGE_MS / 1000),
-    });
+    };
+    res.cookies.set(SESSION_COOKIE_NAME, sessionCookie, cookieOpts);
+    res.cookies.set(ROLE_COOKIE_NAME, routeRole, cookieOpts);
 
     return res;
   } catch (error) {
@@ -69,17 +94,20 @@ export async function POST(req: NextRequest) {
   }
 }
 
+const CLEAR_COOKIE = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+  maxAge: 0,
+};
+
 /**
- * DELETE: Session-Cookie löschen (Logout).
+ * DELETE: Session- und Role-Cookie löschen (Logout).
  */
 export async function DELETE() {
   const res = NextResponse.json({ success: true });
-  res.cookies.set(SESSION_COOKIE_NAME, '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0,
-  });
+  res.cookies.set(SESSION_COOKIE_NAME, '', CLEAR_COOKIE);
+  res.cookies.set(ROLE_COOKIE_NAME, '', CLEAR_COOKIE);
   return res;
 }

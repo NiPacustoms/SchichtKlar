@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Button, Avatar, alpha } from '@mui/material';
+import { Box, Typography, Button, Avatar } from '@mui/material';
 import { GlassCard } from './GlassCard';
 import {
   Assignment as AssignmentIcon,
@@ -9,7 +9,6 @@ import {
   People,
   Assessment,
   DocumentScanner,
-  Chat,
   CalendarToday,
   TrendingUp,
   Euro,
@@ -40,7 +39,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   action,
   secondaryAction,
   size = 'medium',
-  className = 'glass',
+  className: _className = 'glass',
 }) => {
   const iconSize = size === 'small' ? 40 : size === 'medium' ? 64 : 80;
   const spacing = size === 'small' ? 2 : size === 'medium' ? 3 : 4;
@@ -150,8 +149,8 @@ export const EmptyNotifications: React.FC<{ onRefresh?: () => void }> = ({ onRef
 export const EmptyAssignments: React.FC<{ onRefresh?: () => void }> = ({ onRefresh }) => (
   <EmptyState
     icon={<AssignmentIcon />}
-    title="Keine Assignments"
-    description="Derzeit sind keine Assignments verfügbar. Neue Aufträge werden hier angezeigt."
+    title="Keine Einsätze"
+    description="Derzeit sind keine Einsätze verfügbar. Neue Aufträge werden hier angezeigt."
     action={onRefresh ? { label: 'Aktualisieren', onClick: onRefresh } : undefined}
   />
 );
@@ -197,15 +196,6 @@ export const EmptyDocuments: React.FC<{ onRefresh?: () => void }> = ({ onRefresh
     icon={<DocumentScanner />}
     title="Keine Dokumente"
     description="Es sind noch keine Dokumente hochgeladen. Laden Sie Ihr erstes Dokument hoch."
-    action={onRefresh ? { label: 'Aktualisieren', onClick: onRefresh } : undefined}
-  />
-);
-
-export const EmptyChat: React.FC<{ onRefresh?: () => void }> = ({ onRefresh }) => (
-  <EmptyState
-    icon={<Chat />}
-    title="Keine Nachrichten"
-    description="Es sind noch keine Nachrichten vorhanden. Starten Sie eine Unterhaltung."
     action={onRefresh ? { label: 'Aktualisieren', onClick: onRefresh } : undefined}
   />
 );

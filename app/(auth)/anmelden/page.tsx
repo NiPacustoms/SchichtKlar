@@ -9,15 +9,12 @@ import {
   Alert,
   Container,
   Stack,
-  Link,
-  CircularProgress,
 } from '@mui/material';
-import { InlineSpinner } from '@/components/ui/LoadingSpinner';
 import { AppLogo } from '@/components/ui/AppLogo';
-import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { logger } from '@/lib/logging';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormData } from '@/lib/validations/authForms';
@@ -25,10 +22,12 @@ import { useBrandingSettings } from '@/lib/hooks/useBrandingSettings';
 import NextLink from 'next/link';
 
 export default function LoginPage() {
-  const { user, loading, signIn } = useAuth();
+  const { user, loading, authError, signIn } = useAuth();
+  const { canAccessAdminArea, isLoading: permissionsLoading } = usePermissions();
   const { branding } = useBrandingSettings();
-  const router = useRouter();
   const [oidcEnabled, setOidcEnabled] = useState(false);
+  const [justSubmitted, setJustSubmitted] = useState(false);
+  const redirectFormRef = useRef<HTMLFormElement>(null);
 
   // SOTA: react-hook-form mit Zod-Resolver
   const {
@@ -45,18 +44,22 @@ export default function LoginPage() {
     },
   });
 
-  // SOTA: Optimierter Submit-Handler mit react-hook-form
   const onSubmit = async (data: LoginFormData) => {
     clearErrors();
-
+    setJustSubmitted(true);
     try {
       await signIn(data.email, data.password);
-      // Die Weiterleitung erfolgt automatisch über den useEffect
     } catch (err: unknown) {
       const errorMessage = (err as Error).message || 'Ein Fehler ist aufgetreten';
       setError('root', { message: errorMessage });
+      setJustSubmitted(false);
     }
   };
+
+  // Nach erfolgreichem Login: "justSubmitted" zurücksetzen, sobald user oder authError da ist
+  useEffect(() => {
+    if (user || authError) setJustSubmitted(false);
+  }, [user, authError]);
 
   // Dynamisch prüfen ob OIDC verfügbar ist (Client-Side)
   useEffect(() => {
@@ -73,36 +76,33 @@ export default function LoginPage() {
     }
   };
 
+  // Rolle kommt aus dem Konto (Firestore): Admin-Registrierung oder Einladung als Mitarbeiter
+  const redirectTarget =
+    user && !loading && !permissionsLoading
+      ? (canAccessAdminArea ? '/admin/uebersicht' : '/employee/arbeitsplatz')
+      : null;
+
+  // Sofort-Redirect (Cookie ist bereits gesetzt, da User erst nach setSessionCookie gesetzt wird). Zusätzlich Zeitgeber als Fallback.
   useEffect(() => {
-    logger.debug('Login useEffect triggered', {}, { loading, userId: user?.id });
-
-    if (!loading && user) {
-      // Bereits eingeloggt → rollenbasiertes Redirect
-      logger.debug('User logged in, redirecting based on role', {}, { role: user.role });
-
-      // Verzögerung für bessere UX und um sicherzustellen, dass der State vollständig geladen ist
-      const redirectTimer = setTimeout(() => {
-        logger.debug('Executing redirect for role', {}, { role: user.role });
-
-        if (user.role === 'admin' || user.role === 'dispatcher') {
-          logger.debug('Redirecting to admin overview');
-          router.replace('/admin/uebersicht');
-        } else if (user.role === 'nurse') {
-          logger.debug('Redirecting to employee workspace');
-          router.replace('/employee/arbeitsplatz');
-        } else {
-          // Fallback für unbekannte Rollen
-          logger.debug('Redirecting to employee workspace (fallback)');
-          router.replace('/employee/arbeitsplatz');
-        }
-      }, 200); // Erhöhte Verzögerung für bessere Stabilität
-
-      return () => clearTimeout(redirectTimer);
-    }
-  }, [user, loading, router]);
+    if (!redirectTarget || typeof window === 'undefined') return;
+    const go = () => window.location.assign(redirectTarget);
+    go(); // sofort, damit kein Effect-Cleanup (z. B. React Strict Mode) den Redirect verhindert
+    const fallback = setTimeout(go, 600);
+    return () => clearTimeout(fallback);
+  }, [redirectTarget]);
 
   return (
     <Box className="min-height-viewport" sx={{ position: 'relative' }}>
+      {/* Verstecktes Formular als Fallback-Redirect */}
+      {redirectTarget && (
+        <form
+          ref={redirectFormRef}
+          method="GET"
+          action={redirectTarget}
+          style={{ display: 'none' }}
+          aria-hidden="true"
+        />
+      )}
       {/* zentriertes, großes Logo wie auf der Landing */}
       <Box
         sx={{
@@ -140,18 +140,41 @@ export default function LoginPage() {
             pb: 0,
           }}
         >
-          {loading || user ? (
+          {(loading || user || justSubmitted) ? (
             <Box
               sx={{
                 display: 'flex',
+                flexDirection: 'column',
                 justifyContent: 'center',
                 alignItems: 'center',
                 minHeight: '60vh',
-                gap: 2,
+                gap: 3,
               }}
             >
-              <InlineSpinner size={24} />
-              <Typography variant="h6">{loading ? 'Lade...' : 'Weiterleitung...'}</Typography>
+              <Typography variant="h6" aria-live="polite">
+                {loading ? 'Lade...' : user ? 'Weiterleitung...' : 'Anmeldung wird geprüft...'}
+              </Typography>
+              {redirectTarget && (
+                <>
+                  <Button
+                    component="a"
+                    href={redirectTarget}
+                    variant="contained"
+                    size="large"
+                    sx={{ minWidth: 220 }}
+                  >
+                    Zum Dashboard
+                  </Button>
+                  <Typography variant="body2" color="text.secondary">
+                    Falls die Weiterleitung nicht startet, auf den Button klicken.
+                  </Typography>
+                </>
+              )}
+              {justSubmitted && !user && !authError && !loading && (
+                <Typography variant="body2" color="text.secondary">
+                  Bitte einen Moment warten…
+                </Typography>
+              )}
             </Box>
           ) : (
             <Stack
@@ -165,7 +188,28 @@ export default function LoginPage() {
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
                   Melden Sie sich in Ihrem JobFlow-Konto an
                 </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Ihre Rolle (Administrator oder Mitarbeiter) wird anhand Ihres Kontos erkannt. Sie werden nach der Anmeldung automatisch in den passenden Bereich weitergeleitet.
+                </Typography>
 
+                {process.env.NODE_ENV === 'development' && (
+                  <>
+                    <Typography variant="caption" component="div" sx={{ mb: 1, fontFamily: 'monospace', color: 'text.secondary' }}>
+                      Dev: loading={String(loading)} user={user != null ? (user as { email?: string }).email ?? '—' : '—'} authError={authError ? 'ja' : '—'}
+                    </Typography>
+                    {!loading && !user && !authError && (
+                      <Typography variant="caption" component="div" sx={{ mb: 1, color: 'text.secondary' }}>
+                        Nach Anmelden: Session wird sofort gesetzt; bei Fehler erscheint hier eine Meldung oder unter F12 → Network: POST /api/auth/session
+                      </Typography>
+                    )}
+                  </>
+                )}
+
+                {authError && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {authError}
+                  </Alert>
+                )}
                 {/* SOTA: Error-Display mit react-hook-form */}
                 {errors.root && (
                   <Alert severity="error" sx={{ mb: 2 }}>
@@ -212,20 +256,17 @@ export default function LoginPage() {
                   />
 
                   <Box sx={{ textAlign: 'right', mb: 3 }}>
-                    <Link
-                      component={NextLink}
+                    <NextLink
                       href="/passwort-vergessen"
-                      sx={{
+                      style={{
                         color: '#005f73',
                         textDecoration: 'none',
                         fontSize: '0.875rem',
-                        '&:hover': {
-                          textDecoration: 'underline',
-                        },
                       }}
+                      className="hover:underline"
                     >
                       Passwort vergessen?
-                    </Link>
+                    </NextLink>
                   </Box>
 
                   <Button
@@ -235,22 +276,16 @@ export default function LoginPage() {
                     disabled={isSubmitting}
                     sx={{ py: 1.5, mb: 2 }}
                     aria-label="Anmelden"
+                    aria-busy={isSubmitting}
                     data-testid="login-button"
                   >
-                    {isSubmitting ? (
-                      <>
-                        <CircularProgress size={20} sx={{ mr: 1 }} />
-                        Anmelden...
-                      </>
-                    ) : (
-                      'Anmelden'
-                    )}
+                    {isSubmitting ? 'Anmelden...' : 'Anmelden'}
                   </Button>
 
                   <Box sx={{ textAlign: 'center', mt: 1 }}>
-                    <Link component={NextLink} href="/passwort-vergessen" variant="body2">
+                    <NextLink href="/passwort-vergessen" style={{ fontSize: '0.875rem', color: 'inherit' }}>
                       Passwort vergessen?
-                    </Link>
+                    </NextLink>
                   </Box>
                 </Box>
 

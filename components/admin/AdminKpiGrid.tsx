@@ -11,6 +11,13 @@ export interface AdminKpiGridProps {
   onKpiClick?: (kpi: DashboardKpi) => void;
 }
 
+/** Priority 1 = kritisch (zuerst), 2 = Warning, 3 = Standard/Good */
+function getPriorityFromStatus(status: DashboardKpi['status']): 1 | 2 | 3 {
+  if (status === 'critical') return 1;
+  if (status === 'warning') return 2;
+  return 3;
+}
+
 export function AdminKpiGrid({ items, loading, onKpiClick }: AdminKpiGridProps) {
   const theme = useTheme();
 
@@ -28,9 +35,14 @@ export function AdminKpiGrid({ items, loading, onKpiClick }: AdminKpiGridProps) 
     );
   }
 
+  const sortedItems = [...items].sort(
+    (a, b) => getPriorityFromStatus(a.status) - getPriorityFromStatus(b.status)
+  );
+
   return (
     <Grid container spacing={3}>
-      {items.map(kpi => {
+      {sortedItems.map(kpi => {
+        const priority = getPriorityFromStatus(kpi.status);
         const color =
           kpi.status === 'critical'
             ? theme.palette.error.main
@@ -57,6 +69,7 @@ export function AdminKpiGrid({ items, loading, onKpiClick }: AdminKpiGridProps) 
               icon={kpi.icon}
               color={color}
               trend={trend}
+              priority={priority}
               onClick={onKpiClick ? () => onKpiClick(kpi) : undefined}
             />
           </Grid>

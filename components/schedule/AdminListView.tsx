@@ -40,6 +40,11 @@ import { useMediaQuery } from '@mui/material';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { useEffect, useState } from 'react';
+import {
+  getShiftDisplayStatus,
+  getShiftStatusLabel,
+  type ShiftDisplayStatus,
+} from '@/lib/utils/shiftStatus';
 
 function FormStatusBadge({ shiftId }: { shiftId: string }) {
   const [counts, setCounts] = useState<{ ack: number; dec: number; open: number } | null>(null);
@@ -120,7 +125,6 @@ interface AdminListViewProps {
   onEdit: (shift: Shift) => void;
   onAssign: (shift: Shift) => void;
   onDelete: (shift: Shift) => void;
-  onDuplicate: (shift: Shift) => void;
 }
 
 export function AdminListView({
@@ -129,7 +133,6 @@ export function AdminListView({
   onEdit,
   onAssign,
   onDelete,
-  onDuplicate,
 }: AdminListViewProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
@@ -158,27 +161,31 @@ export function AdminListView({
     handleMenuClose();
   };
 
-  const getStatusColor = (status: Shift['status']) => {
-    switch (status) {
+  const getStatusColor = (displayStatus: ShiftDisplayStatus) => {
+    switch (displayStatus) {
       case 'open':
         return 'warning';
       case 'filled':
         return 'success';
       case 'cancelled':
         return 'error';
+      case 'ended':
+        return 'default';
       default:
         return 'default';
     }
   };
 
-  const getStatusIcon = (status: Shift['status']) => {
-    switch (status) {
+  const getStatusIcon = (displayStatus: ShiftDisplayStatus) => {
+    switch (displayStatus) {
       case 'open':
         return <Warning color="warning" />;
       case 'filled':
         return <CheckCircle color="success" />;
       case 'cancelled':
         return <Error color="error" />;
+      case 'ended':
+        return <CheckCircle color="action" />;
       default:
         return <AssignmentIcon />;
     }
@@ -242,7 +249,7 @@ export function AdminListView({
               <GlassCard>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Typography variant="h5" color="warning.main" sx={{ fontWeight: 600 }}>
-                    {shifts.filter(s => s.status === 'open').length}
+                    {shifts.filter(s => getShiftDisplayStatus(s) === 'open').length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Offene Schichten
@@ -261,7 +268,6 @@ export function AdminListView({
                 onEdit={onEdit}
                 onAssign={onAssign}
                 onDelete={onDelete}
-                onDuplicate={onDuplicate}
               />
             </Grid>
           ))}
@@ -299,7 +305,7 @@ export function AdminListView({
             <GlassCard>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Typography variant="h4" color="warning.main" sx={{ fontWeight: 600 }}>
-                  {shifts.filter(s => s.status === 'open').length}
+                  {shifts.filter(s => getShiftDisplayStatus(s) === 'open').length}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Offene Schichten
@@ -311,7 +317,7 @@ export function AdminListView({
             <GlassCard>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Typography variant="h4" color="success.main" sx={{ fontWeight: 600 }}>
-                  {shifts.filter(s => s.status === 'filled').length}
+                  {shifts.filter(s => getShiftDisplayStatus(s) === 'filled').length}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Besetzte Schichten
@@ -352,7 +358,7 @@ export function AdminListView({
           },
         }}
       >
-        <Table>
+        <Table stickyHeader size="medium">
           <TableHead>
             <TableRow>
               <TableCell>Schicht</TableCell>
@@ -361,7 +367,6 @@ export function AdminListView({
               <TableCell>Besetzung</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Qualifikationen</TableCell>
-              <TableCell>Zuschläge</TableCell>
               <TableCell align="right">Aktionen</TableCell>
             </TableRow>
           </TableHead>
@@ -381,12 +386,12 @@ export function AdminListView({
                           width: 12,
                           height: 12,
                           borderRadius: '50%',
-                          backgroundColor: getShiftTypeColor(shift.type),
+                          backgroundColor: 'primary.main',
                         }}
                       />
                       <Box>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {shift.type}
+                          Schicht
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                           ID: {shift.id.slice(0, 8)}
@@ -448,16 +453,10 @@ export function AdminListView({
 
                   <TableCell>
                     <Chip
-                      icon={getStatusIcon(shift.status)}
-                      label={
-                        shift.status === 'open'
-                          ? 'Offen'
-                          : shift.status === 'filled'
-                            ? 'Besetzt'
-                            : 'Abgesagt'
-                      }
+                      icon={getStatusIcon(getShiftDisplayStatus(shift))}
+                      label={getShiftStatusLabel(getShiftDisplayStatus(shift))}
                       color={
-                        getStatusColor(shift.status) as
+                        getStatusColor(getShiftDisplayStatus(shift)) as
                           | 'default'
                           | 'primary'
                           | 'secondary'
@@ -488,23 +487,6 @@ export function AdminListView({
                           variant="outlined"
                           color="default"
                         />
-                      )}
-                    </Box>
-                  </TableCell>
-
-                  <TableCell>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {(shift as unknown as { surchargeNight?: boolean }).surchargeNight && (
-                        <Chip size="small" label="Nacht" color="secondary" variant="outlined" />
-                      )}
-                      {(shift as unknown as { surchargeWeekend?: boolean }).surchargeWeekend && (
-                        <Chip size="small" label="WoE" color="secondary" variant="outlined" />
-                      )}
-                      {(shift as unknown as { surchargeHoliday?: boolean }).surchargeHoliday && (
-                        <Chip size="small" label="FT" color="secondary" variant="outlined" />
-                      )}
-                      {(shift as unknown as { surchargeOnCall?: boolean }).surchargeOnCall && (
-                        <Chip size="small" label="Ruf" color="secondary" variant="outlined" />
                       )}
                     </Box>
                   </TableCell>
@@ -562,10 +544,6 @@ export function AdminListView({
         >
           <PersonAdd sx={{ mr: 1 }} />
           Zuweisen
-        </MenuItem>
-        <MenuItem onClick={() => handleAction(onDuplicate)}>
-          <AssignmentIcon sx={{ mr: 1 }} />
-          Duplizieren
         </MenuItem>
         <MenuItem onClick={() => handleAction(onDelete)} sx={{ color: 'error.main' }}>
           <Error sx={{ mr: 1 }} />

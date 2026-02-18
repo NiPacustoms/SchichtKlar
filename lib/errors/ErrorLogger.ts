@@ -293,9 +293,7 @@ export class Logger {
       url: typeof window !== 'undefined' ? window.location.href : 'server'
     };
     
-    // TODO: Integrate with Sentry or other error reporting service
-    // Sentry.captureException(entry.error, { extra: errorReport });
-    
+    // Sentry wird über @sentry/nextjs genutzt. Optional: hier Sentry.captureException(entry.error, { extra: errorReport }) aufrufen.
     console.error('CRITICAL ERROR REPORT:', errorReport);
   }
   

@@ -218,6 +218,8 @@ export function DailySignatureDialog({
           onClick={handleSign}
           variant="contained"
           disabled={isSubmitting || !confirmReviewed || !status || !signerName.trim()}
+          data-testid="daily-signature-submit"
+          aria-label="Tägliche Bestätigung signieren"
         >
           Signieren
         </Button>

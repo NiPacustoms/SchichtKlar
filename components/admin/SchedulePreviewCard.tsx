@@ -13,6 +13,11 @@ import { format, addDays, isToday, isTomorrow, isThisWeek } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { useState } from 'react';
 import Link from 'next/link';
+import {
+  getShiftDisplayStatus,
+  getShiftStatusLabel,
+  type ShiftDisplayStatus,
+} from '@/lib/utils/shiftStatus';
 
 interface SchedulePreviewCardProps {
   shifts: Shift[];
@@ -33,40 +38,31 @@ export function SchedulePreviewCard({
     return facility?.name || 'Unbekannte Einrichtung';
   };
 
-  const getShiftStatusColor = (status: Shift['status']) => {
-    switch (status) {
+  const getShiftStatusColor = (displayStatus: ShiftDisplayStatus) => {
+    switch (displayStatus) {
       case 'open':
         return 'error';
       case 'filled':
         return 'success';
       case 'cancelled':
         return 'default';
+      case 'ended':
+        return 'default';
       default:
         return 'default';
     }
   };
 
-  const getShiftStatusIcon = (status: Shift['status']) => {
-    switch (status) {
+  const getShiftStatusIcon = (displayStatus: ShiftDisplayStatus) => {
+    switch (displayStatus) {
       case 'open':
         return <WarningIcon fontSize="small" />;
       case 'filled':
         return <FilledIcon fontSize="small" />;
+      case 'ended':
+        return <FilledIcon fontSize="small" />;
       default:
         return <ShiftIcon fontSize="small" />;
-    }
-  };
-
-  const getShiftStatusLabel = (status: Shift['status']) => {
-    switch (status) {
-      case 'open':
-        return 'Offen';
-      case 'filled':
-        return 'Besetzt';
-      case 'cancelled':
-        return 'Storniert';
-      default:
-        return status;
     }
   };
 
@@ -101,8 +97,8 @@ export function SchedulePreviewCard({
     {} as Record<string, Shift[]>
   );
 
-  const openShiftsCount = filteredShifts.filter(s => s.status === 'open').length;
-  const filledShiftsCount = filteredShifts.filter(s => s.status === 'filled').length;
+  const openShiftsCount = filteredShifts.filter(s => getShiftDisplayStatus(s) === 'open').length;
+  const filledShiftsCount = filteredShifts.filter(s => getShiftDisplayStatus(s) === 'filled').length;
 
   if (shifts.length === 0) {
     return (
@@ -229,7 +225,7 @@ export function SchedulePreviewCard({
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <ShiftIcon fontSize="small" color="action" />
                           <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {shift.type}
+                            Schicht
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
                             {shift.startTime} - {shift.endTime}
@@ -238,9 +234,9 @@ export function SchedulePreviewCard({
 
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <Chip
-                            icon={getShiftStatusIcon(shift.status)}
-                            label={getShiftStatusLabel(shift.status)}
-                            color={getShiftStatusColor(shift.status)}
+                            icon={getShiftStatusIcon(getShiftDisplayStatus(shift))}
+                            label={getShiftStatusLabel(getShiftDisplayStatus(shift))}
+                            color={getShiftStatusColor(getShiftDisplayStatus(shift))}
                             size="small"
                             variant="outlined"
                           />

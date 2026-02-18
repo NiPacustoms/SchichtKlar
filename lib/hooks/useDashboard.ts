@@ -1,7 +1,10 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { subDays } from 'date-fns';
-import { assignmentService } from '@/lib/services/assignments';
+import {
+  getTodayAssignment,
+  getUpcomingAssignments,
+} from '@/src/composition';
 import { timesheetService } from '@/lib/services/timesheets';
 import { shiftService } from '@/lib/services/shifts';
 import { facilityService } from '@/lib/services/facilities';
@@ -21,7 +24,7 @@ export const useDashboard = () => {
       if (!userId) return null;
 
       try {
-        return await assignmentService.getTodayAssignment(userId);
+        return await getTodayAssignment.execute(userId);
       } catch (error) {
         logger.error('Error fetching today assignment:', error);
         return null;
@@ -69,7 +72,7 @@ export const useDashboard = () => {
       if (!userId) return [];
 
       try {
-        return await assignmentService.getUpcomingAssignments(userId);
+        return await getUpcomingAssignments.execute(userId);
       } catch (error) {
         logger.error('Error fetching upcoming assignments:', error);
         return [];

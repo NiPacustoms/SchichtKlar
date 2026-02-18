@@ -2,7 +2,7 @@
 
 import { logger } from '@/lib/logging';
 
-import { AppLayout } from '@/components/layout/AppLayout';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { useEmployeeReports, EmployeeReportFilters } from '@/lib/hooks/useEmployeeReports';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -11,21 +11,10 @@ import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { toast } from '@/lib/utils/toast';
 import {
   Assessment,
-  TrendingUp,
-  TrendingDown,
-  TrendingFlat,
   Download,
   Refresh,
-  Euro,
-  Schedule,
   Work,
-  DarkMode as Night,
-  Weekend,
-  Celebration as Holiday,
-  BeachAccess as Vacation,
   BarChart,
-  PieChart,
-  ShowChart as LineChart,
 } from '@mui/icons-material';
 import {
   Box,
@@ -46,7 +35,6 @@ import {
   Chip,
   Alert,
   IconButton,
-  Tooltip,
   FormControl,
   InputLabel,
   Select,
@@ -56,7 +44,7 @@ import {
   Divider,
   CircularProgress,
 } from '@mui/material';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -78,14 +66,11 @@ import {
 
 export default function BerichtePage() {
   const { user } = useAuth();
-  const { mode } = useTheme();
-  const isDark = false;
+  useTheme();
 
   const [filters, setFilters] = useState<EmployeeReportFilters>({});
   const [activeTab, setActiveTab] = useState(0);
-  const [reportType, setReportType] = useState<'worktime' | 'surcharges' | 'vacation' | 'all'>(
-    'all'
-  );
+  const [reportType, setReportType] = useState<'worktime' | 'all'>('all');
   const [isExporting, setIsExporting] = useState(false);
 
   const {
@@ -93,23 +78,15 @@ export default function BerichtePage() {
     isLoading,
     error,
     workTimeReport,
-    surchargesReport,
-    vacationReport,
     formatDate,
     formatTime,
-    formatDateTime,
-    formatWeek,
-    formatMonth,
     formatCurrency,
     formatHours,
-    formatPercentage,
     getStatusColor,
     getStatusLabel,
     getTrendIcon,
     getTrendText,
     exportWorkTimeReport,
-    exportSurchargesReport,
-    exportVacationReport,
     exportAllReports,
     refetch,
   } = useEmployeeReports(filters);
@@ -125,12 +102,6 @@ export default function BerichtePage() {
         case 'worktime':
           await exportWorkTimeReport(format);
           break;
-        case 'surcharges':
-          await exportSurchargesReport(format);
-          break;
-        case 'vacation':
-          await exportVacationReport(format);
-          break;
         case 'all':
           await exportAllReports(format);
           break;
@@ -144,29 +115,10 @@ export default function BerichtePage() {
     }
   };
 
-  const getCurrentReportData = () => {
-    switch (reportType) {
-      case 'worktime':
-        return workTimeReport;
-      case 'surcharges':
-        return surchargesReport;
-      case 'vacation':
-        return vacationReport;
-      case 'all':
-        return { workTime: workTimeReport, surcharges: surchargesReport, vacation: vacationReport };
-      default:
-        return workTimeReport;
-    }
-  };
-
-  const getReportTitle = () => {
+  const _getReportTitle = () => {
     switch (reportType) {
       case 'worktime':
         return 'Arbeitszeit-Bericht';
-      case 'surcharges':
-        return 'Zuschläge-Bericht';
-      case 'vacation':
-        return 'Urlaubs-Bericht';
       case 'all':
         return 'Alle Berichte';
       default:
@@ -184,18 +136,15 @@ export default function BerichtePage() {
 
   if (!user) {
     return (
-      <AppLayout>
-        <Box sx={{ p: 3 }}>
-          <Alert severity="error">Bitte melde dich an, um deine Berichte zu sehen.</Alert>
-        </Box>
-      </AppLayout>
+      <PageContainer maxWidth="wide">
+        <Alert severity="error">Bitte melde dich an, um deine Berichte zu sehen.</Alert>
+      </PageContainer>
     );
   }
 
   return (
-    <AppLayout>
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+    <PageContainer maxWidth="wide">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h4" sx={{ fontWeight: 600 }}>
             Meine Berichte
           </Typography>
@@ -260,11 +209,9 @@ export default function BerichtePage() {
                 <Select
                   value={reportType}
                   label="Berichtstyp"
-                  onChange={e => setReportType(e.target.value as 'worktime' | 'surcharges' | 'vacation' | 'all')}
+                  onChange={e => setReportType(e.target.value as 'worktime' | 'all')}
                 >
                   <MenuItem value="worktime">Arbeitszeit</MenuItem>
-                  <MenuItem value="surcharges">Zuschläge</MenuItem>
-                  <MenuItem value="vacation">Urlaub</MenuItem>
                   <MenuItem value="all">Alle</MenuItem>
                 </Select>
               </FormControl>
@@ -300,7 +247,7 @@ export default function BerichtePage() {
         <Paper className="glass" sx={{ mb: 3 }}>
           <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
             <Tab label="Übersicht" icon={<Assessment />} iconPosition="start" />
-            <Tab label="Charts" icon={<BarChart />} iconPosition="start" />
+            <Tab label="Diagramme" icon={<BarChart />} iconPosition="start" />
             <Tab label="Details" icon={<Work />} iconPosition="start" />
           </Tabs>
         </Paper>
@@ -392,187 +339,6 @@ export default function BerichtePage() {
               </Card>
             </Grid>
 
-            {/* Zuschläge-Statistiken */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card className="glass">
-                <CardContent>
-                  <Typography variant="h6" sx={{ mb: 2 }}>
-                    Zuschläge-Übersicht
-                  </Typography>
-
-                  <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Gesamtzuschläge</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {formatCurrency(surchargesReport.totalSurcharge)}
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={100}
-                      sx={{ height: 6, borderRadius: 3 }}
-                    />
-                  </Box>
-
-                  <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Nachtzuschläge</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {formatCurrency(surchargesReport.nightSurcharge)}
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={
-                        surchargesReport.totalSurcharge > 0
-                          ? (surchargesReport.nightSurcharge / surchargesReport.totalSurcharge) *
-                            100
-                          : 0
-                      }
-                      sx={{ height: 6, borderRadius: 3 }}
-                    />
-                  </Box>
-
-                  <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Wochenendzuschläge</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {formatCurrency(surchargesReport.weekendSurcharge)}
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={
-                        surchargesReport.totalSurcharge > 0
-                          ? (surchargesReport.weekendSurcharge / surchargesReport.totalSurcharge) *
-                            100
-                          : 0
-                      }
-                      sx={{ height: 6, borderRadius: 3 }}
-                    />
-                  </Box>
-
-                  <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Feiertagszuschläge</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {formatCurrency(surchargesReport.holidaySurcharge)}
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={
-                        surchargesReport.totalSurcharge > 0
-                          ? (surchargesReport.holidaySurcharge / surchargesReport.totalSurcharge) *
-                            100
-                          : 0
-                      }
-                      sx={{ height: 6, borderRadius: 3 }}
-                    />
-                  </Box>
-
-                  <Divider sx={{ my: 2 }} />
-
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2">Durchschnitt pro Tag</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {formatCurrency(surchargesReport.averageSurchargePerDay)}
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2">Durchschnitt pro Woche</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {formatCurrency(surchargesReport.averageSurchargePerWeek)}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Urlaubs-Statistiken */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card className="glass">
-                <CardContent>
-                  <Typography variant="h6" sx={{ mb: 2 }}>
-                    Urlaubs-Übersicht
-                  </Typography>
-
-                  <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Gesamturlaubstage</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {vacationReport.totalVacationDays}
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={100}
-                      sx={{ height: 6, borderRadius: 3 }}
-                    />
-                  </Box>
-
-                  <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Verbrauchte Tage</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {vacationReport.usedVacationDays}
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={
-                        vacationReport.totalVacationDays > 0
-                          ? (vacationReport.usedVacationDays / vacationReport.totalVacationDays) *
-                            100
-                          : 0
-                      }
-                      sx={{ height: 6, borderRadius: 3 }}
-                    />
-                  </Box>
-
-                  <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Verbleibende Tage</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {vacationReport.remainingVacationDays}
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={
-                        vacationReport.totalVacationDays > 0
-                          ? (vacationReport.remainingVacationDays /
-                              vacationReport.totalVacationDays) *
-                            100
-                          : 0
-                      }
-                      sx={{ height: 6, borderRadius: 3 }}
-                    />
-                  </Box>
-
-                  <Divider sx={{ my: 2 }} />
-
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2">Durchschnitt pro Monat</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {vacationReport.averageVacationDaysPerMonth}
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2">Verbrauch in %</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {formatPercentage(
-                        vacationReport.usedVacationDays,
-                        vacationReport.totalVacationDays
-                      )}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-
             {/* Trend */}
             <Grid size={{ xs: 12, md: 6 }}>
               <Card className="glass">
@@ -604,51 +370,6 @@ export default function BerichtePage() {
                     </Box>
                   </Box>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <Avatar
-                      sx={{
-                        bgcolor:
-                          surchargesReport.surchargeTrend === 'up'
-                            ? 'success.main'
-                            : surchargesReport.surchargeTrend === 'down'
-                              ? 'error.main'
-                              : 'info.main',
-                      }}
-                    >
-                      {getTrendIcon(surchargesReport.surchargeTrend)}
-                    </Avatar>
-                    <Box>
-                      <Typography variant="h6">
-                        Zuschläge: {getTrendText(surchargesReport.surchargeTrend)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {formatCurrency(surchargesReport.averageSurchargePerWeek)} pro Woche
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Avatar
-                      sx={{
-                        bgcolor:
-                          vacationReport.vacationTrend === 'up'
-                            ? 'success.main'
-                            : vacationReport.vacationTrend === 'down'
-                              ? 'error.main'
-                              : 'info.main',
-                      }}
-                    >
-                      {getTrendIcon(vacationReport.vacationTrend)}
-                    </Avatar>
-                    <Box>
-                      <Typography variant="h6">
-                        Urlaub: {getTrendText(vacationReport.vacationTrend)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {vacationReport.averageVacationDaysPerMonth} Tage pro Monat
-                      </Typography>
-                    </Box>
-                  </Box>
                 </CardContent>
               </Card>
             </Grid>
@@ -705,82 +426,6 @@ export default function BerichtePage() {
                           name="Überstunden"
                         />
                       </RechartsLineChart>
-                    </ResponsiveContainer>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Zuschläge-Chart */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card className="glass">
-                <CardContent>
-                  <Typography variant="h6" sx={{ mb: 2 }}>
-                    Zuschläge pro Tag
-                  </Typography>
-                  <Box sx={{ height: 300 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsBarChart data={surchargesReport.surchargeByDay}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis
-                          dataKey="day"
-                          tickFormatter={value =>
-                            new Date(value).toLocaleDateString('de-DE', {
-                              day: '2-digit',
-                              month: '2-digit',
-                            })
-                          }
-                        />
-                        <YAxis />
-                        <RechartsTooltip
-                          formatter={(value: unknown, name: unknown) => [formatCurrency(Number(value)), name]}
-                          labelFormatter={value => new Date(value).toLocaleDateString('de-DE')}
-                        />
-                        <Bar dataKey="nightSurcharge" stackId="a" fill="#9c27b0" name="Nacht" />
-                        <Bar
-                          dataKey="weekendSurcharge"
-                          stackId="a"
-                          fill="#f44336"
-                          name="Wochenende"
-                        />
-                        <Bar
-                          dataKey="holidaySurcharge"
-                          stackId="a"
-                          fill="#ff9800"
-                          name="Feiertag"
-                        />
-                        <Bar
-                          dataKey="overtimeSurcharge"
-                          stackId="a"
-                          fill="#4caf50"
-                          name="Überstunden"
-                        />
-                      </RechartsBarChart>
-                    </ResponsiveContainer>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Urlaubs-Chart */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card className="glass">
-                <CardContent>
-                  <Typography variant="h6" sx={{ mb: 2 }}>
-                    Urlaub pro Monat
-                  </Typography>
-                  <Box sx={{ height: 300 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsBarChart data={vacationReport.vacationByMonth}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="month" tickFormatter={value => formatMonth(value)} />
-                        <YAxis />
-                        <RechartsTooltip
-                          formatter={(value, name) => [`${value} Tage`, name]}
-                          labelFormatter={value => formatMonth(value)}
-                        />
-                        <Bar dataKey="days" fill="#2196f3" name="Urlaubstage" />
-                      </RechartsBarChart>
                     </ResponsiveContainer>
                   </Box>
                 </CardContent>
@@ -860,7 +505,6 @@ export default function BerichtePage() {
                           <TableCell>Start</TableCell>
                           <TableCell>Ende</TableCell>
                           <TableCell>Stunden</TableCell>
-                          <TableCell>Zuschläge</TableCell>
                           <TableCell>Status</TableCell>
                         </TableRow>
                       </TableHead>
@@ -871,7 +515,6 @@ export default function BerichtePage() {
                             <TableCell>{formatTime(timesheet.startDate)}</TableCell>
                             <TableCell>{formatTime(timesheet.endDate)}</TableCell>
                             <TableCell>{formatHours(timesheet.totalHours)}</TableCell>
-                            <TableCell>{formatCurrency(timesheet.surchargeAmount || 0)}</TableCell>
                             <TableCell>
                               <Chip
                                 label={getStatusLabel(timesheet.status)}
@@ -895,7 +538,6 @@ export default function BerichtePage() {
             </Grid>
           </Grid>
         )}
-      </Box>
-    </AppLayout>
+    </PageContainer>
   );
 }

@@ -7,6 +7,7 @@ import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { useDomainAssignment } from '@/lib/hooks/useDomainAssignments';
 import { assignmentService } from '@/lib/services/assignments';
 import { facilityService } from '@/lib/services/facilities';
 import { cloudFunctions } from '@/lib/services/cloudFunctions';
@@ -28,15 +29,7 @@ export default function AssignmentDetailPage() {
   const queryClient = useQueryClient();
   const [declineModalOpen, setDeclineModalOpen] = useState(false);
 
-  const {
-    data: assignment,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['assignment', id],
-    queryFn: () => assignmentService.getById(id),
-    enabled: !!id,
-  });
+  const { assignment, isLoading, error } = useDomainAssignment(id ?? null);
 
   const { data: facility } = useQuery({
     queryKey: ['facility', assignment?.facilityId],
@@ -70,15 +63,12 @@ export default function AssignmentDetailPage() {
       } catch (e) {
         logger.warn('Notify facility failed', e);
       }
-      try {
-        await cloudFunctions.createChatChannelForAssignment(assignment.id);
-      } catch (e) {
-        logger.warn('Create chat channel failed', e);
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assignment', id] });
+      queryClient.invalidateQueries({ queryKey: ['domain-assignment', id] });
       queryClient.invalidateQueries({ queryKey: ['myAssignments'] });
+      queryClient.invalidateQueries({ queryKey: ['domain-assignments'] });
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
       toast.success('Einsatz angenommen. Die Einrichtung wurde benachrichtigt.');
       router.push('/employee/einsaetze');
@@ -99,7 +89,9 @@ export default function AssignmentDetailPage() {
       signatureDataUrl,
     });
     queryClient.invalidateQueries({ queryKey: ['assignment', id] });
+    queryClient.invalidateQueries({ queryKey: ['domain-assignment', id] });
     queryClient.invalidateQueries({ queryKey: ['myAssignments'] });
+    queryClient.invalidateQueries({ queryKey: ['domain-assignments'] });
     queryClient.invalidateQueries({ queryKey: ['assignments'] });
     toast.success('Einsatz abgelehnt.');
     setDeclineModalOpen(false);

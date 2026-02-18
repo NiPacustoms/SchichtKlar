@@ -13,6 +13,8 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { firebaseStorageService } from './firebaseStorage';
+import { documentGenerationService } from './documentGeneration';
+import { settingsService } from './settingsService';
 import { timesheetService, userService, assignmentService } from './index';
 import { facilityService } from './facilities';
 import { shiftService } from './shifts';
@@ -248,28 +250,46 @@ export const reportService = {
         );
       }
 
-      // Dummy-Inhalt generieren (ersetzbar durch echte Report-Renderer)
-      const content = `Report ${reportId} (${format}) generated at ${new Date().toISOString()}`;
-      const file = new File([content], `report-${reportId}.${format}`, {
-        type:
-          format === 'pdf'
-            ? 'application/pdf'
-            : format === 'excel'
-            ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            : 'text/csv',
-      });
+      let url: string;
 
-      const url = await firebaseStorageService.uploadExport(
-        file,
-        'report',
-        reportData.userId,
-        {
-          reportId,
-          reportType: reportData.type,
-          period: reportData.period,
-          format,
-        }
-      ).then(res => res.url);
+      if (format === 'pdf') {
+        // High-End-PDF mit Firmenlogo (vom Admin in Einstellungen gepflegt)
+        const settings = await settingsService.getSettings();
+        const reportTitle = this.getReportTitle(reportData.type, reportData.period);
+        const result = await documentGenerationService.generateDocument({
+          type: 'admin-report',
+          adminReportData: {
+            reportTitle,
+            period: reportData.period,
+            reportType: reportData.type,
+            branding: {
+              companyName: settings.companyName,
+              companyLogo: settings.companyLogo,
+            },
+          },
+        });
+        url = result.url;
+      } else {
+        // Excel/CSV: Datei generieren und hochladen
+        const content = `Report ${reportId} (${format}) generated at ${new Date().toISOString()}`;
+        const file = new File([content], `report-${reportId}.${format}`, {
+          type:
+            format === 'excel'
+              ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+              : 'text/csv',
+        });
+        url = await firebaseStorageService.uploadExport(
+          file,
+          'report',
+          reportData.userId,
+          {
+            reportId,
+            reportType: reportData.type,
+            period: reportData.period,
+            format,
+          }
+        ).then(res => res.url);
+      }
 
       await updateDoc(doc(getDb(), COLLECTION_NAME, reportId), {
         fileUrl: url,
@@ -578,7 +598,9 @@ export const reportService = {
         regularHours: timesheet.regularHours || 0,
         overtimeHours: timesheet.overtimeHours || 0,
       }));
-      
+
+      const userName = filters.userId ? (await userService.getById(filters.userId))?.displayName ?? '' : '';
+
       return [{
         totalHours,
         regularHours,
@@ -594,7 +616,7 @@ export const reportService = {
         employees: filters.userId ? [
           {
             userId: filters.userId,
-            userName: '', // TODO: Aus User-Service laden (userService.getById(filters.userId)?.displayName)
+            userName,
             totalHours,
             regularHours,
             overtimeHours,
@@ -655,8 +677,7 @@ export const reportService = {
   },
 
   async generateVacationReport(_filters: { period?: string; userId?: string }): Promise<unknown[]> {
-    // TODO: Implementiere echte Vacation Report Funktionalität
-    // Für jetzt: Leeres Array zurückgeben, keine Mock-Daten
+    // Geplant: Urlaubs-/Abwesenheitsdaten aus Firestore oder eigenem Modul. Aktuell leer.
     logger.warn('generateVacationReport not yet implemented');
     return [];
   },

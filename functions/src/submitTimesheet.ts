@@ -55,22 +55,24 @@ export const submitTimesheet = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('invalid-argument', 'Start and end time are required');
       }
 
-      // Zeitberechnung
-      const start = new Date(`2000-01-01T${startTime}`);
-      const end = new Date(`2000-01-01T${endTime}`);
+      const timesheetDate = timesheet.date?.toDate ? timesheet.date.toDate() : new Date(timesheet.date || new Date());
 
-      let totalMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
-
-      // Nachtschichten handhaben
-      if (totalMinutes < 0) {
-        totalMinutes += 24 * 60;
+      // Start/Ende mit echtem Schichtdatum (für ArbZG Ruhezeit/Wochenstunden korrekt)
+      const [startH, startM] = String(startTime).split(':').map(Number);
+      const [endH, endM] = String(endTime).split(':').map(Number);
+      const start = new Date(timesheetDate);
+      start.setHours(startH, startM || 0, 0, 0);
+      const end = new Date(timesheetDate);
+      end.setHours(endH, endM || 0, 0, 0);
+      if (end.getTime() <= start.getTime()) {
+        end.setDate(end.getDate() + 1);
       }
 
+      let totalMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
       const totalHours = (totalMinutes - (breakMinutes || 0)) / 60;
       const roundedTotalHours = Math.round(totalHours * 100) / 100;
 
       // 5. VOLLSTÄNDIGE ARBZG-VALIDIERUNG (inkl. Ruhezeiten, 45-Minuten-Pause, etc.)
-      const timesheetDate = timesheet.date?.toDate ? timesheet.date.toDate() : new Date(timesheet.date || new Date());
       const validationData: TimesheetValidationData = {
         id: timesheetId,
         userId: timesheet.userId,

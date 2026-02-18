@@ -1,6 +1,5 @@
-// Feiertags-Provider (Vollständige Implementierung)
-// Berechnet deutsche Feiertage für beliebige Jahre
-// TODO: Später durch externe API (z. B. feiertage-api.de) ersetzen
+// Feiertags-Provider: berechnet deutsche Feiertage für beliebige Jahre.
+// Optional V2: externe API (z. B. feiertage-api.de) für dynamische Daten.
 
 export interface HolidayProvider {
   getHolidays(year: number, state?: string): Promise<Date[]>;

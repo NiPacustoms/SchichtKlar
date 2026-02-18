@@ -21,30 +21,20 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
+import { getShiftDisplayStatus, getShiftStatusLabel, type ShiftDisplayStatus } from '@/lib/utils/shiftStatus';
 
-const getStatusColor = (status: Shift['status']) => {
-  switch (status) {
+const getStatusColor = (displayStatus: ShiftDisplayStatus) => {
+  switch (displayStatus) {
     case 'open':
       return 'warning';
     case 'filled':
       return 'success';
     case 'cancelled':
       return 'error';
+    case 'ended':
+      return 'default';
     default:
       return 'default';
-  }
-};
-
-const getStatusLabel = (status: Shift['status']) => {
-  switch (status) {
-    case 'open':
-      return 'Offen';
-    case 'filled':
-      return 'Besetzt';
-    case 'cancelled':
-      return 'Abgesagt';
-    default:
-      return 'Unbekannt';
   }
 };
 
@@ -66,18 +56,22 @@ export function ShiftStatusManager({
   const [reason, setReason] = useState('');
   const [isChanging, setIsChanging] = useState(false);
 
-  const getStatusIcon = (status: Shift['status']) => {
-    switch (status) {
+  const getStatusIcon = (displayStatus: ShiftDisplayStatus) => {
+    switch (displayStatus) {
       case 'open':
         return <Schedule color="warning" />;
       case 'filled':
         return <CheckCircle color="success" />;
       case 'cancelled':
         return <Cancel color="error" />;
+      case 'ended':
+        return <CheckCircle color="action" />;
       default:
         return <Schedule />;
     }
   };
+
+  const displayStatus = getShiftDisplayStatus(shift);
 
   const getAvailableStatuses = (currentStatus: Shift['status']): Shift['status'][] => {
     switch (currentStatus) {
@@ -152,10 +146,10 @@ export function ShiftStatusManager({
       {/* Current Status Display */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         <Chip
-          icon={getStatusIcon(shift.status)}
-          label={getStatusLabel(shift.status)}
+          icon={getStatusIcon(displayStatus)}
+          label={getShiftStatusLabel(getShiftDisplayStatus(shift))}
           color={
-            getStatusColor(shift.status) as
+            getStatusColor(displayStatus) as
               | 'default'
               | 'primary'
               | 'secondary'
@@ -209,10 +203,10 @@ export function ShiftStatusManager({
               Aktueller Status:
             </Typography>
             <Chip
-              icon={getStatusIcon(shift.status)}
-              label={getStatusLabel(shift.status)}
+              icon={getStatusIcon(displayStatus)}
+              label={getShiftStatusLabel(getShiftDisplayStatus(shift))}
               color={
-                getStatusColor(shift.status) as
+                getStatusColor(displayStatus) as
                   | 'default'
                   | 'primary'
                   | 'secondary'
@@ -234,8 +228,8 @@ export function ShiftStatusManager({
               {availableStatuses.map(status => (
                 <MenuItem key={status} value={status}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {getStatusIcon(status)}
-                    {getStatusLabel(status)}
+                    {getStatusIcon(status as ShiftDisplayStatus)}
+                    {getShiftStatusLabel(status as ShiftDisplayStatus)}
                   </Box>
                 </MenuItem>
               ))}
@@ -372,7 +366,7 @@ export function BulkShiftStatusManager({
           >
             {isChanging
               ? 'Ändere...'
-              : `${shifts.length} Schichten ${getStatusLabel(newStatus).toLowerCase()}`}
+              : `${shifts.length} Schichten ${getShiftStatusLabel(newStatus as ShiftDisplayStatus).toLowerCase()}`}
           </Button>
         </DialogActions>
       </Dialog>

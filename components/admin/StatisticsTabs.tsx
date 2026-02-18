@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { GlassCard } from '@/components/ui/GlassCard';
 import {
   Box,
   Typography,
@@ -67,7 +66,9 @@ const TabPanel = React.memo((props: TabPanelProps) => {
       aria-labelledby={`stats-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && (
+        <Box sx={{ p: 3, pb: 4 }}>{children}</Box>
+      )}
     </div>
   );
 });
@@ -115,29 +116,6 @@ export const StatisticsTabs = React.memo(
     const safeActivityData = Array.isArray(staffActivity) ? staffActivity : [];
 
     const currentData = timeRange === 'week' ? weeklyData : monthlyData;
-    // #region agent log
-    const shiftKeys = shiftData.map(item => item?.name);
-    const activityKeys = safeActivityData.map(item => item?.name);
-    fetch('http://127.0.0.1:7243/ingest/772533d7-e058-439e-a00a-1be099111014', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        location: 'StatisticsTabs.tsx',
-        message: 'StatisticsTabs list keys',
-        data: {
-          shiftDataLen: shiftData.length,
-          safeActivityDataLen: safeActivityData.length,
-          shiftKeys,
-          activityKeys,
-          hasUndefinedShiftKey: shiftKeys.some(k => k == null),
-          hasUndefinedActivityKey: activityKeys.some(k => k == null),
-        },
-        timestamp: Date.now(),
-        sessionId: 'debug-session',
-        hypothesisId: 'H1',
-      }),
-    }).catch(() => {});
-    // #endregion
     const averageHours =
       currentData.length > 0
         ? currentData.reduce((sum, item) => sum + (item.hours || 0), 0) / currentData.length
@@ -199,32 +177,41 @@ export const StatisticsTabs = React.memo(
 
     if (!isHydrated) {
       return (
-        <GlassCard>
-          <Box
-            sx={{
-              p: 3,
-              minHeight: 300,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Typography variant="body2" color="text.secondary">
-              Statistiken werden geladen…
-            </Typography>
-          </Box>
-        </GlassCard>
+        <Box
+          sx={{
+            p: 3,
+            minHeight: 300,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            Statistiken werden geladen…
+          </Typography>
+        </Box>
       );
     }
 
     return (
-      <GlassCard>
+      <Box>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs
             value={activeTab}
             onChange={handleTabChange}
             aria-label="Statistik Tabs"
             variant="fullWidth"
+            sx={{
+              '& .MuiTabs-indicator': {
+                borderRadius: '4px 4px 0 0',
+                height: 3,
+              },
+              '& .MuiTab-root': {
+                minHeight: 48,
+                textTransform: 'none',
+                fontWeight: 600,
+              },
+            }}
           >
             <Tab
               key="stats-trends"
@@ -443,7 +430,7 @@ export const StatisticsTabs = React.memo(
           </Typography>
           <Grid container spacing={3}>
             <Grid key="tab2-staff-total" size={{ xs: 12, md: 6 }}>
-              <GlassCard sx={{ p: 3, textAlign: 'center' }}>
+              <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
                 <Typography variant="h2" color="primary.main" sx={{ fontWeight: 800, mb: 1 }}>
                   {Array.isArray(staff) ? staff.length : 0}
                 </Typography>
@@ -453,10 +440,10 @@ export const StatisticsTabs = React.memo(
                 <Typography variant="body2" color="text.secondary" sx={{ fontSize: '14px' }}>
                   Gesamt im System
                 </Typography>
-              </GlassCard>
+              </Paper>
             </Grid>
             <Grid key="tab2-staff-onduty" size={{ xs: 12, md: 6 }}>
-              <GlassCard sx={{ p: 3, textAlign: 'center' }}>
+              <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
                 <Typography variant="h2" color="success.main" sx={{ fontWeight: 800, mb: 1 }}>
                   {safeActivityData.find((a: ChartDataPoint) => a.name === 'Im Dienst')?.value || 0}
                 </Typography>
@@ -466,7 +453,7 @@ export const StatisticsTabs = React.memo(
                 <Typography variant="body2" color="text.secondary" sx={{ fontSize: '14px' }}>
                   Aktuell beschäftigt
                 </Typography>
-              </GlassCard>
+              </Paper>
             </Grid>
           </Grid>
         </TabPanel>
@@ -618,7 +605,7 @@ export const StatisticsTabs = React.memo(
             </Grid>
           </Grid>
         </TabPanel>
-      </GlassCard>
+      </Box>
     );
   }
 );

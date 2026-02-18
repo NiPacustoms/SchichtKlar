@@ -5,6 +5,9 @@ import { logger } from '@/lib/logging';
 import React, { useState, useCallback } from 'react';
 import type { Customer } from '@/lib/types';
 import { Dialog } from '@/components/ui/Dialog';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Box, Typography, Button } from '@mui/material';
+import { Add } from '@mui/icons-material';
 
 interface AddressData {
   street: string;
@@ -36,7 +39,7 @@ export default function CustomersPage() {
     contactEmail: '',
   });
 
-  const handleAddressFormat = useCallback((address: AddressData | string): string => {
+  const _handleAddressFormat = useCallback((address: AddressData | string): string => {
     if (typeof address === 'string') return address;
     return `${address.street}, ${address.postalCode} ${address.city}`;
   }, []);
@@ -76,7 +79,7 @@ export default function CustomersPage() {
         setIsDialogOpen(false);
       } catch (error) {
         logger.error(
-          'Error adding customer:',
+          'Fehler beim Hinzufügen des Kunden:',
           error instanceof Error ? error.message : String(error)
         );
       }
@@ -85,19 +88,21 @@ export default function CustomersPage() {
   );
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Customers</h1>
-        <button
-          type="button"
+    <PageContainer maxWidth="standard">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" sx={{ fontWeight: 700 }}>
+          Kunden
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
           onClick={() => setIsDialogOpen(true)}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
         >
-          Add Customer
-        </button>
-      </div>
+          Kunde hinzufügen
+        </Button>
+      </Box>
 
-      <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} title="Add New Customer">
+      <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} title="Neuen Kunden anlegen">
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="text"
@@ -108,28 +113,28 @@ export default function CustomersPage() {
           />
           <input
             type="text"
-            placeholder="Street"
+            placeholder="Straße"
             value={formData.street}
             onChange={e => setFormData(prev => ({ ...prev, street: e.target.value }))}
             className="w-full rounded border px-3 py-2"
           />
           <input
             type="text"
-            placeholder="Postal Code"
+            placeholder="PLZ"
             value={formData.postalCode}
             onChange={e => setFormData(prev => ({ ...prev, postalCode: e.target.value }))}
             className="w-full rounded border px-3 py-2"
           />
           <input
             type="text"
-            placeholder="City"
+            placeholder="Ort"
             value={formData.city}
             onChange={e => setFormData(prev => ({ ...prev, city: e.target.value }))}
             className="w-full rounded border px-3 py-2"
           />
           <input
             type="text"
-            placeholder="Country"
+            placeholder="Land"
             value={formData.country}
             onChange={e => setFormData(prev => ({ ...prev, country: e.target.value }))}
             className="w-full rounded border px-3 py-2"
@@ -138,25 +143,25 @@ export default function CustomersPage() {
             value={formData.type}
             onChange={e => handleTypeChange(e.target.value as 'individual' | 'business')}
             className="w-full rounded border px-3 py-2"
-            aria-label="Customer Type"
-            title="Customer Type"
+            aria-label="Kundentyp"
+            title="Kundentyp"
           >
-            <option value="individual">Individual</option>
-            <option value="business">Business</option>
+            <option value="individual">Privat</option>
+            <option value="business">Geschäftlich</option>
           </select>
           <select
             value={formData.status}
             onChange={e => handleStatusChange(e.target.value as 'active' | 'inactive')}
             className="w-full rounded border px-3 py-2"
-            aria-label="Customer Status"
-            title="Customer Status"
+            aria-label="Kundenstatus"
+            title="Kundenstatus"
           >
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value="active">Aktiv</option>
+            <option value="inactive">Inaktiv</option>
           </select>
           <input
             type="email"
-            placeholder="Email"
+            placeholder="E-Mail"
             value={formData.contactEmail}
             onChange={e => setFormData(prev => ({ ...prev, contactEmail: e.target.value }))}
             className="w-full rounded border px-3 py-2"
@@ -165,10 +170,10 @@ export default function CustomersPage() {
             type="submit"
             className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
           >
-            Add Customer
+            Kunde hinzufügen
           </button>
         </form>
       </Dialog>
-    </div>
+    </PageContainer>
   );
 }

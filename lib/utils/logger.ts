@@ -50,7 +50,7 @@ class Logger {
   info(...args: unknown[]): void {
     if (this.shouldLog(LOG_LEVELS.INFO)) {
       // eslint-disable-next-line no-console
-      logger.info('[INFO]', ...args);
+      console.info('[INFO]', ...args);
     }
   }
 
@@ -60,7 +60,7 @@ class Logger {
   warn(...args: unknown[]): void {
     if (this.shouldLog(LOG_LEVELS.WARN)) {
       // eslint-disable-next-line no-console
-      logger.warn('[WARN]', ...args);
+      console.warn('[WARN]', ...args);
     }
   }
 
@@ -70,7 +70,7 @@ class Logger {
   error(...args: unknown[]): void {
     if (this.shouldLog(LOG_LEVELS.ERROR)) {
       // eslint-disable-next-line no-console
-      logger.error('[ERROR]', ...args);
+      console.error('[ERROR]', ...args);
     }
   }
 

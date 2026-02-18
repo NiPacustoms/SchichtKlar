@@ -195,7 +195,7 @@ export function AssignmentRequestCard({
           >
             <Box sx={{ flex: 1 }}>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                {shift.type}
+                Schicht
               </Typography>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>

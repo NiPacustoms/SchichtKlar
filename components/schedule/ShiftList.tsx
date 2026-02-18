@@ -5,6 +5,11 @@ import { Shift } from '@/lib/types';
 import { Add, Schedule } from '@mui/icons-material';
 import { Box, Button, Chip, Typography } from '@mui/material';
 import { format } from 'date-fns';
+import {
+  getShiftDisplayStatus,
+  getShiftStatusLabel,
+  type ShiftDisplayStatus,
+} from '@/lib/utils/shiftStatus';
 
 interface ShiftListProps {
   shifts: Shift[];
@@ -28,29 +33,18 @@ export function ShiftList({ shifts, onRequestShift, showRequestButton = true }: 
     }
   };
 
-  const getStatusColor = (status: Shift['status']) => {
-    switch (status) {
+  const getStatusColor = (displayStatus: ShiftDisplayStatus) => {
+    switch (displayStatus) {
       case 'open':
         return 'info';
       case 'filled':
         return 'success';
       case 'cancelled':
         return 'error';
+      case 'ended':
+        return 'default';
       default:
         return 'default';
-    }
-  };
-
-  const getStatusLabel = (status: Shift['status']) => {
-    switch (status) {
-      case 'open':
-        return 'Offen';
-      case 'filled':
-        return 'Besetzt';
-      case 'cancelled':
-        return 'Abgesagt';
-      default:
-        return 'Unbekannt';
     }
   };
 
@@ -75,7 +69,7 @@ export function ShiftList({ shifts, onRequestShift, showRequestButton = true }: 
         const shiftDate = shift.date instanceof Date ? shift.date : new Date(shift.date);
         const shiftLabel = shift.facilityId
           ? `Einrichtung ${shift.facilityId}${shift.stationId ? ` · Station ${shift.stationId}` : ''}`
-          : shift.type || 'Schicht';
+          : 'Schicht';
         return (
           <GlassCard key={shift.id}>
             <Box sx={{ p: 3 }}>
@@ -99,7 +93,7 @@ export function ShiftList({ shifts, onRequestShift, showRequestButton = true }: 
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <Schedule sx={{ fontSize: 16, color: getShiftTypeColor(shift.type) }} />
                     <Typography variant="body2" sx={{ color: getShiftTypeColor(shift.type) }}>
-                      {shift.type}
+                      Schicht
                     </Typography>
                   </Box>
                   <Typography variant="body2" color="text.secondary">
@@ -108,8 +102,8 @@ export function ShiftList({ shifts, onRequestShift, showRequestButton = true }: 
                   </Typography>
                 </Box>
                 <Chip
-                  label={getStatusLabel(shift.status)}
-                  color={getStatusColor(shift.status)}
+                  label={getShiftStatusLabel(getShiftDisplayStatus(shift))}
+                  color={getStatusColor(getShiftDisplayStatus(shift))}
                   size="small"
                   sx={{
                     fontWeight: 600,
@@ -119,7 +113,7 @@ export function ShiftList({ shifts, onRequestShift, showRequestButton = true }: 
                 />
               </Box>
 
-              {showRequestButton && shift.status === 'open' && onRequestShift && (
+              {showRequestButton && getShiftDisplayStatus(shift) === 'open' && onRequestShift && (
                 <Button
                   variant="outlined"
                   size="small"
