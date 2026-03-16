@@ -42,7 +42,7 @@ export async function calculateWeeklyHours(
 ): Promise<WeeklyHoursResult> {
   const endOfWeek = getEndOfWeek(startOfWeek);
   try {
-    const { timesheets, aggregates } = await timesheetService.getByDateRange(
+    const { timesheets: _timesheets, aggregates } = await timesheetService.getByDateRange(
       mitarbeiterId,
       startOfWeek,
       endOfWeek,

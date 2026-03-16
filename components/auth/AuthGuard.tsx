@@ -14,7 +14,7 @@ import { adminSettingsService } from '@/lib/services/adminSettings';
 import Link from 'next/link';
 
 /** Zugriff-verweigert-Ansicht: Rolle wird beim Login aus dem Konto ermittelt (Admin-Registrierung oder Einladung). */
-function AccessDeniedView({ user }: { user: User | null }) {
+function _AccessDeniedView({ user }: { user: User | null }) {
   return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="text-center max-w-md px-4">

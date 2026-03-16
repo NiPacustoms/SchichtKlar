@@ -97,7 +97,7 @@ export function ShiftManagementCard({
   const displayStatus = getShiftDisplayStatus(shift);
   const statusLabel = getShiftStatusLabel(displayStatus);
 
-  const getShiftTypeColor = (type: Shift['type']) => {
+  const _getShiftTypeColor = (type: Shift['type']) => {
     switch (type) {
       case 'Frühdienst':
         return '#0288D1';
