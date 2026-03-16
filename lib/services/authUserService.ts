@@ -68,6 +68,46 @@ export function buildFallbackUser(firebaseUser: FirebaseUser): User {
   };
 }
 
+/**
+ * Erstellt einen Fallback-User mit korrekter Rolle aus Firebase Custom Claims.
+ * Verhindert, dass Admins fälschlich als 'nurse' erkannt werden.
+ */
+export async function buildFallbackUserWithClaims(firebaseUser: FirebaseUser): Promise<User> {
+  let role: User['role'] = 'nurse';
+  let companyId = SINGLE_COMPANY_ID;
+  try {
+    const tokenResult = await firebaseUser.getIdTokenResult(false);
+    const claimsRole = tokenResult.claims.role as string | undefined;
+    if (claimsRole === 'admin' || claimsRole === 'nurse') {
+      role = claimsRole;
+    }
+    const claimsCompanyId = tokenResult.claims.companyId as string | undefined;
+    if (claimsCompanyId) {
+      companyId = claimsCompanyId;
+    }
+  } catch (error) {
+    logger.warn('Failed to read claims for fallback user', {}, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+  return {
+    id: firebaseUser.uid,
+    email: firebaseUser.email || '',
+    displayName:
+      firebaseUser.displayName ||
+      firebaseUser.email?.split('@')[0] ||
+      'Unbekannter Benutzer',
+    role,
+    companyId,
+    qualifications: [],
+    documents: [],
+    active: true,
+    notificationSettings: { ...DEFAULT_NOTIFICATION_SETTINGS },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
 function getDate(timestamp: unknown): Date {
   if (!timestamp) return new Date();
   if (timestamp instanceof Date) return timestamp;
@@ -337,4 +377,5 @@ export const authUserService = {
   applyClaimsToUser,
   updateAuthUserProfile,
   buildFallbackUser,
+  buildFallbackUserWithClaims,
 };

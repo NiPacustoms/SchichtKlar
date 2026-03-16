@@ -74,10 +74,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = authInstance.onAuthStateChanged((fbUser: FirebaseUser | null) => {
       setAuthError(null);
       if (fbUser) {
-        // Sofort anzeigen: App mit Fallback-User nutzbar machen, dann volles Profil im Hintergrund laden
-        setUser(authUserService.buildFallbackUser(fbUser));
+        // Sofort FirebaseUser setzen, aber loading bleibt true bis Profil+Rolle geladen
         setFirebaseUser(fbUser);
-        setLoading(false);
         (async () => {
           try {
             // Parallel: Session-Cookie und User-Profil – spart spürbar Zeit
@@ -87,11 +85,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             ]);
             if (loadedUser) {
               setUser(loadedUser);
+            } else {
+              // Nur als Fallback wenn Firestore nicht erreichbar: Rolle aus Claims lesen
+              setUser(await authUserService.buildFallbackUserWithClaims(fbUser));
             }
           } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
             setAuthError(msg || 'Sitzung konnte nicht eingerichtet werden.');
             logger.error('Session/User fehlgeschlagen', error instanceof Error ? error : new Error(String(error)));
+            // Im Fehlerfall: Fallback-User mit Claims-Rolle setzen
+            setUser(await authUserService.buildFallbackUserWithClaims(fbUser));
+          } finally {
+            setLoading(false);
           }
         })();
       } else {
@@ -164,7 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const loadedUser = firestoreUser
             ? await authUserService.applyClaimsToUser(fbUser, firestoreUser)
             : null;
-          setUser(loadedUser ?? authUserService.buildFallbackUser(fbUser));
+          setUser(loadedUser ?? await authUserService.buildFallbackUserWithClaims(fbUser));
           setFirebaseUser(fbUser);
         } catch (sessionError) {
           const msg = sessionError instanceof Error ? sessionError.message : String(sessionError);
