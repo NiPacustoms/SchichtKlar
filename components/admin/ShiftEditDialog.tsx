@@ -26,7 +26,6 @@ import {
   FormControl,
   InputLabel,
   Chip,
-  Divider,
   Tooltip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -111,6 +110,7 @@ export default function ShiftEditDialog({ open, shift, onClose, onUpdated }: Shi
         color: normalizeShiftColor((shift as unknown as { color?: string }).color),
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, shift]);
 
   const handleChange = (field: keyof typeof form, value: unknown) => {

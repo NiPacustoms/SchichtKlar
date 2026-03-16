@@ -2,8 +2,6 @@
 
 import { Box } from '@mui/material';
 import { usePathname } from 'next/navigation';
-import { AppLogo } from '@/components/ui/AppLogo';
-import { BackButton } from '@/components/layout/BackButton';
 import dynamic from 'next/dynamic';
 
 // useBrandingSettings nutzt useQuery – dynamischer Import verhindert SSR-Probleme im Layout

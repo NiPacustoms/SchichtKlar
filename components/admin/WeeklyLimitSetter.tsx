@@ -43,7 +43,7 @@ export function WeeklyLimitSetter({ employee, compact = false }: WeeklyLimitSett
     register,
     handleSubmit,
     formState: { errors },
-    setValue,
+    setValue: _setValue,
   } = useForm<WeeklyLimitFormData>({
     resolver: zodResolver(weeklyLimitSchema),
     defaultValues: { limit: currentLimit || 48 },

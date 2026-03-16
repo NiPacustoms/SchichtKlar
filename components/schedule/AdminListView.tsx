@@ -191,7 +191,7 @@ export function AdminListView({
     }
   };
 
-  const getShiftTypeColor = (type: Shift['type']) => {
+  const _getShiftTypeColor = (type: Shift['type']) => {
     switch (type) {
       case 'Frühdienst':
         return '#0288D1';

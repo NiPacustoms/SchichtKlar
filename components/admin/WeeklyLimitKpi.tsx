@@ -12,7 +12,7 @@ export interface WeeklyLimitKpiProps {
   onClick?: () => void;
 }
 
-export function WeeklyLimitKpi({ mitarbeiterId, mitarbeiterName, onClick }: WeeklyLimitKpiProps) {
+export function WeeklyLimitKpi({ mitarbeiterId, mitarbeiterName: _mitarbeiterName, onClick }: WeeklyLimitKpiProps) {
   const theme = useTheme();
   const { data: limit, isLoading } = useWeeklyLimit(mitarbeiterId);
 
