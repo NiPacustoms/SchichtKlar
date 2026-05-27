@@ -12,6 +12,7 @@ import { QueryProvider } from '@/lib/providers/QueryProvider';
 import { GlobalErrorBoundary } from '@/components/errors/GlobalErrorBoundary';
 import { validateLegalConfig } from '@/lib/config/legal';
 import { logger } from '@/lib/logging';
+import { WebVitals } from '@/components/WebVitals';
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 
@@ -38,9 +39,30 @@ const inter = Inter({
   preload: true,
 });
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://jobflow.app';
+
 export const metadata: Metadata = {
-  title: 'JobFlow - Zeitarbeits-App',
-  description: 'DSGVO-konforme Zeitarbeits-App für medizinisches Personal',
+  metadataBase: new URL(APP_URL),
+  title: {
+    default: 'JobFlow - Zeitarbeits-App',
+    template: '%s | JobFlow',
+  },
+  description: 'DSGVO-konforme Zeitarbeits-App für medizinisches Personal – Dienstplanung, Zeiterfassung und Dokumentenverwaltung.',
+  openGraph: {
+    type: 'website',
+    locale: 'de_DE',
+    url: APP_URL,
+    siteName: 'JobFlow',
+    title: 'JobFlow - Zeitarbeits-App',
+    description: 'DSGVO-konforme Zeitarbeits-App für medizinisches Personal – Dienstplanung, Zeiterfassung und Dokumentenverwaltung.',
+    images: [{ url: '/favicon-512.png', width: 512, height: 512, alt: 'JobFlow Logo' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'JobFlow - Zeitarbeits-App',
+    description: 'DSGVO-konforme Zeitarbeits-App für medizinisches Personal.',
+    images: ['/favicon-512.png'],
+  },
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },
@@ -312,6 +334,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         data-firebase-config={FIREBASE_CONFIG_JSON}
         suppressHydrationWarning
       >
+        <WebVitals />
         <EmotionRegistry>
           <GlobalErrorBoundary showDetails={process.env.NODE_ENV === 'development'}>
             <QueryProvider>

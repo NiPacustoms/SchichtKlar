@@ -36,8 +36,21 @@ async function resolveRouteRole(uid: string): Promise<RouteRole> {
  * POST: Session-Cookie setzen (nach Login).
  * Setzt __session und jobflow_role (admin|nurse) – Middleware erzwingt strikte Routentrennung.
  */
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  const allowed = process.env.NEXT_PUBLIC_APP_URL
+    ? [process.env.NEXT_PUBLIC_APP_URL, 'http://localhost:3000']
+    : ['http://localhost:3000'];
+  return allowed.some((o) => origin.startsWith(o));
+}
+
 export async function POST(req: NextRequest) {
   try {
+    const origin = req.headers.get('origin');
+    if (origin && !isAllowedOrigin(origin)) {
+      return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
+    }
+
     if (!adminAuth) {
       const appError = createAppError(
         new Error('Firebase Admin ist nicht konfiguriert.'),
