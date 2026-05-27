@@ -13,6 +13,7 @@ import { GlobalErrorBoundary } from '@/components/errors/GlobalErrorBoundary';
 import { validateLegalConfig } from '@/lib/config/legal';
 import { logger } from '@/lib/logging';
 import { WebVitals } from '@/components/WebVitals';
+import { SkipLink } from '@/components/a11y/SkipLink';
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 
@@ -334,6 +335,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         data-firebase-config={FIREBASE_CONFIG_JSON}
         suppressHydrationWarning
       >
+        <SkipLink />
         <WebVitals />
         <EmotionRegistry>
           <GlobalErrorBoundary showDetails={process.env.NODE_ENV === 'development'}>
@@ -344,7 +346,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <MUIThemeProviderWrapper>
                     <ConditionalHeader />
                     <PluginInit />
-                    {children}
+                    <main id="main-content" tabIndex={-1} style={{ outline: 'none' }}>
+                      {children}
+                    </main>
                     <InstallPrompt />
                     <CookieBanner />
                   </MUIThemeProviderWrapper>

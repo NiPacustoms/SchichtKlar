@@ -207,15 +207,15 @@ function AdminShiftsPageContent() {
     setAssignDialogOpen(true);
   };
 
-  const handleDeleteShift = async (shift: { id: string }) => {
-    if (confirm('Schicht wirklich löschen?')) {
+  const handleDeleteShift = (shift: { id: string }) => {
+    toast.undoable('Schicht wird gelöscht …', async () => {
       try {
         await deleteShift(shift.id);
-        toast.success('Schicht erfolgreich gelöscht');
-      } catch (error) {
+        toast.success('Schicht gelöscht');
+      } catch {
         toast.error('Fehler beim Löschen der Schicht');
       }
-    }
+    });
   };
 
   const handleShiftClick = (shift: { id: string }) => {
