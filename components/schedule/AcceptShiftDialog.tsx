@@ -35,7 +35,7 @@ export function AcceptShiftDialog({
   onClose,
   assignment,
   onAccept,
-  getShiftTypeColor,
+  getShiftTypeColor: _getShiftTypeColor,
   checkBreakRule,
 }: AcceptShiftDialogProps) {
   const [isLoading, setIsLoading] = useState(true);

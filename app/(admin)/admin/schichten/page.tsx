@@ -111,7 +111,7 @@ function AdminShiftsPageContent() {
     shifts,
     isLoading,
     error,
-    createShift,
+    createShift: _createShift,
     updateShift: _updateShift,
     deleteShift,
     assignShift: _assignShift,

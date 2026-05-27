@@ -76,6 +76,10 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  // ESLint wird separat via `npm run lint` geprüft (flat-config ist nicht kompatibel mit Next.js-internem Lint)
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   // Image Optimization Konfiguration für Firebase Storage
   images: {
     remotePatterns: [
