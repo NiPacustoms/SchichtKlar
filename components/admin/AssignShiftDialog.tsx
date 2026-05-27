@@ -52,9 +52,9 @@ function DraggableUserRow({ userId, children }: DraggableUserRowProps) {
     collect: (monitor) => ({ isDragging: monitor.isDragging() }),
   });
   return (
-    <div ref={dragRef as unknown as React.Ref<HTMLDivElement>} style={{ opacity: isDragging ? 0.5 : 1 }}>
+    <Box ref={dragRef as unknown as React.Ref<HTMLDivElement>} sx={{ opacity: isDragging ? 0.5 : 1 }}>
       {children}
-    </div>
+    </Box>
   );
 }
 
@@ -72,19 +72,19 @@ function AssignedDropZone({ onDrop, disabled, children }: AssignedDropZoneProps)
     collect: (monitor) => ({ isOver: monitor.isOver() }),
   });
   return (
-    <div
+    <Box
       ref={dropRef as unknown as React.Ref<HTMLDivElement>}
-      style={{
+      sx={{
         minHeight: 120,
-        borderRadius: 8,
+        borderRadius: '8px',
         border: '2px dashed',
-        borderColor: isOver && !disabled ? 'var(--mui-palette-primary-main)' : 'var(--mui-palette-divider)',
-        backgroundColor: isOver && !disabled ? 'var(--mui-palette-action-hover)' : 'transparent',
+        borderColor: isOver && !disabled ? 'primary.main' : 'divider',
+        backgroundColor: isOver && !disabled ? 'action.hover' : 'transparent',
         transition: 'background-color 0.2s, border-color 0.2s',
       }}
     >
       {children}
-    </div>
+    </Box>
   );
 }
 

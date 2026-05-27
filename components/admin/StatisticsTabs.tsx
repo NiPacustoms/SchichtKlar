@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useTheme } from '@mui/material/styles';
 import {
   Box,
   Typography,
@@ -83,6 +84,7 @@ export const StatisticsTabs = React.memo(
     staffActivity = [],
     staff = [],
   }: StatisticsTabsProps) => {
+    const theme = useTheme();
     const [activeTab, setActiveTab] = useState(0);
     const [timeRange, setTimeRange] = useState<'week' | 'month'>('week');
     const [_chartDimensions, setChartDimensions] = useState({ width: 300, height: 200 });
@@ -306,8 +308,8 @@ export const StatisticsTabs = React.memo(
                       <XAxis dataKey="name" />
                       <YAxis />
                       <Tooltip content={<CustomTooltip />} />
-                      <Bar key="bar-hours" dataKey="hours" fill="#2196f3" name="Gearbeitet" />
-                      <Bar key="bar-target" dataKey="target" fill="#e0e0e0" name="Ziel" />
+                      <Bar key="bar-hours" dataKey="hours" fill={theme.palette.primary.main} name="Gearbeitet" />
+                      <Bar key="bar-target" dataKey="target" fill={theme.palette.grey[300]} name="Ziel" />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -551,7 +553,7 @@ export const StatisticsTabs = React.memo(
                       <XAxis type="number" />
                       <YAxis dataKey="name" type="category" width={100} />
                       <Tooltip />
-                      <Bar key="bar-value" dataKey="value" fill="#2196f3" />
+                      <Bar key="bar-value" dataKey="value" fill={theme.palette.primary.main} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (

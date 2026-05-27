@@ -3,7 +3,8 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
 import { AdminListView } from '@/components/schedule/AdminListView';
-import AdminCalendarView from '@/components/schedule/AdminCalendarView';
+import dynamic from 'next/dynamic';
+const AdminCalendarView = dynamic(() => import('@/components/schedule/AdminCalendarView'), { ssr: false });
 import { AssignShiftDialog } from '@/components/admin/AssignShiftDialog';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { ShiftCreateDialog } from '@/components/admin/ShiftCreateDialog';

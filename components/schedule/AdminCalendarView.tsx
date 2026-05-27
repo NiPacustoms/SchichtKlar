@@ -49,6 +49,16 @@ import { de } from 'date-fns/locale';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { isShiftEnded } from '@/lib/utils/shiftStatus';
 
+function getColorForUser(userId: string): string {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+    hash |= 0;
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue} 65% 50%)`;
+}
+
 function FormStatusChip({ shiftId }: { shiftId: string }) {
   const [label, setLabel] = useState<string | null>(null);
   const [color, setColor] = useState<'default' | 'success' | 'warning' | 'error'>('default');
@@ -140,16 +150,6 @@ export default function AdminCalendarView({
   onDayClick,
   onDayLongPress,
 }: AdminCalendarViewProps) {
-  // Deterministische Farbzuteilung pro Mitarbeiter (aus userId)
-  const getColorForUser = (userId: string): string => {
-    let hash = 0;
-    for (let i = 0; i < userId.length; i++) {
-      hash = userId.charCodeAt(i) + ((hash << 5) - hash);
-      hash |= 0;
-    }
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue} 65% 50%)`;
-  };
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'), {
     noSsr: true,

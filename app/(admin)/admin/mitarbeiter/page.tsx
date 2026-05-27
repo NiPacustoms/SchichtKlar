@@ -9,8 +9,12 @@ import {
 import { userService } from '@/lib/services/users';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/lib/logging';
+import dynamic from 'next/dynamic';
 import { StaffCreateDialog } from '@/components/admin/StaffCreateDialog';
-import { StaffEditDialog } from '@/components/admin/StaffEditDialog';
+const StaffEditDialog = dynamic(
+  () => import('@/components/admin/StaffEditDialog').then((m) => ({ default: m.StaffEditDialog })),
+  { ssr: false }
+);
 import { CategoryManager } from '@/components/admin/CategoryManager';
 import { StaffFilters } from '@/components/admin/StaffFilters';
 import { StaffStatsCard } from '@/components/admin/StaffStatsCard';
