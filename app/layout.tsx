@@ -4,6 +4,7 @@ import { EmotionRegistry } from '@/components/EmotionRegistry';
 import { ConditionalHeader } from '@/components/layout/ConditionalHeader';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { OfflineBanner } from '@/components/pwa/OfflineBanner';
+import { OfflineConflictContainer } from '@/components/pwa/OfflineConflictContainer';
 import { PushNotificationInitializer } from '@/components/pwa/PushNotificationInitializer';
 import { CookieBanner } from '@/components/legal/CookieBanner';
 import { PluginInit } from '@/components/PluginInit';
@@ -348,6 +349,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <MUIThemeProviderWrapper>
                     <ConditionalHeader />
                     <OfflineBanner />
+                    <OfflineConflictContainer />
                     <PluginInit />
                     <PushNotificationInitializer />
                     <main id="main-content" tabIndex={-1} style={{ outline: 'none' }}>
