@@ -90,8 +90,9 @@ export const viewport: Viewport = {
   userScalable: true,
 };
 
-// Verhindert statische Prerender-Fehler (webpack-runtime .call) bei "/"
-export const dynamic = 'force-dynamic';
+// Default 'auto' lassen: Next.js entscheidet pro Route (statisch vs. dynamisch)
+// War zuvor 'force-dynamic' wegen webpack-runtime Fehler - mit Next.js 15.5+ behoben
+export const dynamic = 'auto';
 
 // Firebase-Config für Service Worker als JSON (wird ins data-Attribut geschrieben, nicht ins Script).
 // Verhindert "Invalid or unexpected token" durch Sonderzeichen in Env-Werten im gebündelten layout.js.
