@@ -1,9 +1,12 @@
 const path = require('path');
 
 /** @type {import('next').NextConfig} */
+// Production CSP: 'unsafe-eval' entfernt (war XSS-Risiko via eval()).
+// 'unsafe-inline' bleibt für MUI/Emotion CSS-in-JS und Initial-Scripts.
+// TODO: Auf Nonce-basierte CSP umstellen für vollständige Härtung.
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com;
+  script-src 'self' 'unsafe-inline' https://www.googletagmanager.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   img-src 'self' data: blob: https://firebasestorage.googleapis.com https://lh3.googleusercontent.com;
   font-src 'self' https://fonts.gstatic.com;
