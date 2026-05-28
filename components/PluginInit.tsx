@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { logger } from '@/lib/logging';
 
 /**
  * Initialisiert die L8-Plugin-Registry einmalig beim App-Start (nur im Browser).
@@ -11,9 +12,7 @@ export function PluginInit() {
     import('@/src/composition')
       .then(({ initPlugins }) => initPlugins())
       .catch((err) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('[PluginInit] initPlugins failed', err);
-        }
+        logger.warn('[PluginInit] initPlugins failed', err instanceof Error ? err : new Error(String(err)));
       });
   }, []);
   return null;

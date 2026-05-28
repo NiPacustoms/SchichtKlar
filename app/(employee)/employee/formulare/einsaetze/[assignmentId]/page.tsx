@@ -97,6 +97,7 @@ export default function AssignmentFormPage() {
     let isMounted = true;
     (async () => {
       try {
+        // Stage 1: Load assignment (required for other queries)
         const a = await assignmentService.getById(assignmentId);
         if (!a) {
           setError('Zuweisung nicht gefunden');
@@ -106,36 +107,49 @@ export default function AssignmentFormPage() {
         if (!isMounted) return;
         setAssignment(a);
 
+        // Stage 2: Load shift (required for facility & timesheet)
         const s = await shiftService.getById(a.shiftId);
         if (!isMounted) return;
         setShift(s);
 
-        // Lade Facility-Daten
-        if (s?.facilityId) {
-          const f = await facilityService.getById(s.facilityId);
-          if (isMounted) {
-            setFacility(f);
-            // Lade Station-Name
-            if (f && s.stationId) {
-              const station = f.stations?.find(st => st.id === s.stationId);
-              setStationName(station?.name || '');
-            }
+        // Stage 3: Parallel-load facility, timesheet, documents (independent queries)
+        const isAccepted = a.status === 'accepted' || a.formStatus === 'acknowledged';
+        const shiftDate = s?.date
+          ? (typeof s.date === 'string' ? new Date(s.date) : s.date)
+          : null;
+
+        const [facilityResult, timesheetResult, docsResult] = await Promise.all([
+          s?.facilityId ? facilityService.getById(s.facilityId).catch(() => null) : Promise.resolve(null),
+          isAccepted && a.userId && shiftDate
+            ? timesheetService.getByDate(a.userId, shiftDate).catch(() => null)
+            : Promise.resolve(null),
+          isAccepted && a.userId
+            ? documentService.getByUserId(a.userId).catch(() => [])
+            : Promise.resolve([]),
+        ]);
+
+        if (!isMounted) return;
+
+        // Process facility result
+        if (facilityResult) {
+          setFacility(facilityResult);
+          if (s?.stationId) {
+            const station = facilityResult.stations?.find((st) => st.id === s.stationId);
+            setStationName(station?.name || '');
           }
         }
 
-        // Wenn Einsatz bereits angenommen: Zeiterfassung und PDF für Zusammenfassung laden
-        const isAccepted = a.status === 'accepted' || a.formStatus === 'acknowledged';
-        if (isAccepted && a.userId && s?.date) {
-          const shiftDate = typeof s.date === 'string' ? new Date(s.date) : s.date;
-          const ts = await timesheetService.getByDate(a.userId, shiftDate);
-          if (isMounted) setTimesheetForShift(ts);
-          try {
-            const docs = await documentService.getByUserId(a.userId);
-            const pdfDoc = docs.find(d => d.notes?.includes(a.id) || d.name?.toLowerCase().includes('einsatzmitteilung'));
-            if (isMounted && pdfDoc?.url) setAssignmentPdfUrl(pdfDoc.url);
-          } catch {
-            if ((a as { pdfUrl?: string }).pdfUrl) setAssignmentPdfUrl((a as { pdfUrl: string }).pdfUrl);
-          }
+        // Process timesheet result
+        if (timesheetResult) setTimesheetForShift(timesheetResult);
+
+        // Process documents result
+        const pdfDoc = docsResult.find(
+          (d) => d.notes?.includes(a.id) || d.name?.toLowerCase().includes('einsatzmitteilung')
+        );
+        if (pdfDoc?.url) {
+          setAssignmentPdfUrl(pdfDoc.url);
+        } else if ((a as { pdfUrl?: string }).pdfUrl) {
+          setAssignmentPdfUrl((a as { pdfUrl: string }).pdfUrl);
         }
 
         reset({

@@ -70,7 +70,8 @@ export class GlobalErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoun
       try {
         logger.error('Global Error Boundary caught an error:', appError.toObject());
       } catch {
-        console.error('Error boundary:', error);
+        // Last-resort fallback if logger itself fails
+        logger.error('Error boundary fallback', error instanceof Error ? error : new Error(String(error)));
       }
     } catch (e) {
       this.setState({
