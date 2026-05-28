@@ -2,9 +2,22 @@ import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/firebase';
 import { sendAssignmentFormEmail } from '@/lib/services/email';
 import { collection, query, where, getDocs, doc, getDoc, Timestamp } from 'firebase/firestore';
+import { verifyIdToken, getRoleFromToken } from '@/lib/server/firebaseAdmin';
+import { createAuthErrorResponse } from '@/lib/errors';
 
 export async function POST(request: Request) {
   try {
+    // Auth-Check: Nur Admins dürfen Reminders senden
+    const authHeader = request.headers.get('authorization');
+    const decoded = await verifyIdToken(authHeader || undefined);
+    if (!decoded) {
+      return createAuthErrorResponse('UNAUTHENTICATED', '/api/forms/reminders');
+    }
+    const role = getRoleFromToken(decoded);
+    if (role !== 'admin') {
+      return createAuthErrorResponse('UNAUTHORIZED', '/api/forms/reminders');
+    }
+
     const url = new URL(request.url);
     const origin = `${url.protocol}//${url.host}`;
     const twentyFourHoursAgo = Timestamp.fromDate(new Date(Date.now() - 24 * 60 * 60 * 1000));

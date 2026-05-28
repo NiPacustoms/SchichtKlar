@@ -22,28 +22,45 @@ service cloud.firestore {
       return isAuthenticated() && (hasRole('admin') || hasRoleFromUserDoc('admin'));
     }
 
-    // Helper-Funktion für Mandantenisolation
-    // Prüft, ob der User zur gleichen Company gehört wie das Dokument
-    // Ermittelt die CompanyId des Requestors entweder aus dem Token oder dem User-Dokument
+    // Helper-Funktion für Mandantenisolation (Multi-Tenant)
+    // Ermittelt die CompanyId des Requestors aus dem Token (Custom Claim)
     function getRequesterCompanyId() {
-      return 'aufabruf';
+      return request.auth != null && 'companyId' in request.auth.token
+        ? request.auth.token.companyId
+        : null;
     }
 
+    // Fallback: CompanyId aus User-Dokument (vor Sync der Custom Claims)
     function getRequesterCompanyIdFromDoc() {
-      return 'aufabruf';
+      let doc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return doc != null && 'companyId' in doc.data ? doc.data.companyId : null;
     }
 
+    // User hat einen Company-Kontext (Token ODER User-Doc)
     function hasCompanyContext() {
-      return true;
+      return isAuthenticated() && (
+        getRequesterCompanyId() != null ||
+        getRequesterCompanyIdFromDoc() != null
+      );
     }
 
+    // Prüft, ob das Ressource-Dokument zur gleichen Company gehört wie der User
+    // null companyId in resource = Legacy-Daten ohne Tenant (zulassen, aber loggen)
     function belongsToSameCompany(resourceCompanyId) {
-      return true;
+      return isAuthenticated() && (
+        resourceCompanyId == null ||
+        resourceCompanyId == getRequesterCompanyId() ||
+        resourceCompanyId == getRequesterCompanyIdFromDoc()
+      );
     }
 
     // Prüft, ob das zu erstellende Dokument zur gleichen Company gehört wie der User
     function creatingForSameCompany(requestCompanyId) {
-      return true;
+      return isAuthenticated() && (
+        requestCompanyId == null ||
+        requestCompanyId == getRequesterCompanyId() ||
+        requestCompanyId == getRequesterCompanyIdFromDoc()
+      );
     }
 
     // Users: Jede Mitarbeiter-Rolle ist von anderen getrennt – nur eigene Daten lesbar.
