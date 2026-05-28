@@ -25,6 +25,7 @@
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
     "lint:ci": "eslint . --quiet --rule '@typescript-eslint/no-explicit-any:off' --rule 'react/no-unescaped-entities:off' --rule 'no-empty:off' --rule 'react/jsx-key:off' --rule 'no-unreachable:off' --rule 'no-useless-escape:off'",
+    "prepare": "husky",
     "typecheck": "tsc --noEmit",
     "typecheck:ci": "tsc --noEmit || echo 'Type errors ignored in CI'",
     "validate": "npm run lint && npm run typecheck",
@@ -54,6 +55,14 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "generate:domain": "node scripts/generate-domain.js"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@babel/runtime": "^7.28.6",
@@ -127,7 +136,9 @@
     "eslint-config-next": "^15.5.12",
     "eslint-config-prettier": "^9.1.0",
     "firebase": "^12.6.0",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
+    "lint-staged": "^17.0.5",
     "prettier": "^3.8.1",
     "source-map-js": "^1.2.1",
     "storybook": "^8.4.0",
