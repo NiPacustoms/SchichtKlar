@@ -9,6 +9,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { logger } from '@/lib/logging';
 import { createAppError, ErrorCode } from '@/lib/errors';
 import * as offlineStorage from './offlineStorage';
+import { retryWithBackoff, isRetryableError } from '@/lib/utils/retry';
 
 export const OFFLINE_SYNC_STATUS_EVENT = 'jobflow-offline-sync-status';
 export const OFFLINE_CONFLICT_EVENT = 'jobflow-offline-conflict';
@@ -187,7 +188,29 @@ class OfflineQueueService {
 
       for (const item of itemsToSync) {
         try {
-          await this.syncItem(item);
+          // Verwende Retry mit Exponential Backoff für transient errors
+          await retryWithBackoff(
+            () => this.syncItem(item),
+            {
+              maxRetries: 3,
+              initialDelayMs: 1000,
+              maxDelayMs: 16000,
+              backoffMultiplier: 2,
+              isRetryable: (error) => {
+                // Konflikte sollen NICHT retried werden
+                const conflictType = this.detectConflictType(error);
+                const isConflict = ['not_found', 'validation', 'duplicate', 'stale'].includes(conflictType);
+                if (isConflict) return false;
+                // Nutze Standard-Retry-Logik für transient errors
+                return isRetryableError(error);
+              },
+              onRetry: (attempt, error, delayMs) => {
+                logger.info(`Retrying sync for item ${item.id} (attempt ${attempt}, delay: ${delayMs}ms)`, {
+                  error: error.message,
+                });
+              },
+            }
+          );
           syncedIds.push(item.id);
           await this.removePersistedItem(item.id);
         } catch (error) {
@@ -210,23 +233,18 @@ class OfflineQueueService {
             await this.updatePersistedRetries(item.id, item.retries);
             this.notifyConflict(conflict);
           } else {
-            // Transient-Fehler: Retry
-            item.retries += 1;
-            if (item.retries < 3) {
-              failedItems.push(item);
-              await this.updatePersistedRetries(item.id, item.retries);
-            } else {
-              // Max retries erreicht: Gib auf
-              const conflict: OfflineConflict = {
-                itemId: item.id,
-                type: 'unknown',
-                message: `Sync fehlgeschlagen nach ${item.retries} Versuchen`,
-                timestamp: Date.now(),
-              };
-              item.conflict = conflict;
-              await this.removePersistedItem(item.id);
-              this.notifyConflict(conflict);
-            }
+            // Nach Retry-Erschöpfung: Behandle als Konflikt für UI
+            const conflict: OfflineConflict = {
+              itemId: item.id,
+              type: 'unknown',
+              message: `Sync fehlgeschlagen nach Retries: ${error instanceof Error ? error.message : String(error)}`,
+              timestamp: Date.now(),
+            };
+            item.conflict = conflict;
+            item.retries = 3;
+            failedItems.push(item);
+            await this.updatePersistedRetries(item.id, item.retries);
+            this.notifyConflict(conflict);
           }
         }
       }
