@@ -105,7 +105,7 @@ describe('assignmentService', () => {
 
     it('should return empty array if no companyId found', async () => {
       const { getCompanyIdFromAuth } = await import('@/lib/utils/companyId');
-      vi.mocked(getCompanyIdFromAuth).mockResolvedValue(null);
+      vi.mocked(getCompanyIdFromAuth).mockResolvedValueOnce(null);
 
       const result = await assignmentService.getByUserId('user123');
 

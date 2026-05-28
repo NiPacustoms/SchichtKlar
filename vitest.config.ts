@@ -3,7 +3,7 @@ import path from 'path';
 
 export default defineConfig({
   test: {
-    environment: 'node',
+    environment: 'jsdom',
     include: [
       'lib/**/__tests__/**/*.test.ts',
       'lib/**/*.test.ts',
@@ -24,7 +24,7 @@ export default defineConfig({
         '**/*.d.ts',
         '**/index.ts',
       ],
-      reporter: ['text', 'text-summary', 'html'],
+      reporter: ['text', 'text-summary', 'html', 'lcov'],
     },
   },
   resolve: {

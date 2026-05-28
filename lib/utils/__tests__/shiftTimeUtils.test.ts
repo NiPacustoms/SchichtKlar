@@ -42,7 +42,8 @@ describe('getTimeTrackingWindow', () => {
   });
 
   it('respektiert benutzerdefinierte Minuten vor Start', () => {
-    const now = new Date('2025-02-03T05:50:00.000Z'); // 06:50 Berlin → mit 15 min ok, mit 10 min zu früh
+    // 06:49 Berlin = 05:49 UTC → 11 min vor 07:00 → mit 15 min ok, mit 10 min zu früh
+    const now = new Date('2025-02-03T05:49:00.000Z');
     const resultDefault = getTimeTrackingWindow(now, shiftDate, startTime, endTime, tz, 15, 0);
     const resultCustom = getTimeTrackingWindow(now, shiftDate, startTime, endTime, tz, 10, 0);
     expect(resultDefault.allowed).toBe(true);
