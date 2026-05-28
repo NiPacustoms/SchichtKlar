@@ -1,7 +1,7 @@
 {
   "name": "JobFlow - Zeitarbeits-App",
   "short_name": "JobFlow",
-  "description": "Zeitarbeits-App für medizinisches Personal",
+  "description": "DSGVO-konforme Zeitarbeits-App für medizinisches Personal – Dienstplanung, Zeiterfassung und Dokumentenverwaltung.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -55,6 +55,36 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Zeiterfassung",
+      "short_name": "Zeiten",
+      "description": "Starte direkt mit der Zeiterfassung",
+      "url": "/employee/zeiterfassung",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Meine Einsätze",
+      "short_name": "Einsätze",
+      "description": "Aktuelle Einsätze anzeigen",
+      "url": "/employee/einsaetze",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Dienstplan",
+      "short_name": "Dienstplan",
+      "description": "Admin-Dienstplan öffnen",
+      "url": "/admin/dienstplan",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Mitarbeiter",
+      "short_name": "Mitarbeiter",
+      "description": "Mitarbeiterverwaltung",
+      "url": "/admin/mitarbeiter",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96", "type": "image/png" }]
     }
   ],
   "categories": ["business", "productivity"],

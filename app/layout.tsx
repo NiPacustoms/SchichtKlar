@@ -3,6 +3,8 @@ import { ThemeModeProvider } from '@/contexts/ThemeModeContext';
 import { EmotionRegistry } from '@/components/EmotionRegistry';
 import { ConditionalHeader } from '@/components/layout/ConditionalHeader';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { OfflineBanner } from '@/components/pwa/OfflineBanner';
+import { PushNotificationInitializer } from '@/components/pwa/PushNotificationInitializer';
 import { CookieBanner } from '@/components/legal/CookieBanner';
 import { PluginInit } from '@/components/PluginInit';
 // import BottomNav from '@/components/layout/BottomNavigation';
@@ -345,7 +347,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <ThemeModeProvider>
                   <MUIThemeProviderWrapper>
                     <ConditionalHeader />
+                    <OfflineBanner />
                     <PluginInit />
+                    <PushNotificationInitializer />
                     <main id="main-content" tabIndex={-1} style={{ outline: 'none' }}>
                       {children}
                     </main>

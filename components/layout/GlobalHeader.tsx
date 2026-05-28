@@ -15,6 +15,7 @@ import { NotificationBell } from '@/components/layout/NotificationBell';
 import { BackButton } from '@/components/layout/BackButton';
 import { useThemeMode } from '@/contexts/ThemeModeContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
+import { SyncStatusIndicator } from '@/components/ui/SyncStatusIndicator';
 
 export function GlobalHeader() {
   const { user, signOut } = useAuth();
@@ -121,6 +122,7 @@ export function GlobalHeader() {
             {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
           </IconButton>
 
+          {user && <SyncStatusIndicator hideWhenSynced />}
           {user && <NotificationBell />}
 
           {user && !isOnDashboard && (

@@ -8,7 +8,7 @@ import { useOfflineSync } from '@/lib/hooks/useOfflineSync';
  * Zeigt den Offline-/Sync-Status der Zeiterfassung (IndexedDB-Queue).
  * Nutzbar auf der Zeiterfassungs-Seite oder im Layout.
  */
-export function SyncStatusIndicator() {
+export function SyncStatusIndicator({ hideWhenSynced = false }: { hideWhenSynced?: boolean }) {
   const { pendingCount, isSyncing, status } = useOfflineSync();
 
   if (status === 'offline') {
@@ -55,6 +55,8 @@ export function SyncStatusIndicator() {
       </Tooltip>
     );
   }
+
+  if (hideWhenSynced) return null;
 
   return (
     <Tooltip title="Alle Zeiterfassungen sind synchronisiert.">
