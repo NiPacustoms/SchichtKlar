@@ -145,9 +145,9 @@ export const useStaff = () => {
   };
 
   const deleteUser = (id: string) => {
-    if (window.confirm('Möchten Sie diesen Mitarbeiter wirklich löschen?')) {
+    toast.undoable('Mitarbeiter wird gelöscht …', () => {
       deleteUserMutation.mutate(id);
-    }
+    });
   };
 
   const toggleUserStatus = (id: string, currentStatus: boolean) => {

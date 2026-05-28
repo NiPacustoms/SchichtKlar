@@ -76,16 +76,12 @@ export default function DocumentsPage() {
   };
 
   const handleDelete = (documentId: string) => {
-    if (confirm('Dokument wirklich löschen?')) {
+    toast.undoable('Dokument wird gelöscht …', () => {
       deleteDocument.mutate(documentId, {
-        onSuccess: () => {
-          toast.success('Dokument erfolgreich gelöscht!');
-        },
-        onError: error => {
-          toast.error('Fehler beim Löschen: ' + error.message);
-        },
+        onSuccess: () => toast.success('Dokument gelöscht'),
+        onError: error => toast.error('Fehler beim Löschen: ' + error.message),
       });
-    }
+    });
   };
 
   const handleDownload = async (doc: Document) => {
@@ -133,7 +129,7 @@ export default function DocumentsPage() {
   };
 
   const _handleVerify = (documentId: string) => {
-    if (confirm('Dokument als verifiziert markieren?')) {
+    {
       verifyDocument.mutate(
         { id: documentId, verifiedBy: user?.id || 'admin' },
         {
