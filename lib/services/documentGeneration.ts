@@ -9,6 +9,14 @@ import { userService } from './users';
 import { firebaseStorageService } from './firebaseStorage';
 import { logger } from '@/lib/logging';
 import { getAppLogoUrl } from '@/lib/config/logo';
+import {
+  DOC_COLORS,
+  DEFAULT_COMPANY_INFO,
+  loadLogo,
+  drawLetterhead,
+  applyLegalFooter,
+  type CompanyLegalInfo,
+} from './documentLayout';
 
 /**
  * jsPDF-Instanz, ergänzt um die von jspdf-autotable gesetzte
@@ -43,6 +51,8 @@ export interface DocumentGenerationOptions {
   timesheetIds?: string[];
   includeSignatures?: boolean;
   customData?: Record<string, unknown>;
+  /** Pflichtangaben des Verleihers für Briefkopf & rechtssichere Fußzeile. */
+  companyLegalInfo?: CompanyLegalInfo;
   /** Für Admin-Bericht-Export: Logo, Firmenname, Titel, Zeitraum */
   adminReportData?: {
     reportTitle: string;
@@ -164,116 +174,273 @@ class DocumentGenerationService {
   }
 
   /**
-   * Generiert einen Zeiterfassungsbericht
+   * Führt die Pflichtangaben des Verleihers aus den übergebenen Optionen und dem
+   * Branding zu einer vollständigen CompanyLegalInfo zusammen (Fallback: Defaults).
+   */
+  private resolveCompanyInfo(
+    options: DocumentGenerationOptions,
+    brandingFallback?: { companyName?: string; companyLogo?: string }
+  ): CompanyLegalInfo {
+    const provided = options.companyLegalInfo;
+    return {
+      ...DEFAULT_COMPANY_INFO,
+      ...provided,
+      companyName:
+        provided?.companyName ||
+        brandingFallback?.companyName ||
+        DEFAULT_COMPANY_INFO.companyName,
+      companyLogo: provided?.companyLogo || brandingFallback?.companyLogo,
+    };
+  }
+
+  /** Hilfsfunktion: Zahl als deutsche Stunden-Angabe (z. B. "8,50"). */
+  private fmtHours(value: number): string {
+    return value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  /**
+   * Generiert einen Stundennachweis / Tätigkeitsnachweis im Branchenstandard der
+   * Arbeitnehmerüberlassung (Verleiher / Entleiher / Leiharbeitnehmer).
+   *
+   * Rechtsgrundlage der Arbeitszeitaufzeichnung: § 16 Abs. 2 ArbZG, § 17 MiLoG
+   * sowie BAG-Beschluss v. 13.09.2022 (1 ABR 22/21). Aufbewahrung: 2 Jahre.
    */
   private async generateTimesheetReport(
     doc: JsPDFWithAutoTable,
     autoTable: AutoTableFn,
     options: DocumentGenerationOptions
   ): Promise<Blob> {
-    const margin = 14;
-    let y = 20;
+    const margin = 18;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const company = this.resolveCompanyInfo(options);
 
-    // Header
-    doc.setFontSize(20);
+    // Briefkopf (Logo + Verleiher-Absender + Akzentlinie)
+    const logo = await loadLogo(company.companyLogo);
+    let y = drawLetterhead(doc, company, logo, margin);
+
+    // —— Titel ——
     doc.setFont('helvetica', 'bold');
-    doc.text('Zeiterfassungsbericht', margin, y);
-    
-    y += 10;
-    doc.setFontSize(12);
+    doc.setFontSize(16);
+    doc.setTextColor(...DOC_COLORS.text);
+    doc.text('Stundennachweis / Tätigkeitsnachweis', margin, y);
+    y += 6;
     doc.setFont('helvetica', 'normal');
-    
-    if (options.dateRange) {
-      doc.text(
-        `Zeitraum: ${options.dateRange.start.toLocaleDateString('de-DE')} - ${options.dateRange.end.toLocaleDateString('de-DE')}`,
-        margin,
-        y
-      );
-      y += 8;
-    }
-    
-    doc.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, margin, y);
-    y += 15;
+    doc.setFontSize(8.5);
+    doc.setTextColor(...DOC_COLORS.muted);
+    doc.text('Arbeitnehmerüberlassung gem. AÜG · Arbeitszeitaufzeichnung nach § 16 Abs. 2 ArbZG / § 17 MiLoG', margin, y);
+    y += 10;
 
-    // Lade echte Timesheet-Daten
+    // Lade Mitarbeiter- und Zeiterfassungs-Daten
+    let employee = null as Awaited<ReturnType<typeof userService.getById>>;
+    if (options.userId) {
+      try {
+        employee = await userService.getById(options.userId);
+      } catch (error) {
+        logger.error('Fehler beim Laden des Mitarbeiters', error instanceof Error ? error : new Error(String(error)));
+      }
+    }
+
     let timesheets: Timesheet[] = [];
     if (options.dateRange && options.userId) {
       try {
-        // Stelle sicher, dass die Daten korrekt normalisiert sind
         const startDate = new Date(options.dateRange.start);
         startDate.setHours(0, 0, 0, 0);
         const endDate = new Date(options.dateRange.end);
         endDate.setHours(23, 59, 59, 999);
-        
-        timesheets = await timesheetService.getTimesheetsByDateRange(
-          startDate,
-          endDate,
-          options.userId
-        );
+        timesheets = await timesheetService.getTimesheetsByDateRange(startDate, endDate, options.userId);
       } catch (error) {
         logger.error('Fehler beim Laden der Zeiterfassungen', error instanceof Error ? error : new Error(String(error)));
-        // Weiter mit leerem Array
       }
     }
 
-    // Erstelle Tabellendaten
-    const tableData = timesheets.length > 0
-      ? timesheets.map(ts => [
-          ts.date ? new Date(ts.date).toLocaleDateString('de-DE') : '-',
-          ts.startTime || '-',
-          ts.endTime || '-',
-          `${ts.breakMinutes || 0} Min`,
-          `${ts.totalHours?.toFixed(2) || '0,00'}`,
-          this.getStatusLabel(ts.status || 'pending'),
-        ])
-      : [
-          ['Keine Daten verfügbar', '', '', '', '', ''],
-        ];
-
-    // Limit auf 100 Einträge pro Seite für Zeiterfassungsberichte
-    const maxEntriesPerPage = 100;
-    const entriesToShow = tableData.slice(0, maxEntriesPerPage);
-    
-    autoTable(doc, {
-      head: [['Datum', 'Start', 'Ende', 'Pause', 'Stunden', 'Status']],
-      body: entriesToShow,
-      startY: y,
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [66, 139, 202] },
-      theme: 'striped',
-    });
-    
-    // Wenn mehr Einträge vorhanden sind, Hinweis hinzufügen
-    if (tableData.length > maxEntriesPerPage) {
-      const finalY = doc.lastAutoTable?.finalY || y + (entriesToShow.length * 10) + 20;
-      y = finalY + 10;
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(9);
-      doc.text(`Hinweis: Es werden nur die ersten ${maxEntriesPerPage} von ${tableData.length} Einträgen angezeigt.`, margin, y);
-      y += 10;
+    // Entleiher (Einsatzbetrieb) bestimmen: eindeutig oder mehrere
+    const facilityIds = Array.from(
+      new Set(timesheets.map(ts => ts.facilityId).filter((id): id is string => !!id))
+    );
+    let entleiher: Facility | null = null;
+    if (facilityIds.length === 1) {
+      try {
+        entleiher = await facilityService.getById(facilityIds[0]);
+      } catch (error) {
+        logger.error('Fehler beim Laden des Entleihers', error instanceof Error ? error : new Error(String(error)));
+      }
     }
+    const multipleFacilities = facilityIds.length > 1;
 
-    // Zusammenfassung
+    // —— Info-Block: Mitarbeiter (links) | Entleiher (rechts) ——
+    const colGap = 6;
+    const colWidth = (pageWidth - margin * 2 - colGap) / 2;
+    const rightX = margin + colWidth + colGap;
+    const blockTop = y;
+
+    const drawInfoBlock = (
+      x: number,
+      heading: string,
+      rows: [string, string][]
+    ): number => {
+      let by = blockTop;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(...DOC_COLORS.accent);
+      doc.text(heading, x, by);
+      by += 5;
+      doc.setTextColor(...DOC_COLORS.text);
+      rows.forEach(([label, value]) => {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text(label, x, by);
+        doc.setFont('helvetica', 'normal');
+        const valueLines = doc.splitTextToSize(value || '–', colWidth - 32);
+        doc.text(valueLines, x + 32, by);
+        by += Math.max(5, valueLines.length * 4.6);
+      });
+      return by;
+    };
+
+    const employeeName = employee?.displayName || '–';
+    const employeeQualification =
+      employee?.jobTitle ||
+      (employee?.qualifications && employee.qualifications.length > 0
+        ? employee.qualifications.join(', ')
+        : '–');
+
+    const entleiherName = multipleFacilities
+      ? 'mehrere Einrichtungen – siehe Tabelle'
+      : entleiher?.name || '–';
+    const entleiherAddress = multipleFacilities ? '' : entleiher?.address || '';
+    const stations = Array.from(
+      new Set(timesheets.map(ts => ts.station).filter((s): s is string => !!s))
+    );
+
+    const leftEnd = drawInfoBlock(margin, 'Mitarbeiter (Leiharbeitnehmer)', [
+      ['Name:', employeeName],
+      ['Tätigkeit:', employeeQualification],
+    ]);
+    const rightRows: [string, string][] = [['Einrichtung:', entleiherName]];
+    if (entleiherAddress) rightRows.push(['Anschrift:', entleiherAddress]);
+    if (stations.length > 0) rightRows.push(['Station:', stations.join(', ')]);
+    const rightEnd = drawInfoBlock(rightX, 'Entleiher (Einsatzbetrieb)', rightRows);
+
+    y = Math.max(leftEnd, rightEnd) + 4;
+
+    // Zeitraum
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(...DOC_COLORS.text);
+    if (options.dateRange) {
+      doc.text(
+        `Abrechnungszeitraum: ${options.dateRange.start.toLocaleDateString('de-DE')} – ${options.dateRange.end.toLocaleDateString('de-DE')}`,
+        margin,
+        y
+      );
+    }
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...DOC_COLORS.muted);
+    doc.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, pageWidth - margin, y, { align: 'right' });
+    y += 8;
+    doc.setTextColor(...DOC_COLORS.text);
+
+    // —— Tabelle der Einsätze ——
+    const head = multipleFacilities
+      ? [['Datum', 'Einrichtung', 'Beginn', 'Ende', 'Pause', 'Std.', 'dav. Nacht', 'dav. So/Ft', 'Status']]
+      : [['Datum', 'Beginn', 'Ende', 'Pause', 'Std.', 'dav. Nacht', 'dav. So/Ft', 'Status']];
+
+    const body = timesheets.length > 0
+      ? timesheets.map(ts => {
+          const soFt = (ts.weekendHours || 0) + (ts.holidayHours || 0);
+          const baseRow = [
+            ts.date ? new Date(ts.date).toLocaleDateString('de-DE') : '-',
+            ts.startTime || '-',
+            ts.endTime || '-',
+            `${ts.breakMinutes || 0} Min`,
+            this.fmtHours(ts.totalHours || 0),
+            this.fmtHours(ts.nightHours || 0),
+            this.fmtHours(soFt),
+            this.getStatusLabel(ts.status || 'pending'),
+          ];
+          return multipleFacilities
+            ? [baseRow[0], ts.station || ts.facilityId || '-', ...baseRow.slice(1)]
+            : baseRow;
+        })
+      : [multipleFacilities
+          ? ['Keine Daten verfügbar', '', '', '', '', '', '', '', '']
+          : ['Keine Daten verfügbar', '', '', '', '', '', '', '']];
+
+    autoTable(doc, {
+      head,
+      body,
+      startY: y,
+      styles: { fontSize: 8.5, cellPadding: 2, textColor: DOC_COLORS.text },
+      headStyles: { fillColor: DOC_COLORS.accent, textColor: [255, 255, 255], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: DOC_COLORS.zebra },
+      theme: 'grid',
+      margin: { left: margin, right: margin },
+    });
+    y = (doc.lastAutoTable?.finalY ?? y) + 8;
+
+    // —— Zusammenfassung ——
     if (timesheets.length > 0) {
       const totalHours = timesheets.reduce((sum, ts) => sum + (ts.totalHours || 0), 0);
+      const nightHours = timesheets.reduce((sum, ts) => sum + (ts.nightHours || 0), 0);
+      const soFtHours = timesheets.reduce((sum, ts) => sum + (ts.weekendHours || 0) + (ts.holidayHours || 0), 0);
       const approvedHours = timesheets
         .filter(ts => ts.status === 'approved')
         .reduce((sum, ts) => sum + (ts.totalHours || 0), 0);
-      
-      // Ermittle die Y-Position nach der Tabelle
-      const displayedEntries = Math.min(timesheets.length, 100);
-      const finalY = doc.lastAutoTable?.finalY || y + (displayedEntries * 10) + 20;
-      y = finalY + 15;
-      
-      doc.setFont('helvetica', 'bold');
-      doc.text('Zusammenfassung:', margin, y);
-      y += 10;
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Gesamtstunden: ${totalHours.toFixed(2)}`, margin + 10, y);
-      y += 8;
-      doc.text(`Genehmigte Stunden: ${approvedHours.toFixed(2)}`, margin + 10, y);
+
+      if (y > doc.internal.pageSize.getHeight() - 80) {
+        doc.addPage();
+        y = 24;
+      }
+
+      const sumX = pageWidth - margin - 70;
+      doc.setDrawColor(...DOC_COLORS.line);
+      doc.setLineWidth(0.3);
+      doc.line(sumX, y, pageWidth - margin, y);
+      y += 5;
+      const sumRow = (label: string, value: string, bold = false) => {
+        doc.setFont('helvetica', bold ? 'bold' : 'normal');
+        doc.setFontSize(9);
+        doc.text(label, sumX, y);
+        doc.text(value, pageWidth - margin, y, { align: 'right' });
+        y += 5.5;
+      };
+      sumRow('Gesamtstunden:', `${this.fmtHours(totalHours)} h`, true);
+      sumRow('davon Nachtstunden:', `${this.fmtHours(nightHours)} h`);
+      sumRow('davon Sonn-/Feiertag:', `${this.fmtHours(soFtHours)} h`);
+      sumRow('genehmigte Stunden:', `${this.fmtHours(approvedHours)} h`);
+      y += 6;
     }
 
+    // —— Doppel-Unterschrift (Mitarbeiter / Entleiher) ——
+    if (y > doc.internal.pageSize.getHeight() - 55) {
+      doc.addPage();
+      y = 24;
+    }
+    y += 6;
+    const sigWidth = (pageWidth - margin * 2 - 16) / 2;
+    const sigLineY = y + 16;
+    doc.setDrawColor(...DOC_COLORS.text);
+    doc.setLineWidth(0.3);
+    doc.line(margin, sigLineY, margin + sigWidth, sigLineY);
+    doc.line(margin + sigWidth + 16, sigLineY, margin + sigWidth * 2 + 16, sigLineY);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...DOC_COLORS.muted);
+    doc.text('Datum, Unterschrift Mitarbeiter/in', margin, sigLineY + 5);
+    doc.text('Datum, Unterschrift / Stempel Entleiher', margin + sigWidth + 16, sigLineY + 5);
+    y = sigLineY + 12;
+
+    // Rechtlicher Hinweis
+    doc.setFontSize(7.5);
+    doc.setTextColor(...DOC_COLORS.muted);
+    const legalNote = doc.splitTextToSize(
+      'Mit seiner Unterschrift bestätigt der Entleiher die Richtigkeit der erfassten Arbeitszeiten. Aufzeichnung und Aufbewahrung gemäß § 16 Abs. 2 ArbZG und § 17 MiLoG (Aufbewahrungsfrist: mindestens 2 Jahre).',
+      pageWidth - margin * 2
+    );
+    doc.text(legalNote, margin, y);
+
+    // Rechtssichere Fußzeile auf allen Seiten
+    applyLegalFooter(doc, company, margin);
     return doc.output('blob');
   }
 
@@ -780,50 +947,61 @@ class DocumentGenerationService {
     }
 
     const data = options.assignmentNotificationData;
-    const margin = 14;
+    const margin = 18;
     const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 20;
+    const contentWidth = pageWidth - margin * 2;
+    const company = this.resolveCompanyInfo(options, data.branding);
+    const companyName = company.companyName;
 
     const formatDate = (d: Date) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const creationDateStr = formatDate(data.assignmentCreationDate);
     const assignmentDateStr = formatDate(data.assignmentDate);
 
-    // Oben rechts: Erstellungsdatum und Einsatzdatum (ordentlich)
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    const rightX = pageWidth - margin;
-    doc.text(`Erstellt am: ${creationDateStr}`, rightX, y, { align: 'right' });
-    y += 6;
-    doc.text(`Einsatzdatum: ${assignmentDateStr}`, rightX, y, { align: 'right' });
-    y += 14;
+    // Briefkopf (Logo + Verleiher-Absender + Akzentlinie)
+    const logo = await loadLogo(company.companyLogo);
+    let y = drawLetterhead(doc, company, logo, margin);
 
-    // Titel links
+    // Erstellungsdatum oben rechts
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...DOC_COLORS.muted);
+    doc.text(`Erstellt am: ${creationDateStr}`, pageWidth - margin, y, { align: 'right' });
+    doc.setTextColor(...DOC_COLORS.text);
+
+    // Titel
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('Einsatzmitteilung nach § 11 Absatz 2 Satz 4 AÜG', margin, y);
-    y += 10;
-
-    const companyName = data.branding?.companyName || 'AufAbruf GmbH';
-    doc.setFontSize(11);
+    doc.setTextColor(...DOC_COLORS.accent);
+    doc.text('Einsatzmitteilung', margin, y);
+    y += 5;
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text(companyName, margin, y);
-    y += 8;
+    doc.setTextColor(...DOC_COLORS.muted);
+    doc.text('gemäß § 11 Absatz 2 Satz 4 AÜG', margin, y);
+    y += 11;
+    doc.setTextColor(...DOC_COLORS.text);
 
-    // Status: EINSATZ ANGENOMMEN / EINSATZ ABGELEHNT (deutlich sichtbar)
-    doc.setFontSize(12);
+    // Status-Badge: EINSATZ ANGENOMMEN / ABGELEHNT
+    const statusLabel = data.isDeclined ? 'EINSATZ ABGELEHNT' : 'EINSATZ ANGENOMMEN';
+    const statusColor: [number, number, number] = data.isDeclined ? [183, 28, 28] : [27, 94, 32];
     doc.setFont('helvetica', 'bold');
-    doc.text(data.isDeclined ? 'EINSATZ ABGELEHNT' : 'EINSATZ ANGENOMMEN', margin, y);
-    y += 10;
+    doc.setFontSize(11);
+    const badgeW = doc.getTextWidth(statusLabel) + 8;
+    doc.setFillColor(...statusColor);
+    doc.roundedRect(margin, y - 5, badgeW, 8, 1.5, 1.5, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.text(statusLabel, margin + 4, y);
+    doc.setTextColor(...DOC_COLORS.text);
+    y += 13;
 
     doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
     doc.setFont('helvetica', 'bold');
     doc.text('Mitarbeiter:', margin, y);
     doc.setFont('helvetica', 'normal');
     doc.text(data.employeeName, margin + 45, y);
     y += 10;
 
-    // Hinweistext: Zeitarbeitnehmer für AufAbruf GmbH
+    // Hinweistext: Zeitarbeitnehmer für Verleiher
     doc.text(`Hiermit setze ich Sie in Kenntnis, dass Sie als Zeitarbeitnehmer für die ${companyName} tätig werden.`, margin, y);
     y += 10;
 
@@ -871,14 +1049,14 @@ class DocumentGenerationService {
     // Zeiterfassungs- und Arbeitsschutz-Hinweise (bei Annahme nur diese; bei Ablehnung danach noch Ablehnungsblock)
     doc.setFontSize(10);
     const hintText1 = `Die Einsatzzeit wird über die App erfasst. Bitte lassen Sie die Zeiterfassung vom Berechtigten am Einsatzort in der App digital unterschreiben. Die erfassten Zeiten werden automatisch an die ${companyName} Zentrale übermittelt.`;
-    const hintLines1 = doc.splitTextToSize(hintText1, 180);
+    const hintLines1 = doc.splitTextToSize(hintText1, contentWidth);
     hintLines1.forEach((line: string) => {
       doc.text(line, margin, y);
       y += 6;
     });
     y += 4;
     const hintText2 = 'Bitte denken Sie an entsprechende Arbeitsschutzkleidung (Kasack, festes Schuhwerk) und achten die Hygienevorschriften sowie den zur Verfügung gestellten Hautschutzplan.';
-    const hintLines2 = doc.splitTextToSize(hintText2, 180);
+    const hintLines2 = doc.splitTextToSize(hintText2, contentWidth);
     hintLines2.forEach((line: string) => {
       doc.text(line, margin, y);
       y += 6;
@@ -894,7 +1072,7 @@ class DocumentGenerationService {
       doc.setFont('helvetica', 'normal');
       const declineLines = doc.splitTextToSize(
         `Hiermit lehne ich den angeforderten Dienst am ${assignmentDateStr} ab. Mir ist bewusst, dass mir diese Zeit von meiner vertraglich vereinbarten Betriebszeit in Abzug gebracht wird.`,
-        180
+        contentWidth
       );
       declineLines.forEach((line: string) => {
         doc.text(line, margin, y);
@@ -906,7 +1084,7 @@ class DocumentGenerationService {
         doc.text('Begründung:', margin, y);
         y += 7;
         doc.setFont('helvetica', 'normal');
-        const reasonLines = doc.splitTextToSize(data.declineReason, 180);
+        const reasonLines = doc.splitTextToSize(data.declineReason, contentWidth);
         reasonLines.forEach((line: string) => {
           doc.text(line, margin, y);
           y += 6;
@@ -950,6 +1128,8 @@ class DocumentGenerationService {
     y += 14;
     doc.text(`Datum: ${formatDate(data.date)}`, margin, y);
 
+    // Rechtssichere Fußzeile auf allen Seiten
+    applyLegalFooter(doc, company, margin);
     return doc.output('blob');
   }
 
