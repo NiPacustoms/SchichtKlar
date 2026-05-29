@@ -84,13 +84,21 @@ export async function sendAssignmentFormEmail(payload: AssignmentFormEmailPayloa
     return;
   }
   try {
-    const { functions } = await import('@/lib/firebase');
-    const { httpsCallable } = await import('firebase/functions');
-    if (!functions) throw new Error('Firebase Functions ist nicht initialisiert');
-    const call = httpsCallable(functions, 'sendAssignmentFormEmailCF');
-    await call(payload);
+    const { auth } = await import('@/lib/firebase');
+    const token = await auth?.currentUser?.getIdToken();
+    if (!token) throw new Error('Kein Auth-Token');
+
+    const res = await fetch('/api/email/send-assignment-form', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`HTTP ${res.status}: ${err}`);
+    }
   } catch (e) {
-    logger.warn('[Email:FALLBACK] Assignment Form', {}, { payload, html: renderAssignmentFormEmailHtml(payload) });
+    logger.warn('[Email:FALLBACK] Assignment Form', {}, { to: payload.to, error: String(e) });
   }
 }
 
@@ -167,23 +175,29 @@ export async function sendDocumentEmail(payload: DocumentEmailPayload): Promise<
     return;
   }
 
-  const { functions } = await import('@/lib/firebase');
-  const { httpsCallable } = await import('firebase/functions');
-
-  if (!functions) {
-    throw new Error('Firebase Functions ist nicht initialisiert');
-  }
+  const { auth } = await import('@/lib/firebase');
+  const token = await auth?.currentUser?.getIdToken();
+  if (!token) throw new Error('Kein Auth-Token');
 
   const pdfBase64 = await blobToBase64(payload.pdfBlob);
-  const call = httpsCallable(functions, 'sendDocumentEmailCF');
-  await call({
-    to: payload.to,
-    cc: payload.cc,
-    subject: payload.subject,
-    pdfBase64,
-    fileName: payload.fileName,
-    bodyText: payload.bodyText,
+
+  const res = await fetch('/api/email/send-document', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      to: payload.to,
+      cc: payload.cc,
+      subject: payload.subject,
+      pdfBase64,
+      fileName: payload.fileName,
+      bodyText: payload.bodyText,
+    }),
   });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`HTTP ${res.status}: ${err}`);
+  }
 }
 
 export async function sendAssignmentSignatureEmail(payload: AssignmentSignatureEmailPayload): Promise<void> {
