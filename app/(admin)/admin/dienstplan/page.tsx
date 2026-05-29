@@ -172,7 +172,14 @@ export default function AdminDienstplanPage() {
   const handleSendReminders = async () => {
     try {
       setSendingReminders(true);
-      const res = await fetch('/api/forms/reminders', { method: 'POST' });
+      // Die Route verlangt einen Admin-Bearer-Token – ohne Header schlägt sie mit 401 fehl.
+      const { auth } = await import('@/lib/firebase');
+      const token = await auth?.currentUser?.getIdToken();
+      if (!token) throw new Error('Nicht angemeldet');
+      const res = await fetch('/api/forms/reminders', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Fehler beim Senden');
       toast.success(`Erinnerungen versendet: ${data.sent}`);
