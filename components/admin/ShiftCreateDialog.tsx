@@ -29,7 +29,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Facility, User } from '@/lib/types';
 import { de } from 'date-fns/locale';
 import { useEffect, useState } from 'react';
-import { eachDayOfInterval, format } from 'date-fns';
+import { eachDayOfInterval, format, addDays } from 'date-fns';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useForm } from 'react-hook-form';
@@ -611,18 +611,24 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
                 />
               </Grid>
 
-              {/* Overnight-Hinweis */}
-              {isOvernight && (
-                <Grid size={{ xs: 12 }}>
-                  <Alert severity="info">
-                    <Typography component="span" variant="body2">
-                      <strong>Overnight-Schicht erkannt:</strong> Die Endzeit liegt vor der
-                      Startzeit. Die Schicht geht über Mitternacht und wird automatisch korrekt
-                      berechnet.
-                    </Typography>
-                  </Alert>
-                </Grid>
-              )}
+              {/* Overnight-Hinweis inkl. konkretem Bis-Datum (Folgetag) */}
+              {isOvernight && (() => {
+                const startDate = (watch('date') || initialDate || new Date()) as Date;
+                const endDate = addDays(startDate, 1);
+                return (
+                  <Grid size={{ xs: 12 }}>
+                    <Alert severity="info">
+                      <Typography component="span" variant="body2">
+                        <strong>Overnight-Schicht erkannt:</strong> Die Endzeit liegt vor der
+                        Startzeit – die Schicht endet am Folgetag, dem{' '}
+                        <strong>{format(endDate, 'EEEE, dd.MM.yyyy', { locale: de })}</strong> um{' '}
+                        <strong>{watch('endTime')} Uhr</strong>. Die Dauer wird automatisch korrekt
+                        berechnet.
+                      </Typography>
+                    </Alert>
+                  </Grid>
+                );
+              })()}
 
               {/* Kapazität */}
               <Grid size={{ xs: 12, sm: 6 }}>

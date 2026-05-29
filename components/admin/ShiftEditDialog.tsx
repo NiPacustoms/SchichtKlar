@@ -27,6 +27,7 @@ import {
   InputLabel,
   Chip,
   Tooltip,
+  Alert,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useEffect, useMemo, useState } from 'react';
@@ -124,13 +125,13 @@ export default function ShiftEditDialog({ open, shift, onClose, onUpdated }: Shi
     if (!form.date) v.date = 'Datum erforderlich';
     if (!form.startTime) v.startTime = 'Startzeit erforderlich';
     if (!form.endTime) v.endTime = 'Endzeit erforderlich';
-    // Zeitfenster validieren
+    // Zeitfenster validieren – Overnight (Ende < Start) ist erlaubt, nur Gleichheit nicht.
     if (form.startTime && form.endTime) {
       const [sh, sm] = form.startTime.split(':').map(Number);
       const [eh, em] = form.endTime.split(':').map(Number);
       const start = sh * 60 + sm;
       const end = eh * 60 + em;
-      if (end <= start) v.endTime = 'Endzeit muss nach Startzeit liegen';
+      if (end === start) v.endTime = 'Endzeit darf nicht gleich der Startzeit sein';
     }
 
     // Kapazität >= bereits zugewiesen
@@ -348,6 +349,28 @@ export default function ShiftEditDialog({ open, shift, onClose, onUpdated }: Shi
                 helperText={errors.endTime}
               />
             </Grid>
+            {/* Overnight-Hinweis inkl. konkretem Bis-Datum (Folgetag) */}
+            {form.startTime && form.endTime && form.endTime < form.startTime && (() => {
+              const base = form.date ? new Date(form.date) : new Date();
+              const endDate = new Date(base);
+              endDate.setDate(endDate.getDate() + 1);
+              const endDateLabel = endDate.toLocaleDateString('de-DE', {
+                weekday: 'long',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              });
+              return (
+                <Grid size={{ xs: 12 }}>
+                  <Alert severity="info">
+                    <Typography component="span" variant="body2">
+                      <strong>Overnight-Schicht:</strong> Die Schicht endet am Folgetag, dem{' '}
+                      <strong>{endDateLabel}</strong> um <strong>{form.endTime} Uhr</strong>.
+                    </Typography>
+                  </Alert>
+                </Grid>
+              );
+            })()}
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
