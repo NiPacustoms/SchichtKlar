@@ -428,30 +428,31 @@ class DocumentGenerationService {
     doc.setTextColor(...DOC_COLORS.text);
 
     // —— Tabelle der Einsätze ——
+    // Tätigkeit/Bemerkung nur in der Einzel-Einrichtungs-Ansicht (sonst zu breit für A4).
     const head = multipleFacilities
       ? [['Datum', 'Einrichtung', 'Beginn', 'Ende', 'Pause', 'Std.', 'dav. Nacht', 'dav. So/Ft', 'Status']]
-      : [['Datum', 'Beginn', 'Ende', 'Pause', 'Std.', 'dav. Nacht', 'dav. So/Ft', 'Status']];
+      : [['Datum', 'Beginn', 'Ende', 'Pause', 'Std.', 'dav. Nacht', 'dav. So/Ft', 'Tätigkeit', 'Status']];
 
     const body = timesheets.length > 0
       ? timesheets.map(ts => {
           const soFt = (ts.weekendHours || 0) + (ts.holidayHours || 0);
-          const baseRow = [
-            ts.date ? new Date(ts.date).toLocaleDateString('de-DE') : '-',
+          const dateCell = ts.date ? new Date(ts.date).toLocaleDateString('de-DE') : '-';
+          const timeCells = [
             ts.startTime || '-',
             ts.endTime || '-',
             `${ts.breakMinutes || 0} Min`,
             this.fmtHours(ts.totalHours || 0),
             this.fmtHours(ts.nightHours || 0),
             this.fmtHours(soFt),
-            this.getStatusLabel(ts.status || 'pending'),
           ];
+          const statusCell = this.getStatusLabel(ts.status || 'pending');
           return multipleFacilities
-            ? [baseRow[0], ts.station || ts.facilityId || '-', ...baseRow.slice(1)]
-            : baseRow;
+            ? [dateCell, ts.station || ts.facilityId || '-', ...timeCells, statusCell]
+            : [dateCell, ...timeCells, ts.notes?.trim() || '–', statusCell];
         })
       : [multipleFacilities
           ? ['Keine Daten verfügbar', '', '', '', '', '', '', '', '']
-          : ['Keine Daten verfügbar', '', '', '', '', '', '', '']];
+          : ['Keine Daten verfügbar', '', '', '', '', '', '', '', '']];
 
     autoTable(doc, {
       head,
@@ -473,6 +474,8 @@ class DocumentGenerationService {
       const approvedHours = timesheets
         .filter(ts => ts.status === 'approved')
         .reduce((sum, ts) => sum + (ts.totalHours || 0), 0);
+      const breakMinutesTotal = timesheets.reduce((sum, ts) => sum + (ts.breakMinutes || 0), 0);
+      const shiftCount = timesheets.length;
 
       if (y > doc.internal.pageSize.getHeight() - 80) {
         doc.addPage();
@@ -491,9 +494,11 @@ class DocumentGenerationService {
         doc.text(value, pageWidth - margin, y, { align: 'right' });
         y += 5.5;
       };
+      sumRow('Anzahl Einsätze:', `${shiftCount}`);
       sumRow('Gesamtstunden:', `${this.fmtHours(totalHours)} h`, true);
       sumRow('davon Nachtstunden:', `${this.fmtHours(nightHours)} h`);
       sumRow('davon Sonn-/Feiertag:', `${this.fmtHours(soFtHours)} h`);
+      sumRow('Pausen gesamt:', `${breakMinutesTotal} Min`);
       sumRow('genehmigte Stunden:', `${this.fmtHours(approvedHours)} h`);
       y += 6;
     }
@@ -515,7 +520,14 @@ class DocumentGenerationService {
     doc.setTextColor(...DOC_COLORS.muted);
     doc.text('Datum, Unterschrift Mitarbeiter/in', margin, sigLineY + 5);
     doc.text('Datum, Unterschrift / Stempel Entleiher', margin + sigWidth + 16, sigLineY + 5);
-    y = sigLineY + 12;
+    // Klarnamen unter den Linien (Lesbarkeit / Zuordnung)
+    if (employeeName && employeeName !== '–') {
+      doc.text(`(${employeeName})`, margin, sigLineY + 9.5);
+    }
+    if (!multipleFacilities && entleiherName && entleiherName !== '–') {
+      doc.text(`(${entleiherName})`, margin + sigWidth + 16, sigLineY + 9.5);
+    }
+    y = sigLineY + 16;
 
     // Rechtlicher Hinweis
     doc.setFontSize(7.5);
