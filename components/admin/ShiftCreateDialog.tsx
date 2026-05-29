@@ -7,6 +7,7 @@ import { toast } from '@/lib/utils/toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -117,6 +118,9 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isOvernight, setIsOvernight] = useState(false);
+  // Abweichende Start-/Endzeiten pro Tag im Zeitraum (Key: yyyy-MM-dd)
+  const [usePerDayTimes, setUsePerDayTimes] = useState(false);
+  const [perDayTimes, setPerDayTimes] = useState<Record<string, { start: string; end: string }>>({});
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'), { noSsr: true });
 
@@ -317,6 +321,8 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
           }
 
           // Dialog schließen und Formular zurücksetzen
+          setUsePerDayTimes(false);
+          setPerDayTimes({});
           onClose();
           reset();
         },
@@ -350,11 +356,13 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
           const createdShiftIds: string[] = [];
 
           for (const day of days) {
+            const dayKey = format(day, 'yyyy-MM-dd');
+            const override = usePerDayTimes ? perDayTimes[dayKey] : undefined;
             const shiftId = await shiftService.createWithCapacity({
               facilityId: data.facilityId,
               date: typeof day === 'string' ? day : day.toISOString().split('T')[0],
-              startTime: data.startTime,
-              endTime: data.endTime,
+              startTime: override?.start || data.startTime,
+              endTime: override?.end || data.endTime,
               type: data.type,
               capacity: data.capacity,
               requiredQualifications: data.requiredQualifications,
@@ -458,6 +466,8 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
   const handleClose = () => {
     reset();
     setIsOvernight(false);
+    setUsePerDayTimes(false);
+    setPerDayTimes({});
     onClose();
   };
 
@@ -623,6 +633,74 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
                       ? 'Es werden alle Tage im Zeitraum angelegt.'
                       : 'Es werden nur Schichten an den gewählten Wochentagen angelegt.'}
                   </Typography>
+                </Grid>
+              )}
+
+              {/* Abweichende Zeiten pro Tag */}
+              {watch('useRange') && (
+                <Grid size={{ xs: 12 }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={usePerDayTimes}
+                        onChange={e => setUsePerDayTimes(e.target.checked)}
+                      />
+                    }
+                    label="Abweichende Zeiten pro Tag"
+                  />
+                  {usePerDayTimes && (() => {
+                    const start = watch('date') as Date | undefined;
+                    const end = (watch('dateTo') || watch('date')) as Date | undefined;
+                    const wds = watch('weekdays') ?? [];
+                    if (!start || !end) return null;
+                    const days = eachDayOfInterval({ start, end }).filter(
+                      d => wds.length === 0 || wds.includes(getDay(d))
+                    );
+                    const defStart = watch('startTime') || '';
+                    const defEnd = watch('endTime') || '';
+                    return (
+                      <Box sx={{ mt: 1, maxHeight: 240, overflowY: 'auto', pr: 1 }}>
+                        {days.map(d => {
+                          const key = format(d, 'yyyy-MM-dd');
+                          const val = perDayTimes[key] ?? { start: defStart, end: defEnd };
+                          const setVal = (patch: Partial<{ start: string; end: string }>) =>
+                            setPerDayTimes(prev => {
+                              const base = prev[key] ?? { start: defStart, end: defEnd };
+                              return { ...prev, [key]: { ...base, ...patch } };
+                            });
+                          return (
+                            <Box
+                              key={key}
+                              sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+                            >
+                              <Typography variant="body2" sx={{ minWidth: 96 }}>
+                                {format(d, 'EE, dd.MM.', { locale: de })}
+                              </Typography>
+                              <TextField
+                                type="time"
+                                label="Start"
+                                size="small"
+                                value={val.start}
+                                onChange={e => setVal({ start: e.target.value })}
+                                InputLabelProps={{ shrink: true }}
+                              />
+                              <TextField
+                                type="time"
+                                label="Ende"
+                                size="small"
+                                value={val.end}
+                                onChange={e => setVal({ end: e.target.value })}
+                                InputLabelProps={{ shrink: true }}
+                              />
+                            </Box>
+                          );
+                        })}
+                        <Typography variant="caption" color="text.secondary">
+                          Leere Felder verwenden die Standard-Zeiten oben.
+                        </Typography>
+                      </Box>
+                    );
+                  })()}
                 </Grid>
               )}
 
