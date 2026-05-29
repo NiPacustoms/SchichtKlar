@@ -19,6 +19,10 @@ import { settingsService } from '@/lib/services/settingsService';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/lib/utils/toast';
 import { FeatureFlags } from '@/lib/types/featureFlags';
+import { RoleEditDialog } from '@/components/settings/RoleEditDialog';
+import { BackupDialog, RestoreDialog } from '@/components/settings/BackupRestoreDialogs';
+import { DocumentTypeDialog } from '@/components/settings/DocumentTypeDialog';
+import { SettingsEditDialog } from '@/components/settings/SettingsEditDialog';
 import {
   Box,
   Typography,
@@ -35,15 +39,6 @@ import {
   TableRow,
   Paper,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
   Tabs,
   Tab,
@@ -54,7 +49,6 @@ import {
   Avatar,
   Switch,
   FormControlLabel,
-  Checkbox,
 } from '@mui/material';
 import {
   Settings,
@@ -76,10 +70,7 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
-import {
-  PERMISSION_OPTIONS,
-  PERMISSION_GROUPS,
-} from '@/lib/constants/permissions';
+import { PERMISSION_OPTIONS } from '@/lib/constants/permissions';
 
 const getPermissionLabel = (key: string) =>
   PERMISSION_OPTIONS.find(p => p.key === key)?.label ?? key;
@@ -1350,295 +1341,54 @@ export default function AdminSettingsPage() {
           </Grid>
         </TabPanel>
 
-        {/* Settings Dialog */}
-        <Dialog
+        <SettingsEditDialog
           open={settingsDialogOpen}
           onClose={() => setSettingsDialogOpen(false)}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle>Einstellungen bearbeiten</DialogTitle>
-          <DialogContent>
-            <Grid container spacing={3}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField fullWidth label="System-Name" defaultValue={settings.systemName} />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Zeitzone</InputLabel>
-                  <Select label="Zeitzone" defaultValue={settings.timezone}>
-                    <MenuItem value="Europe/Berlin">Europa/Berlin</MenuItem>
-                    <MenuItem value="Europe/London">Europa/London</MenuItem>
-                    <MenuItem value="America/New_York">Amerika/New_York</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Sprache</InputLabel>
-                  <Select label="Sprache" defaultValue={settings.language}>
-                    <MenuItem value="de">Deutsch</MenuItem>
-                    <MenuItem value="en">English</MenuItem>
-                    <MenuItem value="fr">Français</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Währung</InputLabel>
-                  <Select label="Währung" defaultValue={settings.currency}>
-                    <MenuItem value="EUR">EUR (€)</MenuItem>
-                    <MenuItem value="USD">USD ($)</MenuItem>
-                    <MenuItem value="GBP">GBP (£)</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setSettingsDialogOpen(false)}>Abbrechen</Button>
-            <Button
-              onClick={() => handleUpdateSettings({})}
-              variant="contained"
-              disabled={isUpdating}
-            >
-              {isUpdating ? 'Speichere...' : 'Speichern'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          settings={settings}
+          onSubmit={handleUpdateSettings}
+          isUpdating={isUpdating}
+        />
 
-        {/* Role Dialog */}
-        <Dialog
+        <RoleEditDialog
           open={roleDialogOpen}
           onClose={handleRoleDialogClose}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle>{selectedItem ? 'Rolle bearbeiten' : 'Neue Rolle erstellen'}</DialogTitle>
-          <DialogContent>
-            <Grid container spacing={3} sx={{ pt: 1 }}>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="Rollen-Name"
-                  placeholder="z.B. Teamleiter, Personalplaner"
-                  value={roleFormName}
-                  onChange={e => setRoleFormName(e.target.value)}
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="Beschreibung"
-                  multiline
-                  rows={2}
-                  placeholder="Kurze Beschreibung der Rolle und ihrer Aufgaben..."
-                  value={roleFormDescription}
-                  onChange={e => setRoleFormDescription(e.target.value)}
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Status</InputLabel>
-                  <Select
-                    label="Status"
-                    value={roleFormStatus}
-                    onChange={e => setRoleFormStatus(e.target.value as 'active' | 'inactive' | 'pending')}
-                  >
-                    <MenuItem value="active">Aktiv</MenuItem>
-                    <MenuItem value="inactive">Inaktiv</MenuItem>
-                    <MenuItem value="pending">Ausstehend</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
-                  Berechtigungen
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Wählen Sie die Aktionen aus, die diese Rolle ausführen darf.
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {PERMISSION_GROUPS.map(group => (
-                    <Card key={group} variant="outlined" sx={{ p: 2 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
-                        {group}
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-                        {PERMISSION_OPTIONS.filter(p => p.group === group).map(opt => (
-                          <FormControlLabel
-                            key={opt.key}
-                            control={
-                              <Checkbox
-                                checked={roleFormPermissions.includes(opt.key)}
-                                onChange={() => toggleRolePermission(opt.key)}
-                                size="small"
-                              />
-                            }
-                            label={opt.label}
-                            sx={{ mr: 2 }}
-                          />
-                        ))}
-                      </Box>
-                    </Card>
-                  ))}
-                </Box>
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleRoleDialogClose}>Abbrechen</Button>
-            <Button
-              onClick={handleRoleSubmit}
-              variant="contained"
-              disabled={isCreating || isUpdating}
-            >
-              {isCreating || isUpdating ? 'Speichere...' : 'Speichern'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          selectedRole={selectedItem && 'permissions' in selectedItem ? (selectedItem as Role) : null}
+          name={roleFormName}
+          description={roleFormDescription}
+          permissions={roleFormPermissions}
+          status={roleFormStatus}
+          onChangeName={setRoleFormName}
+          onChangeDescription={setRoleFormDescription}
+          onTogglePermission={toggleRolePermission}
+          onChangeStatus={setRoleFormStatus}
+          onSubmit={handleRoleSubmit}
+          isCreating={isCreating}
+          isUpdating={isUpdating}
+        />
 
-        {/* Document Type Dialog */}
-        <Dialog
+        <DocumentTypeDialog
           open={documentTypeDialogOpen}
           onClose={() => setDocumentTypeDialogOpen(false)}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>
-            {selectedItem ? 'Dokumenttyp bearbeiten' : 'Neuen Dokumenttyp erstellen'}
-          </DialogTitle>
-          <DialogContent>
-            <Grid container spacing={3}>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="Name"
-                  placeholder="z.B. Führerschein, Gesundheitszeugnis"
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Kategorie</InputLabel>
-                  <Select label="Kategorie">
-                    <MenuItem value="personal">Persönlich</MenuItem>
-                    <MenuItem value="professional">Beruflich</MenuItem>
-                    <MenuItem value="legal">Rechtlich</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Gültigkeitsdauer (Tage)"
-                  type="number"
-                  placeholder="365"
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <FormControlLabel control={<Switch />} label="Pflichtdokument" />
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDocumentTypeDialogOpen(false)}>Abbrechen</Button>
-            <Button
-              onClick={() =>
-                selectedItem
-                  ? handleUpdateDocumentType({
-                      name: 'Updated Document Type',
-                      category: 'professional',
-                    })
-                  : handleCreateDocumentType({
-                      name: 'Test Document Type',
-                      category: 'professional',
-                      validityPeriod: 365,
-                      required: false,
-                      status: 'active',
-                    })
-              }
-              variant="contained"
-              disabled={isCreating || isUpdating}
-            >
-              {isCreating || isUpdating ? 'Speichere...' : 'Speichern'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          isEditing={!!(selectedItem && !('permissions' in selectedItem))}
+          onSubmitCreate={handleCreateDocumentType}
+          onSubmitUpdate={handleUpdateDocumentType}
+          isCreating={isCreating}
+          isUpdating={isUpdating}
+        />
 
-        {/* Backup Dialog */}
-        <Dialog
+        <BackupDialog
           open={backupDialogOpen}
           onClose={() => setBackupDialogOpen(false)}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>Backup erstellen</DialogTitle>
-          <DialogContent>
-            <Alert severity="info" sx={{ mb: 3 }}>
-              Das Backup wird alle Systemdaten, Benutzer, Schichten und Dokumente enthalten.
-            </Alert>
+          onBackup={handleBackupData}
+          isBackingUp={isBackingUp}
+        />
 
-            <List>
-              <ListItem>
-                <ListItemText primary="Backup-Typ" secondary="Vollständig" />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="Geschätzte Größe" secondary="Ca. 50-100 MB" />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="Geschätzte Zeit" secondary="Ca. 2-5 Minuten" />
-              </ListItem>
-            </List>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setBackupDialogOpen(false)}>Abbrechen</Button>
-            <Button onClick={handleBackupData} variant="contained" disabled={isBackingUp}>
-              {isBackingUp ? 'Backup wird erstellt...' : 'Backup erstellen'}
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Restore Dialog */}
-        <Dialog
+        <RestoreDialog
           open={restoreDialogOpen}
           onClose={() => setRestoreDialogOpen(false)}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>Daten wiederherstellen</DialogTitle>
-          <DialogContent>
-            <Alert severity="warning" sx={{ mb: 3 }}>
-              Achtung: Alle aktuellen Daten werden überschrieben!
-            </Alert>
-
-            <TextField
-              fullWidth
-              type="file"
-              inputProps={{ accept: '.json' }}
-              label="Backup-Datei auswählen"
-              sx={{ mb: 3 }}
-            />
-
-            <List>
-              <ListItem>
-                <ListItemText primary="Wiederherstellungs-Typ" secondary="Vollständig" />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="Geschätzte Zeit" secondary="Ca. 5-10 Minuten" />
-              </ListItem>
-            </List>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setRestoreDialogOpen(false)}>Abbrechen</Button>
-            <Button
-              onClick={() => handleRestoreData(new File([], 'backup.json'))}
-              variant="contained"
-              disabled={isRestoring}
-            >
-              {isRestoring ? 'Wiederherstellung läuft...' : 'Wiederherstellen'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          onRestore={handleRestoreData}
+          isRestoring={isRestoring}
+        />
       </PageContainer>
     </GlobalErrorBoundary>
   );
