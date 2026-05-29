@@ -97,6 +97,10 @@ export const sendDocumentEmailCF = functions.https.onCall(async (data, context) 
   const { sendDocumentEmailHandler } = await import('./email');
   return sendDocumentEmailHandler(data as Parameters<typeof sendDocumentEmailHandler>[0], context);
 });
+export const sendAssignmentFormEmailCF = functions.https.onCall(async (data, context) => {
+  const { sendAssignmentFormEmailHandler } = await import('./email');
+  return sendAssignmentFormEmailHandler(data as Parameters<typeof sendAssignmentFormEmailHandler>[0], context);
+});
 
 // DSGVO DSR Functions
 export { exportUserData } from './dsr/exportUserData';

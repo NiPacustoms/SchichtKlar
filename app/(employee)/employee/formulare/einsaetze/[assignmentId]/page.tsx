@@ -3,6 +3,8 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { assignmentService, shiftService, facilityService, documentService, timesheetService } from '@/lib/services';
 import { documentGenerationService } from '@/lib/services/documentGeneration';
+import { sendDocumentEmail } from '@/lib/services/email';
+import { logger } from '@/lib/logging';
 import {
   Alert,
   Box,
@@ -242,11 +244,28 @@ export default function AssignmentFormPage() {
       notes: `Einsatzmitteilung für Assignment ${assignment.id}`,
     });
 
-    // PDF-URL am Assignment speichern, damit der Admin die Einsatzmitteilung unter „Einsätze“ öffnen kann
+    // PDF-URL am Assignment speichern, damit der Admin die Einsatzmitteilung unter „Einsätze” öffnen kann
     await assignmentService.update(assignment.id, {
       pdfUrl: pdfResult.url,
       pdfGenerated: true,
     });
+
+    // Fire-and-forget: signiertes PDF als Bestätigung an Mitarbeiter senden
+    if (pdfResult.pdfBlob && user.email) {
+      const emailSubject = isDeclined
+        ? `Ihre Einsatzmitteilung (Ablehnung) – ${currentDate.toLocaleDateString('de-DE')}`
+        : `Ihre Einsatzmitteilung (Bestätigung) – ${currentDate.toLocaleDateString('de-DE')}`;
+      void sendDocumentEmail({
+        to: user.email,
+        subject: emailSubject,
+        pdfBlob: pdfResult.pdfBlob,
+        fileName: pdfResult.fileName,
+      }).then(() => {
+        toast.info(`Bestätigung wurde an ${user.email} gesendet`);
+      }).catch(err => {
+        logger.warn('[Email] Einsatzmitteilung-Versand fehlgeschlagen', err instanceof Error ? err : new Error(String(err)));
+      });
+    }
 
     return pdfResult;
   };

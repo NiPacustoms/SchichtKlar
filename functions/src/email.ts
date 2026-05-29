@@ -370,3 +370,102 @@ export async function sendDocumentEmailHandler(
   return { success: true };
 }
 
+// ─── Einsatz-Formular-Benachrichtigung ───────────────────────────────────────
+
+interface AssignmentFormEmailPayload {
+  to: string;
+  employeeName?: string;
+  formLink: string;
+  shiftInfo?: string;
+}
+
+function renderAssignmentFormEmailHtml(payload: AssignmentFormEmailPayload): string {
+  const greeting = payload.employeeName ? `Hallo ${payload.employeeName},` : 'Guten Tag,';
+  return `
+    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111;">
+      <p>${greeting}</p>
+      <p>Sie wurden für einen Dienst zugewiesen.${payload.shiftInfo ? ` <strong>${payload.shiftInfo}</strong>` : ''}</p>
+      <p>Bitte bestätigen oder lehnen Sie den Einsatz über folgenden Link ab:</p>
+      <p>
+        <a href="${payload.formLink}" style="display:inline-block;background:#16a34a;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
+          Formular öffnen
+        </a>
+      </p>
+      <p>Falls der Button nicht funktioniert, nutzen Sie diesen Link:<br/>
+        <a href="${payload.formLink}">${payload.formLink}</a>
+      </p>
+      <p>Vielen Dank!</p>
+    </div>
+  `;
+}
+
+async function sendAssignmentFormViaResend(
+  payload: AssignmentFormEmailPayload
+): Promise<{ success: boolean; fallback?: boolean }> {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) return { success: false, fallback: true };
+
+  const from = process.env.RESEND_FROM?.trim() || 'JobFlow <onboarding@resend.dev>';
+  try {
+    const { Resend } = await import('resend');
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from,
+      to: payload.to,
+      subject: 'Neuer Einsatz – Bitte Formular ausfüllen',
+      html: renderAssignmentFormEmailHtml(payload),
+      text: [
+        payload.employeeName ? `Hallo ${payload.employeeName},` : 'Guten Tag,',
+        `Sie wurden für einen Dienst zugewiesen.${payload.shiftInfo ? ` ${payload.shiftInfo}` : ''}`,
+        `Bitte öffnen Sie das Formular: ${payload.formLink}`,
+      ].join('\n\n'),
+    });
+    if (error) {
+      console.error('[Email:Resend:AssignmentForm]', error);
+      return { success: false, fallback: true };
+    }
+    return { success: true };
+  } catch (e) {
+    console.error('[Email:Resend:AssignmentForm]', e);
+    return { success: false, fallback: true };
+  }
+}
+
+export async function sendAssignmentFormEmailHandler(
+  data: AssignmentFormEmailPayload,
+  context: { auth?: { uid: string } }
+): Promise<{ success: boolean; fallback?: boolean }> {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Authentication required.');
+  }
+
+  const { to, employeeName, formLink, shiftInfo } = data || ({} as AssignmentFormEmailPayload);
+  if (!to || !formLink) {
+    throw new functions.https.HttpsError('invalid-argument', 'to und formLink sind erforderlich');
+  }
+
+  const resendResult = await sendAssignmentFormViaResend({ to, employeeName, formLink, shiftInfo });
+  if (resendResult.success) return { success: true };
+
+  const transporter = await getTransporter();
+  const config = getSmtpConfig();
+  if (!transporter || !config.from) {
+    console.log('[Email:FALLBACK] sendAssignmentFormEmail', { to, formLink });
+    return { success: false, fallback: true };
+  }
+
+  await transporter.sendMail({
+    from: config.from,
+    to,
+    subject: 'Neuer Einsatz – Bitte Formular ausfüllen',
+    html: renderAssignmentFormEmailHtml({ to, employeeName, formLink, shiftInfo }),
+    text: [
+      employeeName ? `Hallo ${employeeName},` : 'Guten Tag,',
+      `Sie wurden für einen Dienst zugewiesen.${shiftInfo ? ` ${shiftInfo}` : ''}`,
+      `Bitte öffnen Sie das Formular: ${formLink}`,
+    ].join('\n\n'),
+  });
+
+  return { success: true };
+}
+
