@@ -519,10 +519,14 @@ export default function AdminCalendarView({
       assignedTo?: string[];
       color?: string;
       shiftGroupId?: string;
+      capacity?: number;
+      assignedCount?: number;
     };
     const s = shift as unknown as ShiftLike;
     const time = s.startTime && s.endTime ? `${s.startTime}–${s.endTime}` : undefined;
     const assignedTo: string[] = (s.assignedTo || []) as string[];
+    const capacity = s.capacity ?? 1;
+    const assignedCount = s.assignedCount ?? assignedTo.length;
     const shiftColor = s.color || DEFAULT_SHIFT_COLOR;
     const isPartOfGroup = !!s.shiftGroupId;
     const groupShifts = s.shiftGroupId ? shiftGroups[s.shiftGroupId] || [] : [];
@@ -593,6 +597,17 @@ export default function AdminCalendarView({
             )}
           </Box>
           <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexShrink: 0 }}>
+            {/* Besetzung X/Y nur bei Mehrfach-Kapazität (mehr als ein Platz) */}
+            {capacity > 1 && (
+              <Tooltip title={`${assignedCount} von ${capacity} besetzt`}>
+                <Chip
+                  size="small"
+                  label={`${assignedCount}/${capacity}`}
+                  color={assignedCount >= capacity ? 'success' : 'warning'}
+                  variant={assignedCount >= capacity ? 'filled' : 'outlined'}
+                />
+              </Tooltip>
+            )}
             {isShiftEnded(s) ? (
               <Chip size="small" color="default" variant="outlined" label="Beendet" />
             ) : (
