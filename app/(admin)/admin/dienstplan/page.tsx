@@ -84,7 +84,9 @@ export default function AdminDienstplanPage() {
     enabled: !!user?.companyId, // Nur laden, wenn companyId vorhanden ist
   });
 
-  // Realtime-Updates: invalidiere Query bei Änderungen
+  // Realtime-Updates: Live-Daten direkt in den Query-Cache schreiben.
+  // WICHTIG: Der Key muss exakt dem useQuery-Key entsprechen (inkl. companyId),
+  // sonst landen die Updates auf einem toten Key und die Anzeige aktualisiert nicht.
   const queryClient = useQueryClient();
   useEffect(() => {
     const unsubscribe = shiftService.subscribeAll(
@@ -95,15 +97,20 @@ export default function AdminDienstplanPage() {
         facilityId: facilityFilter || undefined,
       },
       newShifts => {
+        // subscribeAll filtert nicht nach companyId – daher client-seitig absichern.
+        const scoped = user?.companyId
+          ? newShifts.filter(s => !s.companyId || s.companyId === user.companyId)
+          : newShifts;
         queryClient.setQueryData<ServiceShift[]>(
           [
             'adminShifts',
+            user?.companyId,
             dateFrom?.toISOString() || null,
             dateTo?.toISOString() || null,
             statusFilter || null,
             facilityFilter || null,
           ],
-          newShifts
+          scoped
         );
       },
       () => {
@@ -111,7 +118,7 @@ export default function AdminDienstplanPage() {
       }
     );
     return () => unsubscribe();
-  }, [queryClient, dateFrom, dateTo, statusFilter, facilityFilter]);
+  }, [queryClient, user?.companyId, dateFrom, dateTo, statusFilter, facilityFilter]);
 
   // Load filters from localStorage
   useEffect(() => {
