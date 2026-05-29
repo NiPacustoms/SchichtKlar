@@ -12,6 +12,18 @@ export interface BrandingSettings {
   secondaryColor: string;
   showLogo: boolean;
   customColors: boolean;
+  // Rechtliche Pflichtangaben (§ 35a GmbHG, § 1 AÜG)
+  legalStreet?: string;
+  legalPostalCode?: string;
+  legalCity?: string;
+  legalPhone?: string;
+  legalEmail?: string;
+  legalWeb?: string;
+  legalRegisterCourt?: string;
+  legalRegisterNumber?: string;
+  legalManagingDirectors?: string;
+  legalVatId?: string;
+  legalAuegPermit?: string;
 }
 
 export function useBrandingSettings(currentUserId?: string) {
@@ -65,6 +77,17 @@ export function useBrandingSettings(currentUserId?: string) {
           secondaryColor: s.secondaryColor,
           showLogo: s.showLogo,
           customColors: s.customColors,
+          legalStreet: s.legalStreet,
+          legalPostalCode: s.legalPostalCode,
+          legalCity: s.legalCity,
+          legalPhone: s.legalPhone,
+          legalEmail: s.legalEmail,
+          legalWeb: s.legalWeb,
+          legalRegisterCourt: s.legalRegisterCourt,
+          legalRegisterNumber: s.legalRegisterNumber,
+          legalManagingDirectors: s.legalManagingDirectors,
+          legalVatId: s.legalVatId,
+          legalAuegPermit: s.legalAuegPermit,
         };
         return branding;
       } catch (error) {
@@ -95,6 +118,17 @@ export function useBrandingSettings(currentUserId?: string) {
           secondaryColor: partial.secondaryColor,
           showLogo: partial.showLogo,
           customColors: partial.customColors,
+          legalStreet: partial.legalStreet,
+          legalPostalCode: partial.legalPostalCode,
+          legalCity: partial.legalCity,
+          legalPhone: partial.legalPhone,
+          legalEmail: partial.legalEmail,
+          legalWeb: partial.legalWeb,
+          legalRegisterCourt: partial.legalRegisterCourt,
+          legalRegisterNumber: partial.legalRegisterNumber,
+          legalManagingDirectors: partial.legalManagingDirectors,
+          legalVatId: partial.legalVatId,
+          legalAuegPermit: partial.legalAuegPermit,
         },
         currentUserId || 'system'
       );

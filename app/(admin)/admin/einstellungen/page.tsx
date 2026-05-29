@@ -49,6 +49,8 @@ import {
   Avatar,
   Switch,
   FormControlLabel,
+  TextField,
+  Divider,
 } from '@mui/material';
 import {
   Settings,
@@ -67,6 +69,7 @@ import {
   Warning,
   ToggleOn,
   People,
+  Gavel,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -148,6 +151,20 @@ export default function AdminSettingsPage() {
   const [roleFormPermissions, setRoleFormPermissions] = useState<string[]>([]);
   const [roleFormStatus, setRoleFormStatus] = useState<'active' | 'inactive' | 'pending'>('active');
 
+  // Rechtliche Pflichtangaben – lokaler Formularstate (§ 35a GmbHG, § 1 AÜG)
+  const [legalStreet, setLegalStreet] = useState('');
+  const [legalPostalCode, setLegalPostalCode] = useState('');
+  const [legalCity, setLegalCity] = useState('');
+  const [legalPhone, setLegalPhone] = useState('');
+  const [legalEmail, setLegalEmail] = useState('');
+  const [legalWeb, setLegalWeb] = useState('');
+  const [legalRegisterCourt, setLegalRegisterCourt] = useState('');
+  const [legalRegisterNumber, setLegalRegisterNumber] = useState('');
+  const [legalManagingDirectors, setLegalManagingDirectors] = useState('');
+  const [legalVatId, setLegalVatId] = useState('');
+  const [legalAuegPermit, setLegalAuegPermit] = useState('');
+  const [isSavingLegal, setIsSavingLegal] = useState(false);
+
   useEffect(() => {
     if (roleDialogOpen) {
       if (selectedItem && 'permissions' in selectedItem) {
@@ -164,6 +181,44 @@ export default function AdminSettingsPage() {
       }
     }
   }, [roleDialogOpen, selectedItem]);
+
+  // Rechtsfelder aus geladenen Branding-Einstellungen initialisieren
+  useEffect(() => {
+    if (branding) {
+      setLegalStreet(branding.legalStreet ?? '');
+      setLegalPostalCode(branding.legalPostalCode ?? '');
+      setLegalCity(branding.legalCity ?? '');
+      setLegalPhone(branding.legalPhone ?? '');
+      setLegalEmail(branding.legalEmail ?? '');
+      setLegalWeb(branding.legalWeb ?? '');
+      setLegalRegisterCourt(branding.legalRegisterCourt ?? '');
+      setLegalRegisterNumber(branding.legalRegisterNumber ?? '');
+      setLegalManagingDirectors(branding.legalManagingDirectors ?? '');
+      setLegalVatId(branding.legalVatId ?? '');
+      setLegalAuegPermit(branding.legalAuegPermit ?? '');
+    }
+  }, [branding]);
+
+  const handleSaveLegalInfo = async () => {
+    setIsSavingLegal(true);
+    try {
+      await updateBranding({
+        legalStreet: legalStreet || undefined,
+        legalPostalCode: legalPostalCode || undefined,
+        legalCity: legalCity || undefined,
+        legalPhone: legalPhone || undefined,
+        legalEmail: legalEmail || undefined,
+        legalWeb: legalWeb || undefined,
+        legalRegisterCourt: legalRegisterCourt || undefined,
+        legalRegisterNumber: legalRegisterNumber || undefined,
+        legalManagingDirectors: legalManagingDirectors || undefined,
+        legalVatId: legalVatId || undefined,
+        legalAuegPermit: legalAuegPermit || undefined,
+      });
+    } finally {
+      setIsSavingLegal(false);
+    }
+  };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -474,6 +529,173 @@ export default function AdminSettingsPage() {
                   label="Logo anzeigen"
                 />
               </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Rechtliche Pflichtangaben */}
+        <Card className="glass" sx={{ mb: 4 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <Gavel sx={{ color: 'primary.main' }} />
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                Rechtliche Pflichtangaben
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Diese Angaben erscheinen in der Fußzeile aller generierten PDF-Dokumente
+              (Pflicht nach § 35a GmbHG und § 1 AÜG).
+            </Typography>
+
+            <Divider sx={{ mb: 3 }} />
+
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.7rem' }}>
+              Anschrift &amp; Kontakt
+            </Typography>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Straße &amp; Hausnummer"
+                  value={legalStreet}
+                  onChange={e => setLegalStreet(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="Musterstraße 1"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 3 }}>
+                <TextField
+                  label="PLZ"
+                  value={legalPostalCode}
+                  onChange={e => setLegalPostalCode(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="80331"
+                  inputProps={{ maxLength: 10 }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 3 }}>
+                <TextField
+                  label="Ort"
+                  value={legalCity}
+                  onChange={e => setLegalCity(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="München"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <TextField
+                  label="Telefon"
+                  value={legalPhone}
+                  onChange={e => setLegalPhone(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="+49 89 12345678"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <TextField
+                  label="E-Mail"
+                  value={legalEmail}
+                  onChange={e => setLegalEmail(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="info@firma.de"
+                  type="email"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <TextField
+                  label="Website"
+                  value={legalWeb}
+                  onChange={e => setLegalWeb(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="www.firma.de"
+                />
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ mb: 3 }} />
+
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.7rem' }}>
+              Handelsregister &amp; Steuer (§ 35a GmbHG)
+            </Typography>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Registergericht"
+                  value={legalRegisterCourt}
+                  onChange={e => setLegalRegisterCourt(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="Amtsgericht München"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Handelsregisternummer"
+                  value={legalRegisterNumber}
+                  onChange={e => setLegalRegisterNumber(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="HRB 123456"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 8 }}>
+                <TextField
+                  label="Geschäftsführer"
+                  value={legalManagingDirectors}
+                  onChange={e => setLegalManagingDirectors(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="Max Mustermann, Erika Musterfrau"
+                  helperText="Kommagetrennt bei mehreren Personen"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <TextField
+                  label="USt-IdNr."
+                  value={legalVatId}
+                  onChange={e => setLegalVatId(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="DE123456789"
+                />
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ mb: 3 }} />
+
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.7rem' }}>
+              Arbeitnehmerüberlassung (§ 1 AÜG)
+            </Typography>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  label="AÜG-Erlaubnistext"
+                  value={legalAuegPermit}
+                  onChange={e => setLegalAuegPermit(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="Erlaubnis zur Arbeitnehmerüberlassung gem. § 1 AÜG erteilt durch die Bundesagentur für Arbeit, Erlaubnis-Nr. …"
+                  multiline
+                  rows={2}
+                  helperText="Erscheint in der Fußzeile aller Dokumente; leer lassen wenn nicht zutreffend"
+                />
+              </Grid>
+            </Grid>
+
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button
+                variant="contained"
+                startIcon={<Save />}
+                onClick={handleSaveLegalInfo}
+                disabled={isSavingLegal || brandingLoading}
+              >
+                {isSavingLegal ? 'Speichert…' : 'Pflichtangaben speichern'}
+              </Button>
             </Box>
           </CardContent>
         </Card>

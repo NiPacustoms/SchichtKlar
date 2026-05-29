@@ -29,6 +29,7 @@ import { documentGenerationService } from '@/lib/services/documentGeneration';
 import { toast } from '@/lib/utils/toast';
 import { Close, Description } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBrandingSettings } from '@/lib/hooks/useBrandingSettings';
 
 interface DocumentGeneratorProps {
   open: boolean;
@@ -38,6 +39,7 @@ interface DocumentGeneratorProps {
 
 export function DocumentGenerator({ open, onClose, onDocumentGenerated }: DocumentGeneratorProps) {
   const { user } = useAuth();
+  const { branding } = useBrandingSettings(user?.id);
   const [documentType, setDocumentType] = useState<DocumentType>('timesheet-report');
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState<Date | null>(null);
@@ -74,6 +76,21 @@ export function DocumentGenerator({ open, onClose, onDocumentGenerated }: Docume
         userId: user.id,
         assignmentId: assignmentId || undefined,
         includeSignatures: true,
+        companyLegalInfo: branding ? {
+          companyName: branding.companyName,
+          companyLogo: branding.companyLogo,
+          street: branding.legalStreet,
+          postalCode: branding.legalPostalCode,
+          city: branding.legalCity,
+          phone: branding.legalPhone,
+          email: branding.legalEmail,
+          web: branding.legalWeb,
+          registerCourt: branding.legalRegisterCourt,
+          registerNumber: branding.legalRegisterNumber,
+          managingDirectors: branding.legalManagingDirectors,
+          vatId: branding.legalVatId,
+          auegPermit: branding.legalAuegPermit,
+        } : undefined,
       };
 
       const result = await documentGenerationService.generateDocument(options);
