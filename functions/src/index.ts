@@ -93,6 +93,11 @@ export const sendInvitationEmailHttp = functions.https.onRequest(async (req, res
     res.status(500).json({ error: 'Failed to send email' });
   }
 });
+export const sendDocumentEmailCF = functions.https.onCall(async (data, context) => {
+  const { sendDocumentEmailHandler } = await import('./email');
+  return sendDocumentEmailHandler(data as Parameters<typeof sendDocumentEmailHandler>[0], context);
+});
+
 // DSGVO DSR Functions
 export { exportUserData } from './dsr/exportUserData';
 export { deleteUserData } from './dsr/deleteUserData';

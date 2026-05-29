@@ -93,6 +93,8 @@ export interface GeneratedDocument {
   fileName: string;
   fileSize: number;
   createdAt: Date;
+  /** Lokaler Blob für direkten E-Mail-Versand ohne Storage-Download */
+  pdfBlob?: Blob;
 }
 
 class DocumentGenerationService {
@@ -166,6 +168,7 @@ class DocumentGenerationService {
         fileName,
         fileSize: pdfBlob.size,
         createdAt: new Date(),
+        pdfBlob,
       };
     } catch (uploadError) {
       logger.error('Upload-Fehler', uploadError instanceof Error ? uploadError : new Error(String(uploadError)));

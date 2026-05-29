@@ -124,6 +124,52 @@ export function renderAssignmentSignatureEmailHtml(payload: AssignmentSignatureE
   `;
 }
 
+// PDF-Dokument per E-Mail versenden
+
+export interface DocumentEmailPayload {
+  to: string;
+  subject: string;
+  pdfBlob: Blob;
+  fileName: string;
+  bodyText?: string;
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      resolve(dataUrl.split(',')[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+export async function sendDocumentEmail(payload: DocumentEmailPayload): Promise<void> {
+  if (typeof window === 'undefined') {
+    logger.warn('[Email] sendDocumentEmail server-side – übersprungen', {}, { to: payload.to });
+    return;
+  }
+
+  const { functions } = await import('@/lib/firebase');
+  const { httpsCallable } = await import('firebase/functions');
+
+  if (!functions) {
+    throw new Error('Firebase Functions ist nicht initialisiert');
+  }
+
+  const pdfBase64 = await blobToBase64(payload.pdfBlob);
+  const call = httpsCallable(functions, 'sendDocumentEmailCF');
+  await call({
+    to: payload.to,
+    subject: payload.subject,
+    pdfBase64,
+    fileName: payload.fileName,
+    bodyText: payload.bodyText,
+  });
+}
+
 export async function sendAssignmentSignatureEmail(payload: AssignmentSignatureEmailPayload): Promise<void> {
   try {
     // Dynamischer Import, um serverseitige Probleme zu vermeiden

@@ -282,4 +282,91 @@ export const sendAssignmentSignatureEmailCF = functions.https.onCall(async (data
   return { success: true, fallback: result.fallback };
 });
 
+// ─── PDF-Dokument per E-Mail versenden ───────────────────────────────────────
+
+export interface SendDocumentEmailPayload {
+  to: string;
+  subject: string;
+  pdfBase64: string;
+  fileName: string;
+  bodyText?: string;
+}
+
+function renderDocumentEmailHtml(payload: SendDocumentEmailPayload): string {
+  return `
+    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111;">
+      <h2>Dokument aus JobFlow</h2>
+      <p>${payload.bodyText || 'Anbei finden Sie das angeforderte Dokument als PDF-Anhang.'}</p>
+      <p>Mit freundlichen Grüßen<br/>JobFlow</p>
+    </div>
+  `;
+}
+
+async function sendDocumentViaResend(
+  payload: SendDocumentEmailPayload
+): Promise<{ success: boolean; fallback?: boolean }> {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) return { success: false, fallback: true };
+
+  const from = process.env.RESEND_FROM?.trim() || 'JobFlow <onboarding@resend.dev>';
+  try {
+    const { Resend } = await import('resend');
+    const resend = new Resend(apiKey);
+    const pdfBuffer = Buffer.from(payload.pdfBase64, 'base64');
+    const { error } = await resend.emails.send({
+      from,
+      to: payload.to,
+      subject: payload.subject,
+      html: renderDocumentEmailHtml(payload),
+      text: payload.bodyText || 'Anbei finden Sie das angeforderte Dokument als PDF-Anhang.',
+      attachments: [{ filename: payload.fileName, content: pdfBuffer }],
+    });
+    if (error) {
+      console.error('[Email:Resend:Document]', error);
+      return { success: false, fallback: true };
+    }
+    return { success: true };
+  } catch (e) {
+    console.error('[Email:Resend:Document]', e);
+    return { success: false, fallback: true };
+  }
+}
+
+export async function sendDocumentEmailHandler(
+  data: SendDocumentEmailPayload,
+  context: { auth?: { uid: string } }
+): Promise<{ success: boolean; fallback?: boolean }> {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Authentication required.');
+  }
+
+  const { to, subject, pdfBase64, fileName, bodyText } = data || ({} as SendDocumentEmailPayload);
+  if (!to || !subject || !pdfBase64 || !fileName) {
+    throw new functions.https.HttpsError('invalid-argument', 'Pflichtfelder fehlen');
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Ungültige E-Mail-Adresse');
+  }
+
+  const resendResult = await sendDocumentViaResend({ to, subject, pdfBase64, fileName, bodyText });
+  if (resendResult.success) return { success: true };
+
+  const transporter = await getTransporter();
+  const config = getSmtpConfig();
+  if (!transporter || !config.from) {
+    console.log('[Email:FALLBACK] sendDocumentEmail', { to, subject, fileName });
+    return { success: false, fallback: true };
+  }
+
+  await transporter.sendMail({
+    from: config.from,
+    to,
+    subject,
+    html: renderDocumentEmailHtml({ to, subject, pdfBase64, fileName, bodyText }),
+    text: bodyText || 'Anbei finden Sie das angeforderte Dokument als PDF-Anhang.',
+    attachments: [{ filename: fileName, content: Buffer.from(pdfBase64, 'base64') }],
+  });
+
+  return { success: true };
+}
 
