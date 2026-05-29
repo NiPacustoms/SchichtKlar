@@ -21,7 +21,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { FormControlLabel, Switch } from '@mui/material';
+import { FormControlLabel, Switch, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -29,7 +29,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Facility, User } from '@/lib/types';
 import { de } from 'date-fns/locale';
 import { useEffect, useState } from 'react';
-import { eachDayOfInterval, format, addDays } from 'date-fns';
+import { eachDayOfInterval, format, addDays, getDay } from 'date-fns';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useForm } from 'react-hook-form';
@@ -47,6 +47,8 @@ const shiftCreateSchema = z
     }),
     dateTo: z.coerce.date().optional(),
     useRange: z.boolean().optional(),
+    /** Ausgewählte Wochentage (0=So..6=Sa) für den Zeitraum. Leer = alle Tage. */
+    weekdays: z.array(z.number()).optional(),
     startTime: z.string().min(1, 'Startzeit ist erforderlich'),
     endTime: z.string().min(1, 'Endzeit ist erforderlich'),
     type: z.string().optional(),
@@ -136,6 +138,7 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
       date: initialDate || new Date(),
       dateTo: initialDate || new Date(),
       useRange: false,
+      weekdays: [],
       startTime: '',
       endTime: '',
       notes: '',
@@ -332,7 +335,14 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
       // Zeitraum: Mehrere Schichten erstellen
       const start = data.date;
       const end = data.dateTo || data.date;
-      const days = eachDayOfInterval({ start, end });
+      const selectedWeekdays = data.weekdays ?? [];
+      const days = eachDayOfInterval({ start, end }).filter(
+        day => selectedWeekdays.length === 0 || selectedWeekdays.includes(getDay(day))
+      );
+      if (days.length === 0) {
+        toast.warning('Im gewählten Zeitraum liegen keine der ausgewählten Wochentage.');
+        return;
+      }
       // Generiere eine gemeinsame shiftGroupId für alle Schichten im Zeitraum
       const shiftGroupId = `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       (async () => {
@@ -578,6 +588,41 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
                       },
                     }}
                   />
+                </Grid>
+              )}
+
+              {/* Wochentag-Auswahl im Zeitraum (z. B. nur MO/MI/FR). Leer = alle Tage. */}
+              {watch('useRange') && (
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant="body2" sx={{ mb: 0.5, color: 'text.secondary' }}>
+                    Nur an bestimmten Wochentagen (optional)
+                  </Typography>
+                  <ToggleButtonGroup
+                    value={watch('weekdays') ?? []}
+                    onChange={(_, value: number[]) => setValue('weekdays', value)}
+                    size="small"
+                    sx={{ flexWrap: 'wrap' }}
+                    aria-label="Wochentage"
+                  >
+                    {[
+                      { v: 1, l: 'Mo' },
+                      { v: 2, l: 'Di' },
+                      { v: 3, l: 'Mi' },
+                      { v: 4, l: 'Do' },
+                      { v: 5, l: 'Fr' },
+                      { v: 6, l: 'Sa' },
+                      { v: 0, l: 'So' },
+                    ].map(d => (
+                      <ToggleButton key={d.v} value={d.v} aria-label={d.l}>
+                        {d.l}
+                      </ToggleButton>
+                    ))}
+                  </ToggleButtonGroup>
+                  <Typography variant="caption" display="block" sx={{ mt: 0.5, color: 'text.secondary' }}>
+                    {(watch('weekdays') ?? []).length === 0
+                      ? 'Es werden alle Tage im Zeitraum angelegt.'
+                      : 'Es werden nur Schichten an den gewählten Wochentagen angelegt.'}
+                  </Typography>
                 </Grid>
               )}
 
