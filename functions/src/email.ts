@@ -286,10 +286,29 @@ export const sendAssignmentSignatureEmailCF = functions.https.onCall(async (data
 
 export interface SendDocumentEmailPayload {
   to: string;
+  cc?: string[];
   subject: string;
   pdfBase64: string;
   fileName: string;
   bodyText?: string;
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Filtert eine CC-Liste auf gültige, eindeutige E-Mail-Adressen (ohne das to-Feld). */
+function sanitizeCcList(cc: string[] | undefined, to: string): string[] {
+  if (!Array.isArray(cc)) return [];
+  const seen = new Set<string>([to.trim().toLowerCase()]);
+  const result: string[] = [];
+  for (const raw of cc) {
+    const addr = String(raw).trim();
+    const key = addr.toLowerCase();
+    if (addr && EMAIL_REGEX.test(addr) && !seen.has(key)) {
+      seen.add(key);
+      result.push(addr);
+    }
+  }
+  return result;
 }
 
 function renderDocumentEmailHtml(payload: SendDocumentEmailPayload): string {
@@ -309,6 +328,7 @@ async function sendDocumentViaResend(
   if (!apiKey) return { success: false, fallback: true };
 
   const from = process.env.RESEND_FROM?.trim() || 'JobFlow <onboarding@resend.dev>';
+  const cc = sanitizeCcList(payload.cc, payload.to);
   try {
     const { Resend } = await import('resend');
     const resend = new Resend(apiKey);
@@ -316,6 +336,7 @@ async function sendDocumentViaResend(
     const { error } = await resend.emails.send({
       from,
       to: payload.to,
+      ...(cc.length ? { cc } : {}),
       subject: payload.subject,
       html: renderDocumentEmailHtml(payload),
       text: payload.bodyText || 'Anbei finden Sie das angeforderte Dokument als PDF-Anhang.',
@@ -340,15 +361,15 @@ export async function sendDocumentEmailHandler(
     throw new functions.https.HttpsError('unauthenticated', 'Authentication required.');
   }
 
-  const { to, subject, pdfBase64, fileName, bodyText } = data || ({} as SendDocumentEmailPayload);
+  const { to, cc, subject, pdfBase64, fileName, bodyText } = data || ({} as SendDocumentEmailPayload);
   if (!to || !subject || !pdfBase64 || !fileName) {
     throw new functions.https.HttpsError('invalid-argument', 'Pflichtfelder fehlen');
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+  if (!EMAIL_REGEX.test(to)) {
     throw new functions.https.HttpsError('invalid-argument', 'Ungültige E-Mail-Adresse');
   }
 
-  const resendResult = await sendDocumentViaResend({ to, subject, pdfBase64, fileName, bodyText });
+  const resendResult = await sendDocumentViaResend({ to, cc, subject, pdfBase64, fileName, bodyText });
   if (resendResult.success) return { success: true };
 
   const transporter = await getTransporter();
@@ -358,9 +379,11 @@ export async function sendDocumentEmailHandler(
     return { success: false, fallback: true };
   }
 
+  const ccList = sanitizeCcList(cc, to);
   await transporter.sendMail({
     from: config.from,
     to,
+    ...(ccList.length ? { cc: ccList } : {}),
     subject,
     html: renderDocumentEmailHtml({ to, subject, pdfBase64, fileName, bodyText }),
     text: bodyText || 'Anbei finden Sie das angeforderte Dokument als PDF-Anhang.',

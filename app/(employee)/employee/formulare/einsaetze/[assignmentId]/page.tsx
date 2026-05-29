@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { assignmentService, shiftService, facilityService, documentService, timesheetService } from '@/lib/services';
 import { documentGenerationService } from '@/lib/services/documentGeneration';
-import { sendDocumentEmail } from '@/lib/services/email';
+import { sendDocumentEmail, INFO_EMAIL_ADDRESS } from '@/lib/services/email';
 import { logger } from '@/lib/logging';
 import {
   Alert,
@@ -255,8 +255,13 @@ export default function AssignmentFormPage() {
       const emailSubject = isDeclined
         ? `Ihre Einsatzmitteilung (Ablehnung) – ${currentDate.toLocaleDateString('de-DE')}`
         : `Ihre Einsatzmitteilung (Bestätigung) – ${currentDate.toLocaleDateString('de-DE')}`;
+      // CC: Einrichtung (hinterlegte E-Mail) + feste Info-Adresse
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const ccList = [facility?.email, INFO_EMAIL_ADDRESS]
+        .filter((addr): addr is string => !!addr && emailRegex.test(addr));
       void sendDocumentEmail({
         to: user.email,
+        cc: ccList,
         subject: emailSubject,
         pdfBlob: pdfResult.pdfBlob,
         fileName: pdfResult.fileName,

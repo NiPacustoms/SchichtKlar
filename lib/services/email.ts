@@ -139,11 +139,15 @@ export function renderAssignmentSignatureEmailHtml(payload: AssignmentSignatureE
 
 export interface DocumentEmailPayload {
   to: string;
+  cc?: string[];
   subject: string;
   pdfBlob: Blob;
   fileName: string;
   bodyText?: string;
 }
+
+/** Feste Info-Adresse, die bei Einsatzmitteilungen immer in Kopie gesetzt wird. */
+export const INFO_EMAIL_ADDRESS = 'info@aufabruf.eu';
 
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -174,6 +178,7 @@ export async function sendDocumentEmail(payload: DocumentEmailPayload): Promise<
   const call = httpsCallable(functions, 'sendDocumentEmailCF');
   await call({
     to: payload.to,
+    cc: payload.cc,
     subject: payload.subject,
     pdfBase64,
     fileName: payload.fileName,
