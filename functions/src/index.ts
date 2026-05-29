@@ -93,14 +93,9 @@ export const sendInvitationEmailHttp = functions.https.onRequest(async (req, res
     res.status(500).json({ error: 'Failed to send email' });
   }
 });
-export const sendDocumentEmailCF = functions.https.onCall(async (data, context) => {
-  const { sendDocumentEmailHandler } = await import('./email');
-  return sendDocumentEmailHandler(data as Parameters<typeof sendDocumentEmailHandler>[0], context);
-});
-export const sendAssignmentFormEmailCF = functions.https.onCall(async (data, context) => {
-  const { sendAssignmentFormEmailHandler } = await import('./email');
-  return sendAssignmentFormEmailHandler(data as Parameters<typeof sendAssignmentFormEmailHandler>[0], context);
-});
+// Hinweis: PDF-Dokumente (sendDocumentEmail) und Einsatz-Benachrichtigungen
+// (sendAssignmentFormEmail) laufen jetzt über Next.js API-Routen mit Resend
+// (app/api/email/*). Die früheren Callable-Functions wurden entfernt.
 
 // DSGVO DSR Functions
 export { exportUserData } from './dsr/exportUserData';

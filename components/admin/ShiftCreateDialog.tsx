@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { cloudFunctions, facilityService, shiftService, userService } from '@/lib/services';
-import { sendAssignmentFormEmail } from '@/lib/services/email';
+import { sendAssignmentFormEmail, INFO_EMAIL_ADDRESS } from '@/lib/services/email';
 import { toast } from '@/lib/utils/toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -91,6 +91,24 @@ interface ShiftCreateDialogProps {
   open: boolean;
   onClose: () => void;
   initialDate?: Date | null;
+}
+
+/**
+ * Ermittelt die CC-Empfänger für die Einsatz-Benachrichtigung:
+ * Einrichtungs-Mail (über facilityId) + feste Info-Adresse. Fehler werden ignoriert.
+ */
+async function buildAssignmentCc(facilityId: string | undefined): Promise<string[]> {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  let facilityEmail: string | undefined;
+  try {
+    const facility = facilityId ? await facilityService.getById(facilityId) : null;
+    facilityEmail = facility?.email;
+  } catch {
+    facilityEmail = undefined;
+  }
+  return [facilityEmail, INFO_EMAIL_ADDRESS].filter(
+    (addr): addr is string => !!addr && emailRegex.test(addr)
+  );
 }
 
 export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDialogProps) {
@@ -258,8 +276,10 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
 
                 if (assignedUser.email && formLink) {
                   try {
+                    const cc = await buildAssignmentCc(data.facilityId);
                     await sendAssignmentFormEmail({
                       to: assignedUser.email,
+                      cc,
                       employeeName: assignedUser.displayName,
                       formLink: fullFormLink ?? formLink ?? '',
                       shiftInfo,
@@ -377,8 +397,10 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
                 // E-Mail-Benachrichtigung
                 if (assignedUser.email) {
                   try {
+                    const cc = await buildAssignmentCc(data.facilityId);
                     await sendAssignmentFormEmail({
                       to: assignedUser.email,
+                      cc,
                       employeeName: assignedUser.displayName,
                       formLink: fullFormLink,
                       shiftInfo: `Zeitraum: ${shiftInfo}`,

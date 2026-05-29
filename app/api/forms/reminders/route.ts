@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/firebase';
-import { sendAssignmentFormEmail } from '@/lib/services/email';
+import { sendAssignmentFormEmailServer } from '@/lib/server/email';
 import { collection, query, where, getDocs, doc, getDoc, Timestamp } from 'firebase/firestore';
 import { verifyIdToken, getRoleFromToken } from '@/lib/server/firebaseAdmin';
 import { createAuthErrorResponse } from '@/lib/errors';
@@ -59,13 +59,13 @@ export async function POST(request: Request) {
 
       const formLink = `${origin}/employee/formulare/einsaetze/${assignmentDoc.id}`;
       try {
-        await sendAssignmentFormEmail({
+        const result = await sendAssignmentFormEmailServer({
           to: email,
           employeeName: user?.displayName,
           formLink,
           shiftInfo: undefined,
         });
-        return 1;
+        return result.sent ? 1 : 0;
       } catch {
         return 0;
       }

@@ -1,81 +1,18 @@
-// Minimaler E-Mail Versand-Adapter (Platzhalter)
-// In Produktion: Resend/SES/Sendgrid integrieren.
-
-export interface InviteEmailPayload {
-  to: string;
-  companyName: string;
-  acceptLink: string;
-}
-
-export function renderInviteEmailHtml(payload: InviteEmailPayload): string {
-  return `
-    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111;">
-      <h2>Einladung zu JobFlow</h2>
-      <p>Sie wurden von <strong>${payload.companyName}</strong> eingeladen, JobFlow beizutreten.</p>
-      <p>Bitte klicken Sie innerhalb von 24 Stunden auf den folgenden Link, um Ihr Konto zu erstellen:</p>
-      <p>
-        <a href="${payload.acceptLink}" style="display:inline-block;background:#3b82f6;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
-          Einladung annehmen
-        </a>
-      </p>
-      <p>Falls der Button nicht funktioniert, nutzen Sie diesen Link: <br/>
-        <a href="${payload.acceptLink}">${payload.acceptLink}</a>
-      </p>
-      <p>Wenn Sie diese Einladung nicht erwartet haben, ignorieren Sie diese E-Mail.</p>
-    </div>
-  `;
-}
+// E-Mail-Versand-Adapter (Client).
+// Alle Mails laufen über Next.js API-Routen (app/api/email/*) mit Resend.
+//
+// Hinweis: Einladungs-E-Mails laufen über /api/invitations (lib/server/email.ts),
+// daher gibt es hier bewusst keine Client-Funktion dafür.
 
 import { logger } from '@/lib/logging';
-
-export async function sendInvitationEmail(payload: InviteEmailPayload): Promise<void> {
-  try {
-    // Dynamischer Import, um serverseitige Probleme zu vermeiden
-    if (typeof window === 'undefined') {
-      logger.warn('[Email] Called server-side, skipping email send', {}, { payload });
-      return;
-    }
-    
-    const { functions } = await import('@/lib/firebase');
-    const { httpsCallable } = await import('firebase/functions');
-    
-    if (!functions) {
-      throw new Error('Firebase Functions ist nicht initialisiert');
-    }
-    const call = httpsCallable(functions, 'sendInvitationEmailCF');
-    await call(payload);
-  } catch (e) {
-    // Fallback Logging, wenn CF nicht verfügbar
-    logger.warn('[Email:FALLBACK] Invitation', {}, { payload, html: renderInviteEmailHtml(payload) });
-  }
-}
 
 // Assignment-Formular-Mail
 export interface AssignmentFormEmailPayload {
   to: string;
+  cc?: string[];
   employeeName?: string;
   formLink: string;
   shiftInfo?: string;
-}
-
-export function renderAssignmentFormEmailHtml(payload: AssignmentFormEmailPayload): string {
-  const greeting = payload.employeeName ? `Hallo ${payload.employeeName},` : 'Guten Tag,';
-  return `
-    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111;">
-      <p>${greeting}</p>
-      <p>Sie wurden für einen Dienst zugewiesen.${payload.shiftInfo ? ` <strong>${payload.shiftInfo}</strong>` : ''}</p>
-      <p>Bitte füllen Sie die Einsatzmitteilung oder die Ablehnung über folgenden Link aus:</p>
-      <p>
-        <a href="${payload.formLink}" style="display:inline-block;background:#16a34a;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
-          Formular öffnen
-        </a>
-      </p>
-      <p>Falls der Button nicht funktioniert, nutzen Sie diesen Link: <br/>
-        <a href="${payload.formLink}">${payload.formLink}</a>
-      </p>
-      <p>Vielen Dank!</p>
-    </div>
-  `;
 }
 
 export async function sendAssignmentFormEmail(payload: AssignmentFormEmailPayload): Promise<void> {

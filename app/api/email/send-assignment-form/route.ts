@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyIdToken } from '@/lib/server/firebaseAdmin';
-import { sendAssignmentFormEmailServer } from '@/lib/server/email';
+import { sendAssignmentFormEmailServer, sanitizeCc } from '@/lib/server/email';
 import {
   createAuthErrorResponse,
   createValidationErrorResponse,
@@ -16,6 +16,7 @@ const ROUTE = '/api/email/send-assignment-form';
 
 interface RequestBody {
   to: string;
+  cc?: string[];
   employeeName?: string;
   formLink: string;
   shiftInfo?: string;
@@ -46,10 +47,11 @@ export async function POST(req: NextRequest) {
     return createValidationErrorResponse('to und formLink sind erforderlich', undefined, ROUTE);
   }
 
-  const { to, employeeName, formLink, shiftInfo } = body;
+  const { to, cc, employeeName, formLink, shiftInfo } = body;
+  const ccList = sanitizeCc(cc, to);
 
   try {
-    const result = await sendAssignmentFormEmailServer({ to, employeeName, formLink, shiftInfo });
+    const result = await sendAssignmentFormEmailServer({ to, cc: ccList, employeeName, formLink, shiftInfo });
     if (!result.sent) {
       return createErrorResponse(
         createAppError(new Error(result.error ?? 'E-Mail konnte nicht gesendet werden'), ErrorCode.INTERNAL_ERROR, {

@@ -1,9 +1,9 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { assignmentService, cloudFunctions, userService } from '@/lib/services';
+import { assignmentService, cloudFunctions, userService, facilityService } from '@/lib/services';
 import { Assignment, Shift, User } from '@/lib/types';
-import { sendAssignmentFormEmail } from '@/lib/services/email';
+import { sendAssignmentFormEmail, INFO_EMAIL_ADDRESS } from '@/lib/services/email';
 import { toast } from '@/lib/utils/toast';
 import {
   Alert,
@@ -194,12 +194,27 @@ export function AssignShiftDialog({ open, onClose, shift }: AssignShiftDialogPro
           : (formLink ?? undefined);
 
       if (user.email && formLink) {
-        void sendAssignmentFormEmail({
-          to: user.email,
-          employeeName: user.displayName,
-          formLink: fullFormLink ?? formLink ?? '',
-          shiftInfo,
-        });
+        // CC an Einrichtung (hinterlegte Mail) + feste Info-Adresse. Fire-and-forget.
+        void (async () => {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          let facilityEmail: string | undefined;
+          try {
+            const facility = shift.facilityId ? await facilityService.getById(shift.facilityId) : null;
+            facilityEmail = facility?.email;
+          } catch {
+            facilityEmail = undefined;
+          }
+          const cc = [facilityEmail, INFO_EMAIL_ADDRESS].filter(
+            (addr): addr is string => !!addr && emailRegex.test(addr)
+          );
+          await sendAssignmentFormEmail({
+            to: user.email,
+            cc,
+            employeeName: user.displayName,
+            formLink: fullFormLink ?? formLink ?? '',
+            shiftInfo,
+          });
+        })();
       }
     },
     onError: (error: unknown) => {

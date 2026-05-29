@@ -1,13 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Assignment } from '@/lib/types/assignment';
 import { assignmentService } from '@/lib/services/assignments';
-import { userService } from '@/lib/services/users';
 import { listAllAssignments } from '@/src/composition';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/utils/toast';
-import { logger } from '@/lib/logging';
 import { cloudFunctions } from '@/lib/services/cloudFunctions';
-import { sendAssignmentFormEmail } from '@/lib/services/email';
 
 interface AssignmentFilters {
   status?: string;
@@ -58,26 +55,9 @@ export const useAssignments = (filters?: AssignmentFilters) => {
   const acceptAssignmentMutation = useMutation({
     mutationFn: (assignmentId: string) =>
       assignmentService.accept(assignmentId),
-    onSuccess: (_, assignmentId) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
       toast.success('Einsatz erfolgreich angenommen');
-      // Fire-and-forget: Mitarbeiter per E-Mail benachrichtigen
-      void (async () => {
-        try {
-          const assignment = await assignmentService.getById(assignmentId);
-          if (!assignment?.userId) return;
-          const employee = await userService.getById(assignment.userId);
-          if (!employee?.email) return;
-          const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
-          await sendAssignmentFormEmail({
-            to: employee.email,
-            employeeName: employee.displayName || undefined,
-            formLink: `${appUrl}/employee/formulare/einsaetze/${assignmentId}`,
-          });
-        } catch (err) {
-          logger.warn('[Email] Benachrichtigung nach Zuweisung fehlgeschlagen', {}, { assignmentId, err });
-        }
-      })();
     },
     onError: (error: unknown) => {
       const message = error && typeof error === 'object' && 'message' in error ? String((error as { message?: unknown }).message) : 'Unbekannter Fehler';

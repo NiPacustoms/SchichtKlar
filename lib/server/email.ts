@@ -170,6 +170,7 @@ export function sanitizeCc(cc: string[] | undefined, to: string): string[] {
 
 export interface AssignmentFormEmailServerPayload {
   to: string;
+  cc?: string[];
   employeeName?: string;
   formLink: string;
   shiftInfo?: string;
@@ -197,7 +198,8 @@ function assignmentFormHtml(p: AssignmentFormEmailServerPayload): string {
 export async function sendAssignmentFormEmailServer(
   payload: AssignmentFormEmailServerPayload
 ): Promise<{ sent: boolean; error?: string }> {
-  const { to, employeeName, formLink, shiftInfo } = payload;
+  const { to, cc, employeeName, formLink, shiftInfo } = payload;
+  const ccList = sanitizeCc(cc, to);
   const html = assignmentFormHtml({ to, employeeName, formLink, shiftInfo });
   const text = [
     employeeName ? `Hallo ${employeeName},` : 'Guten Tag,',
@@ -208,6 +210,7 @@ export async function sendAssignmentFormEmailServer(
   const result = await resendFetch({
     from: getResendFrom(),
     to,
+    ...(ccList.length ? { cc: ccList } : {}),
     subject: 'Neuer Einsatz – Bitte Formular ausfüllen',
     html,
     text,
