@@ -1,12 +1,25 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { jsPDF } from 'jspdf';
+import type { UserOptions } from 'jspdf-autotable';
 import { Timesheet, timesheetService } from './timesheets';
 import { Assignment, assignmentService } from './assignments';
-import { shiftService } from './shifts';
+import { shiftService, type Shift } from './shifts';
 import { facilityService } from './facilities';
+import type { Facility } from '@/lib/types/facility';
 import { userService } from './users';
 import { firebaseStorageService } from './firebaseStorage';
 import { logger } from '@/lib/logging';
 import { getAppLogoUrl } from '@/lib/config/logo';
+
+/**
+ * jsPDF-Instanz, ergänzt um die von jspdf-autotable gesetzte
+ * `lastAutoTable`-Eigenschaft (die Plugin-Typen augmentieren jsPDF in v5 nicht).
+ */
+type JsPDFWithAutoTable = jsPDF & {
+  lastAutoTable?: { finalY: number };
+};
+
+/** Signatur des Default-Exports von jspdf-autotable. */
+type AutoTableFn = (doc: jsPDF, options: UserOptions) => void;
 
 export type DocumentType = 
   | 'timesheet-report'      // Zeiterfassungsbericht
@@ -81,7 +94,7 @@ class DocumentGenerationService {
     const autoTableModule = await import('jspdf-autotable');
     const autoTable = autoTableModule.default;
     
-    const doc = new (jsPDF as any)();
+    const doc = new jsPDF() as JsPDFWithAutoTable;
     let pdfBlob: Blob;
 
     switch (options.type) {
@@ -154,8 +167,8 @@ class DocumentGenerationService {
    * Generiert einen Zeiterfassungsbericht
    */
   private async generateTimesheetReport(
-    doc: any,
-    autoTable: any,
+    doc: JsPDFWithAutoTable,
+    autoTable: AutoTableFn,
     options: DocumentGenerationOptions
   ): Promise<Blob> {
     const margin = 14;
@@ -232,7 +245,7 @@ class DocumentGenerationService {
     
     // Wenn mehr Einträge vorhanden sind, Hinweis hinzufügen
     if (tableData.length > maxEntriesPerPage) {
-      const finalY = (doc as any).lastAutoTable?.finalY || y + (entriesToShow.length * 10) + 20;
+      const finalY = doc.lastAutoTable?.finalY || y + (entriesToShow.length * 10) + 20;
       y = finalY + 10;
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(9);
@@ -249,7 +262,7 @@ class DocumentGenerationService {
       
       // Ermittle die Y-Position nach der Tabelle
       const displayedEntries = Math.min(timesheets.length, 100);
-      const finalY = (doc as any).lastAutoTable?.finalY || y + (displayedEntries * 10) + 20;
+      const finalY = doc.lastAutoTable?.finalY || y + (displayedEntries * 10) + 20;
       y = finalY + 15;
       
       doc.setFont('helvetica', 'bold');
@@ -268,8 +281,8 @@ class DocumentGenerationService {
    * Generiert eine Einsatzbestätigung
    */
   private async generateAssignmentConfirmation(
-    doc: any,
-    autoTable: any,
+    doc: JsPDFWithAutoTable,
+    autoTable: AutoTableFn,
     options: DocumentGenerationOptions
   ): Promise<Blob> {
     const margin = 14;
@@ -286,8 +299,8 @@ class DocumentGenerationService {
     
     // Lade Assignment-Daten
     let assignment: Assignment | null = null;
-    let shift: any = null;
-    let facility: any = null;
+    let shift: Shift | null = null;
+    let facility: Facility | null = null;
     
     if (options.assignmentId) {
       try {
@@ -377,8 +390,8 @@ class DocumentGenerationService {
    * Generiert eine Schichtzusammenfassung
    */
   private async generateShiftSummary(
-    doc: any,
-    autoTable: any,
+    doc: JsPDFWithAutoTable,
+    autoTable: AutoTableFn,
     options: DocumentGenerationOptions
   ): Promise<Blob> {
     const margin = 14;
@@ -446,8 +459,8 @@ class DocumentGenerationService {
    * Generiert einen Monatsbericht
    */
   private async generateMonthlyReport(
-    doc: any,
-    autoTable: any,
+    doc: JsPDFWithAutoTable,
+    autoTable: AutoTableFn,
     options: DocumentGenerationOptions
   ): Promise<Blob> {
     const margin = 14;
@@ -539,7 +552,7 @@ class DocumentGenerationService {
     
     // Wenn mehr Einträge vorhanden sind, Hinweis hinzufügen
     if (tableData.length > maxEntriesPerPage) {
-      const finalY = (doc as any).lastAutoTable?.finalY || y + (entriesToShow.length * 10) + 20;
+      const finalY = doc.lastAutoTable?.finalY || y + (entriesToShow.length * 10) + 20;
       y = finalY + 10;
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(9);
@@ -553,8 +566,8 @@ class DocumentGenerationService {
    * Generiert einen benutzerdefinierten Bericht
    */
   private async generateCustomReport(
-    doc: any,
-    autoTable: any,
+    doc: JsPDFWithAutoTable,
+    autoTable: AutoTableFn,
     options: DocumentGenerationOptions
   ): Promise<Blob> {
     const margin = 14;
@@ -628,8 +641,8 @@ class DocumentGenerationService {
    * Nutzt das vom Admin gepflegte Branding (Einstellungen).
    */
   private async generateAdminReport(
-    doc: any,
-    _autoTable: any,
+    doc: JsPDFWithAutoTable,
+    _autoTable: AutoTableFn,
     options: DocumentGenerationOptions
   ): Promise<Blob> {
     if (!options.adminReportData) {
@@ -758,8 +771,8 @@ class DocumentGenerationService {
    * Status (Angenommen/Abgelehnt), Unterschrift bei Annahme und Ablehnung.
    */
   private async generateAssignmentNotification(
-    doc: any,
-    autoTable: any,
+    doc: JsPDFWithAutoTable,
+    autoTable: AutoTableFn,
     options: DocumentGenerationOptions
   ): Promise<Blob> {
     if (!options.assignmentNotificationData) {
@@ -853,7 +866,7 @@ class DocumentGenerationService {
       theme: 'plain',
       headStyles: { fontStyle: 'bold' },
     });
-    y = (doc as any).lastAutoTable.finalY + 10;
+    y = (doc.lastAutoTable?.finalY ?? y) + 10;
 
     // Zeiterfassungs- und Arbeitsschutz-Hinweise (bei Annahme nur diese; bei Ablehnung danach noch Ablehnungsblock)
     doc.setFontSize(10);
@@ -945,8 +958,8 @@ class DocumentGenerationService {
    * Enthält: Employee Signature (bei Ablehnung), Relieving Personnel Signatures, Facility Signatures
    */
   private async generateAssignmentSignatures(
-    doc: any,
-    _autoTable: any,
+    doc: JsPDFWithAutoTable,
+    _autoTable: AutoTableFn,
     options: DocumentGenerationOptions
   ): Promise<Blob> {
     if (!options.assignmentId) {

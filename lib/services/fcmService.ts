@@ -1,5 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { getMessaging, getToken, onMessage, type Messaging } from 'firebase/messaging';
+import {
+  getMessaging,
+  getToken,
+  onMessage,
+  type Messaging,
+  type MessagePayload,
+} from 'firebase/messaging';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db, getDb } from '@/lib/firebase';
 import { getApp } from 'firebase/app';
@@ -145,7 +150,9 @@ export async function removeFCMToken(userId: string, token: string): Promise<voi
 /**
  * Registriert Message-Handler für eingehende Notifications
  */
-export function onMessageReceived(callback: (payload: any) => void): (() => void) | null {
+export function onMessageReceived(
+  callback: (payload: MessagePayload) => void
+): (() => void) | null {
   const msg = initMessaging();
   if (!msg) {
     return null;

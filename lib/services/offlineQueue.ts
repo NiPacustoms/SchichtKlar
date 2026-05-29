@@ -64,7 +64,7 @@ class OfflineQueueService {
 
   private detectConflictType(error: unknown): ConflictType {
     const errorStr = String(error).toLowerCase();
-    const errorCode = (error as any)?.code?.toLowerCase() || '';
+    const errorCode = (error as { code?: string })?.code?.toLowerCase() || '';
 
     if (errorStr.includes('not found') || errorCode.includes('not-found')) return 'not_found';
     if (errorStr.includes('validation') || errorCode.includes('validation')) return 'validation';
@@ -225,7 +225,7 @@ class OfflineQueueService {
               itemId: item.id,
               type: conflictType,
               message: error instanceof Error ? error.message : String(error),
-              errorCode: (error as any)?.code,
+              errorCode: (error as { code?: string })?.code,
               timestamp: Date.now(),
             };
             item.conflict = conflict;
