@@ -288,7 +288,6 @@ export default function TimePage() {
   const handleStartShiftNow = async () => {
     const now = new Date();
     const startTime = now.toTimeString().slice(0, 5);
-    const today = now.toISOString().slice(0, 10);
     await handleSubmitTimesheet({
       date: now,
       startTime,
@@ -298,8 +297,6 @@ export default function TimePage() {
       station: assignmentDetails?.station?.name || '',
       notes: '',
     });
-    // Datum korrigieren: handleSubmitTimesheet erwartet Date, nicht string
-    void today; // suppress lint
   };
 
   const handleEditTimesheet = (timesheet: Timesheet) => {
