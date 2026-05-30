@@ -405,11 +405,27 @@ function DashboardPageContent() {
                     </Button>
                     <Button
                       component={Link}
+                      href="/employee/zeiten"
+                      variant="outlined"
+                      size="small"
+                    >
+                      Zeitkonto &amp; Überstunden
+                    </Button>
+                    <Button
+                      component={Link}
                       href="/employee/dienstplan"
                       variant="outlined"
                       size="small"
                     >
                       Dienstplan ansehen
+                    </Button>
+                    <Button
+                      component={Link}
+                      href="/employee/berichte"
+                      variant="outlined"
+                      size="small"
+                    >
+                      Berichte &amp; Auswertungen
                     </Button>
                     <Button
                       component={Link}

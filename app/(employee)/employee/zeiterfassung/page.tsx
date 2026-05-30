@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { TimesheetForm } from '@/components/time/TimesheetForm';
 import { TimesheetHistory } from '@/components/time/TimesheetHistory';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
@@ -412,7 +413,18 @@ export default function TimePage() {
             Erfasse deine Arbeitszeiten manuell
           </Typography>
         </Box>
-        <SyncStatusIndicator />
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Button
+            component={Link}
+            href="/employee/zeiten"
+            variant="outlined"
+            size="small"
+            sx={{ textTransform: 'none' }}
+          >
+            Zeitkonto &amp; Überstunden
+          </Button>
+          <SyncStatusIndicator />
+        </Box>
       </Box>
 
       {/* Einsatz-Informationen */}
