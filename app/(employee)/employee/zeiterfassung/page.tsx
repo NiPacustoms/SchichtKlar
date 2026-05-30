@@ -11,9 +11,9 @@ import { toast } from '@/lib/utils/toast';
 import { Alert, Box, Grid, Typography, Button, Card, CardContent, Stack } from '@mui/material';
 import { DailySignatureDialog } from '@/components/admin/DailySignatureDialog';
 import { RelievingPersonnelSignatureDialog } from '@/components/assignments/RelievingPersonnelSignatureDialog';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { logger } from '@/lib/logging';
-import { Pause, Stop } from '@mui/icons-material';
+import { Pause, Stop, PlayArrow } from '@mui/icons-material';
 import { getTodayAssignment, listAssignmentsForUser } from '@/src/composition';
 import { shiftService } from '@/lib/services/shifts';
 import { facilityService } from '@/lib/services/facilities';
@@ -266,6 +266,40 @@ export default function TimePage() {
     } catch (error: unknown) {
       toast.error('Fehler: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler'));
     }
+  };
+
+  // Vorausgefüllte Daten aus dem heutigen Einsatz (nur wenn noch keine Erfassung)
+  const assignmentInitialData = useMemo(() => {
+    if (!assignmentDetails?.shift || timesheet) return undefined;
+    const shiftDate = assignmentDetails.shift.date
+      ? new Date(assignmentDetails.shift.date)
+      : new Date();
+    return {
+      date: shiftDate,
+      startTime: assignmentDetails.shift.startTime || '',
+      endTime: '',
+      breakMinutes: 0,
+      facilityId: assignmentDetails.shift.facilityId || '',
+      station: assignmentDetails.station?.name || '',
+      notes: '',
+    };
+  }, [assignmentDetails, timesheet]);
+
+  const handleStartShiftNow = async () => {
+    const now = new Date();
+    const startTime = now.toTimeString().slice(0, 5);
+    const today = now.toISOString().slice(0, 10);
+    await handleSubmitTimesheet({
+      date: now,
+      startTime,
+      endTime: startTime,
+      breakMinutes: 0,
+      facilityId: assignmentDetails?.shift?.facilityId || '',
+      station: assignmentDetails?.station?.name || '',
+      notes: '',
+    });
+    // Datum korrigieren: handleSubmitTimesheet erwartet Date, nicht string
+    void today; // suppress lint
   };
 
   const handleEditTimesheet = (timesheet: Timesheet) => {
@@ -542,9 +576,30 @@ export default function TimePage() {
                   </Button>
                 </Stack>
               </>
+            ) : !timesheet ? (
+              <>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  {assignmentDetails?.shift
+                    ? `Einsatz: ${assignmentDetails.shift.startTime} – ${assignmentDetails.shift.endTime}`
+                    : 'Schicht heute starten'}
+                </Typography>
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<PlayArrow />}
+                  size="medium"
+                  sx={{ textTransform: 'none' }}
+                  data-testid="start-shift-button"
+                  aria-label="Schicht jetzt starten"
+                  disabled={createTimesheet.isPending}
+                  onClick={handleStartShiftNow}
+                >
+                  Schicht jetzt starten
+                </Button>
+              </>
             ) : (
               <Typography variant="body1" color="text.secondary">
-                Keine laufende Schicht. Nutzen Sie das Formular unten, um Zeiten zu erfassen oder zu starten.
+                Zeiten bereits erfasst. Bearbeitung über das Formular unten möglich.
               </Typography>
             )}
           </CardContent>
@@ -574,8 +629,10 @@ export default function TimePage() {
                     endTime: timesheet.endTime,
                     breakMinutes: timesheet.breakMinutes,
                     notes: timesheet.notes,
+                    facilityId: timesheet.facilityId || '',
+                    station: timesheet.station || '',
                   }
-                : undefined)
+                : assignmentInitialData)
             }
             onSubmit={handleSubmitTimesheet}
             isLoading={createTimesheet.isPending || updateTimesheet.isPending}

@@ -212,7 +212,7 @@ export function TimesheetForm({
     <GlassCard>
       <CardContent sx={{ pt: spacingScale.md }}>
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-          Zeiterfassung bearbeiten
+          {_isEdit ? 'Zeiterfassung bearbeiten' : 'Neue Zeiterfassung'}
         </Typography>
         <Box sx={{ mb: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>

@@ -131,7 +131,9 @@ function DashboardPageContent() {
     <PageContainer maxWidth="standard">
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ color: 'text.primary', fontWeight: 700, mb: 0.5 }}>
-          {isNurse ? 'Willkommen zurück!' : 'Übersicht'}
+          {isNurse
+            ? `Willkommen zurück${user.displayName ? `, ${user.displayName.split(' ')[0]}` : ''}!`
+            : 'Übersicht'}
         </Typography>
         <Typography variant="body1" sx={{ color: 'text.secondary' }}>
           {isNurse ? 'Hier ist dein Überblick für heute' : 'Aktuelle Kennzahlen im Überblick'}
@@ -166,7 +168,15 @@ function DashboardPageContent() {
                         {todayAssignment?.status && (
                           <Chip
                             size="small"
-                            color="success"
+                            color={
+                              todayAssignment.status === 'accepted' || todayAssignment.status === 'assigned'
+                                ? 'success'
+                                : todayAssignment.status === 'declined'
+                                  ? 'error'
+                                  : todayAssignment.status === 'completed' || todayAssignment.status === 'done'
+                                    ? 'primary'
+                                    : 'default'
+                            }
                             label={formatAssignmentStatus(todayAssignment.status)}
                             sx={{ fontWeight: 600 }}
                           />
@@ -210,15 +220,27 @@ function DashboardPageContent() {
                               Hinweis: {todayAssignment.notes}
                             </Typography>
                           )}
-                          <Button
-                            component={Link}
-                            href={todayAssignment.id ? `/employee/formulare/einsaetze/${todayAssignment.id}` : '/employee/einsaetze'}
-                            variant="contained"
-                            size="medium"
-                            sx={{ mt: 1, alignSelf: 'flex-start' }}
-                          >
-                            Einsatzdetails
-                          </Button>
+                          <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
+                            <Button
+                              component={Link}
+                              href={todayAssignment.id ? `/employee/formulare/einsaetze/${todayAssignment.id}` : '/employee/einsaetze'}
+                              variant="contained"
+                              size="medium"
+                            >
+                              Einsatzdetails
+                            </Button>
+                            {!(todayAssignment as { formStatus?: string }).formStatus && todayAssignment.id && (
+                              <Button
+                                component={Link}
+                                href={`/employee/formulare/einsaetze/${todayAssignment.id}`}
+                                variant="outlined"
+                                color="warning"
+                                size="medium"
+                              >
+                                Formular ausfüllen
+                              </Button>
+                            )}
+                          </Stack>
                         </Stack>
                       ) : (
                         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -322,84 +344,84 @@ function DashboardPageContent() {
           </GlassCard>
 
           <Grid container spacing={3}>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Stack spacing={3}>
-                <GlassCard>
-                  <CardContent>
-                    <Stack spacing={2}>
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <NotificationsActive fontSize="small" />
-                        <Typography variant="h6">Benachrichtigungen</Typography>
-                      </Stack>
-                      {upcomingNotifications.length > 0 ? (
-                        <List disablePadding>
-                          {upcomingNotifications.map((notification, index) => (
-                            <Box key={notification?.id ?? `notification-${index}`}>
-                              <ListItem disableGutters>
-                                <ListItemText
-                                  primary={notification.title}
-                                  secondary={
-                                    notification.message.length > 120
-                                      ? `${notification.message.slice(0, 120)}…`
-                                      : notification.message
-                                  }
-                                />
-                              </ListItem>
-                              {index < upcomingNotifications.length - 1 && (
-                                <Divider key={`divider-${notification?.id ?? index}`} component="li" sx={{ my: 1 }} />
-                              )}
-                            </Box>
-                          ))}
-                        </List>
-                      ) : (
-                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                          Keine neuen Benachrichtigungen.
-                        </Typography>
-                      )}
-                      <Button
-                        variant="text"
-                        size="small"
-                        component={Link}
-                        href="/employee/benachrichtigungen"
-                      >
-                        Alle ansehen
-                      </Button>
+            <Grid size={{ xs: 12, md: 8 }}>
+              <GlassCard sx={{ height: '100%' }}>
+                <CardContent>
+                  <Stack spacing={2}>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <NotificationsActive fontSize="small" />
+                      <Typography variant="h6">Benachrichtigungen</Typography>
                     </Stack>
-                  </CardContent>
-                </GlassCard>
+                    {upcomingNotifications.length > 0 ? (
+                      <List disablePadding>
+                        {upcomingNotifications.map((notification, index) => (
+                          <Box key={notification?.id ?? `notification-${index}`}>
+                            <ListItem disableGutters>
+                              <ListItemText
+                                primary={notification.title}
+                                secondary={
+                                  notification.message.length > 120
+                                    ? `${notification.message.slice(0, 120)}…`
+                                    : notification.message
+                                }
+                              />
+                            </ListItem>
+                            {index < upcomingNotifications.length - 1 && (
+                              <Divider key={`divider-${notification?.id ?? index}`} component="li" sx={{ my: 1 }} />
+                            )}
+                          </Box>
+                        ))}
+                      </List>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        Keine neuen Benachrichtigungen.
+                      </Typography>
+                    )}
+                    <Button
+                      variant="text"
+                      size="small"
+                      component={Link}
+                      href="/employee/benachrichtigungen"
+                    >
+                      Alle ansehen
+                    </Button>
+                  </Stack>
+                </CardContent>
+              </GlassCard>
+            </Grid>
 
-                <GlassCard>
-                  <CardContent>
-                    <Stack spacing={1.5}>
-                      <Typography variant="h6">Schnellzugriffe</Typography>
-                      <Button
-                        component={Link}
-                        href="/employee/zeiterfassung"
-                        variant="contained"
-                        size="small"
-                      >
-                        Zeiterfassung öffnen
-                      </Button>
-                      <Button
-                        component={Link}
-                        href="/employee/dienstplan"
-                        variant="outlined"
-                        size="small"
-                      >
-                        Dienstplan ansehen
-                      </Button>
-                      <Button
-                        component={Link}
-                        href="/employee/dokumente"
-                        variant="outlined"
-                        size="small"
-                      >
-                        Dokumente abrufen
-                      </Button>
-                    </Stack>
-                  </CardContent>
-                </GlassCard>
-              </Stack>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <GlassCard sx={{ height: '100%' }}>
+                <CardContent>
+                  <Stack spacing={1.5}>
+                    <Typography variant="h6">Schnellzugriffe</Typography>
+                    <Button
+                      component={Link}
+                      href="/employee/zeiterfassung"
+                      variant="contained"
+                      size="small"
+                    >
+                      Zeiterfassung öffnen
+                    </Button>
+                    <Button
+                      component={Link}
+                      href="/employee/dienstplan"
+                      variant="outlined"
+                      size="small"
+                    >
+                      Dienstplan ansehen
+                    </Button>
+                    <Button
+                      component={Link}
+                      href="/employee/dokumente"
+                      variant="outlined"
+                      size="small"
+                    >
+                      Dokumente abrufen
+                    </Button>
+                  </Stack>
+                </CardContent>
+              </GlassCard>
             </Grid>
           </Grid>
         </Box>
