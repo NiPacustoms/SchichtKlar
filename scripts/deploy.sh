@@ -1,81 +1,87 @@
-#!/bin/bash
-# Deployment Script für Firebase Hosting
-# Lädt Environment-Variablen aus .env.local und deployed die App
+#!/usr/bin/env bash
+# ============================================================
+# JobFlow – Lokales Deployment zu Firebase Hosting
+# ============================================================
+# Voraussetzungen:
+#   1. Firebase CLI: npm install -g firebase-tools
+#   2. Eingeloggt: firebase login
+#   3. .env.local im Projekt-Root vorhanden
+#
+# Ausführen (im Projekt-Root):
+#   chmod +x scripts/deploy.sh
+#   ./scripts/deploy.sh              # Production
+#   ./scripts/deploy.sh preview      # Preview-Channel
+# ============================================================
 
 set -euo pipefail
 
-echo "🚀 JobFlow Deployment Script"
-echo "============================"
+ENV_FILE=".env.local"
+PROJECT="jobflow25"
+CHANNEL="${1:-production}"
 
-# Prüfe ob .env.local existiert
-if [ ! -f .env.local ]; then
-    echo "❌ .env.local nicht gefunden. Bitte erstelle die Datei mit den Firebase-Konfigurationswerten."
-    exit 1
-fi
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
 
-echo "✅ .env.local gefunden"
-
-# Lade Environment-Variablen aus .env.local
-# Entferne Kommentare und leere Zeilen, exportiere nur NEXT_PUBLIC_* Variablen
-# Unterstützt Werte mit Leerzeichen durch korrektes Parsing
-while IFS= read -r line || [ -n "$line" ]; do
-  # Überspringe Kommentare und leere Zeilen
-  [[ "$line" =~ ^[[:space:]]*# ]] && continue
-  [[ -z "${line// }" ]] && continue
-  
-  # Nur NEXT_PUBLIC_* Variablen exportieren
-  if [[ "$line" =~ ^NEXT_PUBLIC_ ]]; then
-    # Parse KEY=VALUE (unterstützt Werte mit Leerzeichen in Anführungszeichen)
-    if [[ "$line" =~ ^([^=]+)=(.*)$ ]]; then
-      key="${BASH_REMATCH[1]}"
-      value="${BASH_REMATCH[2]}"
-      # Entferne Anführungszeichen falls vorhanden
-      value="${value#\"}"
-      value="${value%\"}"
-      export "$key=$value"
-    fi
-  fi
-done < <(grep -v '^#' .env.local | grep '^NEXT_PUBLIC_')
-
-# Prüfe ob alle erforderlichen Variablen gesetzt sind
-REQUIRED_VARS=(
-    "NEXT_PUBLIC_FIREBASE_API_KEY"
-    "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN"
-    "NEXT_PUBLIC_FIREBASE_PROJECT_ID"
-    "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"
-    "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"
-    "NEXT_PUBLIC_FIREBASE_APP_ID"
-)
-
-MISSING_VARS=()
-for var in "${REQUIRED_VARS[@]}"; do
-    if [ -z "${!var:-}" ]; then
-        MISSING_VARS+=("$var")
-    fi
-done
-
-if [ ${#MISSING_VARS[@]} -ne 0 ]; then
-    echo "❌ Fehlende Environment-Variablen:"
-    for var in "${MISSING_VARS[@]}"; do
-        echo "   - $var"
-    done
-    exit 1
-fi
-
-echo "✅ Alle erforderlichen Environment-Variablen sind gesetzt"
-
-# Build und Deploy
 echo ""
-echo "📦 Starte Build..."
+echo "========================================"
+echo "  JobFlow – Firebase Deploy"
+echo "========================================"
+echo ""
+
+if ! command -v firebase &> /dev/null; then
+  echo -e "${RED}FEHLER: Firebase CLI nicht installiert.${NC}"
+  echo "Installieren: npm install -g firebase-tools"
+  exit 1
+fi
+
+if [ ! -f "$ENV_FILE" ]; then
+  echo -e "${RED}FEHLER: $ENV_FILE nicht gefunden.${NC}"
+  exit 1
+fi
+
+# .env.local laden
+set -a
+# shellcheck disable=SC1090
+source "$ENV_FILE"
+set +a
+
+echo -e "${YELLOW}Projekt:${NC} $PROJECT"
+echo -e "${YELLOW}Channel:${NC} $CHANNEL"
+echo ""
+
+# TypeScript prüfen
+echo "Typecheck..."
+npm run typecheck:ci
+echo -e "${GREEN}OK${NC}"
+echo ""
+
+# Build
+echo "Build..."
+export NEXT_PUBLIC_APP_ENV=production
 npm run build
+echo -e "${GREEN}OK${NC}"
+echo ""
+
+# Functions-Abhängigkeiten
+if [ -d "functions" ]; then
+  echo "Functions installieren..."
+  npm ci --prefix functions --no-audit --no-fund
+  echo -e "${GREEN}OK${NC}"
+  echo ""
+fi
+
+# Deploy
+if [ "$CHANNEL" = "production" ]; then
+  echo "Deploy zu Production..."
+  firebase deploy --only hosting --project "$PROJECT" --force
+else
+  echo "Deploy zu Preview-Channel '$CHANNEL'..."
+  firebase hosting:channel:deploy "$CHANNEL" --only hosting --project "$PROJECT" --expires 7d --force
+fi
 
 echo ""
-echo "🚀 Starte Deployment..."
-echo "💡 Hinweis: Bestehende Firestore-Indizes werden automatisch beibehalten (N)."
-# Automatisch "N" bei der Frage nach dem Löschen von Indizes beantworten
-# um bestehende Indizes zu behalten
-echo "N" | firebase deploy
-
+echo -e "${GREEN}Deploy abgeschlossen!${NC}"
 echo ""
-echo "✅ Deployment abgeschlossen!"
 
