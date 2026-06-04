@@ -93,9 +93,9 @@ export default function StaffSimplePage() {
 
   // Handler-Funktionen
   const handleDeleteUser = (id: string) => {
-    if (window.confirm('Möchten Sie diesen Mitarbeiter wirklich löschen?')) {
+    toast.undoable('Mitarbeiter wird gelöscht …', () => {
       deleteUserMutation.mutate(id);
-    }
+    });
   };
 
   const handleToggleUserStatus = (id: string, currentStatus: boolean) => {

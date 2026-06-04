@@ -1,9 +1,9 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { assignmentService, cloudFunctions, userService } from '@/lib/services';
+import { assignmentService, cloudFunctions, userService, facilityService } from '@/lib/services';
 import { Assignment, Shift, User } from '@/lib/types';
-import { sendAssignmentFormEmail } from '@/lib/services/email';
+import { sendAssignmentFormEmail, INFO_EMAIL_ADDRESS } from '@/lib/services/email';
 import { toast } from '@/lib/utils/toast';
 import {
   Alert,
@@ -52,9 +52,9 @@ function DraggableUserRow({ userId, children }: DraggableUserRowProps) {
     collect: (monitor) => ({ isDragging: monitor.isDragging() }),
   });
   return (
-    <div ref={dragRef as unknown as React.Ref<HTMLDivElement>} style={{ opacity: isDragging ? 0.5 : 1 }}>
+    <Box ref={dragRef as unknown as React.Ref<HTMLDivElement>} sx={{ opacity: isDragging ? 0.5 : 1 }}>
       {children}
-    </div>
+    </Box>
   );
 }
 
@@ -72,19 +72,19 @@ function AssignedDropZone({ onDrop, disabled, children }: AssignedDropZoneProps)
     collect: (monitor) => ({ isOver: monitor.isOver() }),
   });
   return (
-    <div
+    <Box
       ref={dropRef as unknown as React.Ref<HTMLDivElement>}
-      style={{
+      sx={{
         minHeight: 120,
-        borderRadius: 8,
+        borderRadius: '8px',
         border: '2px dashed',
-        borderColor: isOver && !disabled ? 'var(--mui-palette-primary-main)' : 'var(--mui-palette-divider)',
-        backgroundColor: isOver && !disabled ? 'var(--mui-palette-action-hover)' : 'transparent',
+        borderColor: isOver && !disabled ? 'primary.main' : 'divider',
+        backgroundColor: isOver && !disabled ? 'action.hover' : 'transparent',
         transition: 'background-color 0.2s, border-color 0.2s',
       }}
     >
       {children}
-    </div>
+    </Box>
   );
 }
 
@@ -194,12 +194,27 @@ export function AssignShiftDialog({ open, onClose, shift }: AssignShiftDialogPro
           : (formLink ?? undefined);
 
       if (user.email && formLink) {
-        void sendAssignmentFormEmail({
-          to: user.email,
-          employeeName: user.displayName,
-          formLink: fullFormLink ?? formLink ?? '',
-          shiftInfo,
-        });
+        // CC an Einrichtung (hinterlegte Mail) + feste Info-Adresse. Fire-and-forget.
+        void (async () => {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          let facilityEmail: string | undefined;
+          try {
+            const facility = shift.facilityId ? await facilityService.getById(shift.facilityId) : null;
+            facilityEmail = facility?.email;
+          } catch {
+            facilityEmail = undefined;
+          }
+          const cc = [facilityEmail, INFO_EMAIL_ADDRESS].filter(
+            (addr): addr is string => !!addr && emailRegex.test(addr)
+          );
+          await sendAssignmentFormEmail({
+            to: user.email,
+            cc,
+            employeeName: user.displayName,
+            formLink: fullFormLink ?? formLink ?? '',
+            shiftInfo,
+          });
+        })();
       }
     },
     onError: (error: unknown) => {

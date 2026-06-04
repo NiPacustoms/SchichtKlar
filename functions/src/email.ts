@@ -281,5 +281,3 @@ export const sendAssignmentSignatureEmailCF = functions.https.onCall(async (data
 
   return { success: true, fallback: result.fallback };
 });
-
-

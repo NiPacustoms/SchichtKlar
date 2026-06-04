@@ -405,13 +405,13 @@ export function StaffEditDialog({ open, onClose, onSave, staff }: StaffEditDialo
             <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
               Bitte korrigieren Sie folgende Fehler:
             </Typography>
-            <ul style={{ margin: 0, paddingLeft: 20 }}>
+            <Box component="ul" sx={{ m: 0, pl: '20px' }}>
               {validationErrors.map((error, index) => (
                 <li key={index}>
                   <Typography variant="body2">{error}</Typography>
                 </li>
               ))}
-            </ul>
+            </Box>
           </Alert>
         )}
         <Grid container spacing={3} sx={{ mt: 1 }}>

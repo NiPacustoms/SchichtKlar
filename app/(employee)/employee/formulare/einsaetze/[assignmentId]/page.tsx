@@ -3,6 +3,8 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { assignmentService, shiftService, facilityService, documentService, timesheetService } from '@/lib/services';
 import { documentGenerationService } from '@/lib/services/documentGeneration';
+import { sendDocumentEmail, INFO_EMAIL_ADDRESS } from '@/lib/services/email';
+import { logger } from '@/lib/logging';
 import {
   Alert,
   Box,
@@ -97,6 +99,7 @@ export default function AssignmentFormPage() {
     let isMounted = true;
     (async () => {
       try {
+        // Stage 1: Load assignment (required for other queries)
         const a = await assignmentService.getById(assignmentId);
         if (!a) {
           setError('Zuweisung nicht gefunden');
@@ -106,36 +109,49 @@ export default function AssignmentFormPage() {
         if (!isMounted) return;
         setAssignment(a);
 
+        // Stage 2: Load shift (required for facility & timesheet)
         const s = await shiftService.getById(a.shiftId);
         if (!isMounted) return;
         setShift(s);
 
-        // Lade Facility-Daten
-        if (s?.facilityId) {
-          const f = await facilityService.getById(s.facilityId);
-          if (isMounted) {
-            setFacility(f);
-            // Lade Station-Name
-            if (f && s.stationId) {
-              const station = f.stations?.find(st => st.id === s.stationId);
-              setStationName(station?.name || '');
-            }
+        // Stage 3: Parallel-load facility, timesheet, documents (independent queries)
+        const isAccepted = a.status === 'accepted' || a.formStatus === 'acknowledged';
+        const shiftDate = s?.date
+          ? (typeof s.date === 'string' ? new Date(s.date) : s.date)
+          : null;
+
+        const [facilityResult, timesheetResult, docsResult] = await Promise.all([
+          s?.facilityId ? facilityService.getById(s.facilityId).catch(() => null) : Promise.resolve(null),
+          isAccepted && a.userId && shiftDate
+            ? timesheetService.getByDate(a.userId, shiftDate).catch(() => null)
+            : Promise.resolve(null),
+          isAccepted && a.userId
+            ? documentService.getByUserId(a.userId).catch(() => [])
+            : Promise.resolve([]),
+        ]);
+
+        if (!isMounted) return;
+
+        // Process facility result
+        if (facilityResult) {
+          setFacility(facilityResult);
+          if (s?.stationId) {
+            const station = facilityResult.stations?.find((st) => st.id === s.stationId);
+            setStationName(station?.name || '');
           }
         }
 
-        // Wenn Einsatz bereits angenommen: Zeiterfassung und PDF für Zusammenfassung laden
-        const isAccepted = a.status === 'accepted' || a.formStatus === 'acknowledged';
-        if (isAccepted && a.userId && s?.date) {
-          const shiftDate = typeof s.date === 'string' ? new Date(s.date) : s.date;
-          const ts = await timesheetService.getByDate(a.userId, shiftDate);
-          if (isMounted) setTimesheetForShift(ts);
-          try {
-            const docs = await documentService.getByUserId(a.userId);
-            const pdfDoc = docs.find(d => d.notes?.includes(a.id) || d.name?.toLowerCase().includes('einsatzmitteilung'));
-            if (isMounted && pdfDoc?.url) setAssignmentPdfUrl(pdfDoc.url);
-          } catch {
-            if ((a as { pdfUrl?: string }).pdfUrl) setAssignmentPdfUrl((a as { pdfUrl: string }).pdfUrl);
-          }
+        // Process timesheet result
+        if (timesheetResult) setTimesheetForShift(timesheetResult);
+
+        // Process documents result
+        const pdfDoc = docsResult.find(
+          (d) => d.notes?.includes(a.id) || d.name?.toLowerCase().includes('einsatzmitteilung')
+        );
+        if (pdfDoc?.url) {
+          setAssignmentPdfUrl(pdfDoc.url);
+        } else if ((a as { pdfUrl?: string }).pdfUrl) {
+          setAssignmentPdfUrl((a as { pdfUrl: string }).pdfUrl);
         }
 
         reset({
@@ -181,6 +197,21 @@ export default function AssignmentFormPage() {
       type: 'assignment-notification',
       assignmentId: assignment.id,
       userId: user.id,
+      companyLegalInfo: branding ? {
+        companyName: branding.companyName,
+        companyLogo: branding.companyLogo,
+        street: branding.legalStreet,
+        postalCode: branding.legalPostalCode,
+        city: branding.legalCity,
+        phone: branding.legalPhone,
+        email: branding.legalEmail,
+        web: branding.legalWeb,
+        registerCourt: branding.legalRegisterCourt,
+        registerNumber: branding.legalRegisterNumber,
+        managingDirectors: branding.legalManagingDirectors,
+        vatId: branding.legalVatId,
+        auegPermit: branding.legalAuegPermit,
+      } : undefined,
       assignmentNotificationData: {
         employeeName,
         facilityName,
@@ -213,11 +244,33 @@ export default function AssignmentFormPage() {
       notes: `Einsatzmitteilung für Assignment ${assignment.id}`,
     });
 
-    // PDF-URL am Assignment speichern, damit der Admin die Einsatzmitteilung unter „Einsätze“ öffnen kann
+    // PDF-URL am Assignment speichern, damit der Admin die Einsatzmitteilung unter „Einsätze” öffnen kann
     await assignmentService.update(assignment.id, {
       pdfUrl: pdfResult.url,
       pdfGenerated: true,
     });
+
+    // Fire-and-forget: signiertes PDF als Bestätigung an Mitarbeiter senden
+    if (pdfResult.pdfBlob && user.email) {
+      const emailSubject = isDeclined
+        ? `Ihre Einsatzmitteilung (Ablehnung) – ${currentDate.toLocaleDateString('de-DE')}`
+        : `Ihre Einsatzmitteilung (Bestätigung) – ${currentDate.toLocaleDateString('de-DE')}`;
+      // CC: Einrichtung (hinterlegte E-Mail) + feste Info-Adresse
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const ccList = [facility?.email, INFO_EMAIL_ADDRESS]
+        .filter((addr): addr is string => !!addr && emailRegex.test(addr));
+      void sendDocumentEmail({
+        to: user.email,
+        cc: ccList,
+        subject: emailSubject,
+        pdfBlob: pdfResult.pdfBlob,
+        fileName: pdfResult.fileName,
+      }).then(() => {
+        toast.info(`Bestätigung wurde an ${user.email} gesendet`);
+      }).catch(err => {
+        logger.warn('[Email] Einsatzmitteilung-Versand fehlgeschlagen', err instanceof Error ? err : new Error(String(err)));
+      });
+    }
 
     return pdfResult;
   };

@@ -3,7 +3,6 @@ import { getCompanyIdFromAuth } from '@/lib/utils/companyId';
 import { createAppError, ErrorCode, ErrorUtils } from '@/lib/errors';
 import { logger } from '@/lib/logging';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
-import type { Shift } from './types';
 import { COLLECTION_NAME } from './types';
 
 const serviceErrorHandler = ErrorUtils.createServiceHandler('shiftService');

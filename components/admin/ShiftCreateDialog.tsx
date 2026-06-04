@@ -2,11 +2,12 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { cloudFunctions, facilityService, shiftService, userService } from '@/lib/services';
-import { sendAssignmentFormEmail } from '@/lib/services/email';
+import { sendAssignmentFormEmail, INFO_EMAIL_ADDRESS } from '@/lib/services/email';
 import { toast } from '@/lib/utils/toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -21,7 +22,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { FormControlLabel, Switch } from '@mui/material';
+import { FormControlLabel, Switch, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -29,7 +30,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Facility, User } from '@/lib/types';
 import { de } from 'date-fns/locale';
 import { useEffect, useState } from 'react';
-import { eachDayOfInterval, format } from 'date-fns';
+import { eachDayOfInterval, format, addDays, getDay } from 'date-fns';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useForm } from 'react-hook-form';
@@ -47,6 +48,8 @@ const shiftCreateSchema = z
     }),
     dateTo: z.coerce.date().optional(),
     useRange: z.boolean().optional(),
+    /** Ausgewählte Wochentage (0=So..6=Sa) für den Zeitraum. Leer = alle Tage. */
+    weekdays: z.array(z.number()).optional(),
     startTime: z.string().min(1, 'Startzeit ist erforderlich'),
     endTime: z.string().min(1, 'Endzeit ist erforderlich'),
     type: z.string().optional(),
@@ -93,10 +96,31 @@ interface ShiftCreateDialogProps {
   initialDate?: Date | null;
 }
 
+/**
+ * Ermittelt die CC-Empfänger für die Einsatz-Benachrichtigung:
+ * Einrichtungs-Mail (über facilityId) + feste Info-Adresse. Fehler werden ignoriert.
+ */
+async function buildAssignmentCc(facilityId: string | undefined): Promise<string[]> {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  let facilityEmail: string | undefined;
+  try {
+    const facility = facilityId ? await facilityService.getById(facilityId) : null;
+    facilityEmail = facility?.email;
+  } catch {
+    facilityEmail = undefined;
+  }
+  return [facilityEmail, INFO_EMAIL_ADDRESS].filter(
+    (addr): addr is string => !!addr && emailRegex.test(addr)
+  );
+}
+
 export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDialogProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isOvernight, setIsOvernight] = useState(false);
+  // Abweichende Start-/Endzeiten pro Tag im Zeitraum (Key: yyyy-MM-dd)
+  const [usePerDayTimes, setUsePerDayTimes] = useState(false);
+  const [perDayTimes, setPerDayTimes] = useState<Record<string, { start: string; end: string }>>({});
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'), { noSsr: true });
 
@@ -118,6 +142,7 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
       date: initialDate || new Date(),
       dateTo: initialDate || new Date(),
       useRange: false,
+      weekdays: [],
       startTime: '',
       endTime: '',
       notes: '',
@@ -258,8 +283,10 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
 
                 if (assignedUser.email && formLink) {
                   try {
+                    const cc = await buildAssignmentCc(data.facilityId);
                     await sendAssignmentFormEmail({
                       to: assignedUser.email,
+                      cc,
                       employeeName: assignedUser.displayName,
                       formLink: fullFormLink ?? formLink ?? '',
                       shiftInfo,
@@ -294,6 +321,8 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
           }
 
           // Dialog schließen und Formular zurücksetzen
+          setUsePerDayTimes(false);
+          setPerDayTimes({});
           onClose();
           reset();
         },
@@ -312,7 +341,14 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
       // Zeitraum: Mehrere Schichten erstellen
       const start = data.date;
       const end = data.dateTo || data.date;
-      const days = eachDayOfInterval({ start, end });
+      const selectedWeekdays = data.weekdays ?? [];
+      const days = eachDayOfInterval({ start, end }).filter(
+        day => selectedWeekdays.length === 0 || selectedWeekdays.includes(getDay(day))
+      );
+      if (days.length === 0) {
+        toast.warning('Im gewählten Zeitraum liegen keine der ausgewählten Wochentage.');
+        return;
+      }
       // Generiere eine gemeinsame shiftGroupId für alle Schichten im Zeitraum
       const shiftGroupId = `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       (async () => {
@@ -320,11 +356,13 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
           const createdShiftIds: string[] = [];
 
           for (const day of days) {
+            const dayKey = format(day, 'yyyy-MM-dd');
+            const override = usePerDayTimes ? perDayTimes[dayKey] : undefined;
             const shiftId = await shiftService.createWithCapacity({
               facilityId: data.facilityId,
               date: typeof day === 'string' ? day : day.toISOString().split('T')[0],
-              startTime: data.startTime,
-              endTime: data.endTime,
+              startTime: override?.start || data.startTime,
+              endTime: override?.end || data.endTime,
               type: data.type,
               capacity: data.capacity,
               requiredQualifications: data.requiredQualifications,
@@ -377,8 +415,10 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
                 // E-Mail-Benachrichtigung
                 if (assignedUser.email) {
                   try {
+                    const cc = await buildAssignmentCc(data.facilityId);
                     await sendAssignmentFormEmail({
                       to: assignedUser.email,
+                      cc,
                       employeeName: assignedUser.displayName,
                       formLink: fullFormLink,
                       shiftInfo: `Zeitraum: ${shiftInfo}`,
@@ -426,6 +466,8 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
   const handleClose = () => {
     reset();
     setIsOvernight(false);
+    setUsePerDayTimes(false);
+    setPerDayTimes({});
     onClose();
   };
 
@@ -559,6 +601,109 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
                 </Grid>
               )}
 
+              {/* Wochentag-Auswahl im Zeitraum (z. B. nur MO/MI/FR). Leer = alle Tage. */}
+              {watch('useRange') && (
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant="body2" sx={{ mb: 0.5, color: 'text.secondary' }}>
+                    Nur an bestimmten Wochentagen (optional)
+                  </Typography>
+                  <ToggleButtonGroup
+                    value={watch('weekdays') ?? []}
+                    onChange={(_, value: number[]) => setValue('weekdays', value)}
+                    size="small"
+                    sx={{ flexWrap: 'wrap' }}
+                    aria-label="Wochentage"
+                  >
+                    {[
+                      { v: 1, l: 'Mo' },
+                      { v: 2, l: 'Di' },
+                      { v: 3, l: 'Mi' },
+                      { v: 4, l: 'Do' },
+                      { v: 5, l: 'Fr' },
+                      { v: 6, l: 'Sa' },
+                      { v: 0, l: 'So' },
+                    ].map(d => (
+                      <ToggleButton key={d.v} value={d.v} aria-label={d.l}>
+                        {d.l}
+                      </ToggleButton>
+                    ))}
+                  </ToggleButtonGroup>
+                  <Typography variant="caption" display="block" sx={{ mt: 0.5, color: 'text.secondary' }}>
+                    {(watch('weekdays') ?? []).length === 0
+                      ? 'Es werden alle Tage im Zeitraum angelegt.'
+                      : 'Es werden nur Schichten an den gewählten Wochentagen angelegt.'}
+                  </Typography>
+                </Grid>
+              )}
+
+              {/* Abweichende Zeiten pro Tag */}
+              {watch('useRange') && (
+                <Grid size={{ xs: 12 }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={usePerDayTimes}
+                        onChange={e => setUsePerDayTimes(e.target.checked)}
+                      />
+                    }
+                    label="Abweichende Zeiten pro Tag"
+                  />
+                  {usePerDayTimes && (() => {
+                    const start = watch('date') as Date | undefined;
+                    const end = (watch('dateTo') || watch('date')) as Date | undefined;
+                    const wds = watch('weekdays') ?? [];
+                    if (!start || !end) return null;
+                    const days = eachDayOfInterval({ start, end }).filter(
+                      d => wds.length === 0 || wds.includes(getDay(d))
+                    );
+                    const defStart = watch('startTime') || '';
+                    const defEnd = watch('endTime') || '';
+                    return (
+                      <Box sx={{ mt: 1, maxHeight: 240, overflowY: 'auto', pr: 1 }}>
+                        {days.map(d => {
+                          const key = format(d, 'yyyy-MM-dd');
+                          const val = perDayTimes[key] ?? { start: defStart, end: defEnd };
+                          const setVal = (patch: Partial<{ start: string; end: string }>) =>
+                            setPerDayTimes(prev => {
+                              const base = prev[key] ?? { start: defStart, end: defEnd };
+                              return { ...prev, [key]: { ...base, ...patch } };
+                            });
+                          return (
+                            <Box
+                              key={key}
+                              sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+                            >
+                              <Typography variant="body2" sx={{ minWidth: 96 }}>
+                                {format(d, 'EE, dd.MM.', { locale: de })}
+                              </Typography>
+                              <TextField
+                                type="time"
+                                label="Start"
+                                size="small"
+                                value={val.start}
+                                onChange={e => setVal({ start: e.target.value })}
+                                InputLabelProps={{ shrink: true }}
+                              />
+                              <TextField
+                                type="time"
+                                label="Ende"
+                                size="small"
+                                value={val.end}
+                                onChange={e => setVal({ end: e.target.value })}
+                                InputLabelProps={{ shrink: true }}
+                              />
+                            </Box>
+                          );
+                        })}
+                        <Typography variant="caption" color="text.secondary">
+                          Leere Felder verwenden die Standard-Zeiten oben.
+                        </Typography>
+                      </Box>
+                    );
+                  })()}
+                </Grid>
+              )}
+
               {/* Startzeit */}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
@@ -589,18 +734,24 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
                 />
               </Grid>
 
-              {/* Overnight-Hinweis */}
-              {isOvernight && (
-                <Grid size={{ xs: 12 }}>
-                  <Alert severity="info">
-                    <Typography component="span" variant="body2">
-                      <strong>Overnight-Schicht erkannt:</strong> Die Endzeit liegt vor der
-                      Startzeit. Die Schicht geht über Mitternacht und wird automatisch korrekt
-                      berechnet.
-                    </Typography>
-                  </Alert>
-                </Grid>
-              )}
+              {/* Overnight-Hinweis inkl. konkretem Bis-Datum (Folgetag) */}
+              {isOvernight && (() => {
+                const startDate = (watch('date') || initialDate || new Date()) as Date;
+                const endDate = addDays(startDate, 1);
+                return (
+                  <Grid size={{ xs: 12 }}>
+                    <Alert severity="info">
+                      <Typography component="span" variant="body2">
+                        <strong>Overnight-Schicht erkannt:</strong> Die Endzeit liegt vor der
+                        Startzeit – die Schicht endet am Folgetag, dem{' '}
+                        <strong>{format(endDate, 'EEEE, dd.MM.yyyy', { locale: de })}</strong> um{' '}
+                        <strong>{watch('endTime')} Uhr</strong>. Die Dauer wird automatisch korrekt
+                        berechnet.
+                      </Typography>
+                    </Alert>
+                  </Grid>
+                );
+              })()}
 
               {/* Kapazität */}
               <Grid size={{ xs: 12, sm: 6 }}>

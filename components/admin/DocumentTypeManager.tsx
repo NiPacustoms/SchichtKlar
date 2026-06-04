@@ -28,6 +28,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from '@/lib/utils/toast';
 
 interface DocumentTypeFormData {
   name: string;
@@ -130,9 +131,9 @@ export function DocumentTypeManager() {
   };
 
   const handleDeactivate = (id: string) => {
-    if (window.confirm('Möchten Sie diesen Dokumententyp wirklich deaktivieren?')) {
+    toast.undoable('Dokumententyp wird deaktiviert …', () => {
       deactivateMutation.mutate(id);
-    }
+    });
   };
 
   if (isLoading) {

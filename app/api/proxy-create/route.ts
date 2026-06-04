@@ -6,6 +6,7 @@ import {
   createAppError,
   ErrorCode,
 } from '@/lib/errors';
+import { verifyIdToken, getRoleFromToken } from '@/lib/server/firebaseAdmin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -57,6 +58,17 @@ export async function OPTIONS() {
 export async function POST(req: NextRequest) {
   const route = '/api/proxy-create';
   const authHeader = req.headers.get('authorization');
+
+  // Verify token & require admin role (creates assignments)
+  const decoded = await verifyIdToken(authHeader || undefined);
+  if (!decoded) {
+    return createAuthErrorResponse('UNAUTHENTICATED', route);
+  }
+  const role = getRoleFromToken(decoded);
+  if (role !== 'admin') {
+    return createAuthErrorResponse('UNAUTHORIZED', route);
+  }
+
   if (!authHeader?.startsWith('Bearer ')) {
     return createAuthErrorResponse('UNAUTHENTICATED', route);
   }

@@ -12,6 +12,11 @@ import { shiftService } from '@/lib/services/shifts';
 import { facilityService } from '@/lib/services/facilities';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/lib/utils/toast';
+import { SickReportDialog } from '@/components/time/SickReportDialog';
+import { AssignmentSelectionDialog } from '@/components/time/AssignmentSelectionDialog';
+import { BreakFormDialog } from '@/components/time/BreakFormDialog';
+import { ArbeitsZeitenTab } from '@/components/time/ArbeitsZeitenTab';
+import { KrankheitTab } from '@/components/time/KrankheitTab';
 import {
   Box,
   Typography,
@@ -20,27 +25,19 @@ import {
   Grid,
   Button,
   Chip,
+  Alert,
+  Tabs,
+  Tab,
+  LinearProgress,
+  Divider,
+  Tooltip,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Alert,
-  Tabs,
-  Tab,
-  LinearProgress,
-  Divider,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
-  Tooltip,
 } from '@mui/material';
 import type { ChipProps } from '@mui/material';
 import {
@@ -55,7 +52,6 @@ import {
   Print,
   Timer,
   HourglassEmpty,
-  Assignment,
   LocationOn,
   Info,
   CheckCircle,
@@ -964,363 +960,39 @@ export default function EmployeeTimesPage() {
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
-        <Card className="glass">
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-              <Work sx={{ mr: 1 }} />
-              Arbeitszeiten-Detail
-            </Typography>
-
-            <TableContainer component={Paper} elevation={0}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Datum</TableCell>
-                    <TableCell>Schicht</TableCell>
-                    <TableCell>Start</TableCell>
-                    <TableCell>Ende</TableCell>
-                    <TableCell>Pausen</TableCell>
-                    <TableCell>Stunden</TableCell>
-                    <TableCell>Status</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {stats.workEntries.map((entry, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {format(entry.date, 'dd.MM.yyyy', { locale: de })}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {entry.shiftType} - {entry.facility}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{entry.startTime}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{entry.endTime}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{entry.breaks}min</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {entry.hours}h
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={entry.status}
-                          color={getStatusColor(entry.status)}
-                          size="small"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
+        <ArbeitsZeitenTab entries={stats.workEntries} getStatusColor={getStatusColor} />
       </TabPanel>
 
       <TabPanel value={activeTab} index={2}>
-        <Card className="glass">
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-              <Sick sx={{ mr: 1 }} />
-              Krankheitstage-Übersicht
-            </Typography>
-
-            <TableContainer component={Paper} elevation={0}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Zeitraum</TableCell>
-                    <TableCell>Tage</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Arzt</TableCell>
-                    <TableCell>Bemerkung</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {stats.sickEntries.map((entry, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {format(entry.startDate, 'dd.MM.yyyy', { locale: de })} -{' '}
-                          {format(entry.endDate, 'dd.MM.yyyy', { locale: de })}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {entry.days}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={entry.status}
-                          color={
-                            entry.status === 'approved'
-                              ? 'success'
-                              : entry.status === 'pending'
-                                ? 'warning'
-                                : 'error'
-                          }
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{entry.doctor}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {entry.remark}
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
+        <KrankheitTab entries={stats.sickEntries} />
       </TabPanel>
 
-      {/* Sick Report Dialog */}
-      <Dialog
+      <SickReportDialog
         open={sickDialogOpen}
         onClose={() => setSickDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Sick />
-            Krankmeldung
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Bitte melden Sie sich krank, sobald Sie wissen, dass Sie nicht zur Arbeit kommen können.
-          </Alert>
-          <Grid container spacing={3} sx={{ mt: 1 }}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Von"
-                type="date"
-                InputLabelProps={{ shrink: true }}
-                value={sickFormData.startDate}
-                onChange={e => setSickFormData({ ...sickFormData, startDate: e.target.value })}
-                required
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Bis"
-                type="date"
-                InputLabelProps={{ shrink: true }}
-                value={sickFormData.endDate}
-                onChange={e => setSickFormData({ ...sickFormData, endDate: e.target.value })}
-                required
-                error={sickFormData.endDate < sickFormData.startDate}
-                helperText={
-                  sickFormData.endDate < sickFormData.startDate
-                    ? 'Enddatum muss nach Startdatum liegen'
-                    : ''
-                }
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Grund"
-                multiline
-                rows={3}
-                placeholder="Beschreibung der Krankheit oder Symptome..."
-                value={sickFormData.reason}
-                onChange={e => setSickFormData({ ...sickFormData, reason: e.target.value })}
-                required
-                error={!sickFormData.reason.trim()}
-                helperText={!sickFormData.reason.trim() ? 'Bitte geben Sie einen Grund an' : ''}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Arztbesuch (optional)"
-                placeholder="Name des Arztes oder Praxis..."
-                value={sickFormData.doctorNote}
-                onChange={e => setSickFormData({ ...sickFormData, doctorNote: e.target.value })}
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setSickDialogOpen(false);
-              setSickFormData({
-                startDate: new Date().toISOString().split('T')[0],
-                endDate: new Date().toISOString().split('T')[0],
-                reason: '',
-                doctorNote: '',
-              });
-            }}
-          >
-            Abbrechen
-          </Button>
-          <Button
-            onClick={handleReportSick}
-            variant="contained"
-            disabled={
-              !sickFormData.reason.trim() ||
-              !sickFormData.startDate ||
-              !sickFormData.endDate ||
-              sickFormData.endDate < sickFormData.startDate
-            }
-            startIcon={<CheckCircle />}
-          >
-            Krankmeldung absenden
-          </Button>
-        </DialogActions>
-      </Dialog>
+        formData={sickFormData}
+        onChange={setSickFormData}
+        onSubmit={handleReportSick}
+      />
 
-      {/* Assignment Selection Dialog */}
-      <Dialog
+      <AssignmentSelectionDialog
         open={assignmentDialogOpen}
         onClose={() => setAssignmentDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Assignment />
-            Auftrag auswählen
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Bitte wählen Sie den Auftrag aus, für den Sie die Schicht starten möchten:
-          </Typography>
-          <RadioGroup
-            value={selectedAssignmentId}
-            onChange={e => setSelectedAssignmentId(e.target.value)}
-          >
-            {activeAssignments.map(({ assignment, shift, facility }) => (
-              <FormControlLabel
-                key={assignment.id}
-                value={assignment.id}
-                control={<Radio />}
-                label={
-                  <Box sx={{ ml: 1 }}>
-                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                      {facility?.name || 'Unbekannte Einrichtung'}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {shift.startTime} - {shift.endTime}
-                    </Typography>
-                    {shift.notes && (
-                      <Typography variant="caption" color="text.secondary">
-                        {shift.notes}
-                      </Typography>
-                    )}
-                  </Box>
-                }
-                sx={{
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 1,
-                  p: 1.5,
-                  mb: 1,
-                  '&:hover': {
-                    backgroundColor: 'action.hover',
-                  },
-                }}
-              />
-            ))}
-          </RadioGroup>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAssignmentDialogOpen(false)}>Abbrechen</Button>
-          <Button
-            onClick={handleConfirmStartShift}
-            variant="contained"
-            disabled={!selectedAssignmentId || isStarting}
-            startIcon={isStarting ? <InlineSpinner size={20} /> : <CheckCircle />}
-          >
-            Schicht starten
-          </Button>
-        </DialogActions>
-      </Dialog>
+        assignments={activeAssignments}
+        selectedId={selectedAssignmentId}
+        onSelect={setSelectedAssignmentId}
+        onConfirm={handleConfirmStartShift}
+        isStarting={isStarting}
+      />
 
-      {/* Break Dialog */}
-      <Dialog
+      <BreakFormDialog
         open={breakDialogOpen}
         onClose={() => setBreakDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Pause />
-            Pause hinzufügen
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Grid container spacing={3} sx={{ mt: 1 }}>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Grund"
-                placeholder="z.B. Mittagspause, Kaffeepause..."
-                value={breakFormData.reason}
-                onChange={e => setBreakFormData({ ...breakFormData, reason: e.target.value })}
-                required
-                error={!breakFormData.reason.trim()}
-                helperText={!breakFormData.reason.trim() ? 'Bitte geben Sie einen Grund an' : ''}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Dauer (Minuten)"
-                type="number"
-                placeholder="30"
-                value={breakFormData.duration}
-                onChange={e =>
-                  setBreakFormData({ ...breakFormData, duration: parseInt(e.target.value) || 30 })
-                }
-                inputProps={{ min: 1, max: 480 }}
-                helperText="Empfohlene Pausen: 15 min (kurz), 30 min (Mittag), 45 min (längere Pause)"
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setBreakDialogOpen(false);
-              setBreakFormData({ reason: '', duration: 30 });
-            }}
-          >
-            Abbrechen
-          </Button>
-          <Button
-            onClick={handleAddBreak}
-            variant="contained"
-            disabled={!breakFormData.reason.trim() || isAddingBreak}
-            startIcon={isAddingBreak ? <InlineSpinner size={20} /> : <CheckCircle />}
-          >
-            Pause hinzufügen
-          </Button>
-        </DialogActions>
-      </Dialog>
+        formData={breakFormData}
+        onChange={setBreakFormData}
+        onSubmit={handleAddBreak}
+        isSubmitting={isAddingBreak}
+      />
     </PageContainer>
   );
 }

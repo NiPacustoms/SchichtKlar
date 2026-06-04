@@ -9,9 +9,21 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { logger } from '@/lib/logging';
 import { createAppError, ErrorCode } from '@/lib/errors';
 import * as offlineStorage from './offlineStorage';
+import { retryWithBackoff, isRetryableError } from '@/lib/utils/retry';
 
 export const OFFLINE_SYNC_STATUS_EVENT = 'jobflow-offline-sync-status';
+export const OFFLINE_CONFLICT_EVENT = 'jobflow-offline-conflict';
 const SYNC_STATUS_EVENT = OFFLINE_SYNC_STATUS_EVENT;
+
+export type ConflictType = 'not_found' | 'validation' | 'duplicate' | 'stale' | 'unknown';
+
+export interface OfflineConflict {
+  itemId: string;
+  type: ConflictType;
+  message: string;
+  errorCode?: string;
+  timestamp: number;
+}
 
 export interface OfflineQueueItem {
   id: string;
@@ -20,6 +32,7 @@ export interface OfflineQueueItem {
   data: Record<string, unknown>;
   timestamp: number;
   retries: number;
+  conflict?: OfflineConflict;
 }
 
 export type OfflineSyncStatus = 'idle' | 'syncing' | 'offline';
@@ -27,6 +40,7 @@ export type OfflineSyncStatus = 'idle' | 'syncing' | 'offline';
 class OfflineQueueService {
   private queue: OfflineQueueItem[] = [];
   private syncing = false;
+  private conflicts: OfflineConflict[] = [];
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -39,6 +53,25 @@ class OfflineQueueService {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent(SYNC_STATUS_EVENT, { detail: this.getStatus() }));
     }
+  }
+
+  private notifyConflict(conflict: OfflineConflict): void {
+    if (typeof window !== 'undefined') {
+      this.conflicts.push(conflict);
+      window.dispatchEvent(new CustomEvent(OFFLINE_CONFLICT_EVENT, { detail: conflict }));
+    }
+  }
+
+  private detectConflictType(error: unknown): ConflictType {
+    const errorStr = String(error).toLowerCase();
+    const errorCode = (error as { code?: string })?.code?.toLowerCase() || '';
+
+    if (errorStr.includes('not found') || errorCode.includes('not-found')) return 'not_found';
+    if (errorStr.includes('validation') || errorCode.includes('validation')) return 'validation';
+    if (errorStr.includes('duplicate') || errorCode.includes('already-exists')) return 'duplicate';
+    if (errorStr.includes('stale') || errorCode.includes('conflict')) return 'stale';
+
+    return 'unknown';
   }
 
   private async loadQueue(): Promise<void> {
@@ -155,17 +188,63 @@ class OfflineQueueService {
 
       for (const item of itemsToSync) {
         try {
-          await this.syncItem(item);
+          // Verwende Retry mit Exponential Backoff für transient errors
+          await retryWithBackoff(
+            () => this.syncItem(item),
+            {
+              maxRetries: 3,
+              initialDelayMs: 1000,
+              maxDelayMs: 16000,
+              backoffMultiplier: 2,
+              isRetryable: (error) => {
+                // Konflikte sollen NICHT retried werden
+                const conflictType = this.detectConflictType(error);
+                const isConflict = ['not_found', 'validation', 'duplicate', 'stale'].includes(conflictType);
+                if (isConflict) return false;
+                // Nutze Standard-Retry-Logik für transient errors
+                return isRetryableError(error);
+              },
+              onRetry: (attempt, error, delayMs) => {
+                logger.info(`Retrying sync for item ${item.id} (attempt ${attempt}, delay: ${delayMs}ms)`, {
+                  error: error.message,
+                });
+              },
+            }
+          );
           syncedIds.push(item.id);
           await this.removePersistedItem(item.id);
         } catch (error) {
+          const conflictType = this.detectConflictType(error);
+          const isConflict = ['not_found', 'validation', 'duplicate', 'stale'].includes(conflictType);
+
           logger.error(`Error syncing item ${item.id}`, error instanceof Error ? error : new Error(String(error)));
-          item.retries += 1;
-          if (item.retries < 3) {
+
+          if (isConflict) {
+            // Konflikt erkannt: Speichere Fehler und benachrichtige UI
+            const conflict: OfflineConflict = {
+              itemId: item.id,
+              type: conflictType,
+              message: error instanceof Error ? error.message : String(error),
+              errorCode: (error as { code?: string })?.code,
+              timestamp: Date.now(),
+            };
+            item.conflict = conflict;
             failedItems.push(item);
             await this.updatePersistedRetries(item.id, item.retries);
+            this.notifyConflict(conflict);
           } else {
-            await this.removePersistedItem(item.id);
+            // Nach Retry-Erschöpfung: Behandle als Konflikt für UI
+            const conflict: OfflineConflict = {
+              itemId: item.id,
+              type: 'unknown',
+              message: `Sync fehlgeschlagen nach Retries: ${error instanceof Error ? error.message : String(error)}`,
+              timestamp: Date.now(),
+            };
+            item.conflict = conflict;
+            item.retries = 3;
+            failedItems.push(item);
+            await this.updatePersistedRetries(item.id, item.retries);
+            this.notifyConflict(conflict);
           }
         }
       }
@@ -272,12 +351,65 @@ class OfflineQueueService {
    */
   async clearQueue(): Promise<void> {
     this.queue = [];
+    this.conflicts = [];
     try {
       await offlineStorage.clearQueue();
     } catch (error) {
       logger.error('Error clearing offline queue', error instanceof Error ? error : new Error(String(error)));
     }
     this.notifyStatus();
+  }
+
+  /**
+   * Gibt alle Konflikte zurück
+   */
+  getConflicts(): OfflineConflict[] {
+    return [...this.conflicts];
+  }
+
+  /**
+   * Gibt Konflikte für ein spezifisches Item zurück
+   */
+  getConflictForItem(itemId: string): OfflineConflict | undefined {
+    return this.conflicts.find((c) => c.itemId === itemId);
+  }
+
+  /**
+   * Löst einen Konflikt auf durch Löschen des Queue-Items
+   */
+  async resolveConflict(itemId: string, delete_item: boolean = true): Promise<void> {
+    if (delete_item) {
+      this.queue = this.queue.filter((item) => item.id !== itemId);
+      await this.removePersistedItem(itemId);
+    }
+    this.conflicts = this.conflicts.filter((c) => c.itemId !== itemId);
+    this.notifyStatus();
+  }
+
+  /**
+   * Versucht ein Konflikt-Item neu zu synchronisieren
+   */
+  async retryConflictItem(itemId: string): Promise<void> {
+    const item = this.queue.find((i) => i.id === itemId);
+    if (!item) return;
+
+    // Setze retries zurück für Neuversuch
+    item.retries = 0;
+    item.conflict = undefined;
+    await this.updatePersistedRetries(itemId, 0);
+
+    // Versuche sofort zu synchen wenn online
+    if (navigator.onLine) {
+      try {
+        await this.syncItem(item);
+        this.queue = this.queue.filter((i) => i.id !== itemId);
+        await this.removePersistedItem(itemId);
+        this.conflicts = this.conflicts.filter((c) => c.itemId !== itemId);
+      } catch (error) {
+        // Error handling wird durch nextSync übernommen
+      }
+      this.notifyStatus();
+    }
   }
 }
 

@@ -19,6 +19,10 @@ import { settingsService } from '@/lib/services/settingsService';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/lib/utils/toast';
 import { FeatureFlags } from '@/lib/types/featureFlags';
+import { RoleEditDialog } from '@/components/settings/RoleEditDialog';
+import { BackupDialog, RestoreDialog } from '@/components/settings/BackupRestoreDialogs';
+import { DocumentTypeDialog } from '@/components/settings/DocumentTypeDialog';
+import { SettingsEditDialog } from '@/components/settings/SettingsEditDialog';
 import {
   Box,
   Typography,
@@ -35,15 +39,6 @@ import {
   TableRow,
   Paper,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
   Tabs,
   Tab,
@@ -54,7 +49,8 @@ import {
   Avatar,
   Switch,
   FormControlLabel,
-  Checkbox,
+  TextField,
+  Divider,
 } from '@mui/material';
 import {
   Settings,
@@ -73,13 +69,11 @@ import {
   Warning,
   ToggleOn,
   People,
+  Gavel,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
-import {
-  PERMISSION_OPTIONS,
-  PERMISSION_GROUPS,
-} from '@/lib/constants/permissions';
+import { PERMISSION_OPTIONS } from '@/lib/constants/permissions';
 
 const getPermissionLabel = (key: string) =>
   PERMISSION_OPTIONS.find(p => p.key === key)?.label ?? key;
@@ -157,6 +151,20 @@ export default function AdminSettingsPage() {
   const [roleFormPermissions, setRoleFormPermissions] = useState<string[]>([]);
   const [roleFormStatus, setRoleFormStatus] = useState<'active' | 'inactive' | 'pending'>('active');
 
+  // Rechtliche Pflichtangaben – lokaler Formularstate (§ 35a GmbHG, § 1 AÜG)
+  const [legalStreet, setLegalStreet] = useState('');
+  const [legalPostalCode, setLegalPostalCode] = useState('');
+  const [legalCity, setLegalCity] = useState('');
+  const [legalPhone, setLegalPhone] = useState('');
+  const [legalEmail, setLegalEmail] = useState('');
+  const [legalWeb, setLegalWeb] = useState('');
+  const [legalRegisterCourt, setLegalRegisterCourt] = useState('');
+  const [legalRegisterNumber, setLegalRegisterNumber] = useState('');
+  const [legalManagingDirectors, setLegalManagingDirectors] = useState('');
+  const [legalVatId, setLegalVatId] = useState('');
+  const [legalAuegPermit, setLegalAuegPermit] = useState('');
+  const [isSavingLegal, setIsSavingLegal] = useState(false);
+
   useEffect(() => {
     if (roleDialogOpen) {
       if (selectedItem && 'permissions' in selectedItem) {
@@ -173,6 +181,44 @@ export default function AdminSettingsPage() {
       }
     }
   }, [roleDialogOpen, selectedItem]);
+
+  // Rechtsfelder aus geladenen Branding-Einstellungen initialisieren
+  useEffect(() => {
+    if (branding) {
+      setLegalStreet(branding.legalStreet ?? '');
+      setLegalPostalCode(branding.legalPostalCode ?? '');
+      setLegalCity(branding.legalCity ?? '');
+      setLegalPhone(branding.legalPhone ?? '');
+      setLegalEmail(branding.legalEmail ?? '');
+      setLegalWeb(branding.legalWeb ?? '');
+      setLegalRegisterCourt(branding.legalRegisterCourt ?? '');
+      setLegalRegisterNumber(branding.legalRegisterNumber ?? '');
+      setLegalManagingDirectors(branding.legalManagingDirectors ?? '');
+      setLegalVatId(branding.legalVatId ?? '');
+      setLegalAuegPermit(branding.legalAuegPermit ?? '');
+    }
+  }, [branding]);
+
+  const handleSaveLegalInfo = async () => {
+    setIsSavingLegal(true);
+    try {
+      await updateBranding({
+        legalStreet: legalStreet || undefined,
+        legalPostalCode: legalPostalCode || undefined,
+        legalCity: legalCity || undefined,
+        legalPhone: legalPhone || undefined,
+        legalEmail: legalEmail || undefined,
+        legalWeb: legalWeb || undefined,
+        legalRegisterCourt: legalRegisterCourt || undefined,
+        legalRegisterNumber: legalRegisterNumber || undefined,
+        legalManagingDirectors: legalManagingDirectors || undefined,
+        legalVatId: legalVatId || undefined,
+        legalAuegPermit: legalAuegPermit || undefined,
+      });
+    } finally {
+      setIsSavingLegal(false);
+    }
+  };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -483,6 +529,173 @@ export default function AdminSettingsPage() {
                   label="Logo anzeigen"
                 />
               </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Rechtliche Pflichtangaben */}
+        <Card className="glass" sx={{ mb: 4 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <Gavel sx={{ color: 'primary.main' }} />
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                Rechtliche Pflichtangaben
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Diese Angaben erscheinen in der Fußzeile aller generierten PDF-Dokumente
+              (Pflicht nach § 35a GmbHG und § 1 AÜG).
+            </Typography>
+
+            <Divider sx={{ mb: 3 }} />
+
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.7rem' }}>
+              Anschrift &amp; Kontakt
+            </Typography>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Straße &amp; Hausnummer"
+                  value={legalStreet}
+                  onChange={e => setLegalStreet(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="Musterstraße 1"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 3 }}>
+                <TextField
+                  label="PLZ"
+                  value={legalPostalCode}
+                  onChange={e => setLegalPostalCode(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="80331"
+                  inputProps={{ maxLength: 10 }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 3 }}>
+                <TextField
+                  label="Ort"
+                  value={legalCity}
+                  onChange={e => setLegalCity(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="München"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <TextField
+                  label="Telefon"
+                  value={legalPhone}
+                  onChange={e => setLegalPhone(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="+49 89 12345678"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <TextField
+                  label="E-Mail"
+                  value={legalEmail}
+                  onChange={e => setLegalEmail(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="info@firma.de"
+                  type="email"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <TextField
+                  label="Website"
+                  value={legalWeb}
+                  onChange={e => setLegalWeb(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="www.firma.de"
+                />
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ mb: 3 }} />
+
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.7rem' }}>
+              Handelsregister &amp; Steuer (§ 35a GmbHG)
+            </Typography>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Registergericht"
+                  value={legalRegisterCourt}
+                  onChange={e => setLegalRegisterCourt(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="Amtsgericht München"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Handelsregisternummer"
+                  value={legalRegisterNumber}
+                  onChange={e => setLegalRegisterNumber(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="HRB 123456"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 8 }}>
+                <TextField
+                  label="Geschäftsführer"
+                  value={legalManagingDirectors}
+                  onChange={e => setLegalManagingDirectors(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="Max Mustermann, Erika Musterfrau"
+                  helperText="Kommagetrennt bei mehreren Personen"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <TextField
+                  label="USt-IdNr."
+                  value={legalVatId}
+                  onChange={e => setLegalVatId(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="DE123456789"
+                />
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ mb: 3 }} />
+
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.7rem' }}>
+              Arbeitnehmerüberlassung (§ 1 AÜG)
+            </Typography>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  label="AÜG-Erlaubnistext"
+                  value={legalAuegPermit}
+                  onChange={e => setLegalAuegPermit(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="Erlaubnis zur Arbeitnehmerüberlassung gem. § 1 AÜG erteilt durch die Bundesagentur für Arbeit, Erlaubnis-Nr. …"
+                  multiline
+                  rows={2}
+                  helperText="Erscheint in der Fußzeile aller Dokumente; leer lassen wenn nicht zutreffend"
+                />
+              </Grid>
+            </Grid>
+
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button
+                variant="contained"
+                startIcon={<Save />}
+                onClick={handleSaveLegalInfo}
+                disabled={isSavingLegal || brandingLoading}
+              >
+                {isSavingLegal ? 'Speichert…' : 'Pflichtangaben speichern'}
+              </Button>
             </Box>
           </CardContent>
         </Card>
@@ -1350,295 +1563,54 @@ export default function AdminSettingsPage() {
           </Grid>
         </TabPanel>
 
-        {/* Settings Dialog */}
-        <Dialog
+        <SettingsEditDialog
           open={settingsDialogOpen}
           onClose={() => setSettingsDialogOpen(false)}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle>Einstellungen bearbeiten</DialogTitle>
-          <DialogContent>
-            <Grid container spacing={3}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField fullWidth label="System-Name" defaultValue={settings.systemName} />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Zeitzone</InputLabel>
-                  <Select label="Zeitzone" defaultValue={settings.timezone}>
-                    <MenuItem value="Europe/Berlin">Europa/Berlin</MenuItem>
-                    <MenuItem value="Europe/London">Europa/London</MenuItem>
-                    <MenuItem value="America/New_York">Amerika/New_York</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Sprache</InputLabel>
-                  <Select label="Sprache" defaultValue={settings.language}>
-                    <MenuItem value="de">Deutsch</MenuItem>
-                    <MenuItem value="en">English</MenuItem>
-                    <MenuItem value="fr">Français</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Währung</InputLabel>
-                  <Select label="Währung" defaultValue={settings.currency}>
-                    <MenuItem value="EUR">EUR (€)</MenuItem>
-                    <MenuItem value="USD">USD ($)</MenuItem>
-                    <MenuItem value="GBP">GBP (£)</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setSettingsDialogOpen(false)}>Abbrechen</Button>
-            <Button
-              onClick={() => handleUpdateSettings({})}
-              variant="contained"
-              disabled={isUpdating}
-            >
-              {isUpdating ? 'Speichere...' : 'Speichern'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          settings={settings}
+          onSubmit={handleUpdateSettings}
+          isUpdating={isUpdating}
+        />
 
-        {/* Role Dialog */}
-        <Dialog
+        <RoleEditDialog
           open={roleDialogOpen}
           onClose={handleRoleDialogClose}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle>{selectedItem ? 'Rolle bearbeiten' : 'Neue Rolle erstellen'}</DialogTitle>
-          <DialogContent>
-            <Grid container spacing={3} sx={{ pt: 1 }}>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="Rollen-Name"
-                  placeholder="z.B. Teamleiter, Personalplaner"
-                  value={roleFormName}
-                  onChange={e => setRoleFormName(e.target.value)}
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="Beschreibung"
-                  multiline
-                  rows={2}
-                  placeholder="Kurze Beschreibung der Rolle und ihrer Aufgaben..."
-                  value={roleFormDescription}
-                  onChange={e => setRoleFormDescription(e.target.value)}
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Status</InputLabel>
-                  <Select
-                    label="Status"
-                    value={roleFormStatus}
-                    onChange={e => setRoleFormStatus(e.target.value as 'active' | 'inactive' | 'pending')}
-                  >
-                    <MenuItem value="active">Aktiv</MenuItem>
-                    <MenuItem value="inactive">Inaktiv</MenuItem>
-                    <MenuItem value="pending">Ausstehend</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
-                  Berechtigungen
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Wählen Sie die Aktionen aus, die diese Rolle ausführen darf.
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {PERMISSION_GROUPS.map(group => (
-                    <Card key={group} variant="outlined" sx={{ p: 2 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
-                        {group}
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-                        {PERMISSION_OPTIONS.filter(p => p.group === group).map(opt => (
-                          <FormControlLabel
-                            key={opt.key}
-                            control={
-                              <Checkbox
-                                checked={roleFormPermissions.includes(opt.key)}
-                                onChange={() => toggleRolePermission(opt.key)}
-                                size="small"
-                              />
-                            }
-                            label={opt.label}
-                            sx={{ mr: 2 }}
-                          />
-                        ))}
-                      </Box>
-                    </Card>
-                  ))}
-                </Box>
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleRoleDialogClose}>Abbrechen</Button>
-            <Button
-              onClick={handleRoleSubmit}
-              variant="contained"
-              disabled={isCreating || isUpdating}
-            >
-              {isCreating || isUpdating ? 'Speichere...' : 'Speichern'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          selectedRole={selectedItem && 'permissions' in selectedItem ? (selectedItem as Role) : null}
+          name={roleFormName}
+          description={roleFormDescription}
+          permissions={roleFormPermissions}
+          status={roleFormStatus}
+          onChangeName={setRoleFormName}
+          onChangeDescription={setRoleFormDescription}
+          onTogglePermission={toggleRolePermission}
+          onChangeStatus={setRoleFormStatus}
+          onSubmit={handleRoleSubmit}
+          isCreating={isCreating}
+          isUpdating={isUpdating}
+        />
 
-        {/* Document Type Dialog */}
-        <Dialog
+        <DocumentTypeDialog
           open={documentTypeDialogOpen}
           onClose={() => setDocumentTypeDialogOpen(false)}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>
-            {selectedItem ? 'Dokumenttyp bearbeiten' : 'Neuen Dokumenttyp erstellen'}
-          </DialogTitle>
-          <DialogContent>
-            <Grid container spacing={3}>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="Name"
-                  placeholder="z.B. Führerschein, Gesundheitszeugnis"
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Kategorie</InputLabel>
-                  <Select label="Kategorie">
-                    <MenuItem value="personal">Persönlich</MenuItem>
-                    <MenuItem value="professional">Beruflich</MenuItem>
-                    <MenuItem value="legal">Rechtlich</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Gültigkeitsdauer (Tage)"
-                  type="number"
-                  placeholder="365"
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <FormControlLabel control={<Switch />} label="Pflichtdokument" />
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDocumentTypeDialogOpen(false)}>Abbrechen</Button>
-            <Button
-              onClick={() =>
-                selectedItem
-                  ? handleUpdateDocumentType({
-                      name: 'Updated Document Type',
-                      category: 'professional',
-                    })
-                  : handleCreateDocumentType({
-                      name: 'Test Document Type',
-                      category: 'professional',
-                      validityPeriod: 365,
-                      required: false,
-                      status: 'active',
-                    })
-              }
-              variant="contained"
-              disabled={isCreating || isUpdating}
-            >
-              {isCreating || isUpdating ? 'Speichere...' : 'Speichern'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          isEditing={!!(selectedItem && !('permissions' in selectedItem))}
+          onSubmitCreate={handleCreateDocumentType}
+          onSubmitUpdate={handleUpdateDocumentType}
+          isCreating={isCreating}
+          isUpdating={isUpdating}
+        />
 
-        {/* Backup Dialog */}
-        <Dialog
+        <BackupDialog
           open={backupDialogOpen}
           onClose={() => setBackupDialogOpen(false)}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>Backup erstellen</DialogTitle>
-          <DialogContent>
-            <Alert severity="info" sx={{ mb: 3 }}>
-              Das Backup wird alle Systemdaten, Benutzer, Schichten und Dokumente enthalten.
-            </Alert>
+          onBackup={handleBackupData}
+          isBackingUp={isBackingUp}
+        />
 
-            <List>
-              <ListItem>
-                <ListItemText primary="Backup-Typ" secondary="Vollständig" />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="Geschätzte Größe" secondary="Ca. 50-100 MB" />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="Geschätzte Zeit" secondary="Ca. 2-5 Minuten" />
-              </ListItem>
-            </List>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setBackupDialogOpen(false)}>Abbrechen</Button>
-            <Button onClick={handleBackupData} variant="contained" disabled={isBackingUp}>
-              {isBackingUp ? 'Backup wird erstellt...' : 'Backup erstellen'}
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Restore Dialog */}
-        <Dialog
+        <RestoreDialog
           open={restoreDialogOpen}
           onClose={() => setRestoreDialogOpen(false)}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>Daten wiederherstellen</DialogTitle>
-          <DialogContent>
-            <Alert severity="warning" sx={{ mb: 3 }}>
-              Achtung: Alle aktuellen Daten werden überschrieben!
-            </Alert>
-
-            <TextField
-              fullWidth
-              type="file"
-              inputProps={{ accept: '.json' }}
-              label="Backup-Datei auswählen"
-              sx={{ mb: 3 }}
-            />
-
-            <List>
-              <ListItem>
-                <ListItemText primary="Wiederherstellungs-Typ" secondary="Vollständig" />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="Geschätzte Zeit" secondary="Ca. 5-10 Minuten" />
-              </ListItem>
-            </List>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setRestoreDialogOpen(false)}>Abbrechen</Button>
-            <Button
-              onClick={() => handleRestoreData(new File([], 'backup.json'))}
-              variant="contained"
-              disabled={isRestoring}
-            >
-              {isRestoring ? 'Wiederherstellung läuft...' : 'Wiederherstellen'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          onRestore={handleRestoreData}
+          isRestoring={isRestoring}
+        />
       </PageContainer>
     </GlobalErrorBoundary>
   );

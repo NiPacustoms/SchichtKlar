@@ -75,26 +75,16 @@ describe('useRealtimeUpdates', () => {
     currentUser = { id: 'user-1', companyId: 'company-1' };
 
     const unsubShifts = vi.fn();
+    const unsubTimesheets = vi.fn();
     const unsubAssignments = vi.fn();
     const unsubNotifications = vi.fn();
 
-    // onSnapshot wird im Hook dreimal aufgerufen – wir simulieren drei Listener
+    // onSnapshot wird im Hook viermal aufgerufen: Shifts, Timesheets, Assignments, Notifications
     onSnapshotMock
-      .mockImplementationOnce((_q, onNext) => {
-        // Shifts-Listener
-        onNext({ size: 1 });
-        return unsubShifts;
-      })
-      .mockImplementationOnce((_q, onNext) => {
-        // Assignments-Listener
-        onNext({ size: 2 });
-        return unsubAssignments;
-      })
-      .mockImplementationOnce((_q, onNext) => {
-        // Notifications-Listener
-        onNext({ size: 3 });
-        return unsubNotifications;
-      });
+      .mockImplementationOnce((_q, onNext) => { onNext({ size: 1 }); return unsubShifts; })
+      .mockImplementationOnce((_q, onNext) => { onNext({ size: 0 }); return unsubTimesheets; })
+      .mockImplementationOnce((_q, onNext) => { onNext({ size: 2 }); return unsubAssignments; })
+      .mockImplementationOnce((_q, onNext) => { onNext({ size: 3 }); return unsubNotifications; });
 
     const { result, unmount } = renderHook(() => useRealtimeUpdates());
 
@@ -102,9 +92,9 @@ describe('useRealtimeUpdates', () => {
       expect(result.current.isConnected).toBe(true);
     });
 
-    // Shifts invalidiert 'shifts' und 'adminDashboard'
+    // Shifts invalidiert 'shifts' und 'admin'
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['shifts'] });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['adminDashboard'] });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['admin'] });
 
     // Assignments invalidieren 'assignments' und 'dashboard'
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['assignments'] });
@@ -117,6 +107,7 @@ describe('useRealtimeUpdates', () => {
     unmount();
 
     expect(unsubShifts).toHaveBeenCalledTimes(1);
+    expect(unsubTimesheets).toHaveBeenCalledTimes(1);
     expect(unsubAssignments).toHaveBeenCalledTimes(1);
     expect(unsubNotifications).toHaveBeenCalledTimes(1);
   });

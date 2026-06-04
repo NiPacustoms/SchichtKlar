@@ -3,7 +3,8 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
 import { AdminListView } from '@/components/schedule/AdminListView';
-import AdminCalendarView from '@/components/schedule/AdminCalendarView';
+import dynamic from 'next/dynamic';
+const AdminCalendarView = dynamic(() => import('@/components/schedule/AdminCalendarView'), { ssr: false });
 import { AssignShiftDialog } from '@/components/admin/AssignShiftDialog';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { ShiftCreateDialog } from '@/components/admin/ShiftCreateDialog';
@@ -83,7 +84,9 @@ export default function AdminDienstplanPage() {
     enabled: !!user?.companyId, // Nur laden, wenn companyId vorhanden ist
   });
 
-  // Realtime-Updates: invalidiere Query bei Änderungen
+  // Realtime-Updates: Live-Daten direkt in den Query-Cache schreiben.
+  // WICHTIG: Der Key muss exakt dem useQuery-Key entsprechen (inkl. companyId),
+  // sonst landen die Updates auf einem toten Key und die Anzeige aktualisiert nicht.
   const queryClient = useQueryClient();
   useEffect(() => {
     const unsubscribe = shiftService.subscribeAll(
@@ -94,15 +97,20 @@ export default function AdminDienstplanPage() {
         facilityId: facilityFilter || undefined,
       },
       newShifts => {
+        // subscribeAll filtert nicht nach companyId – daher client-seitig absichern.
+        const scoped = user?.companyId
+          ? newShifts.filter(s => !s.companyId || s.companyId === user.companyId)
+          : newShifts;
         queryClient.setQueryData<ServiceShift[]>(
           [
             'adminShifts',
+            user?.companyId,
             dateFrom?.toISOString() || null,
             dateTo?.toISOString() || null,
             statusFilter || null,
             facilityFilter || null,
           ],
-          newShifts
+          scoped
         );
       },
       () => {
@@ -110,7 +118,7 @@ export default function AdminDienstplanPage() {
       }
     );
     return () => unsubscribe();
-  }, [queryClient, dateFrom, dateTo, statusFilter, facilityFilter]);
+  }, [queryClient, user?.companyId, dateFrom, dateTo, statusFilter, facilityFilter]);
 
   // Load filters from localStorage
   useEffect(() => {
@@ -164,7 +172,14 @@ export default function AdminDienstplanPage() {
   const handleSendReminders = async () => {
     try {
       setSendingReminders(true);
-      const res = await fetch('/api/forms/reminders', { method: 'POST' });
+      // Die Route verlangt einen Admin-Bearer-Token – ohne Header schlägt sie mit 401 fehl.
+      const { auth } = await import('@/lib/firebase');
+      const token = await auth?.currentUser?.getIdToken();
+      if (!token) throw new Error('Nicht angemeldet');
+      const res = await fetch('/api/forms/reminders', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Fehler beim Senden');
       toast.success(`Erinnerungen versendet: ${data.sent}`);

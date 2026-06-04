@@ -65,13 +65,7 @@ const staffGroupService = {
   }
 };
 
-// Stub-Toast (verwendet Logger für bessere Performance)
-const toast = {
-  success: (message: string) => logger.info('Success:', message),
-  error: (message: string) => logger.error('Error:', message),
-  info: (message: string) => logger.info('Info:', message),
-  warning: (message: string) => logger.warn('Warning:', message)
-};
+import { toast } from '@/lib/utils/toast';
 
 export const useStaffGroups = () => {
   const { user } = useAuth();
@@ -194,9 +188,9 @@ export const useStaffGroups = () => {
   };
 
   const deleteGroup = (groupId: string) => {
-    if (window.confirm('Möchten Sie diese Gruppe wirklich löschen?')) {
+    toast.undoable('Gruppe wird gelöscht …', () => {
       deleteGroupMutation.mutate(groupId);
-    }
+    });
   };
 
   const addMember = (groupId: string, userId: string) => {

@@ -281,7 +281,7 @@ export const facilityService = {
       });
       try {
         const facilityDoc = await getDoc(doc(getDb(), COLLECTION_NAME, id));
-        const facilityCompanyId = facilityDoc.exists() ? (facilityDoc.data() as any).companyId : null;
+        const facilityCompanyId = facilityDoc.exists() ? (facilityDoc.data() as { companyId?: string }).companyId : null;
         await writeAuditLog({
           actorUid: auth?.currentUser?.uid || 'unknown',
           companyId: facilityCompanyId || await getCompanyIdFromAuth() || 'unknown',
@@ -379,7 +379,7 @@ export const facilityService = {
   // Delete facility
   async delete(id: string): Promise<void> {
     const facilityDoc = await getDoc(doc(getDb(), COLLECTION_NAME, id));
-    const facilityCompanyId = facilityDoc.exists() ? (facilityDoc.data() as any).companyId : null;
+    const facilityCompanyId = facilityDoc.exists() ? (facilityDoc.data() as { companyId?: string }).companyId : null;
     await deleteDoc(doc(getDb(), COLLECTION_NAME, id));
     try {
       await writeAuditLog({

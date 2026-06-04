@@ -59,26 +59,26 @@ export function useBulkOperations<T extends { id: string }>(
       return;
     }
 
+    const run = async () => {
+      setState(prev => ({ ...prev, isProcessing: true }));
+      try {
+        await operation.action(state.selectedItems);
+        toast.success(`${operation.label} erfolgreich für ${state.selectedItems.length} Elemente ausgeführt`);
+        clearSelection();
+        onSuccess?.();
+      } catch (error) {
+        toast.error(`Fehler bei ${operation.label}: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
+      } finally {
+        setState(prev => ({ ...prev, isProcessing: false }));
+      }
+    };
+
     if (operation.requiresConfirmation) {
-      const confirmed = window.confirm(
-        operation.confirmationMessage || 
-        `Sind Sie sicher, dass Sie diese Aktion für ${state.selectedItems.length} Elemente ausführen möchten?`
-      );
-      
-      if (!confirmed) return;
-    }
-
-    setState(prev => ({ ...prev, isProcessing: true }));
-
-    try {
-      await operation.action(state.selectedItems);
-      toast.success(`${operation.label} erfolgreich für ${state.selectedItems.length} Elemente ausgeführt`);
-      clearSelection();
-      onSuccess?.();
-    } catch (error) {
-      toast.error(`Fehler bei ${operation.label}: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
-    } finally {
-      setState(prev => ({ ...prev, isProcessing: false }));
+      const msg = operation.confirmationMessage
+        ?? `${operation.label} für ${state.selectedItems.length} Elemente …`;
+      await toast.undoable(msg, run);
+    } else {
+      await run();
     }
   }, [state.selectedItems, clearSelection, onSuccess]);
 

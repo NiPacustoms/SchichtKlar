@@ -1,15 +1,24 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
 import { ShiftManagementCard } from '@/components/admin/ShiftManagementCard';
 import { ShiftCreateDialog } from '@/components/admin/ShiftCreateDialog';
 import ShiftEditDialog from '@/components/admin/ShiftEditDialog';
 import { AssignShiftDialog } from '@/components/admin/AssignShiftDialog';
-import AdminCalendarView from '@/components/schedule/AdminCalendarView';
 import { AdminListView } from '@/components/schedule/AdminListView';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { PageContainer } from '@/components/layout/PageContainer';
+
+// Lazy-load AdminCalendarView (1057 LoC) - reduziert initial bundle size
+const AdminCalendarView = dynamic(
+  () => import('@/components/schedule/AdminCalendarView'),
+  {
+    loading: () => <LoadingSpinner />,
+    ssr: false,
+  }
+);
 import { useShifts } from '@/lib/hooks/useShifts';
 import type { Shift as ShiftEntity } from '@/lib/services/shifts';
 import type { Shift as DomainShift } from '@/lib/types';
@@ -111,7 +120,7 @@ function AdminShiftsPageContent() {
     shifts,
     isLoading,
     error,
-    createShift,
+    createShift: _createShift,
     updateShift: _updateShift,
     deleteShift,
     assignShift: _assignShift,
@@ -207,15 +216,15 @@ function AdminShiftsPageContent() {
     setAssignDialogOpen(true);
   };
 
-  const handleDeleteShift = async (shift: { id: string }) => {
-    if (confirm('Schicht wirklich löschen?')) {
+  const handleDeleteShift = (shift: { id: string }) => {
+    toast.undoable('Schicht wird gelöscht …', async () => {
       try {
         await deleteShift(shift.id);
-        toast.success('Schicht erfolgreich gelöscht');
-      } catch (error) {
+        toast.success('Schicht gelöscht');
+      } catch {
         toast.error('Fehler beim Löschen der Schicht');
       }
-    }
+    });
   };
 
   const handleShiftClick = (shift: { id: string }) => {

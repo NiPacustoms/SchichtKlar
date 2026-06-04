@@ -97,21 +97,6 @@ export function ShiftManagementCard({
   const displayStatus = getShiftDisplayStatus(shift);
   const statusLabel = getShiftStatusLabel(displayStatus);
 
-  const getShiftTypeColor = (type: Shift['type']) => {
-    switch (type) {
-      case 'Frühdienst':
-        return '#0288D1';
-      case 'Spätdienst':
-        return '#2E7D32';
-      case 'Nachtdienst':
-        return '#7B1FA2';
-      case 'On-call':
-        return '#ED6C02';
-      default:
-        return '#666';
-    }
-  };
-
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };

@@ -93,6 +93,10 @@ export const sendInvitationEmailHttp = functions.https.onRequest(async (req, res
     res.status(500).json({ error: 'Failed to send email' });
   }
 });
+// Hinweis: PDF-Dokumente (sendDocumentEmail) und Einsatz-Benachrichtigungen
+// (sendAssignmentFormEmail) laufen jetzt über Next.js API-Routen mit Resend
+// (app/api/email/*). Die früheren Callable-Functions wurden entfernt.
+
 // DSGVO DSR Functions
 export { exportUserData } from './dsr/exportUserData';
 export { deleteUserData } from './dsr/deleteUserData';

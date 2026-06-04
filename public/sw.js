@@ -1,15 +1,33 @@
 // Service Worker für JobFlow PWA
-const VERSION = 'v4';
+const VERSION = 'v5';
 const STATIC_CACHE = `jobflow-static-${VERSION}`;
 const RUNTIME_CACHE = `jobflow-runtime-${VERSION}`;
 
+// Kritische Routen – beim Install vorgeladen, damit sie offline sofort verfügbar sind
 const PRECACHE_URLS = [
   '/',
   '/anmelden',
   '/manifest.webmanifest',
   '/offline.html',
+  // Rechtliche Seiten
+  '/recht/impressum',
+  '/recht/datenschutz',
+  // Employee-Kernseiten
   '/employee/zeiterfassung',
   '/employee/zeiten',
+  '/employee/arbeitsplatz',
+  '/employee/einsaetze',
+  '/employee/profil',
+  // Admin-Kernseiten
+  '/admin/uebersicht',
+  '/admin/schichten',
+  '/admin/dienstplan',
+  '/admin/mitarbeiter',
+  '/admin/einrichtungen',
+  // Öffentliche Icons
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
+  '/favicon.svg',
 ];
 
 const cacheFirst = async (request) => {
@@ -107,16 +125,21 @@ const handleNavigationRequest = async (request) => {
     const cache = await caches.open(STATIC_CACHE);
     cache.put(request, response.clone());
     return response;
-  } catch (error) {
-    const cache = await caches.open(STATIC_CACHE);
-    const cached = await cache.match(request);
-    if (cached) {
-      return cached;
-    }
-    const offlineFallback = await cache.match('/offline.html');
-    if (offlineFallback) {
-      return offlineFallback;
-    }
+  } catch (_error) {
+    // 1. Exakter Match im Static-Cache (Precache)
+    const staticCache = await caches.open(STATIC_CACHE);
+    const staticHit = await staticCache.match(request);
+    if (staticHit) return staticHit;
+
+    // 2. Exakter Match im Runtime-Cache (zuvor besuchte Seiten)
+    const runtimeCache = await caches.open(RUNTIME_CACHE);
+    const runtimeHit = await runtimeCache.match(request);
+    if (runtimeHit) return runtimeHit;
+
+    // 3. Offline-Fallback
+    const offlineFallback = await staticCache.match('/offline.html');
+    if (offlineFallback) return offlineFallback;
+
     return Response.error();
   }
 };

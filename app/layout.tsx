@@ -3,6 +3,9 @@ import { ThemeModeProvider } from '@/contexts/ThemeModeContext';
 import { EmotionRegistry } from '@/components/EmotionRegistry';
 import { ConditionalHeader } from '@/components/layout/ConditionalHeader';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { OfflineBanner } from '@/components/pwa/OfflineBanner';
+import { OfflineConflictContainer } from '@/components/pwa/OfflineConflictContainer';
+import { PushNotificationInitializer } from '@/components/pwa/PushNotificationInitializer';
 import { CookieBanner } from '@/components/legal/CookieBanner';
 import { PluginInit } from '@/components/PluginInit';
 // import BottomNav from '@/components/layout/BottomNavigation';
@@ -12,6 +15,8 @@ import { QueryProvider } from '@/lib/providers/QueryProvider';
 import { GlobalErrorBoundary } from '@/components/errors/GlobalErrorBoundary';
 import { validateLegalConfig } from '@/lib/config/legal';
 import { logger } from '@/lib/logging';
+import { WebVitals } from '@/components/WebVitals';
+import { SkipLink } from '@/components/a11y/SkipLink';
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 
@@ -38,9 +43,30 @@ const inter = Inter({
   preload: true,
 });
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://jobflow.app';
+
 export const metadata: Metadata = {
-  title: 'JobFlow - Zeitarbeits-App',
-  description: 'DSGVO-konforme Zeitarbeits-App für medizinisches Personal',
+  metadataBase: new URL(APP_URL),
+  title: {
+    default: 'JobFlow - Zeitarbeits-App',
+    template: '%s | JobFlow',
+  },
+  description: 'DSGVO-konforme Zeitarbeits-App für medizinisches Personal – Dienstplanung, Zeiterfassung und Dokumentenverwaltung.',
+  openGraph: {
+    type: 'website',
+    locale: 'de_DE',
+    url: APP_URL,
+    siteName: 'JobFlow',
+    title: 'JobFlow - Zeitarbeits-App',
+    description: 'DSGVO-konforme Zeitarbeits-App für medizinisches Personal – Dienstplanung, Zeiterfassung und Dokumentenverwaltung.',
+    images: [{ url: '/favicon-512.png', width: 512, height: 512, alt: 'JobFlow Logo' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'JobFlow - Zeitarbeits-App',
+    description: 'DSGVO-konforme Zeitarbeits-App für medizinisches Personal.',
+    images: ['/favicon-512.png'],
+  },
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },
@@ -64,8 +90,9 @@ export const viewport: Viewport = {
   userScalable: true,
 };
 
-// Verhindert statische Prerender-Fehler (webpack-runtime .call) bei "/"
-export const dynamic = 'force-dynamic';
+// Default 'auto' lassen: Next.js entscheidet pro Route (statisch vs. dynamisch)
+// War zuvor 'force-dynamic' wegen webpack-runtime Fehler - mit Next.js 15.5+ behoben
+export const dynamic = 'auto';
 
 // Firebase-Config für Service Worker als JSON (wird ins data-Attribut geschrieben, nicht ins Script).
 // Verhindert "Invalid or unexpected token" durch Sonderzeichen in Env-Werten im gebündelten layout.js.
@@ -312,6 +339,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         data-firebase-config={FIREBASE_CONFIG_JSON}
         suppressHydrationWarning
       >
+        <SkipLink />
+        <WebVitals />
         <EmotionRegistry>
           <GlobalErrorBoundary showDetails={process.env.NODE_ENV === 'development'}>
             <QueryProvider>
@@ -320,8 +349,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <ThemeModeProvider>
                   <MUIThemeProviderWrapper>
                     <ConditionalHeader />
+                    <OfflineBanner />
+                    <OfflineConflictContainer />
                     <PluginInit />
-                    {children}
+                    <PushNotificationInitializer />
+                    <main id="main-content" tabIndex={-1} style={{ outline: 'none' }}>
+                      {children}
+                    </main>
                     <InstallPrompt />
                     <CookieBanner />
                   </MUIThemeProviderWrapper>

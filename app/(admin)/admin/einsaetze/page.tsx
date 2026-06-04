@@ -42,6 +42,7 @@ import {
   Tabs,
   Tab,
   Badge,
+  Tooltip,
 } from '@mui/material';
 import { useState, useMemo } from 'react';
 import { cloudFunctions } from '@/lib/services/cloudFunctions';
@@ -566,7 +567,7 @@ export default function AssignmentsPage() {
                         {assignment.shiftId || 'Einrichtung nicht verfügbar'}
                       </Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-end' }}>
                       <Chip
                         label={getStatusLabel(assignment.status)}
                         color={
@@ -578,7 +579,33 @@ export default function AssignmentsPage() {
                         }
                         size="small"
                       />
-                      <Chip label="Normal" color="default" size="small" />
+                      {/* Mitarbeiter-Unterschrift: PDF entsteht erst nach Unterschrift (Annahme/Ablehnung) */}
+                      {(assignment.pdfUrl || assignment.employeeSignedAt) && (
+                        <Chip
+                          label="Mitarbeiter ✓"
+                          color="success"
+                          size="small"
+                          variant="outlined"
+                        />
+                      )}
+                      {/* Einrichtungs-Unterschrift sichtbar machen (kann übersprungen werden) */}
+                      {(assignment.pdfUrl || assignment.employeeSignedAt) &&
+                        (assignment.adminSignedAt ? (
+                          <Tooltip
+                            title={`Einrichtung unterschrieben${assignment.adminSignerName ? ` von ${assignment.adminSignerName}` : ''} am ${_formatDate(assignment.adminSignedAt)}`}
+                          >
+                            <Chip label="Einrichtung ✓" color="success" size="small" />
+                          </Tooltip>
+                        ) : (
+                          <Tooltip title="Die Einrichtung hat noch nicht unterschrieben (optional)">
+                            <Chip
+                              label="Einrichtung offen"
+                              color="warning"
+                              size="small"
+                              variant="outlined"
+                            />
+                          </Tooltip>
+                        ))}
                     </Box>
                   </Box>
 
@@ -681,6 +708,19 @@ export default function AssignmentsPage() {
                       >
                         Einsatzmitteilung (PDF) öffnen
                       </Button>
+                      {/* Einrichtungs-Unterschrift nachtragen (optional) */}
+                      {!assignment.adminSignedAt && (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          size="small"
+                          startIcon={<Edit />}
+                          onClick={() => handleSignDecline(assignment.id)}
+                          sx={{ flex: 1 }}
+                        >
+                          Einrichtung unterschreiben
+                        </Button>
+                      )}
                     </Box>
                   ) : assignment.relievingSignatures && assignment.relievingSignatures.length > 0 ? (
                     <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>

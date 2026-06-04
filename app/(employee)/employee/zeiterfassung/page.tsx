@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { TimesheetForm } from '@/components/time/TimesheetForm';
 import { TimesheetHistory } from '@/components/time/TimesheetHistory';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
@@ -11,9 +12,9 @@ import { toast } from '@/lib/utils/toast';
 import { Alert, Box, Grid, Typography, Button, Card, CardContent, Stack } from '@mui/material';
 import { DailySignatureDialog } from '@/components/admin/DailySignatureDialog';
 import { RelievingPersonnelSignatureDialog } from '@/components/assignments/RelievingPersonnelSignatureDialog';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { logger } from '@/lib/logging';
-import { Pause, Stop } from '@mui/icons-material';
+import { Pause, Stop, PlayArrow } from '@mui/icons-material';
 import { getTodayAssignment, listAssignmentsForUser } from '@/src/composition';
 import { shiftService } from '@/lib/services/shifts';
 import { facilityService } from '@/lib/services/facilities';
@@ -22,6 +23,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { AccessTime, LocationOn, Person, Phone, Email } from '@mui/icons-material';
 import { SyncStatusIndicator } from '@/components/ui/SyncStatusIndicator';
+import { offlineQueueService } from '@/lib/services/offlineQueue';
 
 /** Zeit "HH:MM" in Minuten seit Mitternacht (0–1439) */
 function timeToMinutes(hhmm: string): number {
@@ -149,101 +151,153 @@ export default function TimePage() {
         startTime: startTimeForStorage,
       };
 
+      const isOnline = typeof navigator !== 'undefined' && navigator.onLine;
+
       if (editingTimesheet && timesheet) {
-        await updateTimesheet.mutateAsync({
-          id: timesheet.id,
-          data: timesheetData,
-        });
-        toast.success('Zeiterfassung aktualisiert!');
+        if (isOnline) {
+          await updateTimesheet.mutateAsync({
+            id: timesheet.id,
+            data: timesheetData,
+          });
+          toast.success('Zeiterfassung aktualisiert!');
+        } else {
+          // Offline: Queue the update
+          await offlineQueueService.addToQueue('timesheet', 'update', {
+            id: timesheet.id,
+            ...timesheetData,
+          });
+          toast.info('Zeiterfassung lokal gespeichert. Wird synchronisiert wenn Sie online sind.');
+        }
         setEditingTimesheet(null);
         // Prüfe ob Signatur-Dialog geöffnet werden soll
         if (timesheetData.endTime) {
           setOpenDailySignature({ open: true, tsId: timesheet.id, date: data.date });
         }
       } else {
-        const timesheetId = await createTimesheet.mutateAsync(timesheetData);
-        toast.success('Zeiterfassung erstellt!');
+        let timesheetId: string;
+
+        if (isOnline) {
+          timesheetId = await createTimesheet.mutateAsync(timesheetData);
+          toast.success('Zeiterfassung erstellt!');
+        } else {
+          // Offline: Queue the creation
+          timesheetId = await offlineQueueService.addToQueue('timesheet', 'create', timesheetData);
+          toast.info(`Zeiterfassung lokal gespeichert. Wird synchronisiert wenn Sie online sind.`);
+        }
+
         setEditingTimesheet(null);
 
         // Prüfe ob Signatur-Dialoge geöffnet werden sollen
         if (timesheetData.endTime && timesheetId && user?.id) {
-          // Prüfe auf aktives Assignment für heute
-          try {
-            const today = new Date(data.date);
-            today.setHours(0, 0, 0, 0);
+          // Nur bei Online-Erstellung: Signatur-Dialog öffnen
+          // Bei Offline: Signatur wird nach Sync möglich
+          if (isOnline) {
+            // Prüfe auf aktives Assignment für heute
+            try {
+              const today = new Date(data.date);
+              today.setHours(0, 0, 0, 0);
 
-            // Finde aktives Assignment für diesen User
-            const assignments = await listAssignmentsForUser.execute({ userId: user.id });
+              // Finde aktives Assignment für diesen User
+              const assignments = await listAssignmentsForUser.execute({ userId: user.id });
 
-            // Prüfe jedes Assignment synchron
-            let activeAssignment = null;
-            for (const assignment of assignments) {
-              if (assignment.status !== 'accepted' && assignment.status !== 'assigned') {
-                continue;
-              }
+              // Prüfe jedes Assignment synchron
+              let activeAssignment = null;
+              for (const assignment of assignments) {
+                if (assignment.status !== 'accepted' && assignment.status !== 'assigned') {
+                  continue;
+                }
 
-              const shift = await shiftService.getById(assignment.shiftId);
-              if (shift) {
-                const shiftDate = new Date(shift.date);
-                shiftDate.setHours(0, 0, 0, 0);
+                const shift = await shiftService.getById(assignment.shiftId);
+                if (shift) {
+                  const shiftDate = new Date(shift.date);
+                  shiftDate.setHours(0, 0, 0, 0);
 
-                if (shiftDate.getTime() === today.getTime()) {
-                  activeAssignment = assignment;
-                  break;
+                  if (shiftDate.getTime() === today.getTime()) {
+                    activeAssignment = assignment;
+                    break;
+                  }
                 }
               }
-            }
 
-            if (activeAssignment) {
-              // Prüfe ob Relieving-Signatur erforderlich ist
-              const shift = await shiftService.getById(activeAssignment.shiftId);
-              if (shift) {
-                // Berechne Assignment-Zeitraum (vereinfacht: nur Shift-Datum)
-                const assignmentStart = new Date(shift.date);
-                const assignmentEnd = new Date(shift.date); // Für jetzt: nur ein Tag
+              if (activeAssignment) {
+                // Prüfe ob Relieving-Signatur erforderlich ist
+                const shift = await shiftService.getById(activeAssignment.shiftId);
+                if (shift) {
+                  // Berechne Assignment-Zeitraum (vereinfacht: nur Shift-Datum)
+                  const assignmentStart = new Date(shift.date);
+                  const assignmentEnd = new Date(shift.date); // Für jetzt: nur ein Tag
 
-                const collectedDates = activeAssignment.signatureSchedule?.collectedDates || [];
-                const signatureRequired = isSignatureRequiredToday(
-                  assignmentStart,
-                  assignmentEnd,
-                  collectedDates
-                );
+                  const collectedDates = activeAssignment.signatureSchedule?.collectedDates || [];
+                  const signatureRequired = isSignatureRequiredToday(
+                    assignmentStart,
+                    assignmentEnd,
+                    collectedDates
+                  );
 
-                if (signatureRequired) {
-                  // Öffne Relieving Signature Dialog
-                  setOpenRelievingSignature({
-                    open: true,
-                    assignmentId: activeAssignment.id,
-                    timesheetId: timesheetId,
-                    date: data.date,
-                  });
+                  if (signatureRequired) {
+                    // Öffne Relieving Signature Dialog
+                    setOpenRelievingSignature({
+                      open: true,
+                      assignmentId: activeAssignment.id,
+                      timesheetId: timesheetId,
+                      date: data.date,
+                    });
+                  } else {
+                    // Öffne normale Daily Signature Dialog
+                    setOpenDailySignature({ open: true, tsId: timesheetId, date: data.date });
+                  }
                 } else {
-                  // Öffne normale Daily Signature Dialog
                   setOpenDailySignature({ open: true, tsId: timesheetId, date: data.date });
                 }
               } else {
+                // Kein Assignment gefunden, normale Signatur
                 setOpenDailySignature({ open: true, tsId: timesheetId, date: data.date });
               }
-            } else {
-              // Kein Assignment gefunden, normale Signatur
+            } catch (error) {
+              logger.error(
+                'Error checking assignment',
+                error instanceof Error ? error : new Error(String(error))
+              );
+              // Fallback: Normale Signatur
               setOpenDailySignature({ open: true, tsId: timesheetId, date: data.date });
             }
-          } catch (error) {
-            logger.error(
-              'Error checking assignment',
-              error instanceof Error ? error : new Error(String(error))
-            );
-            // Fallback: Normale Signatur
-            setOpenDailySignature({ open: true, tsId: timesheetId, date: data.date });
           }
-        } else if (timesheetData.endTime && timesheetId) {
-          // Kein User, normale Signatur
-          setOpenDailySignature({ open: true, tsId: timesheetId, date: data.date });
         }
       }
     } catch (error: unknown) {
       toast.error('Fehler: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler'));
     }
+  };
+
+  // Vorausgefüllte Daten aus dem heutigen Einsatz (nur wenn noch keine Erfassung)
+  const assignmentInitialData = useMemo(() => {
+    if (!assignmentDetails?.shift || timesheet) return undefined;
+    const shiftDate = assignmentDetails.shift.date
+      ? new Date(assignmentDetails.shift.date)
+      : new Date();
+    return {
+      date: shiftDate,
+      startTime: assignmentDetails.shift.startTime || '',
+      endTime: '',
+      breakMinutes: 0,
+      facilityId: assignmentDetails.shift.facilityId || '',
+      station: assignmentDetails.station?.name || '',
+      notes: '',
+    };
+  }, [assignmentDetails, timesheet]);
+
+  const handleStartShiftNow = async () => {
+    const now = new Date();
+    const startTime = now.toTimeString().slice(0, 5);
+    await handleSubmitTimesheet({
+      date: now,
+      startTime,
+      endTime: startTime,
+      breakMinutes: 0,
+      facilityId: assignmentDetails?.shift?.facilityId || '',
+      station: assignmentDetails?.station?.name || '',
+      notes: '',
+    });
   };
 
   const handleEditTimesheet = (timesheet: Timesheet) => {
@@ -359,7 +413,18 @@ export default function TimePage() {
             Erfasse deine Arbeitszeiten manuell
           </Typography>
         </Box>
-        <SyncStatusIndicator />
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Button
+            component={Link}
+            href="/employee/zeiten"
+            variant="outlined"
+            size="small"
+            sx={{ textTransform: 'none' }}
+          >
+            Zeitkonto &amp; Überstunden
+          </Button>
+          <SyncStatusIndicator />
+        </Box>
       </Box>
 
       {/* Einsatz-Informationen */}
@@ -520,9 +585,30 @@ export default function TimePage() {
                   </Button>
                 </Stack>
               </>
+            ) : !timesheet ? (
+              <>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  {assignmentDetails?.shift
+                    ? `Einsatz: ${assignmentDetails.shift.startTime} – ${assignmentDetails.shift.endTime}`
+                    : 'Schicht heute starten'}
+                </Typography>
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<PlayArrow />}
+                  size="medium"
+                  sx={{ textTransform: 'none' }}
+                  data-testid="start-shift-button"
+                  aria-label="Schicht jetzt starten"
+                  disabled={createTimesheet.isPending}
+                  onClick={handleStartShiftNow}
+                >
+                  Schicht jetzt starten
+                </Button>
+              </>
             ) : (
               <Typography variant="body1" color="text.secondary">
-                Keine laufende Schicht. Nutzen Sie das Formular unten, um Zeiten zu erfassen oder zu starten.
+                Zeiten bereits erfasst. Bearbeitung über das Formular unten möglich.
               </Typography>
             )}
           </CardContent>
@@ -552,8 +638,10 @@ export default function TimePage() {
                     endTime: timesheet.endTime,
                     breakMinutes: timesheet.breakMinutes,
                     notes: timesheet.notes,
+                    facilityId: timesheet.facilityId || '',
+                    station: timesheet.station || '',
                   }
-                : undefined)
+                : assignmentInitialData)
             }
             onSubmit={handleSubmitTimesheet}
             isLoading={createTimesheet.isPending || updateTimesheet.isPending}

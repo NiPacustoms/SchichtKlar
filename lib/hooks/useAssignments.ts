@@ -53,7 +53,7 @@ export const useAssignments = (filters?: AssignmentFilters) => {
 
   // Assignment akzeptieren
   const acceptAssignmentMutation = useMutation({
-    mutationFn: (assignmentId: string) => 
+    mutationFn: (assignmentId: string) =>
       assignmentService.accept(assignmentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
@@ -125,9 +125,9 @@ export const useAssignments = (filters?: AssignmentFilters) => {
   };
 
   const deleteAssignment = (assignmentId: string) => {
-    if (window.confirm('Möchten Sie diesen Einsatz wirklich löschen?')) {
+    toast.undoable('Einsatz wird gelöscht …', () => {
       deleteAssignmentMutation.mutate(assignmentId);
-    }
+    });
   };
 
   // Status-Farben

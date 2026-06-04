@@ -49,6 +49,16 @@ import { de } from 'date-fns/locale';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { isShiftEnded } from '@/lib/utils/shiftStatus';
 
+function getColorForUser(userId: string): string {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+    hash |= 0;
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue} 65% 50%)`;
+}
+
 function FormStatusChip({ shiftId }: { shiftId: string }) {
   const [label, setLabel] = useState<string | null>(null);
   const [color, setColor] = useState<'default' | 'success' | 'warning' | 'error'>('default');
@@ -140,16 +150,6 @@ export default function AdminCalendarView({
   onDayClick,
   onDayLongPress,
 }: AdminCalendarViewProps) {
-  // Deterministische Farbzuteilung pro Mitarbeiter (aus userId)
-  const getColorForUser = (userId: string): string => {
-    let hash = 0;
-    for (let i = 0; i < userId.length; i++) {
-      hash = userId.charCodeAt(i) + ((hash << 5) - hash);
-      hash |= 0;
-    }
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue} 65% 50%)`;
-  };
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'), {
     noSsr: true,
@@ -519,10 +519,14 @@ export default function AdminCalendarView({
       assignedTo?: string[];
       color?: string;
       shiftGroupId?: string;
+      capacity?: number;
+      assignedCount?: number;
     };
     const s = shift as unknown as ShiftLike;
     const time = s.startTime && s.endTime ? `${s.startTime}–${s.endTime}` : undefined;
     const assignedTo: string[] = (s.assignedTo || []) as string[];
+    const capacity = s.capacity ?? 1;
+    const assignedCount = s.assignedCount ?? assignedTo.length;
     const shiftColor = s.color || DEFAULT_SHIFT_COLOR;
     const isPartOfGroup = !!s.shiftGroupId;
     const groupShifts = s.shiftGroupId ? shiftGroups[s.shiftGroupId] || [] : [];
@@ -593,6 +597,17 @@ export default function AdminCalendarView({
             )}
           </Box>
           <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexShrink: 0 }}>
+            {/* Besetzung X/Y nur bei Mehrfach-Kapazität (mehr als ein Platz) */}
+            {capacity > 1 && (
+              <Tooltip title={`${assignedCount} von ${capacity} besetzt`}>
+                <Chip
+                  size="small"
+                  label={`${assignedCount}/${capacity}`}
+                  color={assignedCount >= capacity ? 'success' : 'warning'}
+                  variant={assignedCount >= capacity ? 'filled' : 'outlined'}
+                />
+              </Tooltip>
+            )}
             {isShiftEnded(s) ? (
               <Chip size="small" color="default" variant="outlined" label="Beendet" />
             ) : (

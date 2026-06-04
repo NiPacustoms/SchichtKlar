@@ -24,6 +24,19 @@ export interface SystemSettings {
   secondaryColor: string;
   showLogo: boolean;
   customColors: boolean;
+
+  // Rechtliche Pflichtangaben (§ 35a GmbHG, § 1 AÜG)
+  legalStreet?: string;
+  legalPostalCode?: string;
+  legalCity?: string;
+  legalPhone?: string;
+  legalEmail?: string;
+  legalWeb?: string;
+  legalRegisterCourt?: string;
+  legalRegisterNumber?: string;
+  legalManagingDirectors?: string;
+  legalVatId?: string;
+  legalAuegPermit?: string;
   
   // Surcharges
   nightSurchargeEnabled: boolean;
@@ -97,6 +110,18 @@ export interface SettingsUpdateData {
   language?: string;
   autoBackup?: boolean;
   backupFrequency?: 'daily' | 'weekly' | 'monthly';
+  // Rechtliche Pflichtangaben (§ 35a GmbHG, § 1 AÜG)
+  legalStreet?: string;
+  legalPostalCode?: string;
+  legalCity?: string;
+  legalPhone?: string;
+  legalEmail?: string;
+  legalWeb?: string;
+  legalRegisterCourt?: string;
+  legalRegisterNumber?: string;
+  legalManagingDirectors?: string;
+  legalVatId?: string;
+  legalAuegPermit?: string;
   features?: {
     enableReports?: boolean;
     enableAssignments?: boolean;
@@ -334,6 +359,17 @@ class SettingsService {
     secondaryColor?: string;
     showLogo?: boolean;
     customColors?: boolean;
+    legalStreet?: string;
+    legalPostalCode?: string;
+    legalCity?: string;
+    legalPhone?: string;
+    legalEmail?: string;
+    legalWeb?: string;
+    legalRegisterCourt?: string;
+    legalRegisterNumber?: string;
+    legalManagingDirectors?: string;
+    legalVatId?: string;
+    legalAuegPermit?: string;
   }, userId: string): Promise<void> {
     await this.updateSettings(data, userId);
   }
