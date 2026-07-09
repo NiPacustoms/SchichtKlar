@@ -3,7 +3,7 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com;
+  script-src 'self' 'unsafe-inline'${process.env.NODE_ENV !== 'production' ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   img-src 'self' data: blob: https://firebasestorage.googleapis.com https://lh3.googleusercontent.com;
   font-src 'self' https://fonts.gstatic.com;
@@ -253,6 +253,11 @@ const nextConfig = {
       { source: '/employee/assignments', destination: '/employee/einsaetze', permanent: true },
       { source: '/messenger', destination: '/employee/arbeitsplatz', permanent: true },
     ];
+  },
+  eslint: {
+    // Lint läuft separat über `npm run lint:ci` (CI-Workflow quality.yml).
+    // next build ruft die ESLint-9-API auf, installiert ist ESLint 8 -> Invalid Options.
+    ignoreDuringBuilds: true,
   },
   async headers() {
     return [

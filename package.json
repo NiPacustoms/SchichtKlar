@@ -53,7 +53,8 @@
     "cleanup:unused-exports": "ts-unused-exports tsconfig.json",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "generate:domain": "node scripts/generate-domain.js"
+    "generate:domain": "node scripts/generate-domain.js",
+    "test:rules": "firebase emulators:exec --only firestore --project jobflow-rules-test \"node tests/rules/firestore-rules.test.mjs\""
   },
   "dependencies": {
     "@babel/runtime": "^7.28.6",
@@ -92,6 +93,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1",
     "@playwright/test": "^1.51.0",
     "@storybook/addon-essentials": "^8.4.0",
     "@storybook/nextjs": "^8.4.0",
@@ -125,6 +127,7 @@
     "eslint-config-next": "^15.5.12",
     "eslint-config-prettier": "^9.1.0",
     "firebase": "^12.6.0",
+    "firebase-tools": "^15.22.4",
     "prettier": "^3.8.1",
     "source-map-js": "^1.2.1",
     "storybook": "^8.4.0",

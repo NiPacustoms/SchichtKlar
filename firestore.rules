@@ -37,6 +37,12 @@ service cloud.firestore {
       return true;
     }
 
+    // ACHTUNG (Single-Tenant-Modell): Diese App wird pro Kunde als eigenes
+    // Firebase-Projekt betrieben (SINGLE_COMPANY_ID). Es gibt bewusst keine
+    // Mandantentrennung auf Rules-Ebene. Vor einem Multi-Tenant-Betrieb MUSS
+    // diese Funktion echt implementiert werden (Vergleich mit
+    // request.auth.token.companyId) und alle List-Queries brauchen einen
+    // where('companyId','==',...)-Filter. Siehe tests/rules/.
     function belongsToSameCompany(resourceCompanyId) {
       return true;
     }
@@ -109,11 +115,6 @@ service cloud.firestore {
       );
     }
     
-    // Shifts Collection-Level Queries
-    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
-    match /shifts {
-      allow list: if isAuthenticated();
-    }
 
     // Documents: Besitzer oder Admin; Schreiben nur Besitzer oder Admin mit Mandantenisolation
     match /documents/{docId} {
@@ -146,11 +147,6 @@ service cloud.firestore {
       allow delete: if isAdmin() && belongsToSameCompany(resource.data.companyId);
     }
     
-    // Assignments Collection-Level Queries
-    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
-    match /assignments {
-      allow list: if isAuthenticated();
-    }
 
     // Reports: Lesen für Besitzer/Admin; Schreiben nur Admin mit Mandantenisolation
     match /reports/{reportId} {
@@ -164,11 +160,6 @@ service cloud.firestore {
         creatingForSameCompany(request.resource.data.companyId);
     }
     
-    // Reports Collection-Level Queries
-    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
-    match /reports {
-      allow list: if isAuthenticated();
-    }
 
     // Employee Reports: Mitarbeiter-Berichte mit Mandantenisolation
     match /employeeReports/{reportId} {
@@ -182,11 +173,6 @@ service cloud.firestore {
         creatingForSameCompany(request.resource.data.companyId);
     }
     
-    // Employee Reports Collection-Level Queries
-    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
-    match /employeeReports {
-      allow list: if isAuthenticated();
-    }
 
     // Admin Announcements: Ankündigungen
     match /adminAnnouncements/{announcementId} {
@@ -250,14 +236,6 @@ service cloud.firestore {
       );
     }
     
-    // Timesheets Collection-Level Queries
-    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
-    // Erlaube Queries nur wenn der Benutzer authentifiziert ist
-    // Die Document-Level Rules stellen sicher, dass nur eigene Timesheets zurückgegeben werden
-    // und dass sie zur gleichen Company gehören
-    match /timesheets {
-      allow list: if isAuthenticated();
-    }
 
     // Wochenstunden-Limit: Anträge auf Erhöhung (Pflegekraft → Admin)
     match /limitIncreaseRequests/{requestId} {
@@ -266,9 +244,6 @@ service cloud.firestore {
       );
       allow create: if isAuthenticated() && request.resource.data.mitarbeiterId == request.auth.uid;
       allow update, delete: if isAdmin();
-    }
-    match /limitIncreaseRequests {
-      allow list: if isAuthenticated();
     }
 
     // Times: Zeiterfassung (Arbeitszeiten, Pausen, Krankheit)
@@ -348,11 +323,6 @@ service cloud.firestore {
       );
     }
     
-    // Times Collection-Level Queries
-    // WICHTIG: Collection-Queries müssen client-seitig nach companyId filtern
-    match /times {
-      allow list: if isAuthenticated();
-    }
 
     // Alerts: Benachrichtigungen und Warnungen mit Mandantenisolation
     match /alerts/{alertId} {
@@ -466,10 +436,6 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
     
-    // DocumentTypes Collection-Level Queries
-    match /documentTypes {
-      allow list: if isAuthenticated();
-    }
 
     // Audit Logs: Unveränderlich (GoBD-Konformität)
     // Nur Cloud Functions dürfen schreiben, alle Änderungen sind verboten
