@@ -169,7 +169,7 @@ export default function HomePage() {
               height: 240,
               borderRadius: '50%',
               background: (t) =>
-                `radial-gradient(circle, ${t.palette.secondary?.main || '#e8aa42'}0c 0%, transparent 65%)`,
+                `radial-gradient(circle, ${t.palette.secondary?.main || '#d97706'}0c 0%, transparent 65%)`,
               top: '50%',
               right: '8%',
               animationDelay: '-4s',
@@ -197,7 +197,7 @@ export default function HomePage() {
               height: 120,
               borderRadius: '50%',
               background: (t) =>
-                `radial-gradient(circle, ${t.palette.secondary?.main || '#e8aa42'}08 0%, transparent 55%)`,
+                `radial-gradient(circle, ${t.palette.secondary?.main || '#d97706'}08 0%, transparent 55%)`,
               top: '25%',
               right: '25%',
               animationDelay: '-2s',

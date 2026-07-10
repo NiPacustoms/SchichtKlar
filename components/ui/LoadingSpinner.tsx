@@ -29,7 +29,7 @@ interface LoadingSpinnerProps {
  * @param size - Größe: 'small' (24px), 'medium' (40px), 'large' (64px) oder Zahl
  * @param variant - Variante: 'spinner' (Standard), 'skeleton', 'fullscreen', 'inline' (für Buttons)
  * @param showLogo - Logo im fullscreen Modus anzeigen
- * @param color - MUI Theme-Farbe (Standard: 'primary' = #005f73)
+ * @param color - MUI Theme-Farbe (Standard: 'primary' = #0f766e)
  * @param aria-label - Überschreibt message für Screenreader
  */
 const DEFAULT_LOADING_LABEL = 'Wird geladen';
@@ -130,7 +130,7 @@ export function LoadingSpinner({
               width: sizeValue * 0.4,
               height: sizeValue * 0.4,
               borderRadius: '50%',
-              background: `linear-gradient(135deg, ${spinnerColor} 0%, ${theme.palette.primary.dark || '#0a9396'} 100%)`,
+              background: `${spinnerColor}`,
             }}
           />
         </Box>
@@ -230,7 +230,7 @@ export function LoadingSpinner({
             width: sizeValue * 0.3,
             height: sizeValue * 0.3,
             borderRadius: '50%',
-            background: `linear-gradient(135deg, ${spinnerColor} 0%, ${theme.palette.primary.dark || '#0a9396'} 100%)`,
+            background: `${spinnerColor}`,
           }}
         />
       </Box>

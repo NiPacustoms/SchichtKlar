@@ -11,7 +11,7 @@ export default function RootLoading() {
         minHeight: '100vh',
         fontFamily: 'system-ui, sans-serif',
         fontSize: '1.125rem',
-        color: '#005f73',
+        color: '#0f766e',
       }}
       aria-label="Seite wird geladen"
     >

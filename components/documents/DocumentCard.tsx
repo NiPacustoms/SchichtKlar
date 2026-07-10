@@ -180,9 +180,9 @@ export function DocumentCard({
           PaperProps={{
             sx: {
               borderRadius: 2,
-              boxShadow: '0 12px 32px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.15)',
-              border: '1px solid rgba(0,95,115,0.08)',
-              backdropFilter: 'blur(20px) saturate(180%)',
+              boxShadow: '0 2px 8px rgba(28,25,23,0.07)',
+              border: '1px solid',
+              borderColor: 'divider',
               mt: 1,
             },
           }}

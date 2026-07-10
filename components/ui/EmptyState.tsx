@@ -60,10 +60,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         sx={{
           width: iconSize,
           height: iconSize,
-          background: 'linear-gradient(135deg, #005f73 0%, #0a9396 100%)',
-          color: 'white',
+          backgroundColor: 'primary.main',
+          color: 'primary.contrastText',
           mb: 2,
-          boxShadow: '0 4px 12px rgba(0, 95, 115, 0.3)',
+          boxShadow: 'none',
         }}
       >
         {icon}

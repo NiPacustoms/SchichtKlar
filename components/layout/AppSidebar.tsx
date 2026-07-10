@@ -145,9 +145,7 @@ export function AppSidebar() {
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        background: alpha(theme.palette.background.paper, 0.85),
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        background: theme.palette.background.paper,
         borderRight: `1px solid ${themeConstants.CARD_BORDER_LIGHT}`,
         boxShadow: themeConstants.SHADOW_SOFT,
       }}

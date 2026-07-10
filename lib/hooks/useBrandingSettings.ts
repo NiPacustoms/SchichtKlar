@@ -32,7 +32,7 @@ export function useBrandingSettings(currentUserId?: string) {
           companyName: 'Schichtklar',
           companyLogo: undefined,
           primaryColor: '#4CAF50',
-          secondaryColor: '#005f73',
+          secondaryColor: '#0f766e',
           showLogo: true,
           customColors: false,
         };
@@ -49,7 +49,7 @@ export function useBrandingSettings(currentUserId?: string) {
             companyName: 'Schichtklar',
             companyLogo: undefined,
             primaryColor: '#4CAF50',
-            secondaryColor: '#005f73',
+            secondaryColor: '#0f766e',
             showLogo: true,
             customColors: false,
           };
@@ -75,7 +75,7 @@ export function useBrandingSettings(currentUserId?: string) {
           companyName: 'Schichtklar',
           companyLogo: undefined,
           primaryColor: '#4CAF50',
-          secondaryColor: '#005f73',
+          secondaryColor: '#0f766e',
           showLogo: true,
           customColors: false,
         };

@@ -71,16 +71,11 @@ export function TopPerformers({ performers }: TopPerformersProps) {
                     sx={{
                       width: 40,
                       height: 40,
-                      background:
-                        index === 0
-                          ? 'linear-gradient(135deg, #005f73 0%, #0a9396 100%)'
-                          : 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
+                      backgroundColor: index === 0 ? 'primary.main' : 'grey.500',
+                      color: '#fff',
                       fontSize: '1rem',
                       fontWeight: 700,
-                      boxShadow:
-                        index === 0
-                          ? '0 4px 12px rgba(0, 95, 115, 0.3)'
-                          : '0 2px 8px rgba(0,0,0,0.1)',
+                      boxShadow: 'none',
                     }}
                   >
                     {performer.user.displayName?.charAt(0) || 'U'}

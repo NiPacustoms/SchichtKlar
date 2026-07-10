@@ -259,7 +259,7 @@ export default function LoginPage() {
                     <NextLink
                       href="/passwort-vergessen"
                       style={{
-                        color: '#005f73',
+                        color: 'primary.main',
                         textDecoration: 'none',
                         fontSize: '0.875rem',
                       }}

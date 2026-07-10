@@ -257,7 +257,7 @@ export async function POST(request: NextRequest) {
           : 'open',
       notes: body.notes,
       timezone: body.timezone || 'Europe/Berlin',
-      color: body.color || '#005f73', // DEFAULT_SHIFT_COLOR aus lib/constants/colorPresets
+      color: body.color || '#0f766e', // DEFAULT_SHIFT_COLOR aus lib/constants/colorPresets
       createdBy: body.createdBy || decoded.uid,
       stationId: body.stationId,
     });

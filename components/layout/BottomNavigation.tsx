@@ -119,11 +119,10 @@ export function BottomNav() {
           right: 0,
           zIndex: 1000,
           minHeight: bottomNavHeightPx,
-          background: 'rgba(255,255,255,0.85)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          borderTop: '1px solid rgba(0,95,115,0.08)',
-          boxShadow: '0 -2px 8px rgba(0,0,0,0.04), 0 -1px 3px rgba(0,0,0,0.06)',
+          backgroundColor: 'background.paper',
+          borderTop: '1px solid',
+          borderTopColor: 'divider',
+          boxShadow: '0 -1px 2px rgba(28,25,23,0.05)',
           paddingBottom: 'env(safe-area-inset-bottom)',
           transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
@@ -141,7 +140,7 @@ export function BottomNav() {
               paddingTop: 'env(safe-area-inset-top)',
               transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
               '&.Mui-selected': {
-                color: '#005f73',
+                color: 'primary.main',
                 '& .MuiBottomNavigationAction-label': {
                   fontWeight: 600,
                 },
@@ -169,9 +168,9 @@ export function BottomNav() {
                 cursor: 'pointer',
                 transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
                 '&.Mui-selected': {
-                  color: '#005f73',
+                  color: 'primary.main',
                   '& .MuiSvgIcon-root': {
-                    color: '#005f73',
+                    color: 'primary.main',
                     transform: 'scale(1.1)',
                   },
                 },
@@ -190,11 +189,11 @@ export function BottomNav() {
               value={mainTabs.length}
               onClick={handleMoreClick}
               sx={{
-                color: isMoreActive ? '#005f73' : 'rgba(0,0,0,0.6)',
+                color: isMoreActive ? 'primary.main' : 'text.secondary',
                 '&.Mui-selected': {
-                  color: '#005f73',
+                  color: 'primary.main',
                   '& .MuiSvgIcon-root': {
-                    color: '#005f73',
+                    color: 'primary.main',
                   },
                 },
               }}
@@ -218,12 +217,11 @@ export function BottomNav() {
         }}
         sx={{
           '& .MuiPaper-root': {
-            background: 'rgba(255,255,255,0.98)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            border: '1px solid rgba(0,95,115,0.08)',
-            borderRadius: 16,
-            boxShadow: '0 12px 32px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.15)',
+            backgroundColor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(28,25,23,0.07)',
             marginTop: 1,
           },
         }}

@@ -144,10 +144,9 @@ export function InstallPrompt() {
           px: 2,
           py: 1.5,
           maxWidth: 360,
-          background: 'rgba(255,255,255,0.98)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          border: '1px solid rgba(0,0,0,0.08)',
+          backgroundColor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
         }}
       >
         <Box

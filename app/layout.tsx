@@ -89,7 +89,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="emotion-insertion-point" content="" />
         {/* PWA Manifest */}
         <link rel="manifest" href="/manifest.webmanifest" />
-        <meta name="theme-color" content="#4CAF50" />
+        <meta name="theme-color" content="#0f766e" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />

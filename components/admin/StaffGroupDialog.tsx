@@ -163,14 +163,7 @@ export function StaffGroupDialog({ open, onClose, group, staff }: StaffGroupDial
       maxWidth="md"
       fullWidth
       PaperProps={{
-        className: 'glass',
-        sx: {
-          background: 'rgba(255,255,255,0.95)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          border: '1px solid rgba(0,0,0,0.12)',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-        },
+        sx: { backgroundColor: 'background.paper' },
       }}
     >
       <DialogTitle>
