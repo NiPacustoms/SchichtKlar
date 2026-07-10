@@ -17,6 +17,24 @@ Der Rebrand ist **auch auf Infrastrukturebene vollzogen**: Ein neues Firebase-Pr
 
 **Altes Projekt `jobflow25`:** war Test/Entwicklung, wird nicht weiter verwendet, keine Migration nötig. Kann in der Firebase-Konsole archiviert/gelöscht werden.
 
+## 1a. Provisionierungsstand `schichtklar` (per CLI verifiziert, 10.07.2026)
+
+Die CLIs (`gcloud` 530.x, `firebase-tools` 15.23) sind im Arbeitscontainer per OAuth (Owner-Account) authentifiziert; folgendes wurde direkt ausgeführt und verifiziert:
+
+| Baustein | Status | Detail |
+|---|---|---|
+| Projekt | ✅ ACTIVE | `schichtklar`, Projekt-Nr. `41485991027` |
+| Firestore-API | ✅ aktiviert | `firestore.googleapis.com` |
+| Firestore-DB | ✅ angelegt | `(default)`, **europe-west1**, Native-Modus (Standort permanent, passt zu `firebase.json`/Functions) |
+| Firestore-Rules | ✅ deployt | gehärtete `firestore.rules` (inkl. Eskalations-Sperre) live |
+| Firestore-Indexes | ✅ deployt | `firestore.indexes.json` vollständig |
+| Auth-API | ✅ aktiviert | `identitytoolkit.googleapis.com` |
+| Storage-Rules | ⛔ blockiert | Default-Bucket (`*.firebasestorage.app`) erfordert auf neuen Projekten den **Blaze-Plan**; Billing ist deaktiviert → erst Upgrade, dann Konsole „Storage → Get Started", dann `firebase deploy --only storage` |
+| Cloud Functions | ⛔ blockiert | Deployment erfordert ebenfalls Blaze (Cloud Build/Artifact Registry) |
+| Hosting | ⏳ offen | API aktiviert; Deploy erst nach GitHub-Secret-Einrichtung (Abschnitt 2) oder manuell per CLI |
+
+**Konsequenz:** Auth + Firestore (Kern der App) sind produktionsbereit abgesichert. Dokument-Uploads (Storage) und die serverseitigen Functions (Benachrichtigungen, Timesheet-Schutz, Wochenlimit) benötigen das Blaze-Upgrade — eine Zahlungsentscheidung des Eigentümers, kein technisches Hindernis.
+
 ## 2. ERFORDERLICHE manuelle Schritte in GitHub (für CI/CD-Deploy)
 
 Damit der Deploy-Workflow gegen `schichtklar` läuft, muss **außerhalb des Repos** eingerichtet werden:

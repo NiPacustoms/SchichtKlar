@@ -13,12 +13,13 @@ Ehrliche Auflistung aller bekannten Einschränkungen, offenen Entscheidungen und
 | A3 | **Produktions-Domain & CORS** | Domain + Support-E-Mail festlegen; `scripts/storage-cors.json` (Platzhalter `your-production-domain.example`) auf echte Origin setzen und via `npm run storage:cors` anwenden. |
 | A4 | **AVV mit Google Cloud** | Auftragsverarbeitungsvertrag abschließen; Region `europe-west1` ist bereits gesetzt. |
 | A5 | **GitHub Actions reaktivieren** | Repo-weit seit 31.05.2026 keine Workflow-Runs (Settings → Actions / Billing prüfen). Ohne CI kein automatisches Sicherheitsnetz. |
+| A6 | **Blaze-Plan für Storage & Functions** | Projekt `schichtklar` läuft auf Spark (Billing deaktiviert). Firestore + Auth + Rules sind provisioniert und live (siehe `INFRASTRUCTURE_RENAMING.md` §1a), aber der Storage-Default-Bucket und das Functions-Deployment erfordern auf neuen Projekten den Blaze-Plan. Ohne Upgrade: keine Dokument-Uploads, keine serverseitigen Benachrichtigungen/Timesheet-Schutz-Functions. |
 
 ## B. Vor Produktivbetrieb empfohlen
 
 | # | Thema | Details |
 |---|---|---|
-| B1 | ~~Legacy-Unit-Test-Suite sanieren~~ **ERLEDIGT** | Suite saniert (jsdom-Umgebung, `@testing-library/react`, Mock-/API-Drift behoben): `npm run test:unit` grün (62 passed, 3 skipped, 0 failed). In CI aufgenommen (`quality.yml`). 3 Tests bewusst übersprungen – siehe F1. |
+| B1 | ~~Legacy-Unit-Test-Suite sanieren~~ **ERLEDIGT** | Suite saniert (jsdom-Umgebung, `@testing-library/react`, Mock-/API-Drift behoben) und Produktlücke F1 (Mitarbeiter-Berichte) geschlossen: `npm run test:unit` grün (**65 passed, 0 skipped, 0 failed**). In CI aufgenommen (`quality.yml`). |
 | B2 | **`next` patchen** | Auf `>=15.5.13` heben (schließt Rewrite-Request-Smuggling-Advisory). Siehe `DEPENDENCY_AUDIT.md`. |
 | B3 | **`firebase-admin` aktualisieren** | Schließt transitive `@grpc/grpc-js`/`node-forge`-Advisories (serverseitig). |
 | B4 | **Server-Routen-Gate aktivieren** | `proxy.ts` ist für Next 16 vorbereitet, unter Next 15 inaktiv. Datenzugriff ist bereits durch Firestore-Rules + API-Rollenprüfung geschützt; ein zusätzliches Middleware-Gate wäre Defense-in-Depth (Vorsicht: CSP-Header-Überschneidung mit `next.config.js`). |
