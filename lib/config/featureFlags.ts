@@ -1,6 +1,6 @@
 /**
  * Feature Flags für schrittweise Migration von Mock zu Production
- * JobFlow App - State-of-the-Art Migration Strategy
+ * Schichtklar App - State-of-the-Art Migration Strategy
  */
 
 import { logger } from '@/lib/utils/logger';
@@ -38,7 +38,7 @@ export function getMigrationStatus() {
 
 // Log current configuration (Development only)
 if (FEATURE_FLAGS.IS_DEVELOPMENT && typeof window !== 'undefined') {
-  logger.group('🚀 JobFlow Feature Flags');
+  logger.group('🚀 Schichtklar Feature Flags');
   logger.debug('Mock Auth:', FEATURE_FLAGS.USE_MOCK_AUTH);
   logger.debug('Mock Data:', FEATURE_FLAGS.USE_MOCK_DATA);
   logger.debug('Realtime:', FEATURE_FLAGS.USE_REALTIME);

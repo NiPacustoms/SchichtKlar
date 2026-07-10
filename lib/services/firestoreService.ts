@@ -114,7 +114,7 @@ export class FirestoreService {
     });
   }
 
-  // Spezifische Methoden für JobFlow
+  // Spezifische Methoden für Schichtklar
 
   // Einrichtungen abrufen
   static async getFacilities(): Promise<Array<{ id: string } & Record<string, unknown>>> {

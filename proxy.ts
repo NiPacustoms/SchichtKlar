@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * Proxy für JobFlow (Next.js 16+)
+ * Proxy für Schichtklar (Next.js 16+)
  *
  * Funktionalität:
  * 1. Zentrale Redirects (Doppelungen/englische URLs → kanonische Routen)

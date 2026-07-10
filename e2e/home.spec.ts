@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Home / Landing', () => {
-  test('home page loads and shows JobFlow content', async ({ page }) => {
+  test('home page loads and shows Schichtklar content', async ({ page }) => {
     await page.goto('/');
-    await expect(page).toHaveTitle(/JobFlow|Zeitarbeit/i);
+    await expect(page).toHaveTitle(/Schichtklar|Zeitarbeit/i);
   });
 
   test('login link or button is present', async ({ page }) => {

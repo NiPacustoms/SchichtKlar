@@ -1,5 +1,5 @@
 /**
- * JobFlow Design Tokens – Single Source of Truth
+ * Schichtklar Design Tokens – Single Source of Truth
  * Genutzt von MUI-Theme (lib/theme.ts) und CSS (globals.css / TokenInjector).
  * Elite Design System: Apple HIG + Meta FTL + Linear; weltweit auf allen Endgeräten.
  */

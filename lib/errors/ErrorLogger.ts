@@ -1,5 +1,5 @@
 /**
- * Structured Logging System for JobFlow Application
+ * Structured Logging System for Schichtklar Application
  * 
  * Provides consistent logging across development and production environments
  * with context injection, log levels, and external service integration.

@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
 
 const env = await initializeTestEnvironment({
-  projectId: 'jobflow-rules-test',
+  projectId: 'schichtklar-rules-test',
   firestore: { rules: readFileSync('firestore.rules', 'utf8'), host: '127.0.0.1', port: 8080 },
 });
 

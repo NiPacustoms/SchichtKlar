@@ -2,7 +2,7 @@
 
 /**
  * Firestore Seed Script
- * Erstellt Test-Daten für die JobFlow App
+ * Erstellt Test-Daten für die Schichtklar App
  * 
  * ⚠️ WICHTIG: Dieses Script sollte NUR manuell ausgeführt werden!
  * 
@@ -70,7 +70,7 @@ const auth = getAuth(app);
 // Test-Daten
 const testUsers = [
   {
-    email: 'admin@jobflow.de',
+    email: 'admin@schichtklar.test',
     password: 'admin123',
     displayName: 'Admin User',
     role: 'admin',
@@ -87,7 +87,7 @@ const testUsers = [
     }
   },
   {
-    email: 'dispatcher@jobflow.de',
+    email: 'dispatcher@schichtklar.test',
     password: 'dispatcher123',
     displayName: 'Admin 2',
     role: 'admin',
@@ -104,7 +104,7 @@ const testUsers = [
     }
   },
   {
-    email: 'nurse1@jobflow.de',
+    email: 'nurse1@schichtklar.test',
     password: 'nurse123',
     displayName: 'Maria Schmidt',
     role: 'nurse',
@@ -121,7 +121,7 @@ const testUsers = [
     }
   },
   {
-    email: 'nurse2@jobflow.de',
+    email: 'nurse2@schichtklar.test',
     password: 'nurse123',
     displayName: 'Thomas Müller',
     role: 'nurse',
@@ -462,10 +462,10 @@ async function seedFirestore() {
     console.log(`- Assignments created: ${shiftIds.length}`);
     
     console.log('\n🔑 Test Login Credentials:');
-    console.log('Admin: admin@jobflow.de / admin123');
-    console.log('Admin 2: dispatcher@jobflow.de / dispatcher123');
-    console.log('Nurse 1: nurse1@jobflow.de / nurse123');
-    console.log('Nurse 2: nurse2@jobflow.de / nurse123');
+    console.log('Admin: admin@schichtklar.test / admin123');
+    console.log('Admin 2: dispatcher@schichtklar.test / dispatcher123');
+    console.log('Nurse 1: nurse1@schichtklar.test / nurse123');
+    console.log('Nurse 2: nurse2@schichtklar.test / nurse123');
     
   } catch (error) {
     console.error('❌ Seeding failed:', error);

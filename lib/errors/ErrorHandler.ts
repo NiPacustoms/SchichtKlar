@@ -1,5 +1,5 @@
 /**
- * Central Error Handler for JobFlow Application
+ * Central Error Handler for Schichtklar Application
  * 
  * Provides error transformation, normalization, and context enrichment
  * for consistent error handling across the application.

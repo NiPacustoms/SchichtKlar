@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Auto-Push Script für JobFlow
+# Auto-Push Script für Schichtklar
 # Überwacht Dateiänderungen und pusht automatisch
 
 set -e

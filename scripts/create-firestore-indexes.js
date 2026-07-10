@@ -2,14 +2,14 @@
 
 /**
  * Script to create Firestore indexes programmatically
- * This script helps create the required indexes for the JobFlow application
+ * This script helps create the required indexes for the Schichtklar application
  */
 
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🔥 Creating Firestore indexes for JobFlow...\n');
+console.log('🔥 Creating Firestore indexes for Schichtklar...\n');
 
 // Check if firebase CLI is installed
 try {

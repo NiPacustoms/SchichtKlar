@@ -18,7 +18,7 @@ export function randomString(length: number = 8): string {
  * Generiert eine zufällige E-Mail-Adresse
  */
 export function randomEmail(prefix: string = 'test'): string {
-  return `${prefix}-${randomString(6)}@test.jobflow.local`;
+  return `${prefix}-${randomString(6)}@test.schichtklar.local`;
 }
 
 /**

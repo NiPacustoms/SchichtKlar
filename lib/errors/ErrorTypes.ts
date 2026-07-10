@@ -1,5 +1,5 @@
 /**
- * Error Types and Classes for JobFlow Application
+ * Error Types and Classes for Schichtklar Application
  * 
  * Provides a comprehensive error handling system with typed error classes,
  * severity levels, and structured error information for better debugging
@@ -76,7 +76,7 @@ export interface ErrorMetadata {
 }
 
 /**
- * Base Error Class for JobFlow Application
+ * Base Error Class for Schichtklar Application
  * 
  * Provides structured error information with context, metadata,
  * and user-friendly messages in German.

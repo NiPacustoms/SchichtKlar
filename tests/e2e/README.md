@@ -1,4 +1,4 @@
-# E2E-Tests für JobFlow
+# E2E-Tests für Schichtklar
 
 Umfassende End-to-End-Tests mit Playwright, die Admin- und Mitarbeiter-Rollen (admin, nurse) und ihre kritischen User Flows abdecken.
 
@@ -16,11 +16,11 @@ BASE_URL=http://localhost:3000
 NEXT_PUBLIC_E2E_TEST=true
 
 # Admin-Account (Rolle: admin)
-E2E_ADMIN_EMAIL=admin@test.jobflow.local
+E2E_ADMIN_EMAIL=admin@test.schichtklar.local
 E2E_ADMIN_PASSWORD=test-admin-password
 
 # Mitarbeiter-Account (Rolle: nurse)
-E2E_EMPLOYEE_EMAIL=nurse@test.jobflow.local
+E2E_EMPLOYEE_EMAIL=nurse@test.schichtklar.local
 E2E_EMPLOYEE_PASSWORD=test-nurse-password
 ```
 

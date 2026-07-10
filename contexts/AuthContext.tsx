@@ -141,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(mock);
       setFirebaseUser(null);
       if (typeof window !== 'undefined') {
-        (window as unknown as { __JOBFLOW_USER_ROLE?: string }).__JOBFLOW_USER_ROLE = mock.role;
+        (window as unknown as { __SCHICHTKLAR_USER_ROLE?: string }).__SCHICHTKLAR_USER_ROLE = mock.role;
       }
       return;
     }

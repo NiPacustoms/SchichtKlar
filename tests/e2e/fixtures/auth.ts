@@ -13,7 +13,7 @@ export interface LoginCredentials {
  * Login als Admin
  */
 export async function loginAsAdmin(page: Page, credentials?: LoginCredentials): Promise<void> {
-  const email = credentials?.email || process.env.E2E_ADMIN_EMAIL || 'admin@test.jobflow.local';
+  const email = credentials?.email || process.env.E2E_ADMIN_EMAIL || 'admin@test.schichtklar.local';
   const password = credentials?.password || process.env.E2E_ADMIN_PASSWORD || 'test-admin-password';
 
   await page.goto('/anmelden');
@@ -35,7 +35,7 @@ export async function loginAsAdmin(page: Page, credentials?: LoginCredentials): 
  * Login als Nurse (Mitarbeiter)
  */
 export async function loginAsNurse(page: Page, credentials?: LoginCredentials): Promise<void> {
-  const email = credentials?.email || process.env.E2E_EMPLOYEE_EMAIL || 'nurse@test.jobflow.local';
+  const email = credentials?.email || process.env.E2E_EMPLOYEE_EMAIL || 'nurse@test.schichtklar.local';
   const password = credentials?.password || process.env.E2E_EMPLOYEE_PASSWORD || 'test-nurse-password';
 
   await page.goto('/anmelden');
