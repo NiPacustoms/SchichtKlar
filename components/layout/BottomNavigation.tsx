@@ -146,7 +146,7 @@ export function BottomNav() {
                 },
               },
               '&:hover': {
-                backgroundColor: 'rgba(0,95,115,0.04)',
+                backgroundColor: 'rgba(15, 118, 110, 0.04)',
               },
               '& .MuiBottomNavigationAction-label': {
                 fontSize: '0.75rem',
@@ -238,7 +238,7 @@ export function BottomNav() {
               margin: '4px 8px',
               transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
               '&:hover': {
-                backgroundColor: 'rgba(0,95,115,0.06)',
+                backgroundColor: 'rgba(15, 118, 110, 0.06)',
                 transform: 'translateX(4px)',
               },
               '& .MuiSvgIcon-root': {

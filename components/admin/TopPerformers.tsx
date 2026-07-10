@@ -45,12 +45,12 @@ export function TopPerformers({ performers }: TopPerformersProps) {
                 border: '1px solid',
                 borderColor: 'divider',
                 borderRadius: 2,
-                backgroundColor: index === 0 ? 'rgba(0, 95, 115, 0.06)' : 'transparent',
+                backgroundColor: index === 0 ? 'rgba(15, 118, 110, 0.06)' : 'transparent',
                 transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
                   borderColor: 'primary.main',
                   backgroundColor:
-                    index === 0 ? 'rgba(0, 95, 115, 0.08)' : 'rgba(0, 95, 115, 0.04)',
+                    index === 0 ? 'rgba(15, 118, 110, 0.08)' : 'rgba(15, 118, 110, 0.04)',
                   transform: 'translateX(4px)',
                 },
               }}

@@ -209,12 +209,13 @@ export function OpenShiftCard({
               borderRadius: 4,
               backgroundColor: 'rgba(0,0,0,0.06)',
               '& .MuiLinearProgress-bar': {
-                background:
+                // Semantikfarben flach (Clean & Flat: keine Verläufe)
+                backgroundColor:
                   occupancyPercentage >= 80
-                    ? 'linear-gradient(90deg, #10b981 0%, #059669 100%)'
+                    ? 'success.main'
                     : occupancyPercentage >= 50
-                      ? 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)'
-                      : 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)',
+                      ? 'warning.main'
+                      : 'error.main',
                 borderRadius: 4,
               },
             }}
