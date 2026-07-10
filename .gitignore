@@ -124,3 +124,11 @@ typecheck-final.txt
 
 # Lokale SDK-/Tool-Ordner (nicht versionieren)
 y/
+
+# Service-Account-Keys / GCP-Credentials (dürfen NIE committet werden)
+.keys/
+*service-account*.json
+*serviceAccount*.json
+*-sa.json
+gcloud-*.json
+application_default_credentials.json
