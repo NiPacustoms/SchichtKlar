@@ -7,7 +7,7 @@
 export const DEFAULT_APP_LOGO = '/logo-default.png';
 
 /** App-Name für Alt-Texte und Fallbacks */
-export const APP_NAME = 'JobFlow';
+export const APP_NAME = 'Schichtklar';
 
 /**
  * Gibt die anzuzeigende Logo-URL zurück: Firmenlogo oder Fallback.

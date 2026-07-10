@@ -186,7 +186,7 @@ export default function LoginPage() {
                   Anmelden
                 </Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                  Melden Sie sich in Ihrem JobFlow-Konto an
+                  Melden Sie sich in Ihrem Schichtklar-Konto an
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                   Ihre Rolle (Administrator oder Mitarbeiter) wird anhand Ihres Kontos erkannt. Sie werden nach der Anmeldung automatisch in den passenden Bereich weitergeleitet.

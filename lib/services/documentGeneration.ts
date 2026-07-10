@@ -677,7 +677,7 @@ class DocumentGenerationService {
     }
 
     // —— Firmenname (links, unterhalb Logo-Zone) ——
-    const companyName = data.branding?.companyName || 'JobFlow';
+    const companyName = data.branding?.companyName || 'Schichtklar';
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(40, 40, 40);
@@ -712,7 +712,7 @@ class DocumentGenerationService {
     const reportTypeLabel = this.getReportTypeLabel(data.reportType);
     doc.text(`Berichtstyp: ${reportTypeLabel}`, margin, y);
     y += 10;
-    doc.text('Dieses Dokument wurde automatisch von JobFlow erstellt.', margin, y);
+    doc.text('Dieses Dokument wurde automatisch von Schichtklar erstellt.', margin, y);
 
     // Footer-Zeile unten
     doc.setFontSize(9);

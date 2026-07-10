@@ -136,7 +136,7 @@ export const timesheetProofService = {
     y = 800;
     doc.setFontSize(8);
     doc.setTextColor(120);
-    doc.text(`Timesheet-ID: ${input.timesheet.id} • Mitarbeiter: ${input.employee.id} • Generiert von JobFlow`, margin, y);
+    doc.text(`Timesheet-ID: ${input.timesheet.id} • Mitarbeiter: ${input.employee.id} • Generiert von Schichtklar`, margin, y);
 
     const pdfBytes = doc.output('arraybuffer');
     const file = new File([new Uint8Array(pdfBytes)], `tagesnachweis_${input.timesheet.id}.pdf`, { type: 'application/pdf' });

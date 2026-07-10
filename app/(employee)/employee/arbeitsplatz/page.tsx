@@ -79,7 +79,7 @@ function DashboardPageContent() {
       >
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="h3" sx={{ color: 'text.primary', fontWeight: 700, mb: 2 }}>
-            JobFlow
+            Schichtklar
           </Typography>
           <Typography variant="body1" sx={{ color: 'text.secondary' }}>
             Bitte melde dich an, um fortzufahren

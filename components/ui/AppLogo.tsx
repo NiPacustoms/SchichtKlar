@@ -6,7 +6,7 @@ import type { BrandingSettings } from '@/lib/hooks/useBrandingSettings';
 import { Box } from '@mui/material';
 
 export interface AppLogoProps {
-  /** Branding (companyLogo, companyName). Wenn nicht gesetzt, wird Fallback-Logo + "JobFlow" genutzt. */
+  /** Branding (companyLogo, companyName). Wenn nicht gesetzt, wird Fallback-Logo + "Schichtklar" genutzt. */
   branding?: Pick<BrandingSettings, 'companyLogo' | 'companyName'> | null;
   /** Logo anzeigen nur wenn true (z.B. branding?.showLogo). Default: true */
   showLogo?: boolean;

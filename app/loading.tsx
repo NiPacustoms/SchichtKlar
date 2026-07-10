@@ -15,7 +15,7 @@ export default function RootLoading() {
       }}
       aria-label="Seite wird geladen"
     >
-      JobFlow wird geladen…
+      Schichtklar wird geladen…
     </div>
   );
 }

@@ -308,7 +308,7 @@ export function CategoryManager({ open, onClose, onSave }: CategoryManagerProps)
 
         <TabPanel value={activeTab} index={1}>
           <Alert severity="info" sx={{ mb: 3 }}>
-            Systemrollen steuern die Berechtigungen in JobFlow (Admin, Pflegekraft).
+            Systemrollen steuern die Berechtigungen in Schichtklar (Admin, Pflegekraft).
             Bitte ändern Sie diese nur, wenn Sie die Auswirkungen kennen.
           </Alert>
           <Box sx={{ mb: 3 }}>

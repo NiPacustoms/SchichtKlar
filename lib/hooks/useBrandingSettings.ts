@@ -29,7 +29,7 @@ export function useBrandingSettings(currentUserId?: string) {
       if (!isAdmin) {
         const defaults: BrandingSettings = {
           id: 'default',
-          companyName: 'JobFlow',
+          companyName: 'Schichtklar',
           companyLogo: undefined,
           primaryColor: '#4CAF50',
           secondaryColor: '#005f73',
@@ -46,7 +46,7 @@ export function useBrandingSettings(currentUserId?: string) {
           // showLogo defaults to true so logo is shown by default
           const defaults: BrandingSettings = {
             id: 'default',
-            companyName: 'JobFlow',
+            companyName: 'Schichtklar',
             companyLogo: undefined,
             primaryColor: '#4CAF50',
             secondaryColor: '#005f73',
@@ -72,7 +72,7 @@ export function useBrandingSettings(currentUserId?: string) {
         // showLogo defaults to true so logo is shown by default
         const defaults: BrandingSettings = {
           id: 'default',
-          companyName: 'JobFlow',
+          companyName: 'Schichtklar',
           companyLogo: undefined,
           primaryColor: '#4CAF50',
           secondaryColor: '#005f73',

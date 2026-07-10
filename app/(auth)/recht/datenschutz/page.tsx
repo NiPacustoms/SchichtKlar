@@ -32,7 +32,7 @@ export default function PrivacyPage() {
     }
   }, []);
 
-  const companyName = legalInfo?.companyName || 'JobFlow';
+  const companyName = legalInfo?.companyName || 'Schichtklar';
   const companyEmail = legalInfo?.contact?.email || 'info@jobflow.de';
 
   return (

@@ -38,7 +38,7 @@ try {
   messaging.onBackgroundMessage((payload) => {
     logger.info('[firebase-messaging-sw.js] Received background message ', payload);
 
-    const notificationTitle = payload.notification?.title || 'JobFlow';
+    const notificationTitle = payload.notification?.title || 'Schichtklar';
     const notificationOptions = {
       body: payload.notification?.body || 'Sie haben eine neue Benachrichtigung',
       icon: payload.notification?.icon || '/icons/icon-192x192.png',

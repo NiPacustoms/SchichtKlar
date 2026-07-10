@@ -210,7 +210,7 @@ export class ExportService {
           
           <div class="footer">
             <p>Gesamt: ${data.length} Einträge</p>
-            <p>Erstellt mit JobFlow System</p>
+            <p>Erstellt mit Schichtklar System</p>
           </div>
         </body>
       </html>

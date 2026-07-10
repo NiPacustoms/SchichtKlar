@@ -176,10 +176,10 @@ export function InstallPrompt() {
 
           <Box>
             <Typography id="install-prompt-title" variant="subtitle1" sx={{ fontWeight: 600 }}>
-              JobFlow installieren
+              Schichtklar installieren
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
-              Installiere JobFlow auf deinem Gerät für einen schnelleren Zugriff und eine bessere
+              Installiere Schichtklar auf deinem Gerät für einen schnelleren Zugriff und eine bessere
               Erfahrung.
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>

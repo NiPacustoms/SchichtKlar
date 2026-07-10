@@ -1,6 +1,6 @@
 {
-  "name": "JobFlow - Zeitarbeits-App",
-  "short_name": "JobFlow",
+  "name": "Schichtklar - Zeitarbeits-App",
+  "short_name": "Schichtklar",
   "description": "Zeitarbeits-App für medizinisches Personal",
   "start_url": "/",
   "display": "standalone",

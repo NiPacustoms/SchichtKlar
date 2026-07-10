@@ -56,7 +56,7 @@ export default function HomePage() {
 
   // Fallback für branding, falls es undefined ist
   const brandingData = branding || {
-    companyName: 'JobFlow',
+    companyName: 'Schichtklar',
     companyLogo: undefined,
     showLogo: false,
   };
@@ -94,7 +94,7 @@ export default function HomePage() {
           gap: 2,
         }}
       >
-        <Typography variant="h6">JobFlow wird geladen…</Typography>
+        <Typography variant="h6">Schichtklar wird geladen…</Typography>
         <Button component={Link} href="/anmelden" variant="outlined">
           Zur Anmeldung
         </Button>
@@ -361,7 +361,7 @@ export default function HomePage() {
           }}
         >
           <Typography variant="body2" color="text.secondary">
-            © {new Date().getFullYear()} JobFlow
+            © {new Date().getFullYear()} Schichtklar
           </Typography>
           <Stack direction="row" spacing={3}>
             <Button key="impressum" component={Link} href="/recht/impressum" color="inherit" size="small">

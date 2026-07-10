@@ -35,7 +35,7 @@ interface LoadingSpinnerProps {
 const DEFAULT_LOADING_LABEL = 'Wird geladen';
 
 export function LoadingSpinner({
-  message = 'JobFlow wird geladen...',
+  message = 'Schichtklar wird geladen...',
   size = 'medium',
   variant = 'spinner',
   showLogo = true,
