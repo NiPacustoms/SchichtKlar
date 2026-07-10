@@ -28,7 +28,6 @@ export function MyAssignmentCard({
   onAccept,
   onDecline,
   getShiftTypeColor,
-  getStatusColor,
   getStatusLabel,
   formatTime: _formatTime,
   getTimeUntilShift,

@@ -53,7 +53,7 @@ export const useAdminDashboard = () => {
   });
 
   // Load timesheets - nachgeladen (nicht blockierend für erste Anzeige)
-  const { data: timesheetsData, isLoading: loadingTimesheets } = useQuery<Timesheet[]>({
+  const { data: timesheetsData } = useQuery<Timesheet[]>({
     queryKey: ['admin', 'timesheets', _user?.companyId],
     queryFn: async () => {
       try {
@@ -117,7 +117,7 @@ export const useAdminDashboard = () => {
   });
 
   // Load documents - nachgeladen (nicht blockierend)
-  const { data: documentsData, isLoading: loadingDocuments } = useQuery<Doc[]>({
+  const { data: documentsData } = useQuery<Doc[]>({
     queryKey: ['admin', 'documents'],
     queryFn: async () => {
       try {
@@ -132,7 +132,7 @@ export const useAdminDashboard = () => {
   });
 
   // Load recent activities - nachgeladen (nicht blockierend)
-  const { data: activitiesData, isLoading: loadingActivities } = useQuery<Activity[]>({
+  const { data: activitiesData } = useQuery<Activity[]>({
     queryKey: ['admin', 'activities', _user?.companyId],
     queryFn: async () => {
       try {

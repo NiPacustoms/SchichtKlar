@@ -359,7 +359,7 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
                     firstAssignmentId = assignmentId;
                   }
                   assignedCount++;
-                } catch (assignError) {
+                } catch (_assignError) {
                   failedCount++;
                 }
               }

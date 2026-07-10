@@ -228,7 +228,7 @@ export default function EmployeeTimesPage() {
   const handleQuickBreak = async (duration: number, reason: string) => {
     try {
       await addBreak({ reason, duration });
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -280,7 +280,7 @@ export default function EmployeeTimesPage() {
     if (activeAssignments.length === 1) {
       try {
         await startShift(activeAssignments[0].assignment.id);
-      } catch (error) {
+      } catch (_error) {
         // Error handling is done in the mutations
       }
     } else if (activeAssignments.length > 1) {
@@ -293,7 +293,7 @@ export default function EmployeeTimesPage() {
       // No assignments - error will be shown by the service
       try {
         await startShift();
-      } catch (error) {
+      } catch (_error) {
         // Error handling is done in the mutations
       }
     }
@@ -305,7 +305,7 @@ export default function EmployeeTimesPage() {
       await startShift(selectedAssignmentId);
       setAssignmentDialogOpen(false);
       setSelectedAssignmentId('');
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -313,7 +313,7 @@ export default function EmployeeTimesPage() {
   const handleEndShift = async () => {
     try {
       await endShift();
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -326,7 +326,7 @@ export default function EmployeeTimesPage() {
       await addBreak(breakFormData);
       setBreakDialogOpen(false);
       setBreakFormData({ reason: '', duration: 30 });
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -349,7 +349,7 @@ export default function EmployeeTimesPage() {
         reason: '',
         doctorNote: '',
       });
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -632,7 +632,7 @@ export default function EmployeeTimesPage() {
                     onClick={async () => {
                       try {
                         await endBreak();
-                      } catch (error) {
+                      } catch (_error) {
                         // Error handling is done in the mutations
                       }
                     }}

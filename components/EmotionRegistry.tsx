@@ -60,7 +60,7 @@ export function EmotionRegistry({ options, children }: EmotionRegistryProps) {
     return (
       <style
         data-emotion={`${cache.key} ${names.join(' ')}`}
-        // eslint-disable-next-line react/no-danger
+         
         dangerouslySetInnerHTML={{
           __html: names
             .map(name => {

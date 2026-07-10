@@ -158,7 +158,7 @@ export const adminSettingsService = {
         backupSize: typeof data.backupSize === 'string' ? data.backupSize : undefined,
         availableBackups: typeof data.availableBackups === 'number' ? data.availableBackups : 0,
       };
-    } catch (error) {
+    } catch (_error) {
       // Graceful Fallback bei fehlerhaften Datentypen
       return {
         systemName: 'JobFlow',

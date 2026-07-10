@@ -54,9 +54,7 @@ import {
   serverTimestamp,
   updateDoc,
   where,
-  onSnapshot,
 } from 'firebase/firestore';
-import { writeAuditLog } from '@/lib/services/auditLogService';
 import { facilityService } from '../facilities';
 import * as read from './read';
 import * as read2 from './read2';

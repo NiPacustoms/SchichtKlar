@@ -159,7 +159,7 @@ class ReportService {
       });
 
       return Array.from(userStats.values());
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to generate time account report');
     }
   }
@@ -178,7 +178,7 @@ class ReportService {
         totalSurcharge: user.surchargeAmount,
         totalHours: user.totalHours,
       }));
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to generate surcharge report');
     }
   }
@@ -251,7 +251,7 @@ class ReportService {
       });
 
       return Array.from(userStats.values());
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to generate employee statistics');
     }
   }
@@ -325,7 +325,7 @@ class ReportService {
       });
 
       return Array.from(facilityStats.values());
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to generate shift utilization report');
     }
   }

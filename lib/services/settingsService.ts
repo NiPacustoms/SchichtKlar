@@ -170,7 +170,7 @@ class SettingsService {
       let firestoreDb;
       try {
         firestoreDb = getDb();
-      } catch (dbError) {
+      } catch (_dbError) {
         // Wenn getDb() fehlschlägt, verwende Defaults
         const defaults = this.getDefaultSettings();
         return {
@@ -241,7 +241,7 @@ class SettingsService {
         updatedAt: serverTimestamp(),
         updatedBy
       });
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to update settings');
     }
   }
@@ -273,7 +273,7 @@ class SettingsService {
       await this.updateSettings({ companyLogo: downloadURL }, userId);
 
       return downloadURL;
-    } catch (error) {
+    } catch (_error) {
       // Entwicklungs-Fallback: Wenn Upload wegen CORS/AppCheck scheitert,
       // speichere das Logo als Data-URL in den Einstellungen (nur dev).
       if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
@@ -306,7 +306,7 @@ class SettingsService {
 
       // URL aus Einstellungen entfernen
       await this.updateSettings({ companyLogo: undefined }, userId);
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to delete logo');
     }
   }
@@ -322,7 +322,7 @@ class SettingsService {
         updatedAt: serverTimestamp(),
         updatedBy: userId
       });
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to reset settings');
     }
   }
@@ -455,7 +455,7 @@ class SettingsService {
         updatedAt: serverTimestamp(),
         updatedBy: userId
       });
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to import settings');
     }
   }

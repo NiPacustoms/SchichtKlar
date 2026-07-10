@@ -67,7 +67,7 @@ export function useBrandingSettings(currentUserId?: string) {
           customColors: s.customColors,
         };
         return branding;
-      } catch (error) {
+      } catch (_error) {
         // If settings can't be loaded (e.g., permission denied), return defaults
         // showLogo defaults to true so logo is shown by default
         const defaults: BrandingSettings = {
