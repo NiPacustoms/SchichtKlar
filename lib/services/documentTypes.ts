@@ -141,7 +141,7 @@ export const documentTypeService = {
         id: docRef.id,
         ...docData,
       };
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Fehler beim Erstellen des Dokumententyps');
     }
   },
@@ -156,7 +156,7 @@ export const documentTypeService = {
         ...data,
         updatedAt: new Date(),
       });
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Fehler beim Aktualisieren des Dokumententyps');
     }
   },
@@ -167,7 +167,7 @@ export const documentTypeService = {
   async deactivateType(id: string): Promise<void> {
     try {
       await this.updateType(id, { isActive: false });
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Fehler beim Deaktivieren des Dokumententyps');
     }
   },
@@ -179,7 +179,7 @@ export const documentTypeService = {
     try {
       const docRef = doc(getDb(), 'documentTypes', id);
       await deleteDoc(docRef);
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Fehler beim Löschen des Dokumententyps');
     }
   },
@@ -207,7 +207,7 @@ export const documentTypeService = {
           });
         }
       }
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Fehler beim Initialisieren der Standard-Dokumententypen');
     }
   },

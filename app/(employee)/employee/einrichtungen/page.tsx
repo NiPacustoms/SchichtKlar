@@ -114,7 +114,7 @@ export default function EmployeeFacilitiesPage() {
   const handleGetDirections = async (facilityId: string) => {
     try {
       await getDirections(facilityId);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -122,7 +122,7 @@ export default function EmployeeFacilitiesPage() {
   const handleAddToFavorites = async (facilityId: string) => {
     try {
       await addToFavorites(facilityId);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -130,7 +130,7 @@ export default function EmployeeFacilitiesPage() {
   const handleRemoveFromFavorites = async (facilityId: string) => {
     try {
       await removeFromFavorites(facilityId);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };

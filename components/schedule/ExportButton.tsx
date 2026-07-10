@@ -200,10 +200,6 @@ export function BulkExportButton({
       const body: string[][] = [];
       for (const range of dateRanges) {
         for (const shift of range.shifts) {
-          const shiftAssignments = range.assignments.filter(a => a.shiftId === shift.id);
-          const assigned = shiftAssignments.filter(
-            a => a.status === 'accepted' || a.status === 'assigned'
-          ).length;
           body.push([
             range.label,
             format(shift.date, 'dd.MM.yyyy', { locale: de }),

@@ -255,8 +255,8 @@ const nextConfig = {
     ];
   },
   eslint: {
-    // Lint läuft separat über `npm run lint:ci` (CI-Workflow quality.yml).
-    // next build ruft die ESLint-9-API auf, installiert ist ESLint 8 -> Invalid Options.
+    // Lint läuft separat über `npm run lint:ci` (CI-Workflow quality.yml),
+    // nicht noch einmal im Build – hält den Produktions-Build schnell.
     ignoreDuringBuilds: true,
   },
   async headers() {
@@ -264,6 +264,26 @@ const nextConfig = {
       {
         source: '/(.*)',
         headers: securityHeaders,
+      },
+      // Service Worker dürfen nicht HTTP-gecacht werden, sonst erreichen
+      // Updates installierte PWA-Clients erst nach Ablauf des Caches.
+      {
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Service-Worker-Allowed', value: '/' },
+        ],
+      },
+      {
+        source: '/firebase-messaging-sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Service-Worker-Allowed', value: '/' },
+        ],
+      },
+      {
+        source: '/manifest.webmanifest',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' }],
       },
     ];
   },

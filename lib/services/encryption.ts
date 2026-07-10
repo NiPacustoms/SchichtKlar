@@ -13,7 +13,7 @@ export class EncryptionService {
     try {
       const encrypted = CryptoJS.AES.encrypt(data, this.ENCRYPTION_KEY).toString();
       return encrypted;
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Fehler bei der Verschlüsselung');
     }
   }
@@ -25,7 +25,7 @@ export class EncryptionService {
     try {
       const decrypted = CryptoJS.AES.decrypt(encryptedData, this.ENCRYPTION_KEY);
       return decrypted.toString(CryptoJS.enc.Utf8);
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Fehler bei der Entschlüsselung');
     }
   }

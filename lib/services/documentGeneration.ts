@@ -353,7 +353,7 @@ class DocumentGenerationService {
         } else {
           doc.text(String(assignment.notes).substring(0, 100), margin, y);
         }
-      } catch (error) {
+      } catch (_error) {
         // Fallback wenn splitTextToSize fehlschlägt
         const truncatedNotes = String(assignment.notes).substring(0, 200);
         doc.text(truncatedNotes, margin, y);
@@ -607,7 +607,7 @@ class DocumentGenerationService {
             doc.text(valueStr, margin + 80, y);
             y += 10;
           }
-        } catch (error) {
+        } catch (_error) {
           // Fallback für komplexe Objekte
           doc.text(JSON.stringify(value).substring(0, 100), margin + 80, y);
           y += 10;

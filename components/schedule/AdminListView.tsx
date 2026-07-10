@@ -191,21 +191,6 @@ export function AdminListView({
     }
   };
 
-  const getShiftTypeColor = (type: Shift['type']) => {
-    switch (type) {
-      case 'Frühdienst':
-        return '#0288D1';
-      case 'Spätdienst':
-        return '#2E7D32';
-      case 'Nachtdienst':
-        return '#7B1FA2';
-      case 'On-call':
-        return '#ED6C02';
-      default:
-        return '#666';
-    }
-  };
-
   const _getCapacityColor = (assigned: number, capacity: number) => {
     const percentage = (assigned / capacity) * 100;
     if (percentage >= 100) return '#4CAF50';

@@ -39,7 +39,7 @@ class Logger {
    */
   debug(...args: unknown[]): void {
     if (this.shouldLog(LOG_LEVELS.DEBUG) && IS_DEVELOPMENT) {
-      // eslint-disable-next-line no-console
+       
       console.debug('[DEBUG]', ...args);
     }
   }
@@ -49,7 +49,7 @@ class Logger {
    */
   info(...args: unknown[]): void {
     if (this.shouldLog(LOG_LEVELS.INFO)) {
-      // eslint-disable-next-line no-console
+       
       console.info('[INFO]', ...args);
     }
   }
@@ -59,7 +59,7 @@ class Logger {
    */
   warn(...args: unknown[]): void {
     if (this.shouldLog(LOG_LEVELS.WARN)) {
-      // eslint-disable-next-line no-console
+       
       console.warn('[WARN]', ...args);
     }
   }
@@ -69,7 +69,7 @@ class Logger {
    */
   error(...args: unknown[]): void {
     if (this.shouldLog(LOG_LEVELS.ERROR)) {
-      // eslint-disable-next-line no-console
+       
       console.error('[ERROR]', ...args);
     }
   }
@@ -79,14 +79,14 @@ class Logger {
    */
   group(label: string): void {
     if (IS_DEVELOPMENT) {
-      // eslint-disable-next-line no-console
+       
       console.group(label);
     }
   }
 
   groupEnd(): void {
     if (IS_DEVELOPMENT) {
-      // eslint-disable-next-line no-console
+       
       console.groupEnd();
     }
   }
@@ -96,14 +96,14 @@ class Logger {
    */
   time(label: string): void {
     if (IS_DEVELOPMENT) {
-      // eslint-disable-next-line no-console
+       
       console.time(label);
     }
   }
 
   timeEnd(label: string): void {
     if (IS_DEVELOPMENT) {
-      // eslint-disable-next-line no-console
+       
       console.timeEnd(label);
     }
   }

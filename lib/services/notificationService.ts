@@ -59,7 +59,7 @@ class NotificationService {
 
       const docRef = await addDoc(collection(getDb(), this.collection), notificationData);
       return docRef.id;
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to create notification');
     }
   }
@@ -79,7 +79,7 @@ class NotificationService {
         id: doc.id,
         ...doc.data()
       } as Notification));
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to fetch notifications');
     }
   }
@@ -99,7 +99,7 @@ class NotificationService {
         id: doc.id,
         ...doc.data()
       } as Notification));
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to fetch unread notifications');
     }
   }
@@ -112,7 +112,7 @@ class NotificationService {
         read: true,
         readAt: serverTimestamp()
       });
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to mark notification as read');
     }
   }
@@ -125,7 +125,7 @@ class NotificationService {
         this.markAsRead(notification.id)
       );
       await Promise.all(updatePromises);
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to mark all notifications as read');
     }
   }
@@ -135,7 +135,7 @@ class NotificationService {
     try {
       const notificationRef = doc(getDb(), this.collection, notificationId);
       await deleteDoc(notificationRef);
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to delete notification');
     }
   }
@@ -148,7 +148,7 @@ class NotificationService {
         this.delete(notification.id)
       );
       await Promise.all(deletePromises);
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to delete all notifications for user');
     }
   }
@@ -176,7 +176,7 @@ class NotificationService {
     try {
       const unreadNotifications = await this.getUnreadByUserId(userId);
       return unreadNotifications.length;
-    } catch (error) {
+    } catch (_error) {
       return 0;
     }
   }
@@ -197,7 +197,7 @@ class NotificationService {
       );
 
       return docRefs.map(ref => ref.id);
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to create bulk notifications');
     }
   }
@@ -217,7 +217,7 @@ class NotificationService {
         id: doc.id,
         ...doc.data()
       } as Notification));
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to fetch notifications by type');
     }
   }
@@ -237,7 +237,7 @@ class NotificationService {
         id: doc.id,
         ...doc.data()
       } as Notification));
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to fetch notifications by category');
     }
   }

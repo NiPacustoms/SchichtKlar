@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server';
+import { createNotFoundErrorResponse } from '@/lib/errors/apiErrorResponse';
+
+export const runtime = 'nodejs';
+
+const ROUTE = '/api/debug/test-services';
 
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    return createNotFoundErrorResponse('Not available in production', ROUTE);
+  }
+
   const results: Record<string, unknown> = {};
 
   try {

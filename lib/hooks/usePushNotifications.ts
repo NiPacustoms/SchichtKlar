@@ -46,7 +46,7 @@ export function usePushNotifications() {
       if ('serviceWorker' in navigator) {
         try {
           await navigator.serviceWorker.ready;
-        } catch (error) {
+        } catch (_error) {
           // Service Worker nicht verfügbar - warte kurz und versuche es erneut
           await new Promise(resolve => setTimeout(resolve, 1000));
         }

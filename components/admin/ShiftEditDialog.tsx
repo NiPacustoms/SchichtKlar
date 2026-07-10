@@ -26,7 +26,6 @@ import {
   FormControl,
   InputLabel,
   Chip,
-  Divider,
   Tooltip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -41,6 +40,8 @@ interface ShiftEditDialogProps {
   onClose: () => void;
   onUpdated?: () => void;
 }
+
+const validShiftStatuses = ['open', 'filled', 'cancelled'] as const;
 
 export default function ShiftEditDialog({ open, shift, onClose, onUpdated }: ShiftEditDialogProps) {
   const [form, setForm] = useState({
@@ -77,7 +78,6 @@ export default function ShiftEditDialog({ open, shift, onClose, onUpdated }: Shi
     [facilities, form.facilityId]
   );
 
-  const validShiftStatuses = ['open', 'filled', 'cancelled'] as const;
 
   useEffect(() => {
     if (open && shift) {

@@ -111,7 +111,6 @@ function AdminShiftsPageContent() {
     shifts,
     isLoading,
     error,
-    createShift,
     updateShift: _updateShift,
     deleteShift,
     assignShift: _assignShift,
@@ -212,7 +211,7 @@ function AdminShiftsPageContent() {
       try {
         await deleteShift(shift.id);
         toast.success('Schicht erfolgreich gelöscht');
-      } catch (error) {
+      } catch (_error) {
         toast.error('Fehler beim Löschen der Schicht');
       }
     }

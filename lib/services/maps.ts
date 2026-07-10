@@ -161,7 +161,7 @@ export async function getRoute(origin: Coordinates, destination: Coordinates): P
     // API-Monitoring deaktiviert - Fehler ignorieren
     try {
       await ApiMonitoringService.recordRequest(true, responseTime);
-    } catch (error) {
+    } catch (_error) {
       // Ignoriere API-Monitoring-Fehler
     }
     return cached;

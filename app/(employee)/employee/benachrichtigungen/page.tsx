@@ -148,7 +148,7 @@ export default function EmployeeNotificationsPage() {
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       await markAsRead(notificationId);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -156,7 +156,7 @@ export default function EmployeeNotificationsPage() {
   const handleMarkAsUnread = async (notificationId: string) => {
     try {
       await markAsUnread(notificationId);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -164,7 +164,7 @@ export default function EmployeeNotificationsPage() {
   const handleMarkAllAsRead = async () => {
     try {
       await markAllAsRead();
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -172,7 +172,7 @@ export default function EmployeeNotificationsPage() {
   const handleDeleteNotification = async (notificationId: string) => {
     try {
       await deleteNotification(notificationId);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -183,7 +183,7 @@ export default function EmployeeNotificationsPage() {
         await deleteNotification(notificationId);
       }
       setSelectedNotifications([]);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };

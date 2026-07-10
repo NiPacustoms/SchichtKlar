@@ -125,7 +125,7 @@ export function ShiftRangeDialog({ open, onClose, initialFrom, initialTo }: Shif
           requiredQualifications: [],
           shiftGroupId: shiftGroupId,
           createdBy: user.id,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+           
         } as any);
       }
     },

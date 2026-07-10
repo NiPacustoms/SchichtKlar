@@ -182,7 +182,7 @@ export default function AdminSettingsPage() {
     try {
       await updateSettings(data);
       setSettingsDialogOpen(false);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -231,7 +231,7 @@ export default function AdminSettingsPage() {
     try {
       await createRole(data);
       setRoleDialogOpen(false);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -241,7 +241,7 @@ export default function AdminSettingsPage() {
       await updateRole((selectedItem as Role).id, data);
       setRoleDialogOpen(false);
       setSelectedItem(null);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -249,7 +249,7 @@ export default function AdminSettingsPage() {
   const handleDeleteRole = async (roleId: string) => {
     try {
       await deleteRole(roleId);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -295,7 +295,7 @@ export default function AdminSettingsPage() {
     try {
       await createDocumentType(data);
       setDocumentTypeDialogOpen(false);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -305,7 +305,7 @@ export default function AdminSettingsPage() {
       await updateDocumentType((selectedItem as AdminDocumentType).id, data);
       setDocumentTypeDialogOpen(false);
       setSelectedItem(null);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -313,7 +313,7 @@ export default function AdminSettingsPage() {
   const handleDeleteDocumentType = async (documentTypeId: string) => {
     try {
       await deleteDocumentType(documentTypeId);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -322,7 +322,7 @@ export default function AdminSettingsPage() {
     try {
       await backupData();
       setBackupDialogOpen(false);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };
@@ -331,7 +331,7 @@ export default function AdminSettingsPage() {
     try {
       await restoreData(file);
       setRestoreDialogOpen(false);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in the mutations
     }
   };

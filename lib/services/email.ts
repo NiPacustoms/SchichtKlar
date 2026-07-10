@@ -44,7 +44,7 @@ export async function sendInvitationEmail(payload: InviteEmailPayload): Promise<
     }
     const call = httpsCallable(functions, 'sendInvitationEmailCF');
     await call(payload);
-  } catch (e) {
+  } catch (_e) {
     // Fallback Logging, wenn CF nicht verfügbar
     logger.warn('[Email:FALLBACK] Invitation', {}, { payload, html: renderInviteEmailHtml(payload) });
   }
@@ -140,7 +140,7 @@ export async function sendAssignmentSignatureEmail(payload: AssignmentSignatureE
     }
     const call = httpsCallable(functions, 'sendAssignmentSignatureEmailCF');
     await call(payload);
-  } catch (e) {
+  } catch (_e) {
     // Fallback Logging, wenn CF nicht verfügbar
     logger.warn('[Email:FALLBACK] Assignment Signature', {}, { payload, html: renderAssignmentSignatureEmailHtml(payload) });
   }

@@ -5,7 +5,6 @@ import { facilityService } from '../facilities';
 import { collection, getDocs, orderBy, query, QueryConstraint, where } from 'firebase/firestore';
 import type { Shift, ShiftFilters } from './types';
 import { COLLECTION_NAME } from './types';
-import { safeToDate, safeDateToISOString } from './types';
 import { mapDocToShift } from './mapDoc';
 
 export async function getAll(filters?: ShiftFilters): Promise<Shift[]> {

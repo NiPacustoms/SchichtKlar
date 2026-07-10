@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { logger } from '@/lib/logging';
-import { User } from '@/lib/types';
 
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermissions } from '../../contexts/PermissionsContext';
@@ -11,51 +10,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { adminSettingsService } from '@/lib/services/adminSettings';
-import Link from 'next/link';
-
-/** Zugriff-verweigert-Ansicht: Rolle wird beim Login aus dem Konto ermittelt (Admin-Registrierung oder Einladung). */
-function AccessDeniedView({ user }: { user: User | null }) {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center max-w-md px-4">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">Zugriff verweigert</h1>
-        <p className="text-gray-600 mb-2">Sie haben keine Administratorrechte für diese Seite.</p>
-        <p className="text-sm text-gray-500 mb-4">
-          Ihre Rolle (Administrator oder Mitarbeiter) wird beim Anmelden aus Ihrem Konto gelesen. Administratoren legen ihr Konto über „Als Administrator registrieren“ an; Mitarbeiter erhalten eine Einladung.
-        </p>
-        <p className="text-sm text-gray-500 mb-2">
-          Aktuelle Rolle: <strong>{user?.role || 'unbekannt'}</strong>
-        </p>
-
-        <div className="flex flex-col gap-2 mt-4">
-          <Link
-            href="/employee/arbeitsplatz"
-            className="button-primary px-4 py-2 rounded text-center no-underline text-white"
-          >
-            Zum Mitarbeiterbereich
-          </Link>
-          <Link
-            href="/admin-registrieren"
-            className="text-sm text-blue-600 underline"
-          >
-            Als Administrator registrieren
-          </Link>
-        </div>
-
-        <div className="mt-6 p-4 bg-gray-100 rounded text-left text-xs">
-          <p>
-            <strong>Debug:</strong> User ID: {user?.id || 'N/A'} · E-Mail: {user?.email || 'N/A'} · Company: {user?.companyId || 'N/A'}
-          </p>
-          <p className="mt-2">
-            <a href="/debug-role" className="text-blue-600 underline">
-              Debug-Seite
-            </a>
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 interface AuthGuardProps {
   children: React.ReactNode;
