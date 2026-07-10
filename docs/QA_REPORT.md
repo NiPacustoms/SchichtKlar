@@ -27,9 +27,9 @@ Dieser Bericht dokumentiert die verifizierten Prüfungen, den Zustand der automa
 
 **Status (aktualisiert):** ✅ **saniert.** Die zuvor abgedriftete Vitest-Unit-Suite (`lib/services/__tests__/*`, `lib/hooks/__tests__/*`) wurde vollständig repariert: jsdom-Umgebung (für die clientseitigen `typeof window`-Guards), `@testing-library/react` ergänzt, Firebase-Mocks an die aktuellen Service-Signaturen angeglichen (db/auth/getDoc/Timestamp, forEach-fähige Snapshots), API-Drift korrigiert (`getByUser`→`getByUserId`, `reject`→`verify`, `assign`→`assignUser`, geänderte Rückgabetypen), Mock-Pollution (persistierende `mockResolvedValue`) durch beforeEach-Resets behoben, eine Zeitfenster-Grenzwertannahme präzisiert und die Realtime-Listener-Keys aktualisiert.
 
-**Ergebnis:** `npm run test:unit` → **62 passed, 3 skipped, 0 failed**. In CI aufgenommen (`quality.yml`).
+**Ergebnis:** `npm run test:unit` → **65 passed, 0 skipped, 0 failed**. In CI aufgenommen (`quality.yml`).
 
-**Bewusst übersprungen (3):** Tests für `useEmployeeReports` (workTimeReport/surchargesReport/Export) — diese Funktionen sind aktuell **Stubs** (Nullwerte / nur Toast). Mit `it.skip` und klarer Begründung markiert statt fake-grün gemacht; als Produktlücke F1 in `KNOWN_LIMITATIONS.md` dokumentiert.
+**Produktlücke F1 geschlossen:** Die Mitarbeiter-Berichts-Aggregation/Export (`useEmployeeReports`) wurde implementiert; die 3 zuvor übersprungenen Tests sind reaktiviert und grün. Keine übersprungenen Tests mehr.
 
 ## 4. Geschäftslogik-Befunde (Phase 5 – Entscheidungsbedarf beim Eigentümer)
 
@@ -51,4 +51,4 @@ Zwei Regeln aus der Spezifikation weichen vom implementierten Verhalten ab. Beid
 
 ## 5. Fazit
 
-Der **produktive Code** ist statisch verifiziert (Typecheck, Lint, Build) und in den sicherheitskritischen Pfaden (Firestore-Rules) sowie den arbeitsrechtlichen Kernberechnungen durch neue, grüne Tests abgesichert. Die Legacy-Unit-Suite ist saniert und CI-gebunden (62 passed / 3 dokumentiert übersprungen). Offen bleiben: die Implementierung der Mitarbeiter-Berichts-Aggregation (Produktlücke F1) und zwei fachliche Entscheidungen (B1, B2) beim Eigentümer.
+Der **produktive Code** ist statisch verifiziert (Typecheck, Lint, Build) und in den sicherheitskritischen Pfaden (Firestore-Rules) sowie den arbeitsrechtlichen Kernberechnungen durch neue, grüne Tests abgesichert. Die Legacy-Unit-Suite ist saniert und CI-gebunden (65 passed, 0 übersprungen). Offen bleiben zwei fachliche Entscheidungen (B1, B2) beim Eigentümer.

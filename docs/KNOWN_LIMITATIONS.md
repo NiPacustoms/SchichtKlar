@@ -44,7 +44,7 @@ Ehrliche Auflistung aller bekannten Einschränkungen, offenen Entscheidungen und
 
 | # | Thema | Details |
 |---|---|---|
-| F1 | **`useEmployeeReports` Aggregation/Export unvollständig** | `workTimeReport` liefert aktuell Nullwerte (Stub, leere useMemo-Deps), `surchargesReport` wird nicht bereitgestellt, `exportWorkTimeReport` zeigt nur einen Toast statt `reportService`-Export aufzurufen. Die Mitarbeiter-Berichtsansicht zeigt dadurch keine echten Auswertungen. 3 zugehörige Unit-Tests sind mit klarer Begründung übersprungen (`it.skip`), bis die Logik implementiert ist. **Vor Verkauf des Reporting-Features implementieren.** |
+| F1 | ~~`useEmployeeReports` Aggregation/Export~~ **ERLEDIGT** | Echte Aggregation implementiert: `workTimeReport` (Gesamt-/Regel-/Überstunden, Arbeitstage, Ø pro Tag/Woche, `hoursByDay`-Chartdaten, §3-ArbZG-10h-Check), `surchargesReport` (Gesamtzuschlag + anteilige Aufteilung nach Nacht/Wochenende/Feiertag/Überstunden) und `exportWorkTimeReport` (ruft `reportService`-PDF/Excel-Export). Die 3 zuvor übersprungenen Tests sind reaktiviert und grün. |
 
 ## E. Optionale Ausbaustufen (Marktrecherche)
 

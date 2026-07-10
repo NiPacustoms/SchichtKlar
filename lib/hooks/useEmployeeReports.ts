@@ -151,23 +151,121 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
   const getTrendIcon = (_trend: TrendValue) => null;
   const getTrendText = (_trend: TrendValue) => '';
 
-  const workTimeReport = useMemo(
-    () => ({
-      data: [] as unknown[],
-      summary: {},
-      totalHours: 0,
-      regularHours: 0,
-      overtimeHours: 0,
-      averageHoursPerDay: 0,
-      averageHoursPerWeek: 0,
-      workingDays: 0,
+  const workTimeReport = useMemo(() => {
+    const list = timesheets ?? [];
+    const totalHours = list.reduce((sum, ts) => sum + (ts.totalHours || 0), 0);
+    const overtimeHours = list.reduce((sum, ts) => sum + (ts.overtimeHours || 0), 0);
+    const regularHours = Math.max(0, totalHours - overtimeHours);
+
+    // Aggregation je Kalendertag (für Kennzahlen und Chart)
+    const byDay = new Map<
+      string,
+      { day: Date; totalHours: number; regularHours: number; overtimeHours: number }
+    >();
+    const weeks = new Set<string>();
+    for (const ts of list) {
+      const d = ts.date instanceof Date ? ts.date : new Date(ts.date);
+      if (Number.isNaN(d.getTime())) continue;
+      const dayKey = d.toISOString().slice(0, 10);
+      weeks.add(format(d, "RRRR-'W'II")); // ISO-Woche
+      const th = ts.totalHours || 0;
+      const ot = ts.overtimeHours || 0;
+      const cur = byDay.get(dayKey) ?? { day: d, totalHours: 0, regularHours: 0, overtimeHours: 0 };
+      cur.totalHours += th;
+      cur.overtimeHours += ot;
+      cur.regularHours += Math.max(0, th - ot);
+      byDay.set(dayKey, cur);
+    }
+    const hoursByDay = [...byDay.values()].sort((a, b) => a.day.getTime() - b.day.getTime());
+    const workingDays = byDay.size;
+    const weekCount = weeks.size || (workingDays > 0 ? 1 : 0);
+    const averageHoursPerDay = workingDays > 0 ? totalHours / workingDays : 0;
+    const averageHoursPerWeek = weekCount > 0 ? totalHours / weekCount : 0;
+
+    // ArbZG: keine Überschreitung der 10h-Tagesgrenze (§3)
+    const maxDailyHours = hoursByDay.reduce((m, d) => Math.max(m, d.totalHours), 0);
+    const arbzgCompliance = {
+      isCompliant: maxDailyHours <= 10,
+      maxDailyHours,
+      violations: [] as string[],
+    };
+
+    return {
+      data: list,
+      summary: { totalHours, regularHours, overtimeHours, workingDays },
+      totalHours,
+      regularHours,
+      overtimeHours,
+      averageHoursPerDay,
+      averageHoursPerWeek,
+      workingDays,
       trend: 'flat' as TrendValue,
-      hoursByDay: [] as unknown[],
-    }),
-    []
-  );
-  const exportWorkTimeReport = async (_format: 'pdf' | 'excel') => { toast.info('Export wird vorbereitet'); };
-  const exportAllReports = async (_format: 'pdf' | 'excel') => { toast.info('Export wird vorbereitet'); };
+      hoursByDay,
+      arbzgCompliance,
+    };
+  }, [timesheets]);
+
+  // Zuschlags-Report: Gesamtbetrag + anteilige Aufteilung nach Stundenart
+  const surchargesReport = useMemo(() => {
+    const list = timesheets ?? [];
+    let totalSurcharge = 0;
+    let nightSurcharge = 0;
+    let weekendSurcharge = 0;
+    let holidaySurcharge = 0;
+    let overtimeSurcharge = 0;
+    for (const raw of list) {
+      const ts = raw as {
+        surchargeAmount?: number;
+        nightHours?: number;
+        weekendHours?: number;
+        holidayHours?: number;
+        overtimeHours?: number;
+      };
+      const amount = ts.surchargeAmount || 0;
+      totalSurcharge += amount;
+      const night = ts.nightHours || 0;
+      const weekend = ts.weekendHours || 0;
+      const holiday = ts.holidayHours || 0;
+      const overtime = ts.overtimeHours || 0;
+      const hoursSum = night + weekend + holiday + overtime;
+      if (amount > 0 && hoursSum > 0) {
+        nightSurcharge += (amount * night) / hoursSum;
+        weekendSurcharge += (amount * weekend) / hoursSum;
+        holidaySurcharge += (amount * holiday) / hoursSum;
+        overtimeSurcharge += (amount * overtime) / hoursSum;
+      }
+    }
+    return { totalSurcharge, nightSurcharge, weekendSurcharge, holidaySurcharge, overtimeSurcharge };
+  }, [timesheets]);
+
+  // Berichtszeitraum aus den vorhandenen Timesheets ableiten (Fallback: laufendes Jahr)
+  const reportDateRange = useMemo(() => {
+    const list = timesheets ?? [];
+    const times = list
+      .map(ts => (ts.date instanceof Date ? ts.date : new Date(ts.date)).getTime())
+      .filter(t => !Number.isNaN(t));
+    const now = new Date();
+    const startDate = times.length
+      ? new Date(Math.min(...times))
+      : new Date(now.getFullYear(), 0, 1);
+    const endDate = times.length ? new Date(Math.max(...times)) : now;
+    return { startDate, endDate };
+  }, [timesheets]);
+
+  const exportWorkTimeReport = async (format: 'pdf' | 'excel') => {
+    const data: ExportData = { reportId: 'employee-worktime', ...workTimeReport };
+    const filters: ExportFilters = {
+      startDate: reportDateRange.startDate,
+      endDate: reportDateRange.endDate,
+    };
+    if (format === 'excel') {
+      return exportTimeAccountReportExcel(data, filters);
+    }
+    return exportTimeAccountReportPDF(data, filters);
+  };
+  const exportAllReports = async (format: 'pdf' | 'excel') => {
+    await exportWorkTimeReport(format);
+  };
 
   const refetch = () => { void refetchTimesheets(); queryClient.invalidateQueries({ queryKey: ['employeeTimeEntries'] }); };
 
@@ -219,6 +317,7 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
     timeEntries,
     user,
     workTimeReport,
+    surchargesReport,
     // Loading states
     isLoading,
     loadingTimesheets,
