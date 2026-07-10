@@ -50,7 +50,7 @@ gcloud scheduler jobs create http firestore-daily-backup \
 **Oder manuell ausführen:**
 
 ```bash
-PROJECT_ID=jobflow25 \
+PROJECT_ID=schichtklar \
 BACKUP_BUCKET=gs://schichtklar-backups \
 ./scripts/firestore-backup.sh
 ```
@@ -77,8 +77,8 @@ gcloud scheduler jobs create http storage-daily-backup \
 **Oder manuell ausführen:**
 
 ```bash
-PROJECT_ID=jobflow25 \
-SOURCE_BUCKET=gs://jobflow25.appspot.com \
+PROJECT_ID=schichtklar \
+SOURCE_BUCKET=gs://schichtklar.appspot.com \
 BACKUP_BUCKET=gs://schichtklar-backups \
 ./scripts/storage-backup.sh
 ```
@@ -103,7 +103,7 @@ export const firestoreBackup = functions
   .schedule('0 2 * * *') // Täglich um 02:00 UTC
   .timeZone('UTC')
   .onRun(async (context) => {
-    const projectId = process.env.GCLOUD_PROJECT || 'jobflow25';
+    const projectId = process.env.GCLOUD_PROJECT || 'schichtklar';
     const backupBucket = process.env.BACKUP_BUCKET || 'gs://schichtklar-backups';
     
     try {
@@ -136,7 +136,7 @@ export const storageBackup = functions
   .schedule('0 3 * * *') // Täglich um 03:00 UTC
   .timeZone('UTC')
   .onRun(async (context) => {
-    const projectId = process.env.GCLOUD_PROJECT || 'jobflow25';
+    const projectId = process.env.GCLOUD_PROJECT || 'schichtklar';
     const sourceBucket = `gs://${projectId}.appspot.com`;
     const backupBucket = process.env.BACKUP_BUCKET || 'gs://schichtklar-backups';
     

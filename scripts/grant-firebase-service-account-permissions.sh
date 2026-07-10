@@ -2,8 +2,8 @@
 # Script zum Setzen der Firebase Service Account Berechtigungen
 # Verwendung: ./scripts/grant-firebase-service-account-permissions.sh
 
-PROJECT_ID="jobflow25"
-SERVICE_ACCOUNT="jobflow25@jobflow25.iam.gserviceaccount.com"
+PROJECT_ID="schichtklar"
+SERVICE_ACCOUNT="schichtklar@schichtklar.iam.gserviceaccount.com"
 
 echo "Granting permissions to $SERVICE_ACCOUNT in project $PROJECT_ID..."
 

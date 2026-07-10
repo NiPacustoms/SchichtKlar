@@ -2,8 +2,8 @@
 # Einfaches Script zum Setzen der Firebase Berechtigungen
 # Nutzt nur die beiden wichtigsten Rollen
 
-PROJECT_ID="jobflow25"
-SERVICE_ACCOUNT="jobflow25@jobflow25.iam.gserviceaccount.com"
+PROJECT_ID="schichtklar"
+SERVICE_ACCOUNT="schichtklar@schichtklar.iam.gserviceaccount.com"
 
 echo "Setze Berechtigungen für $SERVICE_ACCOUNT..."
 echo ""

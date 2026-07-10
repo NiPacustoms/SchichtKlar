@@ -100,7 +100,7 @@ jobs:
 
       - name: Setup Firebase CLI and Verify Service Account
         env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JobFlow }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SCHICHTKLAR }}
         run: |
           npm install -g firebase-tools@latest
           echo "$FIREBASE_SERVICE_ACCOUNT" > ${{ github.workspace }}/firebase-service-account.json
@@ -117,12 +117,12 @@ jobs:
           echo "Testing Firebase authentication..."
           export GOOGLE_APPLICATION_CREDENTIALS=${{ github.workspace }}/firebase-service-account.json
           firebase projects:list 2>&1 || echo "Note: projects:list check completed"
-          firebase functions:list --project jobflow25 2>&1 || echo "Note: functions:list may fail if no functions exist or permissions are limited"
+          firebase functions:list --project schichtklar 2>&1 || echo "Note: functions:list may fail if no functions exist or permissions are limited"
           echo "✅ Service Account verification completed"
 
       - name: Auto-setup Service Account (if needed)
         env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JobFlow }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SCHICHTKLAR }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
         run: |
           if [ -f "scripts/setup-service-account.sh" ]; then
@@ -135,7 +135,7 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
         run: |
           echo "⚠️  Attempting to setup cleanup policy..."
-          firebase functions:artifacts:setpolicy --project jobflow25 --location europe-west1 2>&1 || echo "⚠️  Cleanup policy setup failed (will continue with --force)"
+          firebase functions:artifacts:setpolicy --project schichtklar --location europe-west1 2>&1 || echo "⚠️  Cleanup policy setup failed (will continue with --force)"
         continue-on-error: true
       - name: Create .env.production for Next.js build (legal vars)
         run: |
@@ -165,7 +165,7 @@ jobs:
           NEXT_PUBLIC_COMPANY_ZIP: ${{ env.NEXT_PUBLIC_COMPANY_ZIP }}
           NEXT_PUBLIC_COMPANY_EMAIL: ${{ env.NEXT_PUBLIC_COMPANY_EMAIL }}
         run: |
-          firebase deploy --only hosting --project jobflow25 --force
+          firebase deploy --only hosting --project schichtklar --force
       - name: Cleanup service account file
         if: always()
         run: |
@@ -242,7 +242,7 @@ jobs:
 
       - name: Setup Firebase CLI and Verify Service Account
         env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JobFlow }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SCHICHTKLAR }}
         run: |
           npm install -g firebase-tools@latest
           echo "$FIREBASE_SERVICE_ACCOUNT" > ${{ github.workspace }}/firebase-service-account.json
@@ -262,7 +262,7 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
         run: |
           echo "⚠️  Attempting to setup cleanup policy..."
-          if firebase functions:artifacts:setpolicy --project jobflow25 --location europe-west1 2>&1; then
+          if firebase functions:artifacts:setpolicy --project schichtklar --location europe-west1 2>&1; then
             echo "✅ Cleanup policy setup successful"
           else
             echo "⚠️  Cleanup policy setup failed - this is non-blocking"
@@ -298,7 +298,7 @@ jobs:
           NEXT_PUBLIC_COMPANY_ZIP: ${{ env.NEXT_PUBLIC_COMPANY_ZIP }}
           NEXT_PUBLIC_COMPANY_EMAIL: ${{ env.NEXT_PUBLIC_COMPANY_EMAIL }}
         run: |
-          firebase hosting:channel:deploy ${{ github.ref_name }} --only hosting --project jobflow25 --expires 7d --force
+          firebase hosting:channel:deploy ${{ github.ref_name }} --only hosting --project schichtklar --expires 7d --force
       - name: Cleanup service account file
         if: always()
         run: |

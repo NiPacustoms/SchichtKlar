@@ -2,7 +2,7 @@
 
 ## Konfiguration
 
-- **Projekt:** jobflow25
+- **Projekt:** schichtklar
 - **Region:** europe-west1 (Belgien)
 - **Tarif:** Blaze Plan (Pay-as-you-go)
 - **Hosting:** Firebase Hosting mit Next.js SSR

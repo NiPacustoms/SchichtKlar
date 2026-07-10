@@ -33,18 +33,18 @@ firebase deploy --only firestore:indexes
 1. **Assignments Index:**
 
    ```
-   https://console.firebase.google.com/v1/r/project/jobflow25/firestore/indexes?create_composite=Ck1wcm9qZWN0cy9qb2JmbG93MjUvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL2Fzc2lnbm1lbnRzL2luZGV4ZXMvXxABGgoKBnVzZXJJZBABGg4KCmFzc2lnbmVkQXQQAhoMCghfX25hbWVfXxAC
+   https://console.firebase.google.com/v1/r/project/schichtklar/firestore/indexes?create_composite=Ck1wcm9qZWN0cy9qb2JmbG93MjUvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL2Fzc2lnbm1lbnRzL2luZGV4ZXMvXxABGgoKBnVzZXJJZBABGg4KCmFzc2lnbmVkQXQQAhoMCghfX25hbWVfXxAC
    ```
 
 2. **Timesheets Index (by date):**
 
    ```
-   https://console.firebase.google.com/v1/r/project/jobflow25/firestore/indexes?create_composite=Ckxwcm9qZWN0cy9qb2JmbG93MjUvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL3RpbWVzaGVldHMvaW5kZXhlcy9fEAEaCgoGdXNlcklkEAEaCAoEZGF0ZRABGgwKCF9fbmFtZV9fEAE
+   https://console.firebase.google.com/v1/r/project/schichtklar/firestore/indexes?create_composite=Ckxwcm9qZWN0cy9qb2JmbG93MjUvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL3RpbWVzaGVldHMvaW5kZXhlcy9fEAEaCgoGdXNlcklkEAEaCAoEZGF0ZRABGgwKCF9fbmFtZV9fEAE
    ```
 
 3. **Timesheets Index (by date range):**
    ```
-   https://console.firebase.google.com/v1/r/project/jobflow25/firestore/indexes?create_composite=Ckxwcm9qZWN0cy9qb2JmbG93MjUvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL3RpbWVzaGVldHMvaW5kZXhlcy9fEAEaCgoGdXNlcklkEAEaCAoEZGF0ZRACGgwKCF9fbmFtZV9fEAI
+   https://console.firebase.google.com/v1/r/project/schichtklar/firestore/indexes?create_composite=Ckxwcm9qZWN0cy9qb2JmbG93MjUvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL3RpbWVzaGVldHMvaW5kZXhlcy9fEAEaCgoGdXNlcklkEAEaCAoEZGF0ZRACGgwKCF9fbmFtZV9fEAI
    ```
 
 ## Benötigte Indizes
@@ -79,7 +79,7 @@ Nach der Index-Erstellung:
 
 Überwache die Firebase Console auf:
 
-- **Index-Status:** https://console.firebase.google.com/project/jobflow25/firestore/indexes
+- **Index-Status:** https://console.firebase.google.com/project/schichtklar/firestore/indexes
 - **Query-Performance:** Firestore > Usage
 - **Fehler-Logs:** Firebase > Functions > Logs
 

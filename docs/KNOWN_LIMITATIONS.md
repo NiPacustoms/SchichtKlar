@@ -38,7 +38,7 @@ Ehrliche Auflistung aller bekannten Einschränkungen, offenen Entscheidungen und
 |---|---|---|
 | D1 | **Single-Tenant-Modell** | 1 Kunde = 1 Firebase-Projekt (`SINGLE_COMPANY_ID`). Mandanten-Helper in `firestore.rules` sind bewusst Stubs (`return true`). Für Multi-Tenant müssten `belongsToSameCompany` echt implementiert und alle List-Queries mit `companyId`-Filter versehen werden. Durch `tests/rules/` als bewusste Entscheidung gepinnt. |
 | D2 | **UI-System = MUI** | Trotz vorhandener Tailwind-Restkonfiguration ist MUI das führende Design-System (Radix ist nicht installiert). |
-| D3 | **Technische Alt-IDs** | Firebase-Projekt `jobflow25` u. a. bleiben aus Infrastrukturgründen bestehen (nicht nutzer-sichtbar). Migrationspfad: `INFRASTRUCTURE_RENAMING.md`. |
+| D3 | **Firebase-Projekt migriert** | Neues Projekt `schichtklar` angelegt, alle Deploy-Referenzen umgestellt (Frischstart). Erforderlicher GitHub-Schritt: Secret `FIREBASE_SERVICE_ACCOUNT_SCHICHTKLAR` mit Service-Account des neuen Projekts anlegen. Details: `INFRASTRUCTURE_RENAMING.md`. |
 
 ## E. Optionale Ausbaustufen (Marktrecherche)
 

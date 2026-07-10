@@ -35,8 +35,8 @@ Markenstandard: sichtbar **Schichtklar**, technisch/klein **schichtklar**, mit B
 
 | Fundstelle | Wert | Grund für Erhalt | Nutzer-sichtbar? |
 |---|---|---|---|
-| `.firebaserc`, `.github/workflows/firebase-hosting.yml`, ~32 Infra-Skripte, `.env.production.example` (Kommentare) | Firebase-Projekt-ID `jobflow25` | Firebase-Projekt-IDs sind **unveränderlich** und mit Auth/Firestore/Storage/Hosting/Functions **produktiv verbunden**. Umbenennen = neues Projekt + vollständige Datenmigration. | nein |
-| abgeleitet aus Projekt-ID | `jobflow25.firebaseapp.com` (Auth-Domain), `jobflow25.firebasestorage.app` (Bucket), `us-central1-jobflow25.cloudfunctions.net` | technisch an die Projekt-ID gebunden | nein (nur in Netzwerk-Requests) |
+| `.firebaserc`, `.github/workflows/firebase-hosting.yml`, ~32 Infra-Skripte, `.env.production.example` (Kommentare) | Firebase-Projekt-ID `schichtklar` | Firebase-Projekt-IDs sind **unveränderlich** und mit Auth/Firestore/Storage/Hosting/Functions **produktiv verbunden**. Umbenennen = neues Projekt + vollständige Datenmigration. | nein |
+| abgeleitet aus Projekt-ID | `schichtklar.firebaseapp.com` (Auth-Domain), `schichtklar.firebasestorage.app` (Bucket), `us-central1-schichtklar.cloudfunctions.net` | technisch an die Projekt-ID gebunden | nein (nur in Netzwerk-Requests) |
 | Seed-/Test-Fixtures (`scripts/seed-firestore.js`, `scripts/verified-emails-whitelist.txt`, `e2e/**`) | Test-Logins `admin@jobflow.de` u. ä. | fiktive Test-Domain; reine Entwickler-Fixtures. Werden auf `@schichtklar.test` (RFC-6761-reservierte TLD, klar nicht-produktiv) vereinheitlicht, um JobFlow-Sichtbarkeit zu entfernen. | nur Entwickler |
 
 ## 4. Firestore-Collections / Storage-Pfade / Custom Claims

@@ -253,7 +253,7 @@ main() {
     
     # Firebase Variables
     print_info "Firebase Variables"
-    FIREBASE_PROJECT_ID_VALUE="jobflow25"
+    FIREBASE_PROJECT_ID_VALUE="schichtklar"
     FIREBASE_PROJECT_ID_VALUE=$(prompt_value "FIREBASE_PROJECT_ID" "$FIREBASE_PROJECT_ID_VALUE" false)
     set_variable "FIREBASE_PROJECT_ID" "$FIREBASE_PROJECT_ID_VALUE" false
     
@@ -276,7 +276,7 @@ main() {
     echo ""
     read -p "FIREBASE_DEPLOYMENT_NOTIFICATION_URL setzen? (j/n) [n]: " SET_NOTIFICATION_URL
     if [[ "$SET_NOTIFICATION_URL" =~ ^[Jj]$ ]]; then
-        NOTIFICATION_URL_VALUE="https://us-central1-jobflow25.cloudfunctions.net/notifyDeployment"
+        NOTIFICATION_URL_VALUE="https://us-central1-schichtklar.cloudfunctions.net/notifyDeployment"
         NOTIFICATION_URL_VALUE=$(prompt_value "FIREBASE_DEPLOYMENT_NOTIFICATION_URL" "$NOTIFICATION_URL_VALUE" false)
         set_variable "FIREBASE_DEPLOYMENT_NOTIFICATION_URL" "$NOTIFICATION_URL_VALUE" true
     fi

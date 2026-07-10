@@ -66,7 +66,7 @@ Die Scripts können auch in GitHub Actions verwendet werden:
 ```yaml
 - name: Verify Service Account Permissions
   run: |
-    gcloud auth activate-service-account --key-file=${{ secrets.FIREBASE_SERVICE_ACCOUNT_JobFlow }}
+    gcloud auth activate-service-account --key-file=${{ secrets.FIREBASE_SERVICE_ACCOUNT_SCHICHTKLAR }}
     ./scripts/verify-service-account.sh
 ```
 

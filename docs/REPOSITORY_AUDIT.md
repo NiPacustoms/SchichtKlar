@@ -67,9 +67,9 @@ Vitest-Unit-Tests (`lib/services/__tests__`: 8 Service-Tests, `tests/`), Playwri
 | # | Fund | Ort | Bewertung |
 |---|---|---|---|
 | S1 | Hartcodierter Firebase-API-Key als Fallback | `scripts/seed-firestore.js:42` | Web-API-Keys sind by design öffentlich, aber Verkäufer-Projektbezug → **entfernen (Fallback löschen)** |
-| S2 | Persönlicher Entwicklerpfad inkl. Key-Pfad `/Users/<name>/.keys/jobflow25-admin.json` | `scripts/sync-custom-claims.js:30` | **anonymisieren** (Pfad durch ENV/Arg ersetzen) |
+| S2 | Persönlicher Entwicklerpfad inkl. Key-Pfad `/Users/<name>/.keys/schichtklar-admin.json` | `scripts/sync-custom-claims.js:30` | **anonymisieren** (Pfad durch ENV/Arg ersetzen) |
 | S3 | Persönliche Pfade/Name des Entwicklers | `.cursor/**`, `.npmrc` (Kommentar) | `.cursor/` = IDE-Werkzeug → **entfernen oder anonymisieren** |
-| S4 | Verkäufer-Firebase-Projekt-ID `jobflow25` | `.firebaserc`, mehrere docs, Skripte | **vor Übergabe ersetzen** (Käufer-Projekt); dokumentieren in BUYER_HANDOVER |
+| S4 | Verkäufer-Firebase-Projekt-ID `schichtklar` | `.firebaserc`, mehrere docs, Skripte | **vor Übergabe ersetzen** (Käufer-Projekt); dokumentieren in BUYER_HANDOVER |
 | S5 | Branding `aufabruf` / `info@aufabruf.eu` | `.env*.example`, `firestore.rules` (`getRequesterCompanyId` → `'aufabruf'`), `lib/constants/company.ts`, `lib/services/documentGeneration.ts`, 1 Employee-Page, docs | Phase 11: **konfigurierbar machen / neutralisieren** |
 | S6 | Storage: `logos/**` von **jedem** authentifizierten User beschreibbar | `storage.rules` | Phase 4: auf Admin einschränken |
 | S7 | `deleteAllAssignments` Cloud Function (destruktiv) | `functions/src` | Phase 4: Autorisierung verifizieren |

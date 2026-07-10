@@ -95,4 +95,4 @@ Repository ✅ · Firebase-Projekt ⏳ (Transfer/Neuanlage) · Hosting ⏳ · Do
 - `npm run build` ✅ erfolgreich
 - `npm run test:rules` ✅ 13/13 · `businessRules.test.ts` ✅ 12/12
 - `npm audit --omit=dev` ✅ 0 kritisch
-- Rebrand-Scan ✅ kein „jobflow" außer dokumentierten technischen IDs
+- Rebrand-Scan ✅ kein „jobflow" mehr (Projekt vollständig auf schichtklar migriert; nur der GitHub-Repo-Name bleibt vorerst JobFlow)

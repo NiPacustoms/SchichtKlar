@@ -94,7 +94,7 @@ LECK | Nurse ändert eigene companyId:          ERLAUBT – erwartet: VERWEIGERT
 
 ### NIEDRIG-2 — Hartcodierte Firebase-Config-Fallbacks im Seed-Skript ✅ BEHOBEN (Phase 2)
 
-`scripts/seed-firestore.js` enthielt Web-API-Key + Projekt-ID `jobflow25` als Fallback. In Phase 2 entfernt; Skript verlangt jetzt vollständige `.env.local`. (Web-API-Keys sind konzeptbedingt öffentlich, der Befund betraf den Verkäufer-Projektbezug, nicht ein echtes Geheimnis.)
+`scripts/seed-firestore.js` enthielt Web-API-Key + Projekt-ID `schichtklar` als Fallback. In Phase 2 entfernt; Skript verlangt jetzt vollständige `.env.local`. (Web-API-Keys sind konzeptbedingt öffentlich, der Befund betraf den Verkäufer-Projektbezug, nicht ein echtes Geheimnis.)
 
 ---
 

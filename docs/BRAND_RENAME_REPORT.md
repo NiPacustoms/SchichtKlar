@@ -20,17 +20,17 @@
 | **Dokumentation** | `README.md`, `SECURITY.md`, `ARCHITECTURE-HEALTH.md`, `FIREBASE-QUERIES.md`, gesamter `docs/`-Ordner |
 | **Konfig-Beispiele** | `.env.example`, `.env.production.example`, `.env.staging.example`, `.npmrc`, `.cursor/**` |
 
-## 2. Nicht umbenannte technische IDs (Details: `docs/INFRASTRUCTURE_RENAMING.md`)
+## 2. Infrastruktur (Details: `docs/INFRASTRUCTURE_RENAMING.md`)
 
-- **Firebase-Projekt-ID `jobflow25`** + abgeleitete Auth-Domain/Bucket/Functions-URL – unveränderlich, produktiv gebunden, nicht nutzer-sichtbar.
-- **GitHub-Secret `FIREBASE_SERVICE_ACCOUNT_JobFlow`** – referenziert ein real konfiguriertes Secret.
-- **GitHub-Repo-Name `JobFlow`** (Clone-/Setup-Beispiele) – spiegelt den aktuellen Repo-Namen.
+- **Neues Firebase-Projekt `schichtklar`** angelegt; alle Deploy-/Projekt-Referenzen (`.firebaserc`, Workflows, Skripte) migriert. Web-Config gehört in `.env.local`/Hosting-ENV, nicht ins Repo.
+- **GitHub-Secret** auf `FIREBASE_SERVICE_ACCOUNT_SCHICHTKLAR` umgestellt – muss in den Repo-Settings mit einem Service-Account des neuen Projekts angelegt werden.
+- **GitHub-Repo-Name `JobFlow`** (Clone-/Setup-Beispiele) – spiegelt den aktuellen Repo-Namen; optional umbenennbar.
 
 ## 3. Manuelle Aufgaben außerhalb des Repositories
 
 1. **Finale Markenassets bereitstellen** (siehe Punkt 4).
 2. **Produktions-Domain + Support-E-Mail festlegen** und als ENV setzen (siehe Punkt 5) – u. a. `scripts/storage-cors.json` (CORS-Origins stehen auf Platzhalter `your-production-domain.example`).
-3. Optional: Firebase-Projekt und/oder GitHub-Repo/-Secret umbenennen (Migrationsanleitung in `docs/INFRASTRUCTURE_RENAMING.md`).
+3. **GitHub-Secret `FIREBASE_SERVICE_ACCOUNT_SCHICHTKLAR`** mit einem Service-Account des neuen Projekts `schichtklar` anlegen (Deploy-Workflow referenziert bereits diesen Namen). Details: `docs/INFRASTRUCTURE_RENAMING.md`.
 
 ## 4. Noch fehlende Markenassets
 

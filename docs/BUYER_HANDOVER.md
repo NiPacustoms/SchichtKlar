@@ -8,7 +8,7 @@ Praktische Checkliste für die technische Übergabe an einen Käufer. Ziel: der 
 
 | Asset | Empfehlung |
 |---|---|
-| **Firebase-/Google-Cloud-Projekt** (`jobflow25`) | Entweder Projekt-Ownership übertragen (IAM: neuen Owner hinzufügen, alten entfernen) **oder** neues Käufer-Projekt anlegen + Daten migrieren (siehe `INFRASTRUCTURE_RENAMING.md`). Empfehlung: **neues Projekt** für saubere Trennung. |
+| **Firebase-/Google-Cloud-Projekt** (`schichtklar`) | Entweder Projekt-Ownership übertragen (IAM: neuen Owner hinzufügen, alten entfernen) **oder** neues Käufer-Projekt anlegen + Daten migrieren (siehe `INFRASTRUCTURE_RENAMING.md`). Empfehlung: **neues Projekt** für saubere Trennung. |
 | **GitHub-Repository** | Repo-Transfer an Käufer-Org **oder** Fresh-Clone in neues Repo. Danach GitHub-Secrets neu setzen. |
 | **Domain** | Beim Registrar auf Käufer übertragen; DNS auf Firebase Hosting zeigen lassen. |
 | **E-Mail-Dienst** (Resend/SMTP) | Neues Käufer-Konto; API-Key/SMTP-Zugang neu erzeugen. |

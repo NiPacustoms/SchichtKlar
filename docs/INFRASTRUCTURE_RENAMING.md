@@ -1,52 +1,39 @@
-# Infrastruktur-Namen: bewusst beibehaltene JobFlow-Bezüge
+# Infrastruktur-Migration: JobFlow → Schichtklar
 
 **Stand:** 10.07.2026 · Branch `chore/rename-jobflow-to-schichtklar`
 
-Beim Rebrand JobFlow → Schichtklar wurden **sichtbare** Produktbezeichnungen vollständig ersetzt. Einige **technische Identifier** enthalten weiterhin „jobflow", weil ihre Änderung bestehende Infrastruktur, Deployments oder Authentifizierung beschädigen würde. Sie sind **für Endnutzer nicht sichtbar**. Diese Datei dokumentiert jeden dieser Fälle und wie ein Käufer sie migrieren kann.
+Der Rebrand ist **auch auf Infrastrukturebene vollzogen**: Ein neues Firebase-Projekt **`schichtklar`** wurde angelegt, und alle Deploy-/Projekt-Referenzen im Repository wurden vom alten Projekt `jobflow25` auf `schichtklar` umgestellt (Frischstart, keine Datenmigration – `jobflow25` war Test/Entwicklung).
 
-## 1. Firebase-Projekt-ID `jobflow25`
+## 1. Firebase-Projekt `schichtklar` (neu, aktiv)
 
-**Vorkommen:** `.firebaserc`, `.github/workflows/firebase-hosting.yml` (`--project jobflow25`), zahlreiche `scripts/*` (Setup/Deploy/Permissions), `.env.production.example` (Kommentare).
+**Umgestellt in:** `.firebaserc` (`default: schichtklar`), `.github/workflows/firebase-hosting.yml` und `configure-storage-cors.yml` (`--project schichtklar`), alle Infra-Skripte unter `scripts/`, `.env.production.example` (Kommentare).
 
-**Warum unverändert:** Eine Firebase-/GCP-Projekt-ID ist **unveränderlich**. An ihr hängen produktiv: Authentication-Nutzerkonten, Firestore-Daten, Storage-Bucket, Hosting-Site, Cloud Functions und alle Service-Account-Berechtigungen. „Umbenennen" ist technisch nur als **Anlegen eines neuen Projekts + vollständige Datenmigration** möglich.
+**Abgeleitete Werte (automatisch aus der Projekt-ID):**
+- Auth-Domain `schichtklar.firebaseapp.com`
+- Storage-Bucket `schichtklar.firebasestorage.app`
+- Functions-Basis-URL wird im Code dynamisch aus `NEXT_PUBLIC_FIREBASE_PROJECT_ID` gebildet (`us-central1-<projectId>.cloudfunctions.net`) – keine Hardcodes.
 
-**Nutzer-sichtbar:** Nein (erscheint nur in Netzwerk-Requests/CI-Logs).
+**Web-Config:** Die `NEXT_PUBLIC_FIREBASE_*`-Werte des neuen Projekts gehören in `.env.local` (lokal, gitignored) bzw. in die Hosting-Umgebungsvariablen – **nicht** ins Repository. Firebase-Web-API-Keys sind per Design öffentlich; Sicherheit über Firestore-/Storage-Rules.
 
-**Abgeleitete, ebenfalls gebundene Werte:**
-- Auth-Domain `jobflow25.firebaseapp.com`
-- Storage-Bucket `jobflow25.firebasestorage.app`
-- Functions-Basis-URL `https://us-central1-jobflow25.cloudfunctions.net`
+**Altes Projekt `jobflow25`:** war Test/Entwicklung, wird nicht weiter verwendet, keine Migration nötig. Kann in der Firebase-Konsole archiviert/gelöscht werden.
 
-**Migration für einen Käufer (optional, wenn ein eigenes Projekt gewünscht ist):**
-1. Neues Firebase-Projekt anlegen (z. B. `schichtklar-prod`), Region `europe-west1` beibehalten.
-2. `NEXT_PUBLIC_FIREBASE_*` (aus Projekt-Einstellungen), `.firebaserc` (`default`) und die `--project`-Flags in `.github/workflows/firebase-hosting.yml` + Skripten auf die neue ID setzen.
-3. Firestore/Storage per Managed Export/Import migrieren; Auth-Nutzer via `firebase auth:export`/`auth:import`.
-4. Firestore- und Storage-Rules sowie Indizes neu deployen.
-5. Custom Claims neu setzen (`scripts/sync-user-claims.js` / `sync-custom-claims.js`).
-6. Neuen Service-Account anlegen und als GitHub-Secret hinterlegen (siehe Punkt 2).
+## 2. ERFORDERLICHE manuelle Schritte in GitHub (für CI/CD-Deploy)
 
-**Risiko:** Hoch (Datenmigration). Ohne Käuferwunsch nach eigenem Projekt bleibt `jobflow25` bestehen.
+Damit der Deploy-Workflow gegen `schichtklar` läuft, muss **außerhalb des Repos** eingerichtet werden:
 
-## 2. GitHub-Actions-Secret-Name `FIREBASE_SERVICE_ACCOUNT_JobFlow`
-
-**Vorkommen:** `.github/workflows/firebase-hosting.yml`, `.github/workflows/configure-storage-cors.yml`, `scripts/README.md`, `scripts/setup-workload-identity.sh`.
-
-**Warum unverändert:** Der Name referenziert ein tatsächlich im GitHub-Repository konfiguriertes **Secret**. Eine Umbenennung im Code ohne gleichzeitige Umbenennung des Secrets in den Repo-Settings bricht das Deployment.
-
-**Migration (optional):** In GitHub → Settings → Secrets ein Secret `FIREBASE_SERVICE_ACCOUNT_SCHICHTKLAR` mit demselben Wert anlegen, dann die Workflow-Referenzen umstellen und das alte Secret entfernen. Rein kosmetisch, kein funktionaler Gewinn.
+1. **Service-Account** im Projekt `schichtklar` erstellen (Firebase-Konsole → Projekteinstellungen → Dienstkonten → neuen privaten Schlüssel generieren).
+2. Diesen als **GitHub-Secret `FIREBASE_SERVICE_ACCOUNT_SCHICHTKLAR`** hinterlegen (Repo → Settings → Secrets and variables → Actions). Der Workflow referenziert bereits diesen Namen.
+3. Ggf. weitere Secrets/Variablen setzen: `NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_ADMIN_CREDENTIALS_BASE64`, E-Mail-Zugang, Impressums-`NEXT_PUBLIC_COMPANY_*`.
+4. GitHub Actions reaktivieren (Repo-weit seit 31.05.2026 inaktiv – Settings → Actions / Billing).
 
 ## 3. GitHub-Repository-Name `JobFlow`
 
-**Vorkommen:** Beispiel-Prompts/Defaults in `scripts/setup-github-secrets.sh`, `scripts/setup-workload-identity.sh` (`REPO_NAME:-JobFlow`).
+**Vorkommen:** Beispiel-Prompts/Defaults in `scripts/setup-github-secrets.sh`, `scripts/setup-workload-identity.sh` (`REPO_NAME:-JobFlow`) und Clone-Beispiele in der README.
 
-**Warum unverändert:** Diese Werte spiegeln den **aktuellen echten Repo-Namen** (`NiPacustoms/JobFlow`) wider. Sie sind korrekt, solange das Repository nicht umbenannt wird.
-
-**Migration (optional):** Repository in GitHub umbenennen (Settings → Rename). GitHub richtet automatische Redirects ein. Danach die genannten Defaults auf `Schichtklar` setzen. Manuelle, nutzer-unsichtbare Aktion.
+**Status:** bewusst belassen – spiegelt den **aktuellen echten Repo-Namen** (`NiPacustoms/JobFlow`). Optional: Repository in GitHub umbenennen (Settings → Rename; automatische Redirects), danach diese Defaults auf `Schichtklar` setzen. Nutzer-unsichtbar.
 
 ## 4. Nicht betroffen (verifiziert)
 
-- **Firestore-Collections:** kein Collection-Name enthält „jobflow" (geprüft gegen `firestore.rules`). Keine Datenmigration nötig.
-- **Storage-Pfade:** `logos/**`, `documents/**` – kein Markenbezug.
-- **Custom Claims:** `role`, `companyId` – kein Markenbezug.
-- **Lokaler Emulator-Projektname** wurde von `jobflow-rules-test` auf `schichtklar-rules-test` geändert (rein lokal, keine Produktivdaten).
-- **IndexedDB-Cache** `JobFlowOffline` → `SchichtklarOffline` (nur clientseitiger Offline-Cache; da vor Launch keine echten Nutzer existieren, kein Datenverlust).
+- **Firestore-Collections / Storage-Pfade / Custom Claims:** kein Markenbezug, keine Datenmigration nötig.
+- **Lokaler Emulator-Projektname:** `schichtklar-rules-test` (rein lokal).
+- **IndexedDB-Cache:** `SchichtklarOffline` (clientseitiger Cache; Frischstart, kein Datenverlust).

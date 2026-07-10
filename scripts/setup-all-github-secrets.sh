@@ -137,10 +137,10 @@ main() {
     FIREBASERC_FILE=".firebaserc"
     if [ ! -f "$FIREBASERC_FILE" ]; then
         print_warning "$FIREBASERC_FILE nicht gefunden, verwende Standardwert"
-        FIREBASE_PROJECT_ID="jobflow25"
+        FIREBASE_PROJECT_ID="schichtklar"
     else
         # Extrahiere default Projekt-ID aus .firebaserc
-        FIREBASE_PROJECT_ID=$(grep -o '"default": "[^"]*"' "$FIREBASERC_FILE" | cut -d'"' -f4 || echo "jobflow25")
+        FIREBASE_PROJECT_ID=$(grep -o '"default": "[^"]*"' "$FIREBASERC_FILE" | cut -d'"' -f4 || echo "schichtklar")
         print_info "Firebase Projekt-ID aus .firebaserc: $FIREBASE_PROJECT_ID"
     fi
     

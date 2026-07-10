@@ -40,7 +40,7 @@ try {
   console.log('\n✅ Firestore indexes deployed successfully!');
   console.log('\n📝 Note: Index creation may take a few minutes to complete.');
   console.log('   You can monitor the progress in the Firebase Console:');
-  console.log('   https://console.firebase.google.com/project/jobflow25/firestore/indexes');
+  console.log('   https://console.firebase.google.com/project/schichtklar/firestore/indexes');
 } catch (error) {
   console.error('\n❌ Failed to deploy indexes:', error.message);
   console.error('\n🔧 Manual setup required:');

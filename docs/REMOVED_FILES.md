@@ -22,7 +22,7 @@ Jede Entfernung wurde vor der Löschung per Referenzsuche (Imports, `package.jso
 | Datei | Änderung | Grund |
 |---|---|---|
 | `.npmrc` | Auskommentierten persönlichen Cache-Pfad (`/Users/<name>/.npm`) entfernt | persönlicher Entwicklerpfad |
-| `scripts/sync-custom-claims.js` | Persönlichen Key-Pfad (`/Users/<name>/.keys/jobflow25-admin.json`) durch `GOOGLE_APPLICATION_CREDENTIALS`-ENV + generische Pfade ersetzt | persönlicher Pfad + Verkäufer-Projektbezug |
+| `scripts/sync-custom-claims.js` | Persönlichen Key-Pfad (`/Users/<name>/.keys/schichtklar-admin.json`) durch `GOOGLE_APPLICATION_CREDENTIALS`-ENV + generische Pfade ersetzt | persönlicher Pfad + Verkäufer-Projektbezug |
 | `.cursor/README-WORKTREE.md`, `.cursor/worktree-prompt.md` | 8 persönliche Pfade → `<pfad-zum-repo>/JobFlow` | persönliche Entwicklerpfade |
 | `docs/DEPENDENCY_CHECK_REPORT.md`, `docs/DEPENDENCY_MAINTENANCE_PLAN.md`, `docs/FEHLERANALYSE.md` | 7 persönliche Pfade → `<pfad-zum-repo>/JobFlow` | persönliche Entwicklerpfade |
 | `scripts/sync-user-claims.js`, `scripts/setup-github-secrets.sh` | persönlichen Key-Pfad entfernt bzw. Beispiel-Username neutralisiert | persönliche Bezüge |
