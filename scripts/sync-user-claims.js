@@ -35,7 +35,6 @@ if (!userId && !syncAll && !findMissing) {
 const possiblePaths = [
   path.join(__dirname, '../.keys/jobflow25-admin.json'),
   path.join(process.env.HOME || process.env.USERPROFILE || '', '.keys/jobflow25-admin.json'),
-  '/Users/patrickschmidt/.keys/jobflow25-admin.json',
 ];
 
 let serviceAccountPath = null;

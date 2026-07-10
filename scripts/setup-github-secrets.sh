@@ -81,7 +81,7 @@ get_repo_info() {
         # Falls immer noch leer, interaktiv abfragen
         if [ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ]; then
             echo ""
-            read -p "GitHub Repository Owner (z.B. patrickschmidt): " REPO_OWNER
+            read -p "GitHub Repository Owner (z.B. mein-github-user): " REPO_OWNER
             read -p "GitHub Repository Name (z.B. JobFlow): " REPO_NAME
         fi
     fi

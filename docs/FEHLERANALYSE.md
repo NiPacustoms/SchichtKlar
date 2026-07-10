@@ -21,7 +21,7 @@
 **Lösung:**
 
 ```bash
-cd /Users/patrickschmidt/Desktop/Apps/JobFlow
+cd <pfad-zum-repo>/JobFlow
 npm install
 ```
 

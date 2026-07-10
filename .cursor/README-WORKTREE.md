@@ -11,7 +11,7 @@ Jeder Agent hat seine eigene Prompt-Datei im `.cursor/` Verzeichnis:
 ## 📁 Worktree erstellen
 
 ```bash
-cd /Users/patrickschmidt/Desktop/Apps/JobFlow
+cd <pfad-zum-repo>/JobFlow
 
 # Agent 1 Worktree
 git worktree add ../JobFlow-agent1 agent1-mui-grid-fixes
@@ -19,13 +19,13 @@ cd ../JobFlow-agent1
 cat .cursor/AGENT1-PROMPT.md
 
 # Agent 2 Worktree
-cd /Users/patrickschmidt/Desktop/Apps/JobFlow
+cd <pfad-zum-repo>/JobFlow
 git worktree add ../JobFlow-agent2 agent2-api-routes-fixes
 cd ../JobFlow-agent2
 cat .cursor/AGENT2-PROMPT.md
 
 # Agent 3 Worktree
-cd /Users/patrickschmidt/Desktop/Apps/JobFlow
+cd <pfad-zum-repo>/JobFlow
 git worktree add ../JobFlow-agent3 agent3-type-system-fixes
 cd ../JobFlow-agent3
 cat .cursor/AGENT3-PROMPT.md
@@ -75,7 +75,7 @@ git commit -m "Agent1: Grid-Komponenten-Fehler behoben"
 Nach Abschluss aller drei Agenten:
 
 ```bash
-cd /Users/patrickschmidt/Desktop/Apps/JobFlow
+cd <pfad-zum-repo>/JobFlow
 
 # Alle Branches mergen
 git checkout main
