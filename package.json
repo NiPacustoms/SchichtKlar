@@ -54,7 +54,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "generate:domain": "node scripts/generate-domain.js",
-    "test:rules": "firebase emulators:exec --only firestore --project jobflow-rules-test \"node tests/rules/firestore-rules.test.mjs\""
+    "test:rules": "firebase emulators:exec --only firestore --project jobflow-rules-test \"node tests/rules/firestore-rules.test.mjs && node tests/rules/firestore-escalation.test.mjs\""
   },
   "dependencies": {
     "@babel/runtime": "^7.28.6",
@@ -78,7 +78,7 @@
     "firebase-admin": "^12.7.0",
     "html2canvas": "^1.4.1",
     "isomorphic-dompurify": "^2.11.0",
-    "jspdf": "^4.1.0",
+    "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.2",
     "lodash": "^4.17.21",
     "nanoid": "^5.1.6",

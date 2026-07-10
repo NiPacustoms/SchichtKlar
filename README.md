@@ -67,7 +67,7 @@ Konfiguration: `firebase.json` nutzt `frameworksBackend` (Region `europe-west1`)
   - `firebase.json` `frameworksBackend.region=europe-west1`
   - Build erfolgreich: `npm run build`
 - Monitoring & Logs
-  - `NEXT_PUBLIC_SECURITY_WEBHOOK_URL`/`SECURITY_WEBHOOK_URL` gesetzt (optional)
+  - `SECURITY_WEBHOOK_URL` gesetzt (optional, nur serverseitig)
   - Error-Tracking/Analytics (optional) konfiguriert
 - Backups & Recovery (optional)
   - Firestore/Storage Backup-Strategie dokumentiert
