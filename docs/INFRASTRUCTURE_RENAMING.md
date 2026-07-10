@@ -29,11 +29,13 @@ Die CLIs (`gcloud` 530.x, `firebase-tools` 15.23) sind im Arbeitscontainer per O
 | Firestore-Rules | ✅ deployt | gehärtete `firestore.rules` (inkl. Eskalations-Sperre) live |
 | Firestore-Indexes | ✅ deployt | `firestore.indexes.json` vollständig |
 | Auth-API | ✅ aktiviert | `identitytoolkit.googleapis.com` |
-| Storage-Rules | ⛔ blockiert | Default-Bucket (`*.firebasestorage.app`) erfordert auf neuen Projekten den **Blaze-Plan**; Billing ist deaktiviert → erst Upgrade, dann Konsole „Storage → Get Started", dann `firebase deploy --only storage` |
-| Cloud Functions | ⛔ blockiert | Deployment erfordert ebenfalls Blaze (Cloud Build/Artifact Registry) |
-| Hosting | ⏳ offen | API aktiviert; Deploy erst nach GitHub-Secret-Einrichtung (Abschnitt 2) oder manuell per CLI |
+| Billing | ✅ Blaze | Pay-as-you-go vom Eigentümer aktiviert (10.07.2026) |
+| Storage-Bucket | ✅ angelegt | `schichtklar.firebasestorage.app`, **europe-west1** (per REST-API provisioniert) |
+| Storage-Rules | ✅ deployt | gehärtete `storage.rules` (Logo-Write admin-only) live |
+| Cloud Functions | ✅ deployt | **37 Functions** live (Callables/HTTP in `us-central1`, Firestore-Trigger in `europe-west1`), inkl. aller Cloud-Scheduler-Jobs. Vorab nötig: `roles/cloudbuild.builds.builder` für den Default-Compute-SA + Eventarc-/Pub-Sub-Service-Agents (neue GCP-Projekt-Defaults vergeben das nicht mehr automatisch). |
+| Hosting | ⏳ offen | API aktiviert; Deploy erst nach GitHub-Secret-Einrichtung (Abschnitt 2) oder manuell per CLI. Domain: Wix-Subdomain geplant (Festlegung am Projektende). |
 
-**Konsequenz:** Auth + Firestore (Kern der App) sind produktionsbereit abgesichert. Dokument-Uploads (Storage) und die serverseitigen Functions (Benachrichtigungen, Timesheet-Schutz, Wochenlimit) benötigen das Blaze-Upgrade — eine Zahlungsentscheidung des Eigentümers, kein technisches Hindernis.
+**Konsequenz:** Das komplette Firebase-Backend (Auth, Firestore, Storage, Functions, Scheduler) ist produktionsbereit provisioniert und mit den gehärteten Rules abgesichert. Offen sind nur noch Hosting-Deploy, Domain und Impressumsdaten (bewusst ans Projektende gestellt).
 
 ## 2. ERFORDERLICHE manuelle Schritte in GitHub (für CI/CD-Deploy)
 

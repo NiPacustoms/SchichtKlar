@@ -13,7 +13,7 @@ Ehrliche Auflistung aller bekannten Einschränkungen, offenen Entscheidungen und
 | A3 | **Produktions-Domain & CORS** | Domain + Support-E-Mail festlegen; `scripts/storage-cors.json` (Platzhalter `your-production-domain.example`) auf echte Origin setzen und via `npm run storage:cors` anwenden. |
 | A4 | **AVV mit Google Cloud** | Auftragsverarbeitungsvertrag abschließen; Region `europe-west1` ist bereits gesetzt. |
 | A5 | **GitHub Actions reaktivieren** | Repo-weit seit 31.05.2026 keine Workflow-Runs (Settings → Actions / Billing prüfen). Ohne CI kein automatisches Sicherheitsnetz. |
-| A6 | **Blaze-Plan für Storage & Functions** | Projekt `schichtklar` läuft auf Spark (Billing deaktiviert). Firestore + Auth + Rules sind provisioniert und live (siehe `INFRASTRUCTURE_RENAMING.md` §1a), aber der Storage-Default-Bucket und das Functions-Deployment erfordern auf neuen Projekten den Blaze-Plan. Ohne Upgrade: keine Dokument-Uploads, keine serverseitigen Benachrichtigungen/Timesheet-Schutz-Functions. |
+| A6 | ~~Blaze-Plan für Storage & Functions~~ **ERLEDIGT** | Blaze aktiviert (10.07.2026). Storage-Bucket (`europe-west1`) provisioniert, Storage-Rules deployt, alle **37 Cloud Functions** inkl. Scheduler-Jobs live. Vollständiger Stand: `INFRASTRUCTURE_RENAMING.md` §1a. |
 
 ## B. Vor Produktivbetrieb empfohlen
 
