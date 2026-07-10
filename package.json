@@ -126,6 +126,7 @@
     "eslint-config-prettier": "^9.1.0",
     "firebase": "^12.6.0",
     "firebase-tools": "^15.22.4",
+    "pdfjs-dist": "^4.10.38",
     "prettier": "^3.8.1",
     "source-map-js": "^1.2.1",
     "storybook": "^8.4.0",

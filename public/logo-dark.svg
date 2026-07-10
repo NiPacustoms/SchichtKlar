@@ -24,5 +24,5 @@
     <rect x="50" y="50" width="40" height="40" rx="12" fill="#263250"/>
   </g>
   <text x="112" y="63" font-family="Inter, 'Inter SemiBold', system-ui, sans-serif" font-weight="600"
-        font-size="46" letter-spacing="-1" fill="#263250">Schichtklar</text>
+        font-size="46" letter-spacing="-1" fill="#fafaf9">Schichtklar</text>
 </svg>

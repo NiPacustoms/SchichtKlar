@@ -1,4 +1,12 @@
 import { firebaseStorageService } from '@/lib/services/firebaseStorage';
+import {
+  drawFooters,
+  drawLetterhead,
+  kvLine,
+  sectionTitle,
+  PDF_COLORS,
+  PDF_MARGIN,
+} from '@/lib/services/pdf/brandedPdf';
 
 export interface DailyProofInput {
   timesheet: {
@@ -32,111 +40,92 @@ async function fetchAsDataUrl(url: string): Promise<string> {
 export const timesheetProofService = {
   async generateDailyProofPDF(input: DailyProofInput): Promise<{ url: string; path: string }> {
     const { default: jsPDF } = await import('jspdf');
-    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const doc = new jsPDF(); // mm, A4
 
-    const margin = 40;
-    let y = margin;
-
-    // Header
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.text('Tagesnachweis – Einrichtung', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    y += 18;
-    doc.text(`Erstellt am: ${new Date().toLocaleString('de-DE')}`, margin, y);
-    y += 14;
-
-    // Mitarbeiter / Einrichtung
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Angaben', margin, y);
-    doc.setFont('helvetica', 'normal');
-    y += 16;
-    const lines: Array<[string, string]> = [
-      ['Mitarbeiter', `${input.employee.name || input.employee.id} (${input.employee.email || ''})`],
-      ['Einrichtung', `${input.facility?.name || '-'}${input.facility?.address ? ' – ' + input.facility.address : ''}`],
-      ['Datum', new Date(input.timesheet.date).toLocaleDateString('de-DE')],
-    ];
-    lines.forEach(([label, value]) => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${label}:`, margin, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(String(value || ''), margin + 120, y);
-      y += 14;
+    const margin = PDF_MARGIN;
+    let y = await drawLetterhead(doc, {
+      title: 'Tagesnachweis – Einrichtung',
+      subtitle: `Einsatz am ${new Date(input.timesheet.date).toLocaleDateString('de-DE')}`,
     });
 
-    y += 6;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Arbeitszeiten', margin, y);
-    doc.setFont('helvetica', 'normal');
-    y += 16;
-    const timeRows: Array<[string, string]> = [
-      ['Start', input.timesheet.startTime || '-'],
-      ['Ende', input.timesheet.endTime || '-'],
-      ['Pause (Min)', String(input.timesheet.breakMinutes ?? 0)],
-      ['Gesamt (Std.)', String(input.timesheet.totalHours ?? 0)],
-    ];
-    timeRows.forEach(([label, value]) => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${label}:`, margin, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(String(value || ''), margin + 120, y);
-      y += 14;
-    });
+    // Angaben
+    y = sectionTitle(doc, y, 'Angaben');
+    y = kvLine(doc, y, 'Mitarbeiter/in', `${input.employee.name || input.employee.id}${input.employee.email ? ` (${input.employee.email})` : ''}`);
+    y = kvLine(doc, y, 'Einrichtung', `${input.facility?.name || '–'}${input.facility?.address ? ' · ' + input.facility.address : ''}`);
+    y = kvLine(doc, y, 'Datum', new Date(input.timesheet.date).toLocaleDateString('de-DE'));
+
+    // Arbeitszeiten
+    y += 4;
+    y = sectionTitle(doc, y, 'Arbeitszeiten');
+    y = kvLine(doc, y, 'Start', input.timesheet.startTime || '–');
+    y = kvLine(doc, y, 'Ende', input.timesheet.endTime || '–');
+    y = kvLine(doc, y, 'Pause', `${input.timesheet.breakMinutes ?? 0} Min`);
+    y = kvLine(doc, y, 'Gesamt', `${input.timesheet.totalHours ?? 0} h`);
 
     if (input.timesheet.notes) {
-      y += 10;
-      doc.setFont('helvetica', 'bold');
-      doc.text('Notizen:', margin, y);
+      y += 4;
+      y = sectionTitle(doc, y, 'Notizen');
       doc.setFont('helvetica', 'normal');
-      y += 14;
-      const split = doc.splitTextToSize(input.timesheet.notes, 515);
+      doc.setFontSize(10);
+      const split = doc.splitTextToSize(input.timesheet.notes, 210 - 2 * margin);
       doc.text(split, margin, y);
-      y += split.length * 12 + 6;
+      y += split.length * 5 + 4;
     }
 
     // Bestätigung Einrichtung
-    y += 8;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Bestätigung der Einrichtung', margin, y);
-    y += 16;
-    doc.setFont('helvetica', 'normal');
+    y += 4;
+    y = sectionTitle(doc, y, 'Bestätigung der Einrichtung');
     const statusMap: Record<string, string> = {
       performed: 'Dienst geleistet',
       aborted: 'Abgebrochen',
       'no-show': 'Nicht angetreten',
     };
-    const statusText = input.timesheet.facilityConfirmationStatus ? statusMap[input.timesheet.facilityConfirmationStatus] : '-';
-    doc.text(`Status: ${statusText}`, margin, y);
-    y += 14;
-    doc.text(`Name der unterzeichnenden Person: ${input.timesheet.facilitySignerName || '-'}`, margin, y);
-    y += 14;
-    doc.text(`Unterschrieben am: ${input.timesheet.facilitySignedAt ? new Date(input.timesheet.facilitySignedAt).toLocaleString('de-DE') : '-'}`, margin, y);
-    y += 16;
+    const statusText = input.timesheet.facilityConfirmationStatus
+      ? statusMap[input.timesheet.facilityConfirmationStatus]
+      : '–';
+    y = kvLine(doc, y, 'Status', statusText);
+    y = kvLine(doc, y, 'Unterzeichnet von', input.timesheet.facilitySignerName || '–');
+    y = kvLine(
+      doc,
+      y,
+      'Unterschrieben am',
+      input.timesheet.facilitySignedAt
+        ? new Date(input.timesheet.facilitySignedAt).toLocaleString('de-DE')
+        : '–'
+    );
 
+    y += 2;
     if (input.timesheet.facilitySignatureUrl) {
       try {
         const dataUrl = await fetchAsDataUrl(input.timesheet.facilitySignatureUrl);
-        const imgWidth = 220; // px in pt bei 72dpi passt gut
-        const imgHeight = 90;
-        doc.text('Unterschrift:', margin, y);
-        doc.addImage(dataUrl, 'PNG', margin + 100, y - 12, imgWidth, imgHeight);
-        y += imgHeight + 8;
+        doc.addImage(dataUrl, 'PNG', margin, y, 66, 27);
+        y += 29;
+        doc.setDrawColor(...PDF_COLORS.grayLight);
+        doc.setLineWidth(0.3);
+        doc.line(margin, y, margin + 70, y);
+        doc.setFontSize(8.5);
+        doc.setTextColor(...PDF_COLORS.gray);
+        doc.text('Unterschrift der Einrichtung', margin, y + 4.5);
+        doc.setTextColor(...PDF_COLORS.ink);
+        y += 10;
       } catch {
-        doc.text('Unterschrift: [Bild konnte nicht geladen werden]', margin, y);
-        y += 14;
+        y = kvLine(doc, y, 'Unterschrift', '[Bild konnte nicht geladen werden]');
       }
     } else {
-      doc.text('Unterschrift: –', margin, y);
-      y += 14;
+      y = kvLine(doc, y, 'Unterschrift', '–');
     }
 
-    // Footer
-    y = 800;
-    doc.setFontSize(8);
-    doc.setTextColor(120);
-    doc.text(`Timesheet-ID: ${input.timesheet.id} • Mitarbeiter: ${input.employee.id} • Generiert von Schichtklar`, margin, y);
+    // Referenz klein am Ende des Inhalts
+    doc.setFontSize(7.5);
+    doc.setTextColor(...PDF_COLORS.gray);
+    doc.text(
+      `Referenz: ${input.timesheet.id} · Mitarbeiter-ID: ${input.employee.id}`,
+      margin,
+      272
+    );
+    doc.setTextColor(...PDF_COLORS.ink);
+
+    drawFooters(doc);
 
     const pdfBytes = doc.output('arraybuffer');
     const file = new File([new Uint8Array(pdfBytes)], `tagesnachweis_${input.timesheet.id}.pdf`, { type: 'application/pdf' });
@@ -149,5 +138,3 @@ export const timesheetProofService = {
     return { url: upload.url, path: upload.path };
   },
 };
-
-
