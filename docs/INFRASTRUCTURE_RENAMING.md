@@ -32,10 +32,10 @@ Die CLIs (`gcloud` 530.x, `firebase-tools` 15.23) sind im Arbeitscontainer per O
 | Billing | ✅ Blaze | Pay-as-you-go vom Eigentümer aktiviert (10.07.2026) |
 | Storage-Bucket | ✅ angelegt | `schichtklar.firebasestorage.app`, **europe-west1** (per REST-API provisioniert) |
 | Storage-Rules | ✅ deployt | gehärtete `storage.rules` (Logo-Write admin-only) live |
-| Cloud Functions | ✅ deployt | **37 Functions** live (Callables/HTTP in `us-central1`, Firestore-Trigger in `europe-west1`), inkl. aller Cloud-Scheduler-Jobs. Vorab nötig: `roles/cloudbuild.builds.builder` für den Default-Compute-SA + Eventarc-/Pub-Sub-Service-Agents (neue GCP-Projekt-Defaults vergeben das nicht mehr automatisch). |
-| Hosting | ⏳ offen | API aktiviert; Deploy erst nach GitHub-Secret-Einrichtung (Abschnitt 2) oder manuell per CLI. Domain: Wix-Subdomain geplant (Festlegung am Projektende). |
+| Cloud Functions | ✅ deployt | **37 Functions** live (Callables/HTTP in `us-central1`, Firestore-Trigger in `europe-west1`), inkl. aller Cloud-Scheduler-Jobs, **Runtime Node.js 22**. Laufzeit-Env (App-URLs, `INVITATION_EMAIL_SECRET`) via gitignorter `functions/.env.schichtklar` gesetzt. Vorab nötig: `roles/cloudbuild.builds.builder` für den Default-Compute-SA + Eventarc-/Pub-Sub-Service-Agents (neue GCP-Projekt-Defaults vergeben das nicht mehr automatisch). |
+| Hosting | ✅ live | **https://schichtklar.web.app** — Next.js per webframeworks-Deploy, SSR-Backend `ssrschichtklar` in `europe-west1`. Als **Staging** markiert (`NEXT_PUBLIC_APP_ENV=development`), bis echte Impressumsdaten vorliegen; Server-API-Routen nutzen automatische Runtime-Credentials (ADC) — **kein Service-Account-Key nötig**. Domain: Wix-Subdomain folgt am Projektende. |
 
-**Konsequenz:** Das komplette Firebase-Backend (Auth, Firestore, Storage, Functions, Scheduler) ist produktionsbereit provisioniert und mit den gehärteten Rules abgesichert. Offen sind nur noch Hosting-Deploy, Domain und Impressumsdaten (bewusst ans Projektende gestellt).
+**Konsequenz:** Das komplette Firebase-Backend (Auth, Firestore, Storage, Functions, Scheduler, Hosting) ist provisioniert, mit den gehärteten Rules abgesichert und die App ist unter der Staging-URL lauffähig. Offen sind nur noch Domain (Wix-Subdomain), Impressumsdaten und E-Mail-Anbieter (SMTP/Resend) — bewusst ans Projektende gestellt.
 
 ## 2. ERFORDERLICHE manuelle Schritte in GitHub (für CI/CD-Deploy)
 
