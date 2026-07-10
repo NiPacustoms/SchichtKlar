@@ -28,7 +28,7 @@ Die CLIs (`gcloud` 530.x, `firebase-tools` 15.23) sind im Arbeitscontainer per O
 | Firestore-DB | ✅ angelegt | `(default)`, **europe-west1**, Native-Modus (Standort permanent, passt zu `firebase.json`/Functions) |
 | Firestore-Rules | ✅ deployt | gehärtete `firestore.rules` (inkl. Eskalations-Sperre) live |
 | Firestore-Indexes | ✅ deployt | `firestore.indexes.json` vollständig |
-| Auth-API | ✅ aktiviert | `identitytoolkit.googleapis.com` |
+| Auth | ✅ initialisiert | `identitytoolkit.googleapis.com` aktiviert, Auth-Config per API initialisiert, **E-Mail/Passwort-Provider aktiv** (autorisierte Domains: Standard; Wix-Subdomain wird am Projektende ergänzt) |
 | Billing | ✅ Blaze | Pay-as-you-go vom Eigentümer aktiviert (10.07.2026) |
 | Storage-Bucket | ✅ angelegt | `schichtklar.firebasestorage.app`, **europe-west1** (per REST-API provisioniert) |
 | Storage-Rules | ✅ deployt | gehärtete `storage.rules` (Logo-Write admin-only) live |
