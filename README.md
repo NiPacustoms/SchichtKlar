@@ -1,4 +1,4 @@
-# JobFlow - Zeitarbeits-App für medizinisches Personal
+# SchichtKlar - Zeitarbeits-App für medizinisches Personal
 
 ## Deployment & Emulator
 
