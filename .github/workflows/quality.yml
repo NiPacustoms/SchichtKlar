@@ -26,5 +26,7 @@ jobs:
         run: npx eslint . --quiet --rule '@typescript-eslint/no-explicit-any:off' --rule 'react/no-unescaped-entities:off' --rule 'no-empty:off' --rule 'react/jsx-key:off' --rule 'no-unreachable:off' --rule 'no-useless-escape:off'
       - name: Typecheck (CI)
         run: npm run typecheck:ci
+      - name: Unit Tests
+        run: npm run test:unit
       - name: Static Scan
         run: node scripts/static-scan.js

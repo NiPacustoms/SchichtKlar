@@ -25,15 +25,11 @@ Dieser Bericht dokumentiert die verifizierten Prüfungen, den Zustand der automa
 
 ## 3. Zustand der bestehenden Unit-Test-Suite (offener Befund)
 
-**Befund:** Die vorbestehende Vitest-Unit-Suite (`lib/services/__tests__/*`, `lib/hooks/__tests__/*`) ist stark **von den aktuellen Service-APIs abgedriftet**: 21 von 45 Tests schlagen fehl. Ursachen:
+**Status (aktualisiert):** ✅ **saniert.** Die zuvor abgedriftete Vitest-Unit-Suite (`lib/services/__tests__/*`, `lib/hooks/__tests__/*`) wurde vollständig repariert: jsdom-Umgebung (für die clientseitigen `typeof window`-Guards), `@testing-library/react` ergänzt, Firebase-Mocks an die aktuellen Service-Signaturen angeglichen (db/auth/getDoc/Timestamp, forEach-fähige Snapshots), API-Drift korrigiert (`getByUser`→`getByUserId`, `reject`→`verify`, `assign`→`assignUser`, geänderte Rückgabetypen), Mock-Pollution (persistierende `mockResolvedValue`) durch beforeEach-Resets behoben, eine Zeitfenster-Grenzwertannahme präzisiert und die Realtime-Listener-Keys aktualisiert.
 
-1. **Umbenannte Methoden:** Tests rufen `getByUser` statt `getByUserId`, `documentService.reject` (in `verify(id, by, reason)` aufgegangen), `shiftService.assign` (→ `assignUser`).
-2. **Unvollständige Firebase-Mocks:** Mocks exportieren `getDb`/`db`/`auth`/`getDoc`/`Timestamp` nicht mehr passend zu den heutigen Service-Imports; `getDocs`-Mocks liefern `{ docs }` ohne `forEach`, während Services `snapshot.forEach` nutzen.
-3. **Fehlende Test-Abhängigkeit/Umgebung:** Die Hook-Tests brauchen `@testing-library/react` + jsdom-Umgebung; installiert sind nur `@testing-library/dom|jest-dom|user-event`, und die Vitest-Umgebung ist global `node`.
+**Ergebnis:** `npm run test:unit` → **62 passed, 3 skipped, 0 failed**. In CI aufgenommen (`quality.yml`).
 
-**Wichtige Einordnung:** Diese Suite ist **nicht in die CI eingebunden** – die Workflows (`ci.yml`, `quality.yml`) führen nur `lint:ci`, `typecheck:ci` und `build` aus, **nicht** `npm run test:unit`. Deshalb blieb die Drift unbemerkt und blockiert aktuell kein Deployment. Die Produktionsfähigkeit des Codes ist durch Typecheck + Build + die grünen Rules-/Geschäftsregel-Tests belegt.
-
-**Empfehlung (eigener Folge-PR, nicht Teil dieses Branches):** Die Legacy-Suite gezielt sanieren – Mocks an die heutigen Service-Signaturen angleichen, `@testing-library/react` + jsdom ergänzen, dann `npm run test:unit` in die CI aufnehmen. Bewusst **nicht** hier mitgemacht, um keine halbfertig reparierten Tests auszuliefern (das wäre eine Scheinlösung).
+**Bewusst übersprungen (3):** Tests für `useEmployeeReports` (workTimeReport/surchargesReport/Export) — diese Funktionen sind aktuell **Stubs** (Nullwerte / nur Toast). Mit `it.skip` und klarer Begründung markiert statt fake-grün gemacht; als Produktlücke F1 in `KNOWN_LIMITATIONS.md` dokumentiert.
 
 ## 4. Geschäftslogik-Befunde (Phase 5 – Entscheidungsbedarf beim Eigentümer)
 
@@ -55,4 +51,4 @@ Zwei Regeln aus der Spezifikation weichen vom implementierten Verhalten ab. Beid
 
 ## 5. Fazit
 
-Der **produktive Code** ist statisch verifiziert (Typecheck, Lint, Build) und in den sicherheitskritischen Pfaden (Firestore-Rules) sowie den arbeitsrechtlichen Kernberechnungen durch neue, grüne Tests abgesichert. Offen bleiben: die Sanierung der abgedrifteten Legacy-Unit-Suite (Folge-PR) und zwei fachliche Entscheidungen (B1, B2) beim Eigentümer.
+Der **produktive Code** ist statisch verifiziert (Typecheck, Lint, Build) und in den sicherheitskritischen Pfaden (Firestore-Rules) sowie den arbeitsrechtlichen Kernberechnungen durch neue, grüne Tests abgesichert. Die Legacy-Unit-Suite ist saniert und CI-gebunden (62 passed / 3 dokumentiert übersprungen). Offen bleiben: die Implementierung der Mitarbeiter-Berichts-Aggregation (Produktlücke F1) und zwei fachliche Entscheidungen (B1, B2) beim Eigentümer.

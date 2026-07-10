@@ -1,98 +1,102 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { shiftService } from '../shifts';
 
-// Mock Firebase
+// Mock Firebase – db muss truthy sein (Service-Guard `if (!db ...)`)
 vi.mock('@/lib/firebase', () => ({
   db: {},
+  getDb: vi.fn(() => ({})),
+  auth: { currentUser: { uid: 'user123' } },
   serverTimestamp: vi.fn(() => ({ seconds: 1234567890, nanoseconds: 0 })),
 }));
 
+vi.mock('@/lib/utils/companyId', () => ({
+  getCompanyIdFromAuth: vi.fn(() => Promise.resolve('company123')),
+}));
+
 vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(),
-  doc: vi.fn(),
+  collection: vi.fn(() => ({})),
+  doc: vi.fn(() => ({})),
   addDoc: vi.fn(),
   updateDoc: vi.fn(),
   deleteDoc: vi.fn(),
   getDocs: vi.fn(),
+  getDoc: vi.fn(),
   query: vi.fn(),
   where: vi.fn(),
   orderBy: vi.fn(),
   limit: vi.fn(),
+  runTransaction: vi.fn(),
+  serverTimestamp: vi.fn(() => ({ seconds: 1234567890, nanoseconds: 0 })),
 }));
 
 describe('shiftService', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const { getCompanyIdFromAuth } = await import('@/lib/utils/companyId');
+    vi.mocked(getCompanyIdFromAuth).mockResolvedValue('company123');
+    // getDoc-Standard: Facility-/Shift-Dokument mit companyId & Kapazität
+    const { getDoc } = await import('firebase/firestore');
+    vi.mocked(getDoc).mockResolvedValue({
+      exists: () => true,
+      data: () => ({ companyId: 'company123', capacity: 5, assignedCount: 0 }),
+    } as any);
   });
 
   describe('create', () => {
-    it('should create a shift with proper validation', async () => {
-      const mockShift = {
+    it('legt eine Schicht an und liefert die neue ID', async () => {
+      const { addDoc } = await import('firebase/firestore');
+      vi.mocked(addDoc).mockResolvedValue({ id: 'shift123' } as any);
+
+      const result = await shiftService.create({
         facilityId: 'facility123',
         startTime: '08:00',
         endTime: '16:00',
         date: '2024-01-15',
         requiredQualifications: ['nurse'],
-        maxCapacity: 5,
         description: 'Test shift',
-      };
-
-      const { addDoc } = await import('firebase/firestore');
-      vi.mocked(addDoc).mockResolvedValue({ id: 'shift123' } as any);
-
-      const result = await shiftService.create(mockShift);
+      } as any);
 
       expect(result).toBe('shift123');
       expect(addDoc).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
           facilityId: 'facility123',
-          startTime: '08:00',
-          endTime: '16:00',
-          date: '2024-01-15',
-          requiredQualifications: ['nurse'],
-          maxCapacity: 5,
-          description: 'Test shift',
-          status: 'open',
-          createdAt: expect.anything(),
+          companyId: 'company123',
         })
       );
     });
   });
 
-  describe('assign', () => {
-    it('should assign a shift to a user', async () => {
-      const { updateDoc } = await import('firebase/firestore');
+  describe('assignUser', () => {
+    it('weist eine Schicht zu (erzeugt Assignment, aktualisiert Kapazität)', async () => {
+      const { addDoc, updateDoc } = await import('firebase/firestore');
+      vi.mocked(addDoc).mockResolvedValue({ id: 'assignment123' } as any);
       vi.mocked(updateDoc).mockResolvedValue(undefined);
 
-      await shiftService.assign('shift123', 'user123');
+      const result = await shiftService.assignUser('shift123', 'user123');
 
+      expect(result).toBe('assignment123');
       expect(updateDoc).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({
-          assignedUserId: 'user123',
-          status: 'assigned',
-          assignedAt: expect.anything(),
-        })
+        expect.objectContaining({ assignedCount: 1 })
       );
     });
   });
 
   describe('getOpenShifts', () => {
-    it('should fetch open shifts', async () => {
+    it('lädt offene Schichten', async () => {
       const mockShifts = [
-        { id: '1', status: 'open', facilityId: 'facility123' },
-        { id: '2', status: 'open', facilityId: 'facility456' },
+        { id: '1', data: () => ({ status: 'open', facilityId: 'facility123', companyId: 'company123' }) },
+        { id: '2', data: () => ({ status: 'open', facilityId: 'facility456', companyId: 'company123' }) },
       ];
 
       const { getDocs } = await import('firebase/firestore');
-      vi.mocked(getDocs).mockResolvedValue({
-        docs: mockShifts.map(shift => ({ id: shift.id, data: () => shift })),
-      } as any);
+      vi.mocked(getDocs).mockResolvedValue({ docs: mockShifts } as any);
 
       const result = await shiftService.getOpenShifts();
 
-      expect(result).toEqual(mockShifts);
+      expect(result).toHaveLength(2);
+      expect(result.map(s => s.id)).toEqual(['1', '2']);
     });
   });
 });

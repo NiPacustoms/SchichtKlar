@@ -1,10 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { facilityService } from '../facilities';
 
-// Mock Firebase
+// Mock Firebase – db muss truthy sein (Service-Guard `if (!db ...)`)
 vi.mock('@/lib/firebase', () => ({
+  db: {},
   getDb: vi.fn(() => ({})),
+  auth: { currentUser: { uid: 'user123' } },
 }));
+
+// Firestore-Snapshot mit forEach (Services iterieren via snapshot.forEach)
+const snap = (docs: unknown[]) => ({
+  docs,
+  forEach: (cb: (d: unknown) => void) => docs.forEach(cb),
+  empty: docs.length === 0,
+  size: docs.length,
+});
 
 vi.mock('@/lib/utils/companyId', () => ({
   getCompanyIdFromAuth: vi.fn(() => Promise.resolve('company123')),
@@ -29,8 +39,12 @@ vi.mock('firebase/firestore', () => ({
 }));
 
 describe('facilityService', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    // Standard-companyId nach jedem Reset wiederherstellen (Tests, die auf null
+    // setzen, würden sonst nachfolgende Tests verunreinigen).
+    const { getCompanyIdFromAuth } = await import('@/lib/utils/companyId');
+    vi.mocked(getCompanyIdFromAuth).mockResolvedValue('company123');
   });
 
   describe('getAll', () => {
@@ -54,11 +68,7 @@ describe('facilityService', () => {
         },
       ];
 
-      vi.mocked(getDocs).mockResolvedValue({
-        docs: mockFacilities,
-        empty: false,
-        size: 1,
-      } as any);
+      vi.mocked(getDocs).mockResolvedValue(snap(mockFacilities) as any);
 
       const result = await facilityService.getAll('company123');
 
@@ -144,10 +154,10 @@ describe('facilityService', () => {
         }),
       } as any);
 
+      // create() liefert die neue Dokument-ID (Promise<string>)
       const result = await facilityService.create(mockFacilityData);
 
-      expect(result).not.toBeNull();
-      expect(result?.name).toBe('Krankenhaus B');
+      expect(result).toBe('facility2');
       expect(addDoc).toHaveBeenCalled();
     });
 
@@ -194,10 +204,9 @@ describe('facilityService', () => {
         }),
       } as any);
 
-      const result = await facilityService.update('facility1', updates);
+      // update() gibt void zurück; geprüft wird der Schreibaufruf
+      await facilityService.update('facility1', updates);
 
-      expect(result).not.toBeNull();
-      expect(result?.name).toBe('Updated Name');
       expect(updateDoc).toHaveBeenCalled();
     });
   });
@@ -227,13 +236,15 @@ describe('facilityService', () => {
       expect(deleteDoc).toHaveBeenCalled();
     });
 
-    it('should throw error if facility does not exist', async () => {
-      const { getDoc } = await import('firebase/firestore');
+    it('ist idempotent: Löschen eines nicht existierenden Facility wirft nicht', async () => {
+      const { getDoc, deleteDoc } = await import('firebase/firestore');
       vi.mocked(getDoc).mockResolvedValue({
         exists: () => false,
       } as any);
 
-      await expect(facilityService.delete('nonexistent')).rejects.toThrow();
+      // delete() ist idempotent (Firestore-No-Op bei fehlendem Dokument)
+      await expect(facilityService.delete('nonexistent')).resolves.toBeUndefined();
+      expect(deleteDoc).toHaveBeenCalled();
     });
   });
 });

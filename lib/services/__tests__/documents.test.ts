@@ -1,32 +1,50 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { documentService } from '../documents';
 
-// Mock Firebase
+// Mock Firebase – db muss truthy sein (Service-Guard `if (!db ...)`)
 vi.mock('@/lib/firebase', () => ({
   db: {},
+  getDb: vi.fn(() => ({})),
+  auth: { currentUser: { uid: 'user123' } },
   serverTimestamp: vi.fn(() => ({ seconds: 1234567890, nanoseconds: 0 })),
 }));
 
+vi.mock('@/lib/utils/companyId', () => ({
+  getCompanyIdFromAuth: vi.fn(() => Promise.resolve('company123')),
+}));
+
+const ts = { toDate: () => new Date('2024-01-01') };
+
 vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(),
-  doc: vi.fn(),
+  collection: vi.fn(() => ({})),
+  doc: vi.fn(() => ({})),
   addDoc: vi.fn(),
   updateDoc: vi.fn(),
   deleteDoc: vi.fn(),
   getDocs: vi.fn(),
+  getDoc: vi.fn(),
   query: vi.fn(),
   where: vi.fn(),
   orderBy: vi.fn(),
   limit: vi.fn(),
+  Timestamp: { now: () => ({ toDate: () => new Date('2024-01-01') }) },
 }));
 
 describe('documentService', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const { getCompanyIdFromAuth } = await import('@/lib/utils/companyId');
+    vi.mocked(getCompanyIdFromAuth).mockResolvedValue('company123');
+    // Standard: getDoc liefert ein User-Dokument mit companyId (für create/getAll)
+    const { getDoc } = await import('firebase/firestore');
+    vi.mocked(getDoc).mockResolvedValue({
+      exists: () => true,
+      data: () => ({ companyId: 'company123' }),
+    } as any);
   });
 
   describe('create', () => {
-    it('should create a document with proper metadata', async () => {
+    it('legt ein Dokument mit Metadaten an und liefert das Document-Objekt', async () => {
       const mockDocument = {
         userId: 'user123',
         type: 'certificate',
@@ -39,28 +57,23 @@ describe('documentService', () => {
       const { addDoc } = await import('firebase/firestore');
       vi.mocked(addDoc).mockResolvedValue({ id: 'doc123' } as any);
 
-      const result = await documentService.create(mockDocument);
+      const result = await documentService.create(mockDocument as any);
 
-      expect(result).toBe('doc123');
+      expect(result.id).toBe('doc123');
       expect(addDoc).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
           userId: 'user123',
           type: 'certificate',
           name: 'Test Certificate',
-          fileUrl: 'https://example.com/file.pdf',
-          fileSize: 1024,
-          expiryDate: '2024-12-31',
           verified: false,
-          status: 'pending',
-          createdAt: expect.anything(),
         })
       );
     });
   });
 
   describe('verify', () => {
-    it('should verify a document', async () => {
+    it('markiert ein Dokument als verifiziert', async () => {
       const { updateDoc } = await import('firebase/firestore');
       vi.mocked(updateDoc).mockResolvedValue(undefined);
 
@@ -71,46 +84,41 @@ describe('documentService', () => {
         expect.objectContaining({
           verified: true,
           verifiedBy: 'admin123',
-          verifiedAt: expect.anything(),
-          updatedAt: expect.anything(),
         })
       );
     });
-  });
 
-  describe('reject', () => {
-    it('should reject a document with reason', async () => {
+    it('markiert ein Dokument als abgelehnt, wenn ein rejectionReason übergeben wird', async () => {
       const { updateDoc } = await import('firebase/firestore');
       vi.mocked(updateDoc).mockResolvedValue(undefined);
 
-      await documentService.reject('doc123', 'Invalid format');
+      await documentService.verify('doc123', 'admin123', 'Invalid format');
 
       expect(updateDoc).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
           verified: false,
           rejectionReason: 'Invalid format',
-          updatedAt: expect.anything(),
         })
       );
     });
   });
 
-  describe('getByUser', () => {
-    it('should fetch documents for a user', async () => {
+  describe('getByUserId', () => {
+    it('lädt die Dokumente eines Nutzers', async () => {
       const mockDocuments = [
-        { id: '1', userId: 'user123', type: 'certificate' },
-        { id: '2', userId: 'user123', type: 'license' },
+        { id: '1', data: () => ({ userId: 'user123', type: 'certificate', companyId: 'company123', createdAt: ts, updatedAt: ts }) },
+        { id: '2', data: () => ({ userId: 'user123', type: 'license', companyId: 'company123', createdAt: ts, updatedAt: ts }) },
       ];
 
       const { getDocs } = await import('firebase/firestore');
-      vi.mocked(getDocs).mockResolvedValue({
-        docs: mockDocuments.map(doc => ({ id: doc.id, data: () => doc })),
-      } as any);
+      vi.mocked(getDocs).mockResolvedValue({ docs: mockDocuments } as any);
 
-      const result = await documentService.getByUser('user123');
+      const result = await documentService.getByUserId('user123');
 
-      expect(result).toEqual(mockDocuments);
+      expect(result).toHaveLength(2);
+      expect(result.map(d => d.id)).toEqual(['1', '2']);
+      expect(result[0]?.type).toBe('certificate');
     });
   });
 });

@@ -29,7 +29,7 @@
 |---|---:|---|
 | Codequalität | 82 | TS strict, ESLint 9 (0 Warnungen), saubere Service-Schicht + Hexagonal-Layer; Altlasten der Doku/Tests noch spürbar |
 | Sicherheit | 85 | kritische/hohe Befunde behoben & getestet; Rules solide; offen: Server-Routen-Gate, Rate-Limit-Vereinheitlichung |
-| Testabdeckung | 55 | neue Rules- (13) + Geschäftsregel-Tests (12) grün; Legacy-Unit-Suite abgedriftet & nicht CI-gebunden |
+| Testabdeckung | 72 | Unit-Suite saniert & CI-gebunden (62 passed/3 dokumentiert übersprungen); Rules- (13) + Geschäftsregel-Tests (12) grün; offen: Reporting-Feature (F1) |
 | Dokumentation | 88 | vollständige Audit-/Käufer-Doku (Architektur, Schema, ENV, Deployment, Handover, Limitations) |
 | Wartbarkeit | 80 | zentrale Branding-Config, klare Struktur; ESLint/Toolchain vereinheitlicht |
 | Performance | 70 | PWA + SW-Caching, Lazy-PDF-Imports; keine dedizierte Lasttest-/Bundle-Optimierungsrunde in dieser Session |
@@ -93,6 +93,6 @@ Repository ✅ · Firebase-Projekt ⏳ (Transfer/Neuanlage) · Hosting ⏳ · Do
 - `npm run typecheck` ✅ 0 Fehler
 - `npm run lint` (`--max-warnings=0`) ✅ 0 Fehler/Warnungen
 - `npm run build` ✅ erfolgreich
-- `npm run test:rules` ✅ 13/13 · `businessRules.test.ts` ✅ 12/12
+- `npm run test:rules` ✅ 13/13 · `npm run test:unit` ✅ 62 passed / 3 skipped / 0 failed
 - `npm audit --omit=dev` ✅ 0 kritisch
 - Rebrand-Scan ✅ kein „jobflow" mehr (Projekt vollständig auf schichtklar migriert; nur der GitHub-Repo-Name bleibt vorerst JobFlow)

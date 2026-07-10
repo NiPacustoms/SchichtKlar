@@ -18,7 +18,7 @@ Ehrliche Auflistung aller bekannten Einschränkungen, offenen Entscheidungen und
 
 | # | Thema | Details |
 |---|---|---|
-| B1 | **Legacy-Unit-Test-Suite sanieren** | `lib/services/__tests__/*` und `lib/hooks/__tests__/*` sind von den aktuellen Service-APIs abgedriftet (21/45 rot; Details in `QA_REPORT.md`). Nicht CI-gebunden, blockiert daher nichts, sollte aber repariert und in CI aufgenommen werden. Neue Rules- und Geschäftsregel-Tests (13 + 12) sind grün. |
+| B1 | ~~Legacy-Unit-Test-Suite sanieren~~ **ERLEDIGT** | Suite saniert (jsdom-Umgebung, `@testing-library/react`, Mock-/API-Drift behoben): `npm run test:unit` grün (62 passed, 3 skipped, 0 failed). In CI aufgenommen (`quality.yml`). 3 Tests bewusst übersprungen – siehe F1. |
 | B2 | **`next` patchen** | Auf `>=15.5.13` heben (schließt Rewrite-Request-Smuggling-Advisory). Siehe `DEPENDENCY_AUDIT.md`. |
 | B3 | **`firebase-admin` aktualisieren** | Schließt transitive `@grpc/grpc-js`/`node-forge`-Advisories (serverseitig). |
 | B4 | **Server-Routen-Gate aktivieren** | `proxy.ts` ist für Next 16 vorbereitet, unter Next 15 inaktiv. Datenzugriff ist bereits durch Firestore-Rules + API-Rollenprüfung geschützt; ein zusätzliches Middleware-Gate wäre Defense-in-Depth (Vorsicht: CSP-Header-Überschneidung mit `next.config.js`). |
@@ -39,6 +39,12 @@ Ehrliche Auflistung aller bekannten Einschränkungen, offenen Entscheidungen und
 | D1 | **Single-Tenant-Modell** | 1 Kunde = 1 Firebase-Projekt (`SINGLE_COMPANY_ID`). Mandanten-Helper in `firestore.rules` sind bewusst Stubs (`return true`). Für Multi-Tenant müssten `belongsToSameCompany` echt implementiert und alle List-Queries mit `companyId`-Filter versehen werden. Durch `tests/rules/` als bewusste Entscheidung gepinnt. |
 | D2 | **UI-System = MUI** | Trotz vorhandener Tailwind-Restkonfiguration ist MUI das führende Design-System (Radix ist nicht installiert). |
 | D3 | **Firebase-Projekt migriert** | Neues Projekt `schichtklar` angelegt, alle Deploy-Referenzen umgestellt (Frischstart). Erforderlicher GitHub-Schritt: Secret `FIREBASE_SERVICE_ACCOUNT_SCHICHTKLAR` mit Service-Account des neuen Projekts anlegen. Details: `INFRASTRUCTURE_RENAMING.md`. |
+
+## F. Produktlücke: Mitarbeiter-Berichte teils Stub
+
+| # | Thema | Details |
+|---|---|---|
+| F1 | **`useEmployeeReports` Aggregation/Export unvollständig** | `workTimeReport` liefert aktuell Nullwerte (Stub, leere useMemo-Deps), `surchargesReport` wird nicht bereitgestellt, `exportWorkTimeReport` zeigt nur einen Toast statt `reportService`-Export aufzurufen. Die Mitarbeiter-Berichtsansicht zeigt dadurch keine echten Auswertungen. 3 zugehörige Unit-Tests sind mit klarer Begründung übersprungen (`it.skip`), bis die Logik implementiert ist. **Vor Verkauf des Reporting-Features implementieren.** |
 
 ## E. Optionale Ausbaustufen (Marktrecherche)
 
