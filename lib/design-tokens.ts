@@ -102,8 +102,8 @@ export const light = {
   },
   text: {
     primary: '#1c1917',
-    secondary: 'rgba(28,25,23,0.62)',
-    disabled: 'rgba(28,25,23,0.38)',
+    secondary: 'rgba(28,25,23,0.66)', // ≥5.5:1 auf #fafaf9 (AA+ für Fließtext)
+    disabled: 'rgba(28,25,23,0.42)',
   },
   input: {
     bg: '#ffffff',
@@ -130,8 +130,8 @@ export const dark = {
   },
   text: {
     primary: 'rgba(250,250,249,0.95)',
-    secondary: 'rgba(250,250,249,0.68)',
-    disabled: 'rgba(250,250,249,0.45)',
+    secondary: 'rgba(250,250,249,0.72)', // ≥7:1 auf #1c1917
+    disabled: 'rgba(250,250,249,0.48)',
   },
   input: {
     bg: 'rgba(255,255,255,0.05)',

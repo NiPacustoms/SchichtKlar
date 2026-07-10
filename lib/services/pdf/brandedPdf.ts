@@ -28,22 +28,34 @@ const PAGE_H = 297;
 
 let cachedLogo: string | null | undefined;
 
-/** Logo als Daten-URL laden (Browser); schlägt fehl → null (Text-Fallback im Briefkopf). */
+async function fetchPngAsDataUrl(url: string): Promise<string> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(String(res.status));
+  const buf = new Uint8Array(await res.arrayBuffer());
+  // Base64 ohne FileReader (funktioniert in Browser und Test-Umgebung)
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < buf.length; i += chunk) {
+    binary += String.fromCharCode(...buf.subarray(i, i + chunk));
+  }
+  return `data:image/png;base64,${btoa(binary)}`;
+}
+
+/**
+ * Briefkopf-Logo als Daten-URL laden. Dokumente stellt das UNTERNEHMEN aus:
+ * zuerst Firmenlogo (AufAbruf, /company-logo.png), dann Produktlogo (Schichtklar)
+ * als Fallback; schlägt beides fehl → null (Text-Fallback im Briefkopf).
+ */
 async function loadLogoDataUrl(): Promise<string | null> {
   if (cachedLogo !== undefined) return cachedLogo;
   try {
-    const res = await fetch('/logo-default.png');
-    if (!res.ok) throw new Error(String(res.status));
-    const buf = new Uint8Array(await res.arrayBuffer());
-    // Base64 ohne FileReader (funktioniert in Browser und Test-Umgebung)
-    let binary = '';
-    const chunk = 0x8000;
-    for (let i = 0; i < buf.length; i += chunk) {
-      binary += String.fromCharCode(...buf.subarray(i, i + chunk));
-    }
-    cachedLogo = `data:image/png;base64,${btoa(binary)}`;
+    cachedLogo = await fetchPngAsDataUrl('/company-logo.png');
   } catch {
-    cachedLogo = null;
+    try {
+      cachedLogo = await fetchPngAsDataUrl('/logo-default.png');
+    } catch {
+      cachedLogo = null;
+    }
   }
   return cachedLogo;
 }

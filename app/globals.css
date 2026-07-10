@@ -109,6 +109,9 @@ html {
   min-height: 100%;
   font-family: var(--font-sans);
   scroll-behavior: smooth;
+  /* Lesbarkeit: verhindert ungewollte Text-Vergrößerung bei Rotation (iOS/Android) */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -140,6 +143,43 @@ body {
   background-repeat: no-repeat;
   background-size: cover;
   position: relative;
+}
+
+/* ——— Lesbarkeit auf allen Bildschirmgrößen ——— */
+
+/* Lange deutsche Komposita: umbrechen statt überlaufen (lang="de" ist gesetzt) */
+p,
+li,
+td,
+th,
+dd,
+dt,
+figcaption,
+.MuiTypography-body1,
+.MuiTypography-body2 {
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Überschriften: ausgewogene Zeilenumbrüche, keine Waisenwörter */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+/* Fließtext-Absätze: hübschere Umbrüche (progressive enhancement) */
+p {
+  text-wrap: pretty;
+}
+
+/* Lesebreite: Fließtext nicht endlos breit laufen lassen (~75 Zeichen) */
+.readable-width {
+  max-width: 72ch;
 }
 
 @media (prefers-color-scheme: light) {

@@ -38,6 +38,7 @@ function createAppTheme(mode: PaletteMode) {
   const brand = isDark ? colors.brandLight : colors.brand;
   const brandHover = isDark ? colors.brand : colors.brandDark;
 
+  // factor 3: Headings schrumpfen auf kleinen Screens moderater – bessere Lesbarkeit mobil
   return responsiveFontSizes(
     createTheme(
       {
@@ -551,7 +552,8 @@ function createAppTheme(mode: PaletteMode) {
         },
       },
       coreDeDE
-    )
+    ),
+    { factor: 3 }
   );
 }
 

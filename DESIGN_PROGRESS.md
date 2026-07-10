@@ -1,6 +1,6 @@
 # Design-Progress Schichtklar
 
-## Status: IN ARBEIT | Bereich 1, Schritt „Streu-Hexes in Schedule-/Admin-Komponenten migrieren"
+## Status: IN ARBEIT | Bereich 1, Schritt „Streu-Hexes in Schedule-/Admin-Komponenten migrieren" (Lesbarkeits-Pass erledigt)
 
 ## Token-Entscheidungen
 
@@ -32,6 +32,14 @@ NICHT zu Glassmorphism zurückkehren.
    (Briefkopf mit Logo, Teal-Tabellenkopf, Zebra `#fafaf9`, Fußzeile mit Seitenzahlen).
 10. **Logo**: `public/logo-default.png` (hell) / `logo-default-dark.png` (Dark Mode; AppLogo
     wählt automatisch). Assets reproduzierbar via `node scripts/generate-brand-assets.mjs`.
+11. **Marken-Rollen**: Schichtklar = Produkt (App-UI, PDF-Fußzeile) · AufAbruf
+    Personaldienstleistungs GmbH = Unternehmen (PDF-Briefkopf `/company-logo.png`,
+    Firestore-Branding `systemSettings/main`). Firmen-Logo-Assets: `public/company-logo.{svg,png}`.
+12. **Lesbarkeit (10.07.2026)**: Sekundärtext-Kontrast angehoben (hell 0.66 ≈ AA+,
+    dunkel 0.72 ≈ 7:1); `responsiveFontSizes factor 3` (Headings schrumpfen mobil moderater);
+    globals.css: `text-size-adjust 100%`, `hyphens: auto` + `overflow-wrap` für deutsche
+    Komposita (p/li/td/Typography), `text-wrap: balance` auf Headings, `text-wrap: pretty`
+    auf Absätzen, Utility `.readable-width` (72ch) für Fließtextseiten.
 
 ## Bereiche
 

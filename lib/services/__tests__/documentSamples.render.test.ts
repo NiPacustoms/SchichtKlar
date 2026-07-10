@@ -150,8 +150,8 @@ describe.runIf(ENABLED)('Dokument-Muster rendern', () => {
     const origFetch = globalThis.fetch;
     vi.stubGlobal('fetch', (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      if (url === '/logo-default.png') {
-        const buf = readFileSync(path.join(process.cwd(), 'public', 'logo-default.png'));
+      if (url === '/logo-default.png' || url === '/company-logo.png') {
+        const buf = readFileSync(path.join(process.cwd(), 'public', url.slice(1)));
         return new Response(buf, { status: 200, headers: { 'content-type': 'image/png' } });
       }
       return origFetch(input, init);
