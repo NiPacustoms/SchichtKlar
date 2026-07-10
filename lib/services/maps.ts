@@ -136,7 +136,7 @@ export async function geocodeAddress(address: string): Promise<Coordinates | nul
       'Accept': 'application/json',
       'User-Agent': getUserAgent(),
       // Nominatim discourages repeated calls without caching
-      'Referer': 'https://app.jobflow.local',
+      'Referer': 'https://app.schichtklar.local',
     },
   });
   if (!res.ok) return null;

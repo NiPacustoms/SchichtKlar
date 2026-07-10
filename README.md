@@ -1,4 +1,4 @@
-# JobFlow - Zeitarbeits-App für medizinisches Personal
+# Schichtklar - Zeitarbeits-App für medizinisches Personal
 
 ## Deployment & Emulator
 
@@ -392,4 +392,4 @@ Bei Fragen oder Problemen:
 
 ---
 
-**JobFlow** - Sichere, DSGVO-konforme Zeitarbeits-App für medizinisches Personal
+**Schichtklar** - Sichere, DSGVO-konforme Zeitarbeits-App für medizinisches Personal

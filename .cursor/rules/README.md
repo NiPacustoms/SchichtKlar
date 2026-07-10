@@ -1,4 +1,4 @@
-# 🎯 **JobFlow Cursor Rules - Optimiert & Umnummeriert**
+# 🎯 **Schichtklar Cursor Rules - Optimiert & Umnummeriert**
 
 ## **📋 Regel-Struktur (Logisch nummeriert 00-08)**
 

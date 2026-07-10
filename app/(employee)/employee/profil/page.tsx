@@ -758,7 +758,7 @@ export default function ProfilePage() {
                                           const url = window.URL.createObjectURL(blob);
                                           const a = document.createElement('a');
                                           a.href = url;
-                                          a.download = `jobflow-data-export-${Date.now()}.json`;
+                                          a.download = `schichtklar-data-export-${Date.now()}.json`;
                                           document.body.appendChild(a);
                                           a.click();
                                           document.body.removeChild(a);

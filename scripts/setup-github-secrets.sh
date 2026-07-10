@@ -196,7 +196,7 @@ main() {
     E2E_BASE_URL_VALUE=$(prompt_value "E2E_BASE_URL" "$E2E_BASE_URL_VALUE" false)
     set_secret "E2E_BASE_URL" "$E2E_BASE_URL_VALUE" true
     
-    E2E_ADMIN_EMAIL_VALUE="${E2E_ADMIN_EMAIL:-admin@jobflow.de}"
+    E2E_ADMIN_EMAIL_VALUE="${E2E_ADMIN_EMAIL:-admin@schichtklar.test}"
     E2E_ADMIN_EMAIL_VALUE=$(prompt_value "E2E_ADMIN_EMAIL" "$E2E_ADMIN_EMAIL_VALUE" false)
     set_secret "E2E_ADMIN_EMAIL" "$E2E_ADMIN_EMAIL_VALUE" false
     
@@ -204,7 +204,7 @@ main() {
     E2E_ADMIN_PASSWORD_VALUE=$(prompt_value "E2E_ADMIN_PASSWORD" "$E2E_ADMIN_PASSWORD_VALUE" true)
     set_secret "E2E_ADMIN_PASSWORD" "$E2E_ADMIN_PASSWORD_VALUE" false
     
-    E2E_EMPLOYEE_EMAIL_VALUE="${E2E_EMPLOYEE_EMAIL:-nurse@jobflow.de}"
+    E2E_EMPLOYEE_EMAIL_VALUE="${E2E_EMPLOYEE_EMAIL:-nurse@schichtklar.test}"
     E2E_EMPLOYEE_EMAIL_VALUE=$(prompt_value "E2E_EMPLOYEE_EMAIL" "$E2E_EMPLOYEE_EMAIL_VALUE" false)
     set_secret "E2E_EMPLOYEE_EMAIL" "$E2E_EMPLOYEE_EMAIL_VALUE" false
     

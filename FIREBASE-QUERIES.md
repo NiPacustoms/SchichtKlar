@@ -1,4 +1,4 @@
-# Firebase Firestore – Query- und Index-Audit (JobFlow)
+# Firebase Firestore – Query- und Index-Audit (Schichtklar)
 
 Stand: Vollprüfung aller Queries in `lib/` und Abgleich mit `firestore.indexes.json`.
 

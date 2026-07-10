@@ -38,7 +38,7 @@
 - Kontrast ≥ WCAG AA, sichtbare Fokuszustände, Hit‑Area ≥ 40x40px
 
 # Zusammenfassung
-- Alle UI-Elemente nutzen das **JobFlow Theme**. Keine Inline-Farben, keine Fremdlibs. Glasmorphism ist Standard.
+- Alle UI-Elemente nutzen das **Schichtklar Theme**. Keine Inline-Farben, keine Fremdlibs. Glasmorphism ist Standard.
 description:
 globs:
 alwaysApply: false

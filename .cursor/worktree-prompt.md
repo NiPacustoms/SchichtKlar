@@ -2,14 +2,14 @@
 
 ## Kontext
 
-Die JobFlow-App hat aktuell **~1501 TypeScript-Fehler**, die systematisch behoben werden müssen. Die Fehler wurden bereits teilweise reduziert (von ~1536), aber es bleiben noch kritische Probleme.
+Die Schichtklar-App hat aktuell **~1501 TypeScript-Fehler**, die systematisch behoben werden müssen. Die Fehler wurden bereits teilweise reduziert (von ~1536), aber es bleiben noch kritische Probleme.
 
 ## Projekt-Struktur
 
 - **Framework:** Next.js 15.5.6 mit TypeScript
 - **UI-Library:** Material-UI (MUI)
 - **Firebase:** Firestore für Backend
-- **Hauptverzeichnis:** `<pfad-zum-repo>/JobFlow`
+- **Hauptverzeichnis:** `<pfad-zum-repo>/Schichtklar`
 
 ## Aktuelle Fehlerkategorien
 
@@ -270,17 +270,17 @@ npx tsc --noEmit --skipLibCheck 2>&1 | grep -E "error TS" | head -20
 
 ```bash
 # Agent 1
-cd <pfad-zum-repo>/JobFlow
+cd <pfad-zum-repo>/Schichtklar
 git checkout -b agent1-mui-grid-fixes
 # Beginne mit: npx tsc --noEmit --skipLibCheck 2>&1 | grep -i "grid\|mui" | head -30
 
 # Agent 2
-cd <pfad-zum-repo>/JobFlow
+cd <pfad-zum-repo>/Schichtklar
 git checkout -b agent2-api-routes-fixes
 # Beginne mit: npx tsc --noEmit --skipLibCheck 2>&1 | grep "app/api" | head -30
 
 # Agent 3
-cd <pfad-zum-repo>/JobFlow
+cd <pfad-zum-repo>/Schichtklar
 git checkout -b agent3-type-system-fixes
 # Beginne mit: npx tsc --noEmit --skipLibCheck 2>&1 | grep -E "TS23|TS25|TS27|TS70" | head -50
 ```

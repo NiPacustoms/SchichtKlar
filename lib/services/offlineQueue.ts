@@ -10,7 +10,7 @@ import { logger } from '@/lib/logging';
 import { createAppError, ErrorCode } from '@/lib/errors';
 import * as offlineStorage from './offlineStorage';
 
-export const OFFLINE_SYNC_STATUS_EVENT = 'jobflow-offline-sync-status';
+export const OFFLINE_SYNC_STATUS_EVENT = 'schichtklar-offline-sync-status';
 const SYNC_STATUS_EVENT = OFFLINE_SYNC_STATUS_EVENT;
 
 export interface OfflineQueueItem {

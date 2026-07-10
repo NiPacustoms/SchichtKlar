@@ -77,8 +77,8 @@ interface InviteEmailPayload {
 function renderInviteEmailHtml(payload: InviteEmailPayload): string {
   return `
     <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111;">
-      <h2>Einladung zu JobFlow</h2>
-      <p>Sie wurden von <strong>${payload.companyName}</strong> eingeladen, JobFlow beizutreten.</p>
+      <h2>Einladung zu Schichtklar</h2>
+      <p>Sie wurden von <strong>${payload.companyName}</strong> eingeladen, Schichtklar beizutreten.</p>
       <p>Bitte klicken Sie innerhalb von 24 Stunden auf den folgenden Link, um Ihr Konto zu erstellen:</p>
       <p>
         <a href="${payload.acceptLink}" style="display:inline-block;background:#3b82f6;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
@@ -95,7 +95,7 @@ function renderInviteEmailHtml(payload: InviteEmailPayload): string {
 
 /**
  * Versand per Resend (https://resend.com) – nur API-Key nötig, kein SMTP.
- * Env: RESEND_API_KEY (Pflicht), optional RESEND_FROM (z. B. "JobFlow <noreply@ihredomain.de>").
+ * Env: RESEND_API_KEY (Pflicht), optional RESEND_FROM (z. B. "Schichtklar <noreply@ihredomain.de>").
  */
 async function sendInvitationViaResend(
   payload: InviteEmailPayload,
@@ -105,14 +105,14 @@ async function sendInvitationViaResend(
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) return { success: false, fallback: true };
 
-  const from = process.env.RESEND_FROM?.trim() || 'JobFlow <onboarding@resend.dev>';
+  const from = process.env.RESEND_FROM?.trim() || 'Schichtklar <onboarding@resend.dev>';
   try {
     const { Resend } = await import('resend');
     const resend = new Resend(apiKey);
     const { error } = await resend.emails.send({
       from,
       to: payload.to,
-      subject: 'Einladung zu JobFlow',
+      subject: 'Einladung zu Schichtklar',
       html,
       text,
     });
@@ -138,7 +138,7 @@ export async function sendInvitationEmailInternal(
   const company = companyName || 'Ihre Firma';
   const html = renderInviteEmailHtml({ to, companyName: company, acceptLink });
   const text = [
-    `Sie wurden von ${company} eingeladen, JobFlow zu nutzen.`,
+    `Sie wurden von ${company} eingeladen, Schichtklar zu nutzen.`,
     `Bitte öffnen Sie innerhalb von 24 Stunden folgenden Link: ${acceptLink}`,
   ].join('\n\n');
 
@@ -149,7 +149,7 @@ export async function sendInvitationEmailInternal(
 
   const result = await sendTemplatedEmail({
     to,
-    subject: 'Einladung zu JobFlow',
+    subject: 'Einladung zu Schichtklar',
     html,
     text,
   });

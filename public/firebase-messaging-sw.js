@@ -40,7 +40,7 @@ function initializeFirebase() {
     messaging.onBackgroundMessage((payload) => {
       console.log('[firebase-messaging-sw.js] Received background message ', payload);
 
-      const notificationTitle = payload.notification?.title || 'JobFlow';
+      const notificationTitle = payload.notification?.title || 'Schichtklar';
       const notificationOptions = {
         body: payload.notification?.body || 'Sie haben eine neue Benachrichtigung',
         icon: payload.notification?.icon || '/favicon-192.png',

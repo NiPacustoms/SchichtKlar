@@ -9,8 +9,8 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-const DISMISS_STORAGE_KEY = 'jobflow:pwaPromptDismissed';
-const INSTALL_STORAGE_KEY = 'jobflow:pwaInstalled';
+const DISMISS_STORAGE_KEY = 'schichtklar:pwaPromptDismissed';
+const INSTALL_STORAGE_KEY = 'schichtklar:pwaInstalled';
 
 function safeGetItem(storage: Storage | undefined | null, key: string): string | null {
   if (!storage) {

@@ -68,7 +68,7 @@
 - ✅ Theme‑Tokens verwenden (keine Inline‑Hexfarben)
 - ✅ Konsistente Toolbars, klare CTAs
 - ✅ Drawer/Dialog statt Fullscreen für CRUD
-- ✅ Glasmorphism für Cards/Overlays (wie im JobFlow‑Theme)
+- ✅ Glasmorphism für Cards/Overlays (wie im Schichtklar‑Theme)
 - ❌ Keine fremden UI‑Bibliotheken
 - ❌ Keine Uppercase‑Buttons
 - ❌ Kein endloses Scrolling → Pagination

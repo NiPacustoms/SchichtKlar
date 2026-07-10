@@ -62,7 +62,7 @@ const ADMIN_ROUTES = ['/admin'];
 const EMPLOYEE_ROUTES = ['/employee'];
 
 /** Cookie, der serverseitig bei Session-Set gesetzt wird – nur "admin" oder "nurse". */
-const ROLE_COOKIE_NAME = 'jobflow_role';
+const ROLE_COOKIE_NAME = 'schichtklar_role';
 
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = [
