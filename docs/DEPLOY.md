@@ -1,6 +1,6 @@
 # Deployment (nur Firebase)
 
-JobFlow nutzt **keine GitHub Actions**. Build und Deploy laufen ausschließlich über Firebase.
+Schichtklar nutzt **keine GitHub Actions**. Build und Deploy laufen ausschließlich über Firebase.
 
 ## Option 1: Firebase Console – GitHub-Anbindung
 

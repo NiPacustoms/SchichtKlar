@@ -1,4 +1,4 @@
-# Firebase Hosting Kostenübersicht - JobFlow
+# Firebase Hosting Kostenübersicht - Schichtklar
 
 ## Konfiguration
 
@@ -154,7 +154,7 @@ Kosten: ~$63-65/Monat
 # Budget-Alarm erstellen
 gcloud billing budgets create \
   --billing-account=BILLING_ACCOUNT_ID \
-  --display-name="JobFlow Monthly Budget" \
+  --display-name="Schichtklar Monthly Budget" \
   --budget-amount=50USD \
   --threshold-rule=percent=50 \
   --threshold-rule=percent=90 \

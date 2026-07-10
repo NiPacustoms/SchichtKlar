@@ -4,7 +4,7 @@ _Stand: 2025-01-15_
 
 ## 🎯 Übersicht
 
-Diese Datei listet die **essentiellen Dokumentationsdateien** auf, die für den **Betrieb** und die **weitere Entwicklung** von JobFlow benötigt werden.
+Diese Datei listet die **essentiellen Dokumentationsdateien** auf, die für den **Betrieb** und die **weitere Entwicklung** von Schichtklar benötigt werden.
 
 ---
 

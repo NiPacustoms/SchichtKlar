@@ -1,4 +1,4 @@
-# Fehleranalyse - JobFlow Projekt
+# Fehleranalyse - Schichtklar Projekt
 
 **Datum:** 26. Januar 2026  
 **Status:** Analyse abgeschlossen
@@ -21,7 +21,7 @@
 **Lösung:**
 
 ```bash
-cd <pfad-zum-repo>/JobFlow
+cd <pfad-zum-repo>/Schichtklar
 npm install
 ```
 

@@ -1,4 +1,4 @@
-# JobFlow Release-Checkliste
+# Schichtklar Release-Checkliste
 
 ## v1.0.0 – Production Ready (Elite Enterprise)
 

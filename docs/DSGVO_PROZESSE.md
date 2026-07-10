@@ -1,10 +1,10 @@
-# DSGVO Prozesse (JobFlow)
+# DSGVO Prozesse (Schichtklar)
 
 Dieses Dokument beschreibt die datenschutzrelevanten Prozesse: Auftragsverarbeitung (AVV), Technische und organisatorische Maßnahmen (TOMs), Datenfluss, sowie Lösch- und Exportprozesse.
 
 ## 1. Auftragsverarbeitung (AVV) – Checkliste
 
-- Parteien: Verantwortlicher (Kunde), Auftragsverarbeiter (JobFlow), Unterauftragsverarbeiter (Google/Firebase)
+- Parteien: Verantwortlicher (Kunde), Auftragsverarbeiter (Schichtklar), Unterauftragsverarbeiter (Google/Firebase)
 - Gegenstand/Zweck: Personal-/Einsatzplanung, Zeiterfassung, Dokumente
 - Dauer: Vertragslaufzeit + gesetzliche Aufbewahrung
 - Art/Umfang der Daten: Konto-, Kontakt-, Beschäftigungs- und Dokumentdaten

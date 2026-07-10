@@ -12,7 +12,7 @@ Auch wenn die Firebase Extensions API aktiviert ist, schlägt das Deployment feh
 
 2. Finde das Service Account, das für das Deployment verwendet wird:
    - Normalerweise: `firebase-adminsdk-xxxxx@jobflow25.iam.gserviceaccount.com`
-   - ODER: Das Service Account aus GitHub Secrets (`FIREBASE_SERVICE_ACCOUNT_JobFlow`)
+   - ODER: Das Service Account aus GitHub Secrets (`FIREBASE_SERVICE_ACCOUNT_Schichtklar`)
 
 ### Schritt 2: Service Account öffnen
 

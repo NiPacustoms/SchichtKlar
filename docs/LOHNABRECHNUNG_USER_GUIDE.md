@@ -2,7 +2,7 @@
 
 ## Übersicht
 
-Das Lohnabrechnungssystem für JobFlow ermöglicht die vollständige Verwaltung von Gehaltsabrechnungen für deutsche Zeitarbeitsfirmen. Das System ist rechtskonform nach deutschem Steuerrecht und bietet sowohl Admin- als auch Mitarbeiter-Funktionen.
+Das Lohnabrechnungssystem für Schichtklar ermöglicht die vollständige Verwaltung von Gehaltsabrechnungen für deutsche Zeitarbeitsfirmen. Das System ist rechtskonform nach deutschem Steuerrecht und bietet sowohl Admin- als auch Mitarbeiter-Funktionen.
 
 ## Admin-Funktionen
 
@@ -259,7 +259,7 @@ Das System berechnet automatisch:
 
 ## Fazit
 
-Das Lohnabrechnungssystem für JobFlow bietet eine vollständige, rechtskonforme Lösung für die Gehaltsabrechnung. Mit moderner Technologie, höchsten Sicherheitsstandards und benutzerfreundlicher Oberfläche ist es die ideale Lösung für deutsche Zeitarbeitsfirmen.
+Das Lohnabrechnungssystem für Schichtklar bietet eine vollständige, rechtskonforme Lösung für die Gehaltsabrechnung. Mit moderner Technologie, höchsten Sicherheitsstandards und benutzerfreundlicher Oberfläche ist es die ideale Lösung für deutsche Zeitarbeitsfirmen.
 
 **Vorteile:**
 - ✅ Vollständige Rechtskonformität

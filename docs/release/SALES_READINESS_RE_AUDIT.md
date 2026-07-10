@@ -1,4 +1,4 @@
-# JobFlow - Sales Readiness Re-Audit
+# Schichtklar - Sales Readiness Re-Audit
 
 **Erstellt:** 2025-01-27  
 **Zweck:** Verifikation der Fixes aus dem ersten Audit

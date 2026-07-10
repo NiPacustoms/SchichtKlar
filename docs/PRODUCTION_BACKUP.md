@@ -4,7 +4,7 @@ Diese Dokumentation beschreibt die Backup-Strategie für Production.
 
 ## Übersicht
 
-JobFlow sichert folgende Daten:
+Schichtklar sichert folgende Daten:
 1. **Firestore** - Alle Datenbankdaten
 2. **Firebase Storage** - Alle hochgeladenen Dateien
 
@@ -51,7 +51,7 @@ gcloud scheduler jobs create http firestore-daily-backup \
 
 ```bash
 PROJECT_ID=jobflow25 \
-BACKUP_BUCKET=gs://jobflow-backups \
+BACKUP_BUCKET=gs://schichtklar-backups \
 ./scripts/firestore-backup.sh
 ```
 
@@ -79,7 +79,7 @@ gcloud scheduler jobs create http storage-daily-backup \
 ```bash
 PROJECT_ID=jobflow25 \
 SOURCE_BUCKET=gs://jobflow25.appspot.com \
-BACKUP_BUCKET=gs://jobflow-backups \
+BACKUP_BUCKET=gs://schichtklar-backups \
 ./scripts/storage-backup.sh
 ```
 
@@ -104,7 +104,7 @@ export const firestoreBackup = functions
   .timeZone('UTC')
   .onRun(async (context) => {
     const projectId = process.env.GCLOUD_PROJECT || 'jobflow25';
-    const backupBucket = process.env.BACKUP_BUCKET || 'gs://jobflow-backups';
+    const backupBucket = process.env.BACKUP_BUCKET || 'gs://schichtklar-backups';
     
     try {
       const { stdout, stderr } = await execAsync(
@@ -138,7 +138,7 @@ export const storageBackup = functions
   .onRun(async (context) => {
     const projectId = process.env.GCLOUD_PROJECT || 'jobflow25';
     const sourceBucket = `gs://${projectId}.appspot.com`;
-    const backupBucket = process.env.BACKUP_BUCKET || 'gs://jobflow-backups';
+    const backupBucket = process.env.BACKUP_BUCKET || 'gs://schichtklar-backups';
     
     try {
       const { stdout, stderr } = await execAsync(

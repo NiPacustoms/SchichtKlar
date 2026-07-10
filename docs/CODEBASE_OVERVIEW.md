@@ -1,6 +1,6 @@
-# JobFlow – Codebase Overview
+# Schichtklar – Codebase Overview
 
-Dieses Dokument gibt einen kompakten Überblick über den Aufbau des JobFlow‑Repositories und die wichtigsten Codebereiche. Es ergänzt das bestehende `README.md` um eine eher code‑zentrierte Sicht.
+Dieses Dokument gibt einen kompakten Überblick über den Aufbau des Schichtklar‑Repositories und die wichtigsten Codebereiche. Es ergänzt das bestehende `README.md` um eine eher code‑zentrierte Sicht.
 
 ## 1. Technologie-Stack (Code-Perspektive)
 

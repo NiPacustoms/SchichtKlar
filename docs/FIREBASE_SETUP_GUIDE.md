@@ -1,4 +1,4 @@
-# Firebase Setup für JobFlow
+# Firebase Setup für Schichtklar
 
 ## Problem: "Expected first argument to collection() to be a CollectionReference"
 

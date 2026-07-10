@@ -74,7 +74,7 @@ Vitest-Unit-Tests (`lib/services/__tests__`: 8 Service-Tests, `tests/`), Playwri
 | S6 | Storage: `logos/**` von **jedem** authentifizierten User beschreibbar | `storage.rules` | Phase 4: auf Admin einschränken |
 | S7 | `deleteAllAssignments` Cloud Function (destruktiv) | `functions/src` | Phase 4: Autorisierung verifizieren |
 | S8 | `NEXT_PUBLIC_SECURITY_WEBHOOK_URL` client-exponiert | Code | Phase 4 prüfen |
-| S9 | Test-Logins `admin@jobflow.de` etc. | `scripts/verified-emails-whitelist.txt`, Seeds, e2e | fiktive Domain, aber vor Übergabe dokumentieren/rotieren |
+| S9 | Test-Logins `admin@schichtklar.de` etc. | `scripts/verified-emails-whitelist.txt`, Seeds, e2e | fiktive Domain, aber vor Übergabe dokumentieren/rotieren |
 
 ### 8.2 Tote/fragwürdige Dateien (Löschkandidaten – **noch nichts gelöscht**)
 

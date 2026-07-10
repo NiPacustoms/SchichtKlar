@@ -1,8 +1,8 @@
-# JobFlow L8 – Architektur (Endgültige Fertigstellung)
+# Schichtklar L8 – Architektur (Endgültige Fertigstellung)
 
 ## Übersicht
 
-JobFlow folgt einer **Domain-Driven-Design / Hexagonal-Architektur** mit klarer Schichtung:
+Schichtklar folgt einer **Domain-Driven-Design / Hexagonal-Architektur** mit klarer Schichtung:
 
 - **Domain** – reine Fachlogik (Entities, Status, Events), keine Infrastruktur
 - **Application** – Use Cases und Ports (Interfaces)

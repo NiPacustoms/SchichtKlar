@@ -1,6 +1,6 @@
 # Admin Guide
 
-Dieser Leitfaden beschreibt die wichtigsten Admin-Workflows in JobFlow.
+Dieser Leitfaden beschreibt die wichtigsten Admin-Workflows in Schichtklar.
 
 ## Anmeldung
 

@@ -2,7 +2,7 @@
 
 ## Übersicht
 
-Die JobFlow-Lohnabrechnung funktioniert **vollständig ohne externe APIs** und verwendet BMF-konforme Berechnungsformeln nach PAP 2025.
+Die Schichtklar-Lohnabrechnung funktioniert **vollständig ohne externe APIs** und verwendet BMF-konforme Berechnungsformeln nach PAP 2025.
 
 ✅ **Keine BMF-API erforderlich** - Die Lohnsteuerberechnung verwendet die offiziellen BMF-Formeln direkt  
 ✅ **Keine ELSTER-API erforderlich** - Steuerdaten werden manuell gepflegt  

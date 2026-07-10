@@ -1,4 +1,4 @@
-# JobFlow - Schonungslose Marktreife-Analyse
+# Schichtklar - Schonungslose Marktreife-Analyse
 
 **Datum:** 27. Januar 2026  
 **Status:** 🔴 **NICHT MARKTREIF**  
