@@ -458,6 +458,13 @@ service cloud.firestore {
       allow write: if isAuthenticated(); // Jeder authentifizierte User kann schreiben (für Caching)
     }
 
+    // Mail-Queue (Trigger Email): Nur Cloud Functions / Admin SDK (bypass Rules).
+    // Clients dürfen weder lesen noch schreiben, sonst wäre Mail-Versand im
+    // Namen der App durch beliebige Nutzer möglich (Spam/Phishing).
+    match /mail/{mailId} {
+      allow read, write: if false;
+    }
+
     // Default: deny
     match /{document=**} {
       allow read, write: if false;

@@ -35,6 +35,30 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendFormReminderEmails = sendFormReminderEmails;
 const admin = __importStar(require("firebase-admin"));
+function renderReminderEmailHtml(input) {
+    const greeting = input.employeeName ? `Hallo ${input.employeeName},` : 'Guten Tag,';
+    const reasons = [
+        input.formNotDone ? 'die Einsatzmitteilung ist noch nicht bestätigt' : '',
+        input.missingDailySignature ? 'die tägliche Unterschrift fehlt' : '',
+    ].filter(Boolean).join(' und ');
+    return `
+    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111;">
+      <h2>Erinnerung: Einsatz-Formular ausfüllen</h2>
+      <p>${greeting}</p>
+      <p>Für Ihren Einsatz ${reasons ? `ist noch etwas offen: ${reasons}.` : 'ist noch ein Formular offen.'}</p>
+      <p>Bitte füllen Sie das Formular über folgenden Link aus:</p>
+      <p>
+        <a href="${input.formLink}" style="display:inline-block;background:#16a34a;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
+          Formular öffnen
+        </a>
+      </p>
+      <p>Falls der Button nicht funktioniert, nutzen Sie diesen Link: <br/>
+        <a href="${input.formLink}">${input.formLink}</a>
+      </p>
+      <p>Vielen Dank!</p>
+    </div>
+  `;
+}
 async function sendFormReminderEmails() {
     if (!admin.apps.length) {
         admin.initializeApp();
@@ -56,9 +80,46 @@ async function sendFormReminderEmails() {
         if (!formDone || !dailySigned) {
             const userDoc = await db.collection('users').doc(data.userId).get();
             const user = userDoc.exists ? userDoc.data() : null;
-            const email = user === null || user === void 0 ? void 0 : user.email;
+            const email = typeof (user === null || user === void 0 ? void 0 : user.email) === 'string' ? user.email : undefined;
             const formLink = `${process.env.PUBLIC_APP_URL || 'https://app.example.com'}/employee/formulare/einsaetze/${doc.id}`;
-            console.log('[ReminderEmail]', { to: email, formLink, assignmentId: doc.id, missingDailySignature: !dailySigned, formNotDone: !formDone });
+            if (!email) {
+                console.warn('[ReminderEmail] Keine E-Mail-Adresse für User', { userId: data.userId, assignmentId: doc.id });
+                continue;
+            }
+            const html = renderReminderEmailHtml({
+                employeeName: typeof (user === null || user === void 0 ? void 0 : user.displayName) === 'string' ? user.displayName : undefined,
+                formLink,
+                missingDailySignature: !dailySigned,
+                formNotDone: !formDone,
+            });
+            // Mail in die Queue legen; der Firestore-Trigger `processMailQueue`
+            // (default-Codebase) übernimmt den Versand. Deterministische ID
+            // verhindert Duplikate, wenn der Job mehrfach am selben Tag läuft.
+            const today = new Date().toISOString().slice(0, 10);
+            const mailId = `formReminder_${doc.id}_${today}`;
+            try {
+                await db.collection('mail').doc(mailId).create({
+                    to: email,
+                    subject: 'Erinnerung: Einsatz-Formular ausfüllen',
+                    html,
+                    text: `Bitte füllen Sie das Einsatz-Formular aus: ${formLink}`,
+                    delivery: {
+                        state: 'PENDING',
+                        attempts: 0,
+                        error: null,
+                        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                    },
+                });
+                console.log('[ReminderEmail] eingereiht', { to: email, assignmentId: doc.id, mailId });
+            }
+            catch (e) {
+                const code = e.code;
+                if (code === 6) {
+                    // ALREADY_EXISTS: Erinnerung für heute wurde bereits eingereiht
+                    continue;
+                }
+                console.error('[ReminderEmail] Einreihen fehlgeschlagen', { assignmentId: doc.id }, e);
+            }
         }
     }
 }

@@ -62,6 +62,13 @@ export const sendInvitationEmailCF = functions.https.onCall(async (data, context
   const { sendInvitationEmailHandler } = await import('./email');
   return sendInvitationEmailHandler(data as Parameters<typeof sendInvitationEmailHandler>[0], context);
 });
+export const sendAssignmentSignatureEmailCF = functions.https.onCall(async (data, context) => {
+  const { sendAssignmentSignatureEmailHandler } = await import('./email');
+  return sendAssignmentSignatureEmailHandler(data as Parameters<typeof sendAssignmentSignatureEmailHandler>[0], context);
+});
+
+// Mail-Queue: Dokument in Collection `mail` anlegen → E-Mail wird versendet (Trigger-Email-Muster)
+export { processMailQueue, retryMailQueue } from './mailQueue';
 export const sendInvitationEmailHttp = functions.https.onRequest(async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });

@@ -38,34 +38,96 @@ async function getTransporter(): Promise<import('nodemailer').Transporter | null
 }
 
 export interface SendTemplatedEmailPayload {
-  to: string;
+  to: string | string[];
   subject: string;
-  html: string;
+  html?: string;
   text?: string;
   headers?: Record<string, string>;
 }
 
-export async function sendTemplatedEmail(
-  payload: SendTemplatedEmailPayload
-): Promise<{ success: boolean; fallback?: boolean }> {
+export interface SendEmailResult {
+  success: boolean;
+  fallback?: boolean;
+  provider?: 'resend' | 'smtp';
+  error?: string;
+}
+
+/**
+ * Versand per Resend (https://resend.com) – nur API-Key nötig, kein SMTP.
+ * Env: RESEND_API_KEY (Pflicht), optional RESEND_FROM (z. B. "SchichtKlar <noreply@ihredomain.de>").
+ */
+async function sendViaResend(payload: SendTemplatedEmailPayload): Promise<SendEmailResult> {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) return { success: false, fallback: true, error: 'RESEND_API_KEY nicht gesetzt' };
+
+  const from = process.env.RESEND_FROM?.trim() || 'SchichtKlar <onboarding@resend.dev>';
+  try {
+    const { Resend } = await import('resend');
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from,
+      to: payload.to,
+      subject: payload.subject,
+      html: payload.html ?? '',
+      text: payload.text ?? '',
+      headers: payload.headers,
+    });
+    if (error) {
+      console.error('[Email:Resend]', error);
+      return { success: false, provider: 'resend', error: error.message };
+    }
+    return { success: true, provider: 'resend' };
+  } catch (e) {
+    console.error('[Email:Resend]', e);
+    return { success: false, provider: 'resend', error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+async function sendViaSmtp(payload: SendTemplatedEmailPayload): Promise<SendEmailResult> {
   const transporter = await getTransporter();
   const config = getSmtpConfig();
 
   if (!transporter || !config.from) {
-    console.log('[Email:FALLBACK] sendTemplatedEmail', payload);
-    return { success: false, fallback: true };
+    return { success: false, fallback: true, error: 'SMTP nicht konfiguriert (SMTP_HOST/SMTP_USER/SMTP_PASS)' };
   }
 
-  await transporter.sendMail({
-    from: config.from,
+  try {
+    await transporter.sendMail({
+      from: config.from,
+      to: payload.to,
+      subject: payload.subject,
+      html: payload.html,
+      text: payload.text,
+      headers: payload.headers,
+    });
+    return { success: true, provider: 'smtp' };
+  } catch (e) {
+    console.error('[Email:SMTP]', e);
+    return { success: false, provider: 'smtp', error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/**
+ * Zentraler E-Mail-Versand. Provider-Kette: Resend (falls RESEND_API_KEY gesetzt) → SMTP.
+ * Ist kein Provider konfiguriert, wird die Mail nur geloggt (fallback: true).
+ */
+export async function sendTemplatedEmail(
+  payload: SendTemplatedEmailPayload
+): Promise<SendEmailResult> {
+  if (process.env.RESEND_API_KEY?.trim()) {
+    const viaResend = await sendViaResend(payload);
+    if (viaResend.success) return viaResend;
+  }
+
+  const viaSmtp = await sendViaSmtp(payload);
+  if (viaSmtp.success) return viaSmtp;
+
+  console.log('[Email:FALLBACK] sendTemplatedEmail', {
     to: payload.to,
     subject: payload.subject,
-    html: payload.html,
-    text: payload.text,
-    headers: payload.headers,
+    error: viaSmtp.error,
   });
-
-  return { success: true };
+  return { success: false, fallback: true, error: viaSmtp.error };
 }
 
 interface InviteEmailPayload {
@@ -93,40 +155,6 @@ function renderInviteEmailHtml(payload: InviteEmailPayload): string {
   `;
 }
 
-/**
- * Versand per Resend (https://resend.com) – nur API-Key nötig, kein SMTP.
- * Env: RESEND_API_KEY (Pflicht), optional RESEND_FROM (z. B. "JobFlow <noreply@ihredomain.de>").
- */
-async function sendInvitationViaResend(
-  payload: InviteEmailPayload,
-  html: string,
-  text: string
-): Promise<{ success: boolean; fallback?: boolean }> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  if (!apiKey) return { success: false, fallback: true };
-
-  const from = process.env.RESEND_FROM?.trim() || 'JobFlow <onboarding@resend.dev>';
-  try {
-    const { Resend } = await import('resend');
-    const resend = new Resend(apiKey);
-    const { error } = await resend.emails.send({
-      from,
-      to: payload.to,
-      subject: 'Einladung zu JobFlow',
-      html,
-      text,
-    });
-    if (error) {
-      console.error('[Email:Resend]', error);
-      return { success: false, fallback: true };
-    }
-    return { success: true };
-  } catch (e) {
-    console.error('[Email:Resend]', e);
-    return { success: false, fallback: true };
-  }
-}
-
 /** Sendet die Einladungs-E-Mail (ohne Auth – für HTTP-Aufruf aus der API). */
 export async function sendInvitationEmailInternal(
   data: InviteEmailPayload
@@ -142,18 +170,13 @@ export async function sendInvitationEmailInternal(
     `Bitte öffnen Sie innerhalb von 24 Stunden folgenden Link: ${acceptLink}`,
   ].join('\n\n');
 
-  if (process.env.RESEND_API_KEY?.trim()) {
-    const res = await sendInvitationViaResend({ to, companyName: company, acceptLink }, html, text);
-    if (res.success) return res;
-  }
-
   const result = await sendTemplatedEmail({
     to,
     subject: 'Einladung zu JobFlow',
     html,
     text,
   });
-  return { success: !result.fallback, fallback: result.fallback };
+  return { success: result.success, fallback: result.fallback };
 }
 
 /** Handler for lazy-load from index (avoids loading nodemailer at deploy). */
@@ -167,9 +190,7 @@ export async function sendInvitationEmailHandler(
   return sendInvitationEmailInternal(data);
 }
 
-export const sendInvitationEmailCF = functions.https.onCall(sendInvitationEmailHandler);
-
-/** HTTP-Variante von sendInvitationEmailHttp ist in index.ts definiert (lazy load). */
+/** Callable-Wrapper (sendInvitationEmailCF) und HTTP-Variante sind in index.ts definiert (lazy load). */
 
 export interface RenderFacilityAssignmentTakenPayload {
   employeeName: string;
@@ -234,7 +255,11 @@ function renderAssignmentSignatureEmailHtml(payload: AssignmentSignatureEmailPay
   `;
 }
 
-export const sendAssignmentSignatureEmailCF = functions.https.onCall(async (data: AssignmentSignatureEmailPayload, context) => {
+/** Handler for lazy-load from index (avoids loading email deps at deploy). */
+export async function sendAssignmentSignatureEmailHandler(
+  data: AssignmentSignatureEmailPayload,
+  context: { auth?: { uid: string }; authType?: string }
+): Promise<{ success: boolean; fallback?: boolean }> {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Authentication required.');
   }
@@ -279,7 +304,7 @@ export const sendAssignmentSignatureEmailCF = functions.https.onCall(async (data
     ].filter(Boolean).join('\n\n'),
   });
 
-  return { success: true, fallback: result.fallback };
-});
+  return { success: result.success, fallback: result.fallback };
+}
 
 
