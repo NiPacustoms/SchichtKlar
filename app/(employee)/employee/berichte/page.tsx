@@ -124,7 +124,7 @@ export default function BerichtePage() {
   };
 
   if (isLoading) {
-    return <LoadingSpinner message="Berichte werden geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Berichte werden geladen..." />;
   }
 
   if (error) {

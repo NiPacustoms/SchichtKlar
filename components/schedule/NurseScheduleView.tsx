@@ -24,8 +24,8 @@ import {
   ButtonGroup,
   Card,
   CardContent,
-  CircularProgress,
   IconButton,
+  Skeleton,
   Stack,
   ToggleButton,
   ToggleButtonGroup,
@@ -123,9 +123,13 @@ export function NurseScheduleView() {
   const upcomingForBox = [...pendingAssignments, ...upcomingAssignments].slice(0, 5);
 
   if (isLoading) {
+    // Skeleton spiegelt das Ziel-Layout: Titel, Karte, Kalender
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-        <CircularProgress />
+      <Box role="status" aria-live="polite" aria-label="Dienstplan wird geladen">
+        <Skeleton variant="text" width={220} height={40} sx={{ mb: 1 }} />
+        <Skeleton variant="text" width={320} height={20} sx={{ mb: 3 }} />
+        <Skeleton variant="rounded" height={120} sx={{ mb: 3, borderRadius: 2 }} />
+        <Skeleton variant="rounded" height={360} sx={{ borderRadius: 2 }} />
       </Box>
     );
   }

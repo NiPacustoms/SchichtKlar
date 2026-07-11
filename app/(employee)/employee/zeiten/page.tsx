@@ -387,7 +387,7 @@ export default function EmployeeTimesPage() {
   const stats = getTimeStats();
 
   if (authLoading || isLoading) {
-    return <LoadingSpinner message="Zeiten werden geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Zeiten werden geladen..." />;
   }
 
   if (error) {

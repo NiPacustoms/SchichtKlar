@@ -134,7 +134,7 @@ export default function AdminBerichtePage() {
   };
 
   if (isLoading) {
-    return <LoadingSpinner message="Berichte werden geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Berichte werden geladen..." />;
   }
 
   if (error) {

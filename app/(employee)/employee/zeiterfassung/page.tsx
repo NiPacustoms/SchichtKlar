@@ -260,7 +260,7 @@ export default function TimePage() {
   };
 
   if (authLoading || isLoading || loadingAssignment) {
-    return <LoadingSpinner message="Zeiterfassung wird geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Zeiterfassung wird geladen..." />;
   }
 
   if (error) {

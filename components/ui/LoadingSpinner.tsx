@@ -85,7 +85,7 @@ export function LoadingSpinner({
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+          backgroundColor: 'background.default',
           zIndex: 9999,
         }}
       >
@@ -93,9 +93,9 @@ export function LoadingSpinner({
           <AppLogo
             branding={branding}
             showLogo={shouldShowLogo}
-            width={240}
-            height={240}
-            sx={{ width: 240, height: 240 }}
+            width={160}
+            height={160}
+            sx={{ width: 160, height: 160 }}
             showSkeleton={false}
             fallbackBgColor="transparent"
             priority
@@ -130,7 +130,7 @@ export function LoadingSpinner({
               width: sizeValue * 0.4,
               height: sizeValue * 0.4,
               borderRadius: '50%',
-              background: `linear-gradient(135deg, ${spinnerColor} 0%, ${theme.palette.primary.dark || '#0a9396'} 100%)`,
+              backgroundColor: spinnerColor ?? theme.palette.primary.main,
             }}
           />
         </Box>
@@ -230,7 +230,7 @@ export function LoadingSpinner({
             width: sizeValue * 0.3,
             height: sizeValue * 0.3,
             borderRadius: '50%',
-            background: `linear-gradient(135deg, ${spinnerColor} 0%, ${theme.palette.primary.dark || '#0a9396'} 100%)`,
+            backgroundColor: spinnerColor ?? theme.palette.primary.main,
           }}
         />
       </Box>

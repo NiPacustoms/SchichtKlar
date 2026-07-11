@@ -167,7 +167,7 @@ export default function DocumentsPage() {
   };
 
   if (authLoading || isLoading) {
-    return <LoadingSpinner message="Nachweise werden geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Nachweise werden geladen..." />;
   }
 
   if (error) {

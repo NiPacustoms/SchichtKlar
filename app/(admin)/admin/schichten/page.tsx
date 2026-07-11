@@ -236,7 +236,7 @@ function AdminShiftsPageContent() {
   };
 
   if (authLoading || isLoading) {
-    return <LoadingSpinner message="Schichtverwaltung wird geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Schichtverwaltung wird geladen..." />;
   }
 
   if (error) {
@@ -556,11 +556,11 @@ function AdminShiftsPageContent() {
 function AdminShiftsPage() {
   // Ensure this only renders on client side
   if (typeof window === 'undefined') {
-    return <LoadingSpinner message="Schichtverwaltung wird geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Schichtverwaltung wird geladen..." />;
   }
 
   return (
-    <Suspense fallback={<LoadingSpinner message="Schichtverwaltung wird geladen..." />}>
+    <Suspense fallback={<LoadingSpinner variant="skeleton" message="Schichtverwaltung wird geladen..." />}>
       <AdminShiftsPageContent />
     </Suspense>
   );

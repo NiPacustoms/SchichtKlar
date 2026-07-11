@@ -97,7 +97,7 @@ export function LoadingState({
               width: sizeValue * 0.3,
               height: sizeValue * 0.3,
               borderRadius: '50%',
-              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark || '#0a9396'} 100%)`,
+              backgroundColor: theme.palette.primary.main,
               animation: 'pulse 2s ease-in-out infinite',
               '@keyframes pulse': {
                 '0%, 100%': { opacity: 1 },
@@ -287,7 +287,7 @@ export function DataLoadingState({ message = 'Daten werden geladen...' }: { mess
             width: 12,
             height: 12,
             borderRadius: '50%',
-            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark || '#0a9396'} 100%)`,
+            backgroundColor: theme.palette.primary.main,
             animation: 'pulse 2s ease-in-out infinite',
           }}
         />

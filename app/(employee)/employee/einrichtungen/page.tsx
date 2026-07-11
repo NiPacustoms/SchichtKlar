@@ -171,7 +171,7 @@ export default function EmployeeFacilitiesPage() {
   });
 
   if (authLoading || isLoading) {
-    return <LoadingSpinner message="Einrichtungen werden geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Einrichtungen werden geladen..." />;
   }
 
   if (error) {
