@@ -327,6 +327,25 @@ function createAppTheme(mode: PaletteMode) {
               },
             },
           },
+          MuiToggleButton: {
+            styleOverrides: {
+              root: {
+                textTransform: 'none',
+                fontWeight: 500,
+                color: surf.text.secondary,
+                borderColor: surf.border.main,
+                transition: transitionColors,
+                '&.Mui-selected': {
+                  backgroundColor: alpha(colors.petrol, isDark ? 0.24 : 0.1),
+                  color: isDark ? colors.petrolLight : colors.petrol,
+                  fontWeight: 600,
+                  '&:hover': {
+                    backgroundColor: alpha(colors.petrol, isDark ? 0.3 : 0.16),
+                  },
+                },
+              },
+            },
+          },
           MuiTooltip: {
             styleOverrides: {
               tooltip: {

@@ -148,7 +148,6 @@ export function OpenShiftCard({
             size="small"
             sx={{
               fontWeight: 600,
-              fontSize: '12px',
               height: 28,
             }}
           />
@@ -243,7 +242,6 @@ export function OpenShiftCard({
                     icon={hasQualification ? <CheckCircle /> : <Warning />}
                     sx={{
                       fontWeight: 600,
-                      fontSize: '12px',
                       height: 28,
                     }}
                   />
@@ -265,13 +263,13 @@ export function OpenShiftCard({
               borderColor: 'warning.main',
             }}
           >
-            <Typography variant="body2" fontWeight={600} sx={{ fontSize: '14px' }}>
+            <Typography variant="body2" fontWeight={600}>
               ⚠️ Fehlende Qualifikationen: {missingQualifications.join(', ')}
             </Typography>
             <Typography
               variant="caption"
               display="block"
-              sx={{ mt: 0.5, fontSize: '12px', lineHeight: 1.5 }}
+              sx={{ mt: 0.5 }}
             >
               Du kannst dich trotzdem bewerben, aber die Zuweisung ist nicht garantiert.
             </Typography>

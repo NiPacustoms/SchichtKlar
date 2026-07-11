@@ -13,7 +13,8 @@ import { DailySignatureDialog } from '@/components/admin/DailySignatureDialog';
 import { RelievingPersonnelSignatureDialog } from '@/components/assignments/RelievingPersonnelSignatureDialog';
 import { useState } from 'react';
 import { logger } from '@/lib/logging';
-import { Pause, Stop } from '@mui/icons-material';
+import { EventAvailable, Pause, Stop } from '@mui/icons-material';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { getTodayAssignment, listAssignmentsForUser } from '@/src/composition';
 import { shiftService } from '@/lib/services/shifts';
 import { facilityService } from '@/lib/services/facilities';
@@ -293,40 +294,17 @@ export default function TimePage() {
     return (
       <PageContainer maxWidth="standard">
         <Box sx={{ mb: 4 }}>
-          <Typography
-            variant="h4"
-            sx={{
-              color: 'text.primary',
-              fontWeight: 700,
-              mb: 1,
-            }}
-          >
+          <Typography variant="h2" component="h1" sx={{ color: 'text.primary', mb: 1 }}>
             Arbeitszeit erfassen
           </Typography>
         </Box>
 
-        <Alert
-          severity="info"
-          sx={{ mb: 3 }}
-          action={
-            <Button
-              color="inherit"
-              size="small"
-              onClick={() => router.push('/employee/dienstplan')}
-            >
-              Zum Dienstplan
-            </Button>
-          }
-        >
-          <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
-            Kein akzeptierter Einsatz vorhanden
-          </Typography>
-          <Typography variant="body2">
-            Sie können nur Zeiten erfassen, wenn Ihnen ein Einsatz zugewiesen und von Ihnen
-            akzeptiert wurde. Bitte prüfen Sie Ihren Dienstplan und akzeptieren Sie einen Einsatz,
-            bevor Sie mit der Zeiterfassung beginnen.
-          </Typography>
-        </Alert>
+        <EmptyState
+          icon={<EventAvailable />}
+          title="Kein akzeptierter Einsatz"
+          description="Zeiten lassen sich erst erfassen, wenn dir ein Einsatz zugewiesen wurde und du ihn akzeptiert hast. Prüfe dazu deinen Dienstplan."
+          action={{ label: 'Zum Dienstplan', onClick: () => router.push('/employee/dienstplan') }}
+        />
 
         {/* Zeige vorhandene Zeiterfassungen an */}
         {recentTimesheets && recentTimesheets.length > 0 && (
@@ -345,17 +323,10 @@ export default function TimePage() {
     <PageContainer maxWidth="standard">
       <Box sx={{ mb: 4, display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
         <Box>
-          <Typography
-            variant="h4"
-            sx={{
-              color: 'text.primary',
-              fontWeight: 700,
-              mb: 1,
-            }}
-          >
+          <Typography variant="h2" component="h1" sx={{ color: 'text.primary', mb: 1 }}>
             Arbeitszeit erfassen
           </Typography>
-          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             Erfasse deine Arbeitszeiten manuell
           </Typography>
         </Box>

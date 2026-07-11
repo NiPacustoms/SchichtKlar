@@ -1,6 +1,6 @@
 # Design-Progress Schichtklar
 
-## Status: IN ARBEIT | Bereich 1, Schritt: Foundation umgesetzt, Build-Verifikation läuft
+## Status: IN ARBEIT | Bereich 3 (Employee-Flows) beginnt; Bereiche 1+2 committed
 
 ## Token-Entscheidungen
 Alle Festlegungen leben in `lib/design-tokens.ts` (Single Source of Truth) + `lib/theme.ts` (MUI) + `app/globals.css` (CSS-Variablen, synchron gehalten).
@@ -18,17 +18,23 @@ Alle Festlegungen leben in `lib/design-tokens.ts` (Single Source of Truth) + `li
 11. **globals.css**: doppelte `@keyframes shimmer` entfernt; Shimmer einfarbig Petrol (kein Mustard-Regenbogen); Landing-Dauer-Animationen (blob/gradient-drift) entfernt — Klassen bleiben, statisch; Link-Hover petrol-700 statt petrol-400 (Kontrast!); Dark-Mode-Links petrol-300; scroll-behavior nur bei no-preference; body line-height 1.5; .glass-card ohne translateY-Hover; .metric-value 34px/tabular-nums.
 
 ## Bereiche
-1. Foundation — in Arbeit: Umsetzung fertig, Build läuft, danach Screenshots (Landing/Anmelden 390/768/1440) + Commit
-2. Kernkomponenten — offen
-3. Employee-Flows — offen
-4. Admin-Flows — offen
-5. Zustände — offen
-6. Abschluss-Pass — offen
+1. Foundation — fertig 9/10 (Commits f328386, 84697e3). Tokens konsistent, AA-geprüft, Build grün, Landing/Anmelden 390/768/1440 verifiziert.
+2. Kernkomponenten — fertig 9/10 (Commit 9285faa). GlassCard/AlertsPanel/EmptyState/Header/BottomNav/Sidebar/PageHeader/Dialoge verifiziert per Screenshot (Mobile-Header-Kollision behoben, Tab-Truncation behoben). DataTable-Sichtprüfung folgt in Bereich 4 (Admin-Tabellen).
+3. Employee-Flows — in Arbeit: als Nächstes SCAN von app/(employee)/employee/* (arbeitsplatz 427 Z., zeiterfassung 597 Z., zeiten 1326 Z., profil 1107 Z., dokumente 419 Z., dienstplan 75 Z. + schedule-Komponenten)
+4. Admin-Flows — offen (QuickActions-Pillen vereinheitlichen, KPI-Karussell prüfen, „Live“-Chip zurückstufen, AdminKPICard-Gradienten, blaue KPI-Zahl → Token)
+5. Zustände — offen (LoadingSpinner-Fullscreen-Gradient #f5f7fa→#c3cfe2 ersetzen, Spinner→Skeleton in Listen)
+6. Abschluss-Pass — offen (Landing-Leerraum unter Hero, registrieren-Lila-Gradient #667eea→#764ba2!, Dark-Mode-Screens)
 
 ## Nächster Schritt
-1. Build-Ergebnis prüfen (läuft im Hintergrund), bei Grün: `npm run start` + Screenshots von `/`, `/anmelden` in 390/768/1440 (Skript: Scratchpad `shoot.mjs`), Sichtprüfung.
-2. Commit Bereich 1: `design: Foundation — HIG-Typo-Skala, AA-Semantikfarben, weiche Schatten, flache Buttons, Motion-Disziplin`.
-3. Danach Bereich 2 (Kernkomponenten): GlassCard (Default-Hover scale(1.02) entschärfen → nur Schatten; `interactive`-Fälle prüfen), BottomNavigation (#005f73 6x → primary.main), boxShadow-Copy-Paste in 13 Dateien → Token, getShiftTypeColor-Duplikate → `shiftTypeColors`, EmptyState/LoadingSpinner-Gradienten, Gradient-Header (AdminKPICard, StaffStatsCard, StaffStatusCard, TopPerformers, QuickActions, NurseScheduleView #006d77-Gradient).
+Bereich 3 mobile-first: 1) SCAN aller Employee-Seiten + schedule/time-Komponenten, 2) AUDIT (getShiftTypeColor-Triplikat → shiftTypeColors-Token, fontSize-Overrides, borderRadius:4/5-Ausreißer in zeiten/page.tsx, Gradient-Header NurseScheduleView), 3) EXECUTE, 4) Screenshots 390/768/1440 als nurse@demo.de, 5) Commit.
+
+## Screenshot-/Emulator-Setup (WICHTIG für Folge-Sessions)
+- Firebase-Emulator läuft aus Scratchpad: `cd <scratchpad>/emu && <repo>/node_modules/.bin/firebase emulators:start --only auth,firestore --project demo-schichtklar` (Hintergrund; minimale firebase.json dort, weil Repo-firebase.json am Hosting-Framework scheitert)
+- Seed: `node <scratchpad>/seed-emulator.mjs` (Admin-SDK, legt admin@demo.de/admin123 + nurse@demo.de/nurse123 + Facilities/Shifts/Assignments an)
+- `next start` MUSS mit Emulator-Env laufen: `FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 GCLOUD_PROJECT=demo-schichtklar FIREBASE_PROJECT_ID=demo-schichtklar npm run start` (sonst 401 bei Session-Cookie)
+- Nach JEDEM Build den Server neu starten (sonst 400er auf veralteten Chunks!)
+- Screenshots: `WIDTHS=390,1440 node <scratchpad>/shoot-auth.mjs <outdir> nurse@demo.de nurse123 /employee/arbeitsplatz ...` (bypassCSP nötig, Cookie-Consent via initScript)
+- Öffentliche Seiten: `node <scratchpad>/shoot.mjs <outdir> <urls...>`
 
 ## Wichtige Umgebungs-/Arbeitsnotizen
 - **Unit-Tests sind auf dem Basis-Stand bereits rot** (10/12 Dateien, 21 Tests, u.a. shiftTimeUtils) — vorbestehend, NICHT durch Design-Arbeit. Maßstab: keine NEUEN Fehler.

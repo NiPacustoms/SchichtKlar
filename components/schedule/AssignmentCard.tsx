@@ -3,7 +3,7 @@
 import { logger } from '@/lib/logging';
 
 import { GlassCard } from '@/components/ui/GlassCard';
-import { assignmentStatusColors } from '@/lib/design-tokens';
+import { assignmentStatusColors,  getShiftTypeColor as getShiftTypeColorToken } from '@/lib/design-tokens';
 import { Assignment } from '@/lib/types';
 import { Cancel, CheckCircle, AccessTime, Person } from '@mui/icons-material';
 import { Box, Button, Chip, Typography, Stack } from '@mui/material';
@@ -82,20 +82,7 @@ export function AssignmentCard({
     }
   };
 
-  const _getShiftTypeColor = (type: string) => {
-    switch (type) {
-      case 'Frühdienst':
-        return '#0288D1';
-      case 'Spätdienst':
-        return '#2E7D32';
-      case 'Nachtdienst':
-        return '#7B1FA2';
-      case 'On-call':
-        return '#ED6C02';
-      default:
-        return '#666';
-    }
-  };
+  const _getShiftTypeColor = (type: string) => getShiftTypeColorToken(type);
 
   const statusHex = assignmentStatusColors[assignment.status] ?? assignmentStatusColors.pending;
 
@@ -140,7 +127,6 @@ export function AssignmentCard({
             size="small"
             sx={{
               fontWeight: 600,
-              fontSize: '12px',
               height: 28,
               backgroundColor: statusHex,
               color: '#fff',

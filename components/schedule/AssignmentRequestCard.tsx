@@ -25,6 +25,7 @@ import { assignmentService } from '@/lib/services/assignments';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { useState } from 'react';
+import { getShiftTypeColor as getShiftTypeColorToken } from '@/lib/design-tokens';
 
 interface AssignmentRequestCardProps {
   assignment: Assignment;
@@ -156,20 +157,7 @@ export function AssignmentRequestCard({
     }
   };
 
-  const getShiftTypeColor = (type: Shift['type']) => {
-    switch (type) {
-      case 'Frühdienst':
-        return '#0288D1';
-      case 'Spätdienst':
-        return '#2E7D32';
-      case 'Nachtdienst':
-        return '#7B1FA2';
-      case 'On-call':
-        return '#ED6C02';
-      default:
-        return '#666';
-    }
-  };
+  const getShiftTypeColor = (type: Shift['type']) => getShiftTypeColorToken(type);
 
   const handleAccept = () => {
     acceptMutation.mutate();

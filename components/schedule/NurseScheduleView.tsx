@@ -18,6 +18,7 @@ import {
 } from 'date-fns';
 import { de } from 'date-fns/locale';
 import {
+  alpha,
   Box,
   Button,
   ButtonGroup,
@@ -30,14 +31,8 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
-import {
-  CalendarMonth,
-  KeyboardArrowDown,
-  KeyboardArrowLeft,
-  KeyboardArrowRight,
-  Schedule,
-} from '@mui/icons-material';
-import { useRef, useState } from 'react';
+import { KeyboardArrowLeft, KeyboardArrowRight, Schedule } from '@mui/icons-material';
+import { useState } from 'react';
 import { AcceptShiftDialog } from './AcceptShiftDialog';
 import { MyAssignmentCard } from './MyAssignmentCard';
 import { Alert, Grid } from '@mui/material';
@@ -45,7 +40,6 @@ import { Alert, Grid } from '@mui/material';
 const WEEKDAY_LABELS = ['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'];
 
 export function NurseScheduleView() {
-  const calendarRef = useRef<HTMLDivElement>(null);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const [calendarPeriod, setCalendarPeriod] = useState<'week' | 'month'>('month');
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
@@ -105,10 +99,6 @@ export function NurseScheduleView() {
     setAcceptDialogOpen(true);
   };
 
-  const scrollToCalendar = () => {
-    calendarRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   const handlePrev = () => setCurrentDate(prev => addMonths(prev, -1));
   const handleNext = () => setCurrentDate(prev => addMonths(prev, 1));
   const handleToday = () => setCurrentDate(new Date());
@@ -157,21 +147,10 @@ export function NurseScheduleView() {
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography
-              variant="h4"
-              sx={{
-                color: 'text.primary',
-                fontWeight: 700,
-                mb: 0.5,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-              }}
-            >
-              <CalendarMonth sx={{ color: 'primary.main' }} />
+            <Typography variant="h2" component="h1" sx={{ color: 'text.primary', mb: 0.5 }}>
               Mein Dienstplan
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body2" color="text.secondary">
               Übersicht deiner geplanten und ausstehenden Schichten
             </Typography>
           </Box>
@@ -194,59 +173,52 @@ export function NurseScheduleView() {
 
       {viewMode === 'calendar' && (
         <>
-          {/* Anstehende Dienste – Teal Box */}
-          <Box
-            sx={{
-              background: 'linear-gradient(180deg, #006d77 0%, #00838f 50%, #00acc1 100%)',
-              color: 'white',
-              borderRadius: 2,
-              p: 2.5,
-              mb: 3,
-              boxShadow: '0 4px 12px rgba(0,109,119,0.25)',
-            }}
-          >
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-              <Schedule sx={{ fontSize: 22 }} />
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Anstehende Dienste
-              </Typography>
-            </Stack>
-            {upcomingForBox.length === 0 ? (
-              <Typography variant="body1">Keine anstehenden Dienste.</Typography>
-            ) : (
-              <Stack spacing={0.5}>
-                {upcomingForBox.map((a: any) => {
-                  const raw = a.startDate ?? a.assignedAt;
-                  const d = raw ? (typeof raw === 'string' ? new Date(raw) : raw) : null;
-                  const timeStr = a.startTime && a.endTime ? `${a.startTime} – ${a.endTime}` : '';
-                  return (
-                    <Typography key={a.id} variant="body2">
-                      {d ? format(d, 'EEE, d.M.', { locale: de }) : '–'}
-                      {timeStr ? ` · ${timeStr}` : ''}
-                    </Typography>
-                  );
-                })}
+          {/* Anstehende Dienste – ruhige Glas-Karte mit getöntem Icon */}
+          <Card className="glass" sx={{ mb: 3 }}>
+            <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+              <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor: theme => alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.24 : 0.1),
+                    color: theme => (theme.palette.mode === 'dark' ? 'primary.light' : 'primary.main'),
+                  }}
+                >
+                  <Schedule fontSize="small" />
+                </Box>
+                <Typography variant="h5" component="h2">
+                  Anstehende Dienste
+                </Typography>
               </Stack>
-            )}
-          </Box>
-
-          {/* Kalender unten – Hinweis + Nach unten */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              Kalender mit allen Schichten finden Sie unten.
-            </Typography>
-            <Button
-              size="small"
-              variant="outlined"
-              endIcon={<KeyboardArrowDown />}
-              onClick={scrollToCalendar}
-            >
-              Nach unten
-            </Button>
-          </Box>
+              {upcomingForBox.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  Keine anstehenden Dienste.
+                </Typography>
+              ) : (
+                <Stack spacing={0.75}>
+                  {upcomingForBox.map((a: any) => {
+                    const raw = a.startDate ?? a.assignedAt;
+                    const d = raw ? (typeof raw === 'string' ? new Date(raw) : raw) : null;
+                    const timeStr = a.startTime && a.endTime ? `${a.startTime} – ${a.endTime}` : '';
+                    return (
+                      <Typography key={a.id} variant="body2" className="tabular-nums">
+                        {d ? format(d, 'EEE, d.M.', { locale: de }) : '–'}
+                        {timeStr ? ` · ${timeStr}` : ''}
+                      </Typography>
+                    );
+                  })}
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Kalender-Steuerung: Woche / Monat, Pfeile, Heute, Monat/Jahr */}
-          <Box ref={calendarRef} sx={{ mb: 2 }}>
+          <Box sx={{ mb: 2 }}>
             <Box
               sx={{
                 display: 'flex',
@@ -330,13 +302,24 @@ export function NurseScheduleView() {
                             (monthInterval.indexOf(day) + 1) % 7 !== 0 ? `1px solid ${theme.palette.divider}` : 'none',
                           borderBottom: 1,
                           borderColor: 'divider',
-                          bgcolor: !isCurrentMonth ? 'action.hover' : today ? 'primary.light' : 'transparent',
+                          bgcolor: theme =>
+                            !isCurrentMonth
+                              ? 'transparent'
+                              : today
+                                ? alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.2 : 0.08)
+                                : 'transparent',
                           color: !isCurrentMonth ? 'text.disabled' : 'text.primary',
-                          ...(today && { border: '2px solid', borderColor: 'primary.main' }),
                           borderRadius: 0,
                         }}
                       >
-                        <Typography variant="body2" sx={{ fontWeight: today ? 700 : 400 }}>
+                        <Typography
+                          variant="body2"
+                          className="tabular-nums"
+                          sx={{
+                            fontWeight: today ? 700 : 400,
+                            color: today ? 'primary.main' : 'inherit',
+                          }}
+                        >
                           {format(day, 'd')}
                         </Typography>
                         {dayAssignments.length > 0 && (

@@ -197,21 +197,21 @@ export const assignmentStatusColors: Record<string, string> = {
 export const statusColors = assignmentStatusColors;
 
 /**
- * Schichttyp-Farben (Früh/Spät/Nacht) – eine zentrale Zuordnung
- * statt dreifach kopierter Material-Farben in den Karten.
+ * Schichttyp-Farben – eine zentrale Zuordnung statt vierfach
+ * kopierter Material-Farben in Karten und Hooks.
+ * Morgen = Blau, Nachmittag = Amber, Nacht = Violett, Bereitschaft = Teal.
  */
 export const shiftTypeColors: Record<string, string> = {
-  früh: semanticColors.info.main,
-  frueh: semanticColors.info.main,
-  early: semanticColors.info.main,
-  spät: semanticColors.warning.main,
-  spaet: semanticColors.warning.main,
-  late: semanticColors.warning.main,
-  nacht: '#6d28d9',
-  night: '#6d28d9',
-  tag: semanticColors.info.main,
-  day: semanticColors.info.main,
+  Frühdienst: semanticColors.info.main,
+  Spätdienst: semanticColors.warning.main,
+  Nachtdienst: '#6d28d9',
+  'On-call': '#0f766e',
 };
+
+/** Zentrale Schichttyp-Farbe; Fallback: neutrales Grau */
+export function getShiftTypeColor(type?: string): string {
+  return (type && shiftTypeColors[type]) || grey[500];
+}
 
 // Gradient definitions (CSS-ready) – nur für App-Hintergründe, nie für Flächen
 export const gradients = {

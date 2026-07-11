@@ -101,7 +101,6 @@ export function DocumentCard({
               size="small"
               sx={{
                 fontWeight: 600,
-                fontSize: '12px',
                 height: 28,
               }}
             />

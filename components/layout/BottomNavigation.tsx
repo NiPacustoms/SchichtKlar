@@ -146,7 +146,8 @@ export function BottomNav() {
         elevation={0}
       >
         <BottomNavigation
-          value={showMoreButton && isMoreActive ? mainTabs.length : Math.max(0, currentIndex)}
+          // Kein Tab aktiv markieren, wenn die Route zu keinem Tab gehört
+          value={showMoreButton && isMoreActive ? mainTabs.length : currentIndex === -1 ? false : currentIndex}
           showLabels
           sx={{
             minHeight: bottomNavHeightPx,

@@ -3,7 +3,7 @@
 import { GlassCard } from '@/components/ui/GlassCard';
 import { User } from '@/lib/types';
 import { usePermissions } from '@/contexts/PermissionsContext';
-import { Box, Grid, Typography } from '@mui/material';
+import { alpha, Box, Grid, Typography, useTheme } from '@mui/material';
 
 interface ProfileStatsProps {
   user: User;
@@ -17,6 +17,8 @@ interface ProfileStatsProps {
 }
 
 export function ProfileStats({ user, stats }: ProfileStatsProps) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const { canAccessAdminArea } = usePermissions();
   const formatDate = (date: Date) => {
     try {
@@ -33,10 +35,6 @@ export function ProfileStats({ user, stats }: ProfileStatsProps) {
 
   return (
     <Box>
-      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'text.primary' }}>
-        Übersicht
-      </Typography>
-
       <Grid container spacing={3}>
         {/* Benutzerkarte: Avatar links, Name/E-Mail/Rolle rechts, darunter Mitglied seit / Letzte Aktualisierung */}
         <Grid size={12}>
@@ -49,12 +47,12 @@ export function ProfileStats({ user, stats }: ProfileStatsProps) {
                     height: 80,
                     minWidth: 80,
                     borderRadius: '50%',
-                    backgroundColor: '#1B5E20',
+                    backgroundColor: alpha(theme.palette.primary.main, isDark ? 0.24 : 0.1),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
-                    fontSize: '2rem',
+                    color: isDark ? 'primary.light' : 'primary.main',
+                    fontSize: 28,
                     fontWeight: 600,
                   }}
                   aria-hidden
@@ -105,7 +103,7 @@ export function ProfileStats({ user, stats }: ProfileStatsProps) {
         <Grid size={{ xs: 12, sm: 4 }}>
           <GlassCard hover={false}>
             <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ color: '#E65100', fontWeight: 700, mb: 1 }}>
+              <Typography variant="h4" className="tabular-nums" sx={{ color: 'success.main', mb: 1 }}>
                 {stats.validDocuments}
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -117,7 +115,7 @@ export function ProfileStats({ user, stats }: ProfileStatsProps) {
         <Grid size={{ xs: 12, sm: 4 }}>
           <GlassCard hover={false}>
             <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ color: '#E65100', fontWeight: 700, mb: 1 }}>
+              <Typography variant="h4" className="tabular-nums" sx={{ color: 'warning.main', mb: 1 }}>
                 {stats.expiringDocuments}
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -129,7 +127,7 @@ export function ProfileStats({ user, stats }: ProfileStatsProps) {
         <Grid size={{ xs: 12, sm: 4 }}>
           <GlassCard hover={false}>
             <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ color: '#C62828', fontWeight: 700, mb: 1 }}>
+              <Typography variant="h4" className="tabular-nums" sx={{ color: 'error.main', mb: 1 }}>
                 {stats.expiredDocuments}
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -164,12 +162,13 @@ export function ProfileStats({ user, stats }: ProfileStatsProps) {
                   <Box
                     key={qualification}
                     sx={{
-                      px: 2,
-                      py: 1,
-                      borderRadius: 1,
-                      backgroundColor: 'primary.main',
-                      color: 'white',
-                      fontSize: '0.875rem',
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: '999px',
+                      backgroundColor: alpha(theme.palette.primary.main, isDark ? 0.24 : 0.1),
+                      color: isDark ? 'primary.light' : 'primary.dark',
+                      fontSize: 13,
+                      fontWeight: 500,
                     }}
                   >
                     {qualification}

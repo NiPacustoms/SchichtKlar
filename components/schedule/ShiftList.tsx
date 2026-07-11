@@ -10,6 +10,7 @@ import {
   getShiftStatusLabel,
   type ShiftDisplayStatus,
 } from '@/lib/utils/shiftStatus';
+import { getShiftTypeColor as getShiftTypeColorToken } from '@/lib/design-tokens';
 
 interface ShiftListProps {
   shifts: Shift[];
@@ -18,20 +19,7 @@ interface ShiftListProps {
 }
 
 export function ShiftList({ shifts, onRequestShift, showRequestButton = true }: ShiftListProps) {
-  const getShiftTypeColor = (type: Shift['type']) => {
-    switch (type) {
-      case 'Frühdienst':
-        return '#0288D1';
-      case 'Spätdienst':
-        return '#2E7D32';
-      case 'Nachtdienst':
-        return '#7B1FA2';
-      case 'On-call':
-        return '#ED6C02';
-      default:
-        return '#666';
-    }
-  };
+  const getShiftTypeColor = (type: Shift['type']) => getShiftTypeColorToken(type);
 
   const getStatusColor = (displayStatus: ShiftDisplayStatus) => {
     switch (displayStatus) {
@@ -107,7 +95,6 @@ export function ShiftList({ shifts, onRequestShift, showRequestButton = true }: 
                   size="small"
                   sx={{
                     fontWeight: 600,
-                    fontSize: '12px',
                     height: 28,
                   }}
                 />

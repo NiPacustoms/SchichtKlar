@@ -19,6 +19,7 @@ interface ExtendedDocument extends Document {
 }
 import { Upload, Description } from '@mui/icons-material';
 import { Box, Button, Grid, Tab, Tabs, Typography, Stack } from '@mui/material';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useState } from 'react';
 import { getDownloadURL, ref } from 'firebase/storage';
 import { getStorage } from '@/lib/firebase';
@@ -198,43 +199,34 @@ export default function DocumentsPage() {
 
   return (
     <PageContainer maxWidth="standard">
-      <Box sx={{ mb: 4 }}>
-        <Box
-          sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}
-        >
-          <Box>
-            <Typography
-              variant="h4"
-              sx={{
-                color: 'text.primary',
-                fontWeight: 700,
-                mb: 1,
-              }}
-            >
-              Meine Nachweise
-            </Typography>
-            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-              Verwalte deine Dokumente und behalte Ablaufdaten im Blick
-            </Typography>
-          </Box>
-          <Stack direction="row" spacing={2}>
+      <PageHeader
+        title="Meine Nachweise"
+        subtitle="Verwalte deine Dokumente und behalte Ablaufdaten im Blick"
+        actions={
+          <Stack direction="row" spacing={1}>
             <Button
               variant="outlined"
               startIcon={<Description />}
               onClick={() => setShowGenerator(true)}
             >
-              Dokument erstellen
+              Erstellen
             </Button>
             <Button variant="contained" startIcon={<Upload />} onClick={() => setShowUpload(true)}>
               Hochladen
             </Button>
           </Stack>
-        </Box>
-      </Box>
+        }
+      />
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
+        <Tabs
+          value={activeTab}
+          onChange={(_, newValue) => setActiveTab(newValue)}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+        >
           <Tab label={`Alle (${documents.length})`} />
           <Tab label={`Gültig (${validDocuments.length})`} />
           <Tab label={`Läuft ab (${expiringDocuments.length})`} />
