@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAdminDashboard } from '@/lib/hooks/useAdminDashboard';
 import { useRealtimeUpdates } from '@/lib/hooks/useRealtimeUpdates';
 import { AdminKPICard } from '@/components/admin/AdminKPICard';
-import { KPISlideshow } from '@/components/admin/KPISlideshow';
 import { QuickActions } from '@/components/admin/QuickActions';
 import { ExportReportDialog } from '@/components/admin/ExportReportDialog';
 import { AlertsPanel } from '@/components/admin/AlertsPanel';
@@ -18,8 +17,6 @@ import {
   People,
   Assignment as AssignmentIcon,
   TrendingUp,
-  Warning,
-  CheckCircle,
   Business,
   AccessTime,
   Block,
@@ -85,7 +82,7 @@ export default function AdminDashboardPage() {
             label={isConnected ? 'Live' : 'Offline'}
             color={isConnected ? 'success' : 'error'}
             size="small"
-            icon={isConnected ? <CheckCircle /> : <Warning />}
+            variant="outlined"
           />
         }
       />
@@ -132,9 +129,9 @@ export default function AdminDashboardPage() {
         </Box>
       )}
 
-      {/* KPI Cards – Slideshow */}
-      <Box key="kpi-slideshow" sx={{ mb: 4 }}>
-        <KPISlideshow autoAdvanceMs={5000}>
+      {/* KPI Cards – alle auf einen Blick (Grid statt Karussell) */}
+      <Grid key="kpi-grid" container spacing={3} sx={{ mb: 4 }}>
+        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
           <AdminKPICard
             title="Aktive Mitarbeiter"
             value={kpis.activeStaff}
@@ -144,34 +141,42 @@ export default function AdminDashboardPage() {
             trend={kpis.staffGrowth}
             onClick={() => router.push('/admin/mitarbeiter')}
           />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
           <AdminKPICard
             title="Offene Schichten"
             value={kpis.openShifts}
             subtitle="Diese Woche"
             icon={<AssignmentIcon />}
-            color="success.main"
+            color="warning.main"
             trend={kpis.shiftTrend}
             onClick={() => router.push('/admin/schichten?status=open')}
             priority={kpis.openShifts > 0 ? 1 : 2}
           />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
           <AdminKPICard
             title="Auslastung"
             value={`${kpis.utilization}%`}
             subtitle="Durchschnitt"
             icon={<TrendingUp />}
-            color="warning.main"
+            color="primary.main"
             trend={kpis.utilizationTrend}
             onClick={() => router.push('/admin/berichte')}
           />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
           <AdminKPICard
             title="Einrichtungen"
             value={kpis.facilities}
             subtitle="Aktive Standorte"
             icon={<Business />}
-            color="secondary.main"
+            color="primary.main"
             trend={kpis.facilityTrend}
             onClick={() => router.push('/admin/berichte')}
           />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
           <AdminKPICard
             title="Wochenlimit"
             value={kpis.weeklyLimitBlocked > 0 ? `${kpis.weeklyLimitBlocked} überschritten` : 'OK'}
@@ -185,8 +190,8 @@ export default function AdminDashboardPage() {
             priority={kpis.weeklyLimitBlocked > 0 ? 1 : kpis.weeklyLimitWarning > 0 ? 2 : 3}
             onClick={() => router.push('/admin/mitarbeiter')}
           />
-        </KPISlideshow>
-      </Box>
+        </Grid>
+      </Grid>
 
       {/* Statistics with Tabs – ?noStats=1 hides to isolate key warning */}
       <Box key="statistics-tabs" sx={{ mb: 4 }}>
@@ -209,8 +214,8 @@ export default function AdminDashboardPage() {
           <UpcomingShiftsCards shifts={allShifts} maxItems={5} />
         </Grid>
         <Grid key="recent-activities" size={{ xs: 12, lg: 6 }}>
-          <Paper sx={{ p: 2, borderRadius: 2 }} elevation={0} variant="outlined">
-            <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <Paper sx={{ p: 2 }} elevation={0}>
+            <Typography variant="overline" sx={{ display: 'block', mb: 1.5, color: 'text.secondary' }}>
               Letzte Aktivitäten
             </Typography>
             <RecentActivities activities={recentActivities} />

@@ -1,5 +1,6 @@
 'use client';
 
+import { semanticColors } from '@/lib/design-tokens';
 import { useEffect, useMemo, useState } from 'react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { facilityService } from '@/lib/services/facilities';
@@ -205,16 +206,16 @@ export function OpenShiftCard({
             value={occupancyPercentage}
             sx={{
               height: 8,
-              borderRadius: 4,
+              borderRadius: '999px',
               backgroundColor: 'rgba(0,0,0,0.06)',
               '& .MuiLinearProgress-bar': {
-                background:
+                backgroundColor:
                   occupancyPercentage >= 80
-                    ? 'linear-gradient(90deg, #10b981 0%, #059669 100%)'
+                    ? semanticColors.success.main
                     : occupancyPercentage >= 50
-                      ? 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)'
-                      : 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)',
-                borderRadius: 4,
+                      ? semanticColors.warning.main
+                      : semanticColors.error.main,
+                borderRadius: '999px',
               },
             }}
           />

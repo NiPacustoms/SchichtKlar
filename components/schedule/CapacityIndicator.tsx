@@ -162,7 +162,7 @@ export function BulkCapacityIndicator({ shifts, showSummary = true }: BulkCapaci
         variant="determinate"
         value={percentage}
         color={color}
-        sx={{ height: 8, borderRadius: 4 }}
+        sx={{ height: 8, borderRadius: '999px' }}
       />
 
       {showSummary && (

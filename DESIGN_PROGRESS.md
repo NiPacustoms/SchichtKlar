@@ -1,6 +1,6 @@
 # Design-Progress Schichtklar
 
-## Status: IN ARBEIT | Bereich 3 (Employee-Flows) beginnt; Bereiche 1+2 committed
+## Status: IN ARBEIT | Bereich 4 (Admin-Flows) beginnt; Bereiche 1–3 committed
 
 ## Token-Entscheidungen
 Alle Festlegungen leben in `lib/design-tokens.ts` (Single Source of Truth) + `lib/theme.ts` (MUI) + `app/globals.css` (CSS-Variablen, synchron gehalten).
@@ -20,8 +20,8 @@ Alle Festlegungen leben in `lib/design-tokens.ts` (Single Source of Truth) + `li
 ## Bereiche
 1. Foundation — fertig 9/10 (Commits f328386, 84697e3). Tokens konsistent, AA-geprüft, Build grün, Landing/Anmelden 390/768/1440 verifiziert.
 2. Kernkomponenten — fertig 9/10 (Commit 9285faa). GlassCard/AlertsPanel/EmptyState/Header/BottomNav/Sidebar/PageHeader/Dialoge verifiziert per Screenshot (Mobile-Header-Kollision behoben, Tab-Truncation behoben). DataTable-Sichtprüfung folgt in Bereich 4 (Admin-Tabellen).
-3. Employee-Flows — in Arbeit: als Nächstes SCAN von app/(employee)/employee/* (arbeitsplatz 427 Z., zeiterfassung 597 Z., zeiten 1326 Z., profil 1107 Z., dokumente 419 Z., dienstplan 75 Z. + schedule-Komponenten)
-4. Admin-Flows — offen (QuickActions-Pillen vereinheitlichen, KPI-Karussell prüfen, „Live“-Chip zurückstufen, AdminKPICard-Gradienten, blaue KPI-Zahl → Token)
+3. Employee-Flows — fertig 9/10 (Commit fd897db). Alle 6 Employee-Screens per 390px-Screenshot vorher/nachher verifiziert: Dienstplan-Gradient-Banner raus, Dokumente-Overflow behoben, Profil-Fremdfarben semantisch, BottomNav-Active-Bug gefixt, shiftTypeColors zentralisiert. Rest-Punkte für Abschluss-Pass: Du/Sie-Mischung in Texten (zeiten: „Verwalten Sie“, dienstplan „deiner“), Arbeitsplatz-Stats-Row Umbruch bei 390 ok aber prüfenswert.
+4. Admin-Flows — in Arbeit: QuickActions-Pillen vereinheitlichen, KPI-Karussell prüfen, „Live“-Chip zurückstufen, AdminKPICard-Gradienten, blaue KPI-Zahl → Token, staff-simple #005f73-Reste, DataTable-Screens sichten (mitarbeiter, schichten, einsaetze, berichte, einstellungen)
 5. Zustände — offen (LoadingSpinner-Fullscreen-Gradient #f5f7fa→#c3cfe2 ersetzen, Spinner→Skeleton in Listen)
 6. Abschluss-Pass — offen (Landing-Leerraum unter Hero, registrieren-Lila-Gradient #667eea→#764ba2!, Dark-Mode-Screens)
 

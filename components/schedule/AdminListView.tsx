@@ -2,6 +2,7 @@
 
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ShiftManagementCard } from '@/components/admin/ShiftManagementCard';
+import { semanticColors } from '@/lib/design-tokens';
 import { Shift } from '@/lib/types';
 import { assignmentService } from '@/lib/services';
 import {
@@ -193,10 +194,9 @@ export function AdminListView({
 
   const _getCapacityColor = (assigned: number, capacity: number) => {
     const percentage = (assigned / capacity) * 100;
-    if (percentage >= 100) return '#4CAF50';
-    if (percentage >= 80) return '#8BC34A';
-    if (percentage >= 50) return '#FFC107';
-    return '#FF5722';
+    if (percentage >= 80) return semanticColors.success.main;
+    if (percentage >= 50) return semanticColors.warning.main;
+    return semanticColors.error.main;
   };
 
   if (shifts.length === 0) {
@@ -335,11 +335,11 @@ export function AdminListView({
             height: 8,
           },
           '&::-webkit-scrollbar-track': {
-            backgroundColor: 'rgba(0,0,0,0.05)',
+            backgroundColor: 'transparent',
           },
           '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.2)',
-            borderRadius: 4,
+            backgroundColor: 'var(--color-border-strong)',
+            borderRadius: '4px',
           },
         }}
       >
