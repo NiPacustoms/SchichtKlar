@@ -46,7 +46,7 @@ export class StaticHolidayProvider implements HolidayProvider {
       this.addDays(easter, -2),  // Karfreitag
       this.addDays(easter, 1),   // Ostermontag
       this.addDays(easter, 39),  // Christi Himmelfahrt
-      this.addDays(easter, 49),  // Pfingstmontag
+      this.addDays(easter, 50),  // Pfingstmontag (Ostersonntag + 50)
     );
 
     // Bundesland-spezifische Feiertage
@@ -68,9 +68,21 @@ export class StaticHolidayProvider implements HolidayProvider {
         holidays.push(new Date(normalizedYear, 7, 15));
       }
 
-      // Reformationstag (31. Oktober)
-      if (['BB', 'MV', 'SN', 'ST', 'TH'].includes(normalizedState)) {
+      // Reformationstag (31. Oktober) – seit 2018 auch HB/HH/NI/SH
+      if (['BB', 'HB', 'HH', 'MV', 'NI', 'SH', 'SN', 'ST', 'TH'].includes(normalizedState)) {
         holidays.push(new Date(normalizedYear, 9, 31));
+      }
+
+      // Internationaler Frauentag (8. März) – Berlin seit 2019, MV seit 2023
+      if (['BE', 'MV'].includes(normalizedState) && normalizedYear >= 2019) {
+        if (normalizedState === 'BE' || normalizedYear >= 2023) {
+          holidays.push(new Date(normalizedYear, 2, 8));
+        }
+      }
+
+      // Weltkindertag (20. September) – Thüringen seit 2019
+      if (normalizedState === 'TH' && normalizedYear >= 2019) {
+        holidays.push(new Date(normalizedYear, 8, 20));
       }
 
       // Allerheiligen (1. November)
@@ -116,7 +128,9 @@ export class StaticHolidayProvider implements HolidayProvider {
     const nov23 = new Date(year, 10, 23);
     const dayOfWeek = nov23.getDay();
     // Mittwoch = 3, also 3 Tage vorher
-    const daysToSubtract = (dayOfWeek + 4) % 7; // Berechnet Tage bis Mittwoch
+    // Mittwoch STRIKT vor dem 23.11.: fällt der 23.11. selbst auf einen
+    // Mittwoch (z. B. 2022), ist es der 16.11. – daher || 7.
+    const daysToSubtract = ((dayOfWeek + 4) % 7) || 7;
     return this.addDays(nov23, -daysToSubtract);
   }
 

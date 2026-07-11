@@ -69,3 +69,14 @@ Systematische Prüfung aller Kern-Workflows auf Logikfehler. Befunde (alle behob
 **Testabdeckung:** 17 neue Unit-Tests (`signatureSchedule.test.ts` 10, `computeNetHours.test.ts` 7). Gesamtsuite: **82 passed, 0 failed**.
 
 **Bewusst offen gelassen:** C1 (1 Einsatz pro Kalendertag vs. Zeit-Überlappung) bleibt eine fachliche Eigentümer-Entscheidung (schließt Split-Dienste aus). Wochenlimit-Berechnung nutzt Serverzeit (UTC) für Wochengrenzen – bei Europe/Berlin-Betrieb max. 1–2 h Unschärfe an Wochenrändern, dokumentiert.
+
+## 7. Logik-Audit, zweiter Pass (11.07.2026)
+
+| # | Schwere | Befund | Fix |
+|---|---|---|---|
+| L7 | **Hoch (Produktlücke)** | `nightHours`, `weekendHours`, `holidayHours`, `overtimeHours`, `surchargeAmount` wurden **nirgends berechnet** – alle Zuschlags- und Zeitkonten-Reports zeigten dauerhaft 0. | Serverseitiger Stunden-Breakdown in `submitTimesheet` (`functions/src/utils/workHoursBreakdown.ts`): Nacht 23–06 Uhr (§2 ArbZG), Sa/So-Buckets tagesgenau auch über Mitternacht, bundesweite Feiertage (Gauß-Formel), Überstunden > 8 h/Tag, Zuschläge (Nacht 25 %, Sonntag 50 %, Feiertag 125 % – §3b-EStG-üblich, Feiertag ersetzt Sonntag) auf Basis `users.hourlyRate`; ohne hinterlegten Lohn bleibt der Betrag 0 (keine erfundenen Werte). Pausen proportional verteilt. |
+| L8 | Hoch | Client-Konfliktprüfung `checkTimeOverlap` (Einsatz-Zuweisung): Nachtschichten wurden nicht normalisiert – Konflikte mit Schichten über Mitternacht wurden nie erkannt (gleiche Fehlerklasse wie L2, andere Stelle). | Endzeit ≤ Startzeit → +24 h vor dem Vergleich. |
+| L9 | Mittel | Feiertagsprovider: **Pfingstmontag = Ostern+49 (falsch, das ist Pfingstsonntag; korrekt +50)**; Buß- und Bettag fiel in Jahren, in denen der 23.11. selbst ein Mittwoch ist (z. B. 2022), auf den 23.11. statt 16.11.; Reformationstag fehlte für HB/HH/NI/SH (gesetzlich seit 2018); Berlin-Frauentag und Thüringen-Weltkindertag fehlten. | Alle korrigiert/ergänzt; 5 neue Tests pinnen die Regressionen. |
+| L10 | Mittel | Einsatz-Statusübergänge ohne Guards: abgelehnte/abgeschlossene Einsätze konnten wieder „angenommen", beliebige Status „abgeschlossen" werden. | `accept`/`decline`/`complete` prüfen jetzt den Ausgangsstatus. |
+
+**Testabdeckung:** +12 Tests (workHoursBreakdown 7, holidayProvider-Fixes 5). Gesamtsuite: **95 passed, 0 failed**.
