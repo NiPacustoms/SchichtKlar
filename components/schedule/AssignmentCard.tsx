@@ -167,7 +167,7 @@ export function AssignmentCard({
                 textTransform: 'none',
                 fontWeight: 600,
                 borderRadius: 2,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
+                boxShadow: 'var(--shadow-soft)',
               }}
             >
               Annehmen

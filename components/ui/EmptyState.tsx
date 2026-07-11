@@ -108,7 +108,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
                 textTransform: 'none',
                 fontWeight: 600,
                 px: 3,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
+                boxShadow: 'var(--shadow-soft)',
               }}
             >
               {action.label}
