@@ -240,17 +240,17 @@ export default function HomePage() {
           >
             <Box sx={{ mt: { xs: 16, md: 24 }, textAlign: 'center', maxWidth: 760 }}>
               <Typography
-                variant="h2"
-                sx={{ fontWeight: 800, lineHeight: 1.1, mb: 2, textAlign: 'center' }}
+                variant="h1"
+                sx={{ lineHeight: 1.15, mb: 2, textAlign: 'center' }}
               >
-                Personalplanung im Gesundheitswesen - einfach. sicher. schnell.
+                Personalplanung im Gesundheitswesen – einfach. sicher. schnell.
               </Typography>
               <Typography
                 variant="subtitle1"
                 color="text.secondary"
                 sx={{ mb: 4, textAlign: 'center' }}
               >
-                Von Schichtplanung bis Auswertung - alles in einer modernen App, die zu Ihrem
+                Von Schichtplanung bis Auswertung – alles in einer modernen App, die zu Ihrem
                 Workflow passt.
               </Typography>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
@@ -277,7 +277,7 @@ export default function HomePage() {
       {/* Features mit Scroll-Animation */}
       <Container
         maxWidth="xl"
-        sx={{ maxWidth: '1280px', pt: { xs: 16, md: 24 }, pb: { xs: 8, md: 12 } }}
+        sx={{ maxWidth: '1280px', pt: { xs: 8, md: 12 }, pb: { xs: 8, md: 12 } }}
       >
         <Box
           ref={featuresRef}
@@ -316,6 +316,7 @@ export default function HomePage() {
           ].map((f, index) => (
             <GlassCard
               key={f.title}
+              hover={false}
               sx={{
                 p: 3,
                 height: '100%',
@@ -325,19 +326,12 @@ export default function HomePage() {
                   animation: 'landing-fade-in-up 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards',
                   animationDelay: `${index * 80}ms`,
                 }),
-                transition: 'transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease',
-                '&:hover': {
-                  transform: 'translateY(-6px) scale(1.02)',
-                  boxShadow: theme => theme.shadows[6],
-                  borderColor: theme =>
-                    theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)',
-                },
               }}
             >
               <Stack direction="row" spacing={2} alignItems="flex-start">
                 <Box color="primary.main">{f.icon}</Box>
                 <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  <Typography variant="h6" component="h3">
                     {f.title}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">

@@ -404,21 +404,21 @@ export default function BerichtePage() {
                         <Line
                           type="monotone"
                           dataKey="totalHours"
-                          stroke="#1976d2"
+                          stroke="#005f73"
                           strokeWidth={2}
                           name="Gesamtstunden"
                         />
                         <Line
                           type="monotone"
                           dataKey="regularHours"
-                          stroke="#4caf50"
+                          stroke="#047857"
                           strokeWidth={2}
                           name="Regulär"
                         />
                         <Line
                           type="monotone"
                           dataKey="overtimeHours"
-                          stroke="#ff9800"
+                          stroke="#b45309"
                           strokeWidth={2}
                           name="Überstunden"
                         />
@@ -444,12 +444,12 @@ export default function BerichtePage() {
                             {
                               name: 'Regulär',
                               value: workTimeReport.regularHours,
-                              color: '#4caf50',
+                              color: '#047857',
                             },
                             {
                               name: 'Überstunden',
                               value: workTimeReport.overtimeHours,
-                              color: '#ff9800',
+                              color: '#b45309',
                             },
                           ]}
                           cx="50%"
@@ -457,19 +457,19 @@ export default function BerichtePage() {
                           labelLine={false}
                           label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                           outerRadius={80}
-                          fill="#8884d8"
+                          fill="#0a9396"
                           dataKey="value"
                         >
                           {[
                             {
                               name: 'Regulär',
                               value: workTimeReport.regularHours,
-                              color: '#4caf50',
+                              color: '#047857',
                             },
                             {
                               name: 'Überstunden',
                               value: workTimeReport.overtimeHours,
-                              color: '#ff9800',
+                              color: '#b45309',
                             },
                           ].map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />

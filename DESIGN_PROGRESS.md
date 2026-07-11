@@ -1,6 +1,6 @@
 # Design-Progress Schichtklar
 
-## Status: IN ARBEIT | Bereich 5 (Zustände) beginnt; Bereiche 1–4 committed
+## Status: IN ARBEIT | Bereich 6 (Abschluss-Pass) beginnt; Bereiche 1–5 committed
 
 ## Token-Entscheidungen
 Alle Festlegungen leben in `lib/design-tokens.ts` (Single Source of Truth) + `lib/theme.ts` (MUI) + `app/globals.css` (CSS-Variablen, synchron gehalten).
@@ -22,8 +22,8 @@ Alle Festlegungen leben in `lib/design-tokens.ts` (Single Source of Truth) + `li
 2. Kernkomponenten — fertig 9/10 (Commit 9285faa). GlassCard/AlertsPanel/EmptyState/Header/BottomNav/Sidebar/PageHeader/Dialoge verifiziert per Screenshot (Mobile-Header-Kollision behoben, Tab-Truncation behoben). DataTable-Sichtprüfung folgt in Bereich 4 (Admin-Tabellen).
 3. Employee-Flows — fertig 9/10 (Commit fd897db). Alle 6 Employee-Screens per 390px-Screenshot vorher/nachher verifiziert: Dienstplan-Gradient-Banner raus, Dokumente-Overflow behoben, Profil-Fremdfarben semantisch, BottomNav-Active-Bug gefixt, shiftTypeColors zentralisiert. Rest-Punkte für Abschluss-Pass: Du/Sie-Mischung in Texten (zeiten: „Verwalten Sie“, dienstplan „deiner“), Arbeitsplatz-Stats-Row Umbruch bei 390 ok aber prüfenswert.
 4. Admin-Flows — fertig 9/10 (Commit df7c0ac). Übersicht + Mitarbeiter per Screenshot 390/1440 verifiziert (KPI-Grid, ruhige QuickActions, konsistente Stat-Karten). Offen für Abschluss-Pass: BottomNav erscheint auch auf Desktop (bewusste Alt-Entscheidung der App — es gibt keine sichtbare Sidebar im Layout; NICHT einfach ausblenden, sonst Desktop ohne Navigation), einsaetze/berichte/einstellungen nur stichprobenhaft gesichtet.
-5. Zustände — in Arbeit (LoadingSpinner-Fullscreen-Gradient #f5f7fa→#c3cfe2 ersetzen, Spinner→Skeleton in Listen-Seiten: dienstplan employee+admin, berichte beide, FacilityHoursDashboard etc., LoadingStates.tsx Gradienten)
-6. Abschluss-Pass — offen (Landing-Leerraum unter Hero, registrieren-Lila-Gradient #667eea→#764ba2!, Dark-Mode-Screens)
+5. Zustände — fertig 9/10 (Commit d48b791). 14 Seiten auf Skeleton umgestellt, NurseScheduleView-Layout-Skeleton, Loading-Gradienten entfernt. EmptyState/Fehler bereits in B2 überarbeitet; Erfolgs-Feedback = bestehende Toasts (ok).
+6. Abschluss-Pass — in Arbeit: registrieren-Lila-Gradient (#667eea→#764ba2), Landing-Leerraum unter Hero, Dark-Mode-Screens prüfen (390/1440), Du/Sie-Mischung dokumentieren, letzte Hex-Reste sweepen, finale Selbstbewertung
 
 ## Nächster Schritt
 Bereich 3 mobile-first: 1) SCAN aller Employee-Seiten + schedule/time-Komponenten, 2) AUDIT (getShiftTypeColor-Triplikat → shiftTypeColors-Token, fontSize-Overrides, borderRadius:4/5-Ausreißer in zeiten/page.tsx, Gradient-Header NurseScheduleView), 3) EXECUTE, 4) Screenshots 390/768/1440 als nurse@demo.de, 5) Commit.

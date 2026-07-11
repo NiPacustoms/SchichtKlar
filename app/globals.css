@@ -153,6 +153,14 @@ body {
     background-image: var(--gradient-brand-light);
   }
 }
+
+/* App-Dunkelmodus (data-theme) schlägt die System-Preference –
+   sonst bleibt der Hintergrund hell, während Text/Karten dunkel rendern */
+[data-theme='dark'] body,
+[data-theme='dark'] .gradient-background {
+  background-color: var(--color-background);
+  background-image: var(--gradient-brand);
+}
 ::selection {
   background: rgba(0, 95, 115, 0.2);
   color: var(--color-text-primary);
