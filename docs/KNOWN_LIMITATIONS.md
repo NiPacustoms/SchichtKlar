@@ -31,7 +31,7 @@ Ehrliche Auflistung aller bekannten Einschränkungen, offenen Entscheidungen und
 | # | Thema | Details |
 |---|---|---|
 | C1 | **Regel „1 Einsatz pro Kalendertag"** | Aktuell als **Zeit-Überlappung** implementiert (`createWithMatching.ts`), nicht als „ein Einsatz pro Kalendertag". Zwei nicht-überlappende Einsätze am selben Tag wären möglich. Wenn die harte Kalendertag-Regel gilt, muss der Konflikt-Check umgestellt werden (schließt Split-Shifts aus → Freigabe nötig). Siehe `QA_REPORT.md`. |
-| C2 | **Regel „Signaturblock max. 7 Tage"** | Das Datenmodell (`signatureSchedule.requiredDates`) erlaubt beliebig viele Tage; eine harte serverseitige 7-Tage-Grenze wurde nicht gefunden. Empfehlung: bei Anlage validieren (`requiredDates.length <= 7`). |
+| C2 | ~~Regel „Signaturblock max. 7 Tage"~~ **ERLEDIGT (11.07.2026)** | `calculateSignatureSchedule` garantiert die 7-Tage-Blöcke jetzt konstruktiv (Sonntage + Einsatzende, Termin nie nach Einsatzende); zusätzlich prüfbar via `validateSignatureScheduleMaxBlock()`. Dabei behobene Bugs: UTC-Off-by-one der Datums-Keys (Signaturtermine an Sonntagen verfehlten den Abgleich), Signaturtermin lag bei kurzen Einsätzen ohne Sonntag NACH dem Einsatzende (dadurch öffnete sich der Einrichtungs-Signatur-Dialog praktisch nie), Duplikat wenn Einsatzende = Sonntag. 10 neue Unit-Tests. |
 
 ## D. Architektur-Hinweise (kein Mangel, dokumentiert)
 

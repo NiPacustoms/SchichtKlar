@@ -52,3 +52,20 @@ Zwei Regeln aus der Spezifikation weichen vom implementierten Verhalten ab. Beid
 ## 5. Fazit
 
 Der **produktive Code** ist statisch verifiziert (Typecheck, Lint, Build) und in den sicherheitskritischen Pfaden (Firestore-Rules) sowie den arbeitsrechtlichen Kernberechnungen durch neue, grüne Tests abgesichert. Die Legacy-Unit-Suite ist saniert und CI-gebunden (65 passed, 0 übersprungen). Offen bleiben zwei fachliche Entscheidungen (B1, B2) beim Eigentümer.
+
+## 6. Logik-Audit der Zeiterfassungs-Workflows (11.07.2026)
+
+Systematische Prüfung aller Kern-Workflows auf Logikfehler. Befunde (alle behoben, mit Tests gepinnt):
+
+| # | Schwere | Befund | Fix |
+|---|---|---|---|
+| L1 | **Kritisch** | Die UI reichte Zeiterfassungen über den ungeschützten Client-Pfad ein (`timesheetService.submit` = direktes Status-Update). Die sichere Cloud Function `submitTimesheet` (serverseitige Stundenberechnung + vollständige ArbZG-Validierung §3/§4/§5 + Überschneidungsprüfung) wurde **nie aufgerufen** – die gesamte serverseitige Schutzlogik war wirkungslos. | Client-`submit()` ruft jetzt die Cloud Function auf; offline wird das Einreichen mit klarer Meldung verweigert (Erfassung bleibt offlinefähig). |
+| L2 | Hoch | ArbZG-Überschneidungsprüfung nutzte bei Nachtschichten die **unnormalisierte Endzeit** (Ende vor Start) – Überlappungen mit Nachtschichten wurden nicht erkannt. | Endzeit wird vor allen Prüfungen auf den Folgetag normalisiert. |
+| L3 | Hoch | §5-Ruhezeitprüfung: Nachtschicht-Erkennung verglich die Endzeit gegen Mitternacht statt gegen die Startzeit derselben Schicht – die Bedingung konnte nie zutreffen, die Ruhezeit wurde bei Nachtschichten um bis zu 24 h zu früh angesetzt. | Vergleich gegen die Schicht-Startzeit. |
+| L4 | Hoch | Negative/NaN-Stunden möglich: Pause ≥ Arbeitszeit oder ungültige HH:MM-Eingaben erzeugten negative bzw. NaN-`totalHours` (Client `create`/`update` UND Cloud Function). | Gemeinsamer validierter Rechenkern `computeNetHours()` (Client) + Plausibilitätsprüfung in `validateTimesheetArbZG` (Server). |
+| L5 | Hoch | Signatur-Zeitplan (Regel 8): UTC-Datums-Keys verschoben lokale Mitternachtstermine auf den Vortag; bei kurzen Einsätzen ohne Sonntag lag der Signaturtermin NACH dem Einsatzende. Praktische Folge: der Einrichtungs-Signatur-Dialog öffnete sich fast nie. | Lokale Datums-Keys, Termin auf Einsatzende geklemmt, Duplikat-Bereinigung, `validateSignatureScheduleMaxBlock()` als serverseitig nutzbare Prüfung. |
+| L6 | Mittel | Client-`submit()` prüfte den Ausgangsstatus nicht (bereits genehmigte Erfassung konnte auf „submitted" zurückgestuft werden). | Durch L1 mitbehoben – die Cloud Function prüft den Status. |
+
+**Testabdeckung:** 17 neue Unit-Tests (`signatureSchedule.test.ts` 10, `computeNetHours.test.ts` 7). Gesamtsuite: **82 passed, 0 failed**.
+
+**Bewusst offen gelassen:** C1 (1 Einsatz pro Kalendertag vs. Zeit-Überlappung) bleibt eine fachliche Eigentümer-Entscheidung (schließt Split-Dienste aus). Wochenlimit-Berechnung nutzt Serverzeit (UTC) für Wochengrenzen – bei Europe/Berlin-Betrieb max. 1–2 h Unschärfe an Wochenrändern, dokumentiert.
