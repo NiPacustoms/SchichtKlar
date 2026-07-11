@@ -101,7 +101,6 @@ export function DocumentCard({
               size="small"
               sx={{
                 fontWeight: 600,
-                fontSize: '12px',
                 height: 28,
               }}
             />
@@ -180,7 +179,7 @@ export function DocumentCard({
           PaperProps={{
             sx: {
               borderRadius: 2,
-              boxShadow: '0 12px 32px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.15)',
+              boxShadow: 'var(--shadow-large)',
               border: '1px solid rgba(0,95,115,0.08)',
               backdropFilter: 'blur(20px) saturate(180%)',
               mt: 1,

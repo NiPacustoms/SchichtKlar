@@ -2,7 +2,7 @@
 
 import { GlassCard } from '@/components/ui/GlassCard';
 import { User } from '@/lib/types';
-import { Avatar, Box, Chip, Typography } from '@mui/material';
+import { alpha, Avatar, Box, Chip, Typography } from '@mui/material';
 
 interface TopPerformersProps {
   performers: Array<{
@@ -46,12 +46,11 @@ export function TopPerformers({ performers }: TopPerformersProps) {
                 borderColor: 'divider',
                 borderRadius: 2,
                 backgroundColor: index === 0 ? 'rgba(0, 95, 115, 0.06)' : 'transparent',
-                transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+                transition: 'background-color 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
                   borderColor: 'primary.main',
                   backgroundColor:
                     index === 0 ? 'rgba(0, 95, 115, 0.08)' : 'rgba(0, 95, 115, 0.04)',
-                  transform: 'translateX(4px)',
                 },
               }}
             >
@@ -71,16 +70,19 @@ export function TopPerformers({ performers }: TopPerformersProps) {
                     sx={{
                       width: 40,
                       height: 40,
-                      background:
+                      backgroundColor: theme =>
+                        alpha(
+                          index === 0 ? theme.palette.primary.main : theme.palette.grey[500],
+                          theme.palette.mode === 'dark' ? 0.24 : 0.12
+                        ),
+                      color: theme =>
                         index === 0
-                          ? 'linear-gradient(135deg, #005f73 0%, #0a9396 100%)'
-                          : 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
-                      fontSize: '1rem',
-                      fontWeight: 700,
-                      boxShadow:
-                        index === 0
-                          ? '0 4px 12px rgba(0, 95, 115, 0.3)'
-                          : '0 2px 8px rgba(0,0,0,0.1)',
+                          ? theme.palette.mode === 'dark'
+                            ? theme.palette.primary.light
+                            : theme.palette.primary.main
+                          : 'text.secondary',
+                      fontSize: 16,
+                      fontWeight: 600,
                     }}
                   >
                     {performer.user.displayName?.charAt(0) || 'U'}
@@ -104,11 +106,7 @@ export function TopPerformers({ performers }: TopPerformersProps) {
                     label="Bester"
                     color="primary"
                     size="small"
-                    sx={{
-                      fontWeight: 700,
-                      fontSize: '12px',
-                      height: 28,
-                    }}
+                    sx={{ fontWeight: 600 }}
                   />
                 )}
               </Box>

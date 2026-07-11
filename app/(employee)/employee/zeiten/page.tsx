@@ -387,7 +387,7 @@ export default function EmployeeTimesPage() {
   const stats = getTimeStats();
 
   if (authLoading || isLoading) {
-    return <LoadingSpinner message="Zeiten werden geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Zeiten werden geladen..." />;
   }
 
   if (error) {
@@ -406,17 +406,10 @@ export default function EmployeeTimesPage() {
     <PageContainer maxWidth="wide">
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography
-          variant="h3"
-          sx={{
-            color: 'text.primary',
-            fontWeight: 700,
-            mb: 1,
-          }}
-        >
-          Zeiten & Zeitkonto
+        <Typography variant="h2" component="h1" sx={{ color: 'text.primary', mb: 1 }}>
+          Zeiten &amp; Zeitkonto
         </Typography>
-        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           Verwalten Sie Ihre Arbeitszeiten und Überstunden
         </Typography>
       </Box>
@@ -433,10 +426,10 @@ export default function EmployeeTimesPage() {
                 </Typography>
                 <Typography
                   variant="h2"
+                  className="tabular-nums"
                   sx={{
-                    fontWeight: 700,
+                    fontWeight: 600,
                     color: 'primary.main',
-                    fontFamily: 'monospace',
                   }}
                 >
                   {currentTime.toLocaleTimeString('de-DE', {
@@ -454,17 +447,17 @@ export default function EmployeeTimesPage() {
                     icon={<PlayArrow />}
                     label="Arbeitet"
                     color="success"
-                    sx={{ mb: 3, fontSize: '1rem', py: 2.5, px: 1 }}
+                    sx={{ mb: 3 }}
                   />
                   <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
                     Arbeitszeit
                   </Typography>
                   <Typography
                     variant="h1"
+                    className="tabular-nums"
                     sx={{
-                      fontWeight: 700,
+                      fontWeight: 600,
                       color: 'success.main',
-                      fontFamily: 'monospace',
                       mb: 1,
                     }}
                   >
@@ -494,17 +487,17 @@ export default function EmployeeTimesPage() {
                     icon={<Pause />}
                     label="Pause"
                     color="warning"
-                    sx={{ mb: 3, fontSize: '1rem', py: 2.5, px: 1 }}
+                    sx={{ mb: 3 }}
                   />
                   <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
                     Pausendauer
                   </Typography>
                   <Typography
                     variant="h1"
+                    className="tabular-nums"
                     sx={{
-                      fontWeight: 700,
+                      fontWeight: 600,
                       color: 'warning.main',
-                      fontFamily: 'monospace',
                       mb: 1,
                     }}
                   >
@@ -522,7 +515,7 @@ export default function EmployeeTimesPage() {
                     icon={<Stop />}
                     label="Nicht im Dienst"
                     color="default"
-                    sx={{ mb: 3, fontSize: '1rem', py: 2.5, px: 1 }}
+                    sx={{ mb: 3 }}
                   />
                   <Typography variant="body1" color="text.secondary">
                     Starten Sie eine Schicht, um die Zeiterfassung zu beginnen
@@ -670,7 +663,7 @@ export default function EmployeeTimesPage() {
                 <LinearProgress
                   variant="determinate"
                   value={Math.min((stats.todayWorkTimeMinutes / (8 * 60)) * 100, 100)}
-                  sx={{ height: 10, borderRadius: 5 }}
+                  sx={{ height: 8, borderRadius: '999px' }}
                   color={stats.todayWorkTimeMinutes >= 8 * 60 ? 'success' : 'primary'}
                 />
                 <Typography
@@ -768,7 +761,7 @@ export default function EmployeeTimesPage() {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card className="glass">
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="primary" sx={{ fontWeight: 600 }}>
+              <Typography variant="h4" color="primary" className="tabular-nums">
                 {stats.totalHours}
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -780,7 +773,7 @@ export default function EmployeeTimesPage() {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card className="glass">
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main" sx={{ fontWeight: 600 }}>
+              <Typography variant="h4" color="success.main" className="tabular-nums">
                 {stats.overtimeHours}
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -792,7 +785,7 @@ export default function EmployeeTimesPage() {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card className="glass">
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="warning.main" sx={{ fontWeight: 600 }}>
+              <Typography variant="h4" color="warning.main" className="tabular-nums">
                 {stats.sickDays}
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -845,11 +838,11 @@ export default function EmployeeTimesPage() {
                       height: 8,
                     },
                     '&::-webkit-scrollbar-track': {
-                      backgroundColor: 'rgba(0,0,0,0.05)',
+                      backgroundColor: 'transparent',
                     },
                     '&::-webkit-scrollbar-thumb': {
-                      backgroundColor: 'rgba(0,0,0,0.2)',
-                      borderRadius: 4,
+                      backgroundColor: 'var(--color-border-strong)',
+                      borderRadius: '4px',
                     },
                   }}
                 >
@@ -928,7 +921,7 @@ export default function EmployeeTimesPage() {
                     variant="determinate"
                     value={(stats.workHours / stats.totalHours) * 100}
                     color="primary"
-                    sx={{ height: 8, borderRadius: 4 }}
+                    sx={{ height: 8, borderRadius: '999px' }}
                   />
                 </Box>
 
@@ -943,14 +936,14 @@ export default function EmployeeTimesPage() {
                     variant="determinate"
                     value={(stats.overtimeHours / stats.totalHours) * 100}
                     color="success"
-                    sx={{ height: 8, borderRadius: 4 }}
+                    sx={{ height: 8, borderRadius: '999px' }}
                   />
                 </Box>
 
                 <Divider sx={{ my: 2 }} />
 
                 <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                  <Typography variant="h4" className="tabular-nums" sx={{ color: "primary.main" }}>
                     {stats.totalBalance}h
                   </Typography>
                   <Typography variant="body2" color="text.secondary">

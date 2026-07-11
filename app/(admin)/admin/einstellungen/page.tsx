@@ -363,7 +363,7 @@ export default function AdminSettingsPage() {
   };
 
   if (authLoading || isLoading) {
-    return <LoadingSpinner message="Einstellungen werden geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Einstellungen werden geladen..." />;
   }
 
   if (error) {

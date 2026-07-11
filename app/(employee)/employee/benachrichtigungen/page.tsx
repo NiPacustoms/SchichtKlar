@@ -273,7 +273,7 @@ export default function EmployeeNotificationsPage() {
   const filteredNotifications = getFilteredNotifications();
 
   if (authLoading || isLoading) {
-    return <LoadingSpinner message="Benachrichtigungen werden geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Benachrichtigungen werden geladen..." />;
   }
 
   if (error) {

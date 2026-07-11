@@ -306,8 +306,8 @@ export const StatisticsTabs = React.memo(
                       <XAxis dataKey="name" />
                       <YAxis />
                       <Tooltip content={<CustomTooltip />} />
-                      <Bar key="bar-hours" dataKey="hours" fill="#2196f3" name="Gearbeitet" />
-                      <Bar key="bar-target" dataKey="target" fill="#e0e0e0" name="Ziel" />
+                      <Bar key="bar-hours" dataKey="hours" fill="#0a9396" name="Gearbeitet" />
+                      <Bar key="bar-target" dataKey="target" fill="#cbd5e1" name="Ziel" />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -478,7 +478,7 @@ export const StatisticsTabs = React.memo(
                         dataKey="value"
                       >
                         {shiftData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color || '#8884d8'} />
+                          <Cell key={`cell-${index}`} fill={entry.color || '#005f73'} />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -517,7 +517,7 @@ export const StatisticsTabs = React.memo(
                       sx={{
                         width: 20,
                         height: 20,
-                        backgroundColor: item.color || '#8884d8',
+                        backgroundColor: item.color || '#005f73',
                         borderRadius: '50%',
                       }}
                     />
@@ -551,7 +551,7 @@ export const StatisticsTabs = React.memo(
                       <XAxis type="number" />
                       <YAxis dataKey="name" type="category" width={100} />
                       <Tooltip />
-                      <Bar key="bar-value" dataKey="value" fill="#2196f3" />
+                      <Bar key="bar-value" dataKey="value" fill="#0a9396" />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -587,7 +587,7 @@ export const StatisticsTabs = React.memo(
                       sx={{
                         width: 20,
                         height: 20,
-                        backgroundColor: item.color || '#8884d8',
+                        backgroundColor: item.color || '#005f73',
                         borderRadius: '50%',
                       }}
                     />

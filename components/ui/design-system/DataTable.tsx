@@ -20,8 +20,11 @@ interface DataTableProps {
 
 const scrollbarSx = {
   '&::-webkit-scrollbar': { height: 8 },
-  '&::-webkit-scrollbar-track': { backgroundColor: 'rgba(0,0,0,0.05)' },
-  '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 4 },
+  '&::-webkit-scrollbar-track': { backgroundColor: 'transparent' },
+  '&::-webkit-scrollbar-thumb': {
+    backgroundColor: 'var(--color-border-strong)',
+    borderRadius: 4,
+  },
 } as const;
 
 /**

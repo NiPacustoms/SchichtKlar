@@ -20,7 +20,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { escapeHtml } from '@/lib/utils/sanitize';
-import { People, Add, Group, Edit, Delete, Visibility, ContentCopy } from '@mui/icons-material';
+import { People, Add, Group, Edit, Delete, Visibility, ContentCopy, MailOutline, PhoneOutlined, BusinessOutlined } from '@mui/icons-material';
 import {
   Box,
   Typography,
@@ -511,12 +511,13 @@ export default function StaffManagementPage() {
     }
   };
 
+  // Rollen sind kein Status – neutrale/Brand-Farben statt Semantik (rot = Fehler)
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin':
-        return 'error';
+        return 'primary';
       case 'nurse':
-        return 'success';
+        return 'default';
       default:
         return 'default';
     }
@@ -549,17 +550,10 @@ export default function StaffManagementPage() {
       <PageContainer maxWidth="wide">
         {/* Header */}
         <Box sx={{ mb: 4 }}>
-          <Typography
-            variant="h3"
-            sx={{
-              color: 'text.primary',
-              fontWeight: 700,
-              mb: 1,
-            }}
-          >
+          <Typography variant="h2" component="h1" sx={{ color: 'text.primary', mb: 1 }}>
             Mitarbeiterverwaltung
           </Typography>
-          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             Verwalten Sie alle Mitarbeiter und deren Informationen
           </Typography>
         </Box>
@@ -596,7 +590,7 @@ export default function StaffManagementPage() {
               title="Administratoren"
               value={allStaff.filter(s => s.role === 'admin').length}
               icon={<People />}
-              color="error"
+              color="primary"
             />
           </Grid>
         </Grid>
@@ -620,18 +614,18 @@ export default function StaffManagementPage() {
             >
               <Button
                 variant="contained"
-                onClick={inviteStaff}
-                sx={{ width: { xs: '100%', sm: 'auto' } }}
-              >
-                Mitarbeiter einladen
-              </Button>
-              <Button
-                variant="contained"
                 startIcon={<Add />}
                 onClick={() => setCreateDialogOpen(true)}
                 sx={{ width: { xs: '100%', sm: 'auto' } }}
               >
                 Neuer Mitarbeiter
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={inviteStaff}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
+              >
+                Mitarbeiter einladen
               </Button>
               <Button
                 variant="outlined"
@@ -772,18 +766,34 @@ export default function StaffManagementPage() {
                     <Box sx={{ mb: 2 }}>
                       {member.jobTitle && (
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                          💼 {escapeHtml(member.jobTitle)}
+                          {escapeHtml(member.jobTitle)}
                         </Typography>
                       )}
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                        📧 {escapeHtml(member.email)}
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <MailOutline sx={{ fontSize: 16, color: 'text.disabled' }} />
+                        {escapeHtml(member.email)}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                        📞 {member.phone}
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}
+                        className="tabular-nums"
+                      >
+                        <PhoneOutlined sx={{ fontSize: 16, color: 'text.disabled' }} />
+                        {member.phone}
                       </Typography>
                       {(member as User & { group?: string }).group && (
-                        <Typography variant="body2" color="text.secondary">
-                          🏥 {(member as User & { group?: string }).group}
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <BusinessOutlined sx={{ fontSize: 16, color: 'text.disabled' }} />
+                          {(member as User & { group?: string }).group}
                         </Typography>
                       )}
                     </Box>

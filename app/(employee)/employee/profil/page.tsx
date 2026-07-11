@@ -127,7 +127,7 @@ export default function ProfilePage() {
   };
 
   if (authLoading || isLoading) {
-    return <LoadingSpinner message="Profil wird geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Profil wird geladen..." />;
   }
 
   if (error) {

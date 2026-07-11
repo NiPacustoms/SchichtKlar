@@ -7,6 +7,7 @@ import { toast } from '@/lib/utils/toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { endOfWeek, format, startOfWeek } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { getShiftTypeColor as getShiftTypeColorToken } from '@/lib/design-tokens';
 
 export interface NurseScheduleData {
   myAssignments: Assignment[];
@@ -160,21 +161,8 @@ export const useNurseSchedule = (view: 'week' | 'month' = 'week', date?: Date) =
     return [];
   };
 
-  // Get shift type color
-  const getShiftTypeColor = (type: Shift['type']) => {
-    switch (type) {
-      case 'Frühdienst':
-        return '#0288D1';
-      case 'Spätdienst':
-        return '#2E7D32';
-      case 'Nachtdienst':
-        return '#7B1FA2';
-      case 'On-call':
-        return '#ED6C02';
-      default:
-        return '#666';
-    }
-  };
+  // Zentrale Schichttyp-Farbe (lib/design-tokens)
+  const getShiftTypeColor = (type: Shift['type']) => getShiftTypeColorToken(type);
 
   // Get status color
   const getStatusColor = (status: Assignment['status']) => {

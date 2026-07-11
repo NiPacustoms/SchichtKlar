@@ -40,27 +40,15 @@ export function ConfirmDestructiveDialog({
   }, [open]);
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="xs"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-        },
-      }}
-    >
-      <DialogTitle sx={{ fontWeight: 700, fontSize: '20px', pb: 2 }}>{title}</DialogTitle>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogTitle variant="h4" component="h2" sx={{ pb: 2 }}>
+        {title}
+      </DialogTitle>
       <DialogContent>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ mb: 3, fontSize: '15px', lineHeight: 1.6 }}
-        >
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           {description}
         </Typography>
-        <Typography variant="body2" sx={{ mb: 2, fontWeight: 500, fontSize: '14px' }}>
+        <Typography variant="body2" sx={{ mb: 2, fontWeight: 500 }}>
           Zum Bestätigen tippen Sie bitte <strong>{confirmWord}</strong> ein.
         </Typography>
         <TextField
@@ -70,38 +58,14 @@ export function ConfirmDestructiveDialog({
           onChange={e => setInput(e.target.value)}
           placeholder={confirmWord}
           inputProps={{ 'aria-label': 'Bestätigungswort' }}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 2,
-            },
-          }}
           error={input.length > 0 && !isMatch}
         />
       </DialogContent>
       <DialogActions sx={{ p: 3, pt: 2 }}>
-        <Button
-          onClick={onClose}
-          sx={{
-            textTransform: 'none',
-            fontWeight: 600,
-            borderRadius: 2,
-          }}
-        >
+        <Button variant="text" onClick={onClose}>
           {cancelLabel}
         </Button>
-        <Button
-          color="error"
-          variant="contained"
-          onClick={onConfirm}
-          disabled={!isMatch}
-          sx={{
-            textTransform: 'none',
-            fontWeight: 600,
-            borderRadius: 2,
-            px: 3,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
-          }}
-        >
+        <Button color="error" variant="contained" onClick={onConfirm} disabled={!isMatch}>
           {confirmLabel}
         </Button>
       </DialogActions>

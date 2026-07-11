@@ -236,7 +236,7 @@ function AdminShiftsPageContent() {
   };
 
   if (authLoading || isLoading) {
-    return <LoadingSpinner message="Schichtverwaltung wird geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Schichtverwaltung wird geladen..." />;
   }
 
   if (error) {
@@ -267,27 +267,20 @@ function AdminShiftsPageContent() {
       <PageContainer maxWidth="wide">
         {/* Header */}
         <Box sx={{ mb: 4 }}>
-          <Typography
-            variant="h3"
-            sx={{
-              color: 'text.primary',
-              fontWeight: 700,
-              mb: 1,
-            }}
-          >
+          <Typography variant="h2" component="h1" sx={{ color: 'text.primary', mb: 1 }}>
             Schichtverwaltung
           </Typography>
-          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             Verwalten Sie alle Schichten und deren Zuweisungen
           </Typography>
         </Box>
 
         {/* Statistics */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card className="glass">
+          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Card className="glass" sx={{ height: '100%' }}>
               <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" color="primary" sx={{ fontWeight: 600 }}>
+                <Typography variant="h4" className="tabular-nums" sx={{ color: 'text.primary' }}>
                   {stats.total}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -296,10 +289,10 @@ function AdminShiftsPageContent() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card className="glass">
+          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Card className="glass" sx={{ height: '100%' }}>
               <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" color="warning.main" sx={{ fontWeight: 600 }}>
+                <Typography variant="h4" className="tabular-nums" sx={{ color: 'text.primary' }}>
                   {stats.open}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -308,10 +301,10 @@ function AdminShiftsPageContent() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card className="glass">
+          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Card className="glass" sx={{ height: '100%' }}>
               <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" color="success.main" sx={{ fontWeight: 600 }}>
+                <Typography variant="h4" className="tabular-nums" sx={{ color: 'text.primary' }}>
                   {stats.filled}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -320,10 +313,10 @@ function AdminShiftsPageContent() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card className="glass">
+          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Card className="glass" sx={{ height: '100%' }}>
               <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" color="info.main" sx={{ fontWeight: 600 }}>
+                <Typography variant="h4" className="tabular-nums" sx={{ color: 'text.primary' }}>
                   {stats.assignedCount}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -332,10 +325,10 @@ function AdminShiftsPageContent() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card className="glass">
+          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Card className="glass" sx={{ height: '100%' }}>
               <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                <Typography variant="h4" className="tabular-nums" sx={{ color: 'text.secondary' }}>
                   {stats.ended}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -563,11 +556,11 @@ function AdminShiftsPageContent() {
 function AdminShiftsPage() {
   // Ensure this only renders on client side
   if (typeof window === 'undefined') {
-    return <LoadingSpinner message="Schichtverwaltung wird geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Schichtverwaltung wird geladen..." />;
   }
 
   return (
-    <Suspense fallback={<LoadingSpinner message="Schichtverwaltung wird geladen..." />}>
+    <Suspense fallback={<LoadingSpinner variant="skeleton" message="Schichtverwaltung wird geladen..." />}>
       <AdminShiftsPageContent />
     </Suspense>
   );

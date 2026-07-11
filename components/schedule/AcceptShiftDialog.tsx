@@ -209,10 +209,10 @@ export function AcceptShiftDialog({
               borderColor: 'warning.main',
             }}
           >
-            <Typography variant="body2" fontWeight={600} sx={{ fontSize: '14px' }}>
+            <Typography variant="body2" fontWeight={600}>
               ⚠️ Pausenregel-Verletzung
             </Typography>
-            <Typography variant="body2" sx={{ mt: 0.5, fontSize: '14px', lineHeight: 1.6 }}>
+            <Typography variant="body2" sx={{ mt: 0.5 }}>
               Diese Schicht verletzt die 11-Stunden-Pausenregel. Bist du sicher, dass du sie
               trotzdem annehmen möchtest?
             </Typography>
@@ -244,7 +244,7 @@ export function AcceptShiftDialog({
             borderColor: 'info.main',
           }}
         >
-          <Typography variant="body2" sx={{ fontSize: '14px', lineHeight: 1.6 }}>
+          <Typography variant="body2">
             <strong>Hinweis:</strong> Nach der Annahme kannst du die Schicht nur noch in besonderen
             Fällen ablehnen. Bitte stelle sicher, dass du an diesem Tag verfügbar bist.
           </Typography>
@@ -261,7 +261,7 @@ export function AcceptShiftDialog({
               borderColor: 'success.main',
             }}
           >
-            <Typography variant="body2" sx={{ fontSize: '14px', lineHeight: 1.6 }}>
+            <Typography variant="body2">
               ✓ Pausenregel eingehalten: Mindestens 11 Stunden zwischen den Schichten
             </Typography>
           </Alert>
@@ -290,7 +290,7 @@ export function AcceptShiftDialog({
             fontWeight: 600,
             borderRadius: 2,
             px: 3,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
+            boxShadow: 'var(--shadow-soft)',
           }}
         >
           {hasBreakRuleViolation ? 'Trotzdem annehmen' : 'Schicht annehmen'}

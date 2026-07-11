@@ -63,7 +63,7 @@ function DashboardPageContent() {
   );
 
   if (authLoading || isLoading || timesheetLoading) {
-    return <LoadingSpinner message="Arbeitsplatz wird geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Arbeitsplatz wird geladen..." />;
   }
 
   if (!user) {

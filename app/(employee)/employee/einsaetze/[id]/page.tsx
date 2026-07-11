@@ -99,7 +99,7 @@ export default function AssignmentDetailPage() {
   };
 
   if (isLoading || !assignment) {
-    return <LoadingSpinner message={isLoading ? 'Einsatz wird geladen…' : undefined} />;
+    return <LoadingSpinner variant="skeleton" message={isLoading ? 'Einsatz wird geladen…' : undefined} />;
   }
 
   if (error) {

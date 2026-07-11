@@ -49,43 +49,33 @@ export function GlobalHeader() {
   if (!mounted) return null;
 
   return (
-    <AppBar
-      position="static"
-      className="glass"
-      component="header"
-      sx={{
-        zIndex: 1000,
-        transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-      }}
-    >
-      <Toolbar sx={{ position: 'relative' }}>
+    <AppBar position="static" className="glass" component="header" sx={{ zIndex: 1000 }}>
+      <Toolbar sx={{ position: 'relative', minHeight: { xs: 56, sm: 64 } }}>
         {brandingData?.showLogo !== false && (
           <Box
             component={Link}
             href={homeHref}
             sx={{
-              position: 'absolute',
-              left: '50%',
-              transform: 'translateX(-50%)',
+              // Mobil links im Fluss, ab md optisch zentriert
+              position: { xs: 'static', md: 'absolute' },
+              left: { md: '50%' },
+              transform: { md: 'translateX(-50%)' },
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               textDecoration: 'none',
-              px: 2,
-              py: 0.75,
-              width: 128,
-              height: 85,
-              maxWidth: 128,
-              maxHeight: 85,
+              width: 88,
+              height: 48,
               flexShrink: 0,
+              mr: { xs: 1, md: 0 },
             }}
             aria-label="Zur Startseite"
           >
             <AppLogo
               branding={brandingData}
               showLogo
-              width={128}
-              height={85}
+              width={88}
+              height={48}
               sx={{ width: '100%', height: '100%', borderRadius: 0 }}
               showSkeleton={false}
               fallbackBgColor="transparent"
@@ -131,6 +121,7 @@ export function GlobalHeader() {
               variant="outlined"
               color="primary"
               sx={{
+                display: { xs: 'none', sm: 'inline-flex' },
                 borderColor: 'primary.main',
                 '&:hover': {
                   borderColor: 'primary.dark',
@@ -160,6 +151,9 @@ export function GlobalHeader() {
             sx={{
               color: 'text.secondary',
               borderColor: 'divider',
+              minWidth: { xs: 44, sm: 64 },
+              px: { xs: 1.5, sm: 2.5 },
+              '& .MuiButton-startIcon': { mr: { xs: 0, sm: 1 }, ml: { xs: 0, sm: -0.5 } },
               '&:hover': {
                 borderColor: 'text.secondary',
                 backgroundColor: 'action.hover',
@@ -169,7 +163,9 @@ export function GlobalHeader() {
             data-testid="logout-button"
             aria-label="Abmelden"
           >
-            {loggingOut ? 'Abmelden…' : 'Abmelden'}
+            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+              {loggingOut ? 'Abmelden…' : 'Abmelden'}
+            </Box>
           </Button>
         </Box>
       </Toolbar>

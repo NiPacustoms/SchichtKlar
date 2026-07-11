@@ -134,7 +134,7 @@ export default function AdminBerichtePage() {
   };
 
   if (isLoading) {
-    return <LoadingSpinner message="Berichte werden geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Berichte werden geladen..." />;
   }
 
   if (error) {
@@ -497,21 +497,21 @@ export default function AdminBerichtePage() {
                         <Line
                           type="monotone"
                           dataKey="totalHours"
-                          stroke="#1976d2"
+                          stroke="#005f73"
                           strokeWidth={2}
                           name="Gesamtstunden"
                         />
                         <Line
                           type="monotone"
                           dataKey="regularHours"
-                          stroke="#4caf50"
+                          stroke="#047857"
                           strokeWidth={2}
                           name="Regulär"
                         />
                         <Line
                           type="monotone"
                           dataKey="overtimeHours"
-                          stroke="#ff9800"
+                          stroke="#b45309"
                           strokeWidth={2}
                           name="Überstunden"
                         />
@@ -545,7 +545,7 @@ export default function AdminBerichtePage() {
                           formatter={(value, name) => [`${value}`, name]}
                           labelFormatter={value => value}
                         />
-                        <Bar dataKey="count" fill="#2196f3" name="Mitarbeiter" />
+                        <Bar dataKey="count" fill="#0a9396" name="Mitarbeiter" />
                       </RechartsBarChart>
                     </ResponsiveContainer>
                   </Box>
@@ -568,12 +568,12 @@ export default function AdminBerichtePage() {
                             {
                               name: 'Regulär',
                               value: timeAccountReport?.regularHours,
-                              color: '#4caf50',
+                              color: '#047857',
                             },
                             {
                               name: 'Überstunden',
                               value: timeAccountReport?.overtimeHours,
-                              color: '#ff9800',
+                              color: '#b45309',
                             },
                           ]}
                           cx="50%"
@@ -581,19 +581,19 @@ export default function AdminBerichtePage() {
                           labelLine={false}
                           label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                           outerRadius={80}
-                          fill="#8884d8"
+                          fill="#0a9396"
                           dataKey="value"
                         >
                           {[
                             {
                               name: 'Regulär',
                               value: timeAccountReport?.regularHours,
-                              color: '#4caf50',
+                              color: '#047857',
                             },
                             {
                               name: 'Überstunden',
                               value: timeAccountReport?.overtimeHours,
-                              color: '#ff9800',
+                              color: '#b45309',
                             },
                           ].map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />

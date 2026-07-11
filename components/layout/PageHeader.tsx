@@ -46,7 +46,7 @@ export function PageHeader({ title, subtitle, actions, children }: PageHeaderPro
       >
         <Fragment key="page-header-title">
           {typeof title === 'string' ? (
-            <Typography variant="h4" sx={{ fontWeight: 700 }}>
+            <Typography variant="h2" component="h1">
               {title}
             </Typography>
           ) : (
@@ -73,7 +73,7 @@ export function PageHeader({ title, subtitle, actions, children }: PageHeaderPro
       {subtitle && (
         <Box key="page-header-subtitle" component="span" sx={{ display: 'block' }}>
           {typeof subtitle === 'string' ? (
-            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
               {subtitle}
             </Typography>
           ) : (

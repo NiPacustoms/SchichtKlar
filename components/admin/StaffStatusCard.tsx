@@ -1,7 +1,16 @@
 'use client';
 
 import React, { memo } from 'react';
-import { Card, CardContent, Typography, Box, Avatar, LinearProgress } from '@mui/material';
+import {
+  alpha,
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  Avatar,
+  LinearProgress,
+  useTheme,
+} from '@mui/material';
 import { ReactNode } from 'react';
 
 interface StaffStatusCardProps {
@@ -15,7 +24,10 @@ interface StaffStatusCardProps {
 }
 
 export const StaffStatusCard = memo<StaffStatusCardProps>(
-  ({ title, value, total, icon, color, subtitle }) => {
+  ({ title, value, total, icon, color = 'primary', subtitle }) => {
+    const theme = useTheme();
+    const isDark = theme.palette.mode === 'dark';
+    const accent = theme.palette[color].main;
     const percentage = (total || 0) > 0 ? Math.round(((value || 0) / (total || 1)) * 100) : 0;
 
     return (
@@ -24,53 +36,49 @@ export const StaffStatusCard = memo<StaffStatusCardProps>(
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <Avatar
               sx={{
-                background: `linear-gradient(135deg, ${color}.main 0%, ${color}.dark 100%)`,
-                color: 'white',
+                backgroundColor: alpha(accent, isDark ? 0.24 : 0.1),
+                color: accent,
                 mr: 2,
-                width: 48,
-                height: 48,
-                boxShadow: `0 4px 12px ${color}.main40`,
+                width: 44,
+                height: 44,
               }}
             >
               {icon}
             </Avatar>
             <Box sx={{ flexGrow: 1 }}>
-              <Typography
-                variant="h3"
-                sx={{ fontWeight: 800, color: `${color}.main`, fontSize: '32px', mb: 0.5 }}
-              >
+              <Typography variant="h3" className="tabular-nums" sx={{ color: 'text.primary', mb: 0.25 }}>
                 {value}
               </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ fontSize: '14px', fontWeight: 500 }}
-              >
+              <Typography variant="body2" color="text.secondary">
                 {title}
               </Typography>
             </Box>
           </Box>
 
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: subtitle ? 2 : 0 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
               <Typography variant="body2" color="text.secondary">
                 von {total} insgesamt
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                className="tabular-nums"
+                sx={{ fontWeight: 600 }}
+              >
                 {percentage}%
               </Typography>
             </Box>
             <LinearProgress
               variant="determinate"
               value={percentage}
-              color={color}
               sx={{
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: 'rgba(0,0,0,0.06)',
+                height: 6,
+                borderRadius: '999px',
+                backgroundColor: alpha(accent, isDark ? 0.2 : 0.12),
                 '& .MuiLinearProgress-bar': {
-                  background: `linear-gradient(90deg, ${color}.main 0%, ${color}.dark 100%)`,
-                  borderRadius: 4,
+                  backgroundColor: accent,
+                  borderRadius: '999px',
                 },
               }}
             />

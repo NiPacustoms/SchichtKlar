@@ -132,7 +132,6 @@ export function MyAssignmentCard({
             size="small"
             sx={{
               fontWeight: 600,
-              fontSize: '12px',
               height: 28,
               backgroundColor: assignmentStatusColors[assignment.status] ?? assignmentStatusColors.pending,
               color: '#fff',
@@ -194,7 +193,7 @@ export function MyAssignmentCard({
               borderColor: 'warning.main',
             }}
           >
-            <Typography variant="body2" fontWeight={600} sx={{ fontSize: '14px' }}>
+            <Typography variant="body2" fontWeight={600}>
               ⚠️ Pausenregel: Weniger als 11 Stunden zwischen Schichten
             </Typography>
           </Alert>
@@ -217,7 +216,6 @@ export function MyAssignmentCard({
                     color="primary"
                     sx={{
                       fontWeight: 600,
-                      fontSize: '12px',
                       height: 28,
                     }}
                   />
@@ -259,7 +257,7 @@ export function MyAssignmentCard({
                   borderColor: 'info.main',
                 }}
               >
-                <Typography variant="body2" sx={{ fontSize: '14px', lineHeight: 1.6 }}>
+                <Typography variant="body2">
                   <strong>Grund für Ablehnung:</strong> {assignment.declineReason}
                 </Typography>
               </Alert>
@@ -291,7 +289,7 @@ export function MyAssignmentCard({
                 textTransform: 'none',
                 fontWeight: 600,
                 borderRadius: 2,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
+                boxShadow: 'var(--shadow-soft)',
               }}
               size="large"
             >
@@ -327,7 +325,7 @@ export function MyAssignmentCard({
                 borderColor: 'success.main',
               }}
             >
-              <Typography variant="body2" fontWeight={600} sx={{ fontSize: '14px' }}>
+              <Typography variant="body2" fontWeight={600}>
                 ✓ Schicht angenommen
               </Typography>
             </Alert>
@@ -345,7 +343,7 @@ export function MyAssignmentCard({
                 borderColor: 'error.main',
               }}
             >
-              <Typography variant="body2" fontWeight={600} sx={{ fontSize: '14px' }}>
+              <Typography variant="body2" fontWeight={600}>
                 ✗ Schicht abgelehnt
               </Typography>
             </Alert>
@@ -363,7 +361,7 @@ export function MyAssignmentCard({
                 borderColor: 'info.main',
               }}
             >
-              <Typography variant="body2" fontWeight={600} sx={{ fontSize: '14px' }}>
+              <Typography variant="body2" fontWeight={600}>
                 ✓ Schicht abgeschlossen
               </Typography>
             </Alert>

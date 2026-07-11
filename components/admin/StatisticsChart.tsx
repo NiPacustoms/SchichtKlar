@@ -181,8 +181,8 @@ export function StatisticsChart({
                     <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="hours" fill="#2196f3" name="Gearbeitet" />
-                    <Bar dataKey="target" fill="#e0e0e0" name="Ziel" />
+                    <Bar dataKey="hours" fill="#0a9396" name="Gearbeitet" />
+                    <Bar dataKey="target" fill="#cbd5e1" name="Ziel" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -221,7 +221,7 @@ export function StatisticsChart({
                       dataKey="value"
                     >
                       {shiftData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color || '#8884d8'} />
+                        <Cell key={`cell-${index}`} fill={entry.color || '#005f73'} />
                       ))}
                     </Pie>
                     <Tooltip />
@@ -248,7 +248,7 @@ export function StatisticsChart({
                     sx={{
                       width: 12,
                       height: 12,
-                      backgroundColor: item.color || '#8884d8',
+                      backgroundColor: item.color || '#005f73',
                       borderRadius: '50%',
                     }}
                   />
@@ -275,7 +275,7 @@ export function StatisticsChart({
                     <XAxis type="number" />
                     <YAxis dataKey="name" type="category" width={80} />
                     <Tooltip />
-                    <Bar dataKey="value" fill="#2196f3" />
+                    <Bar dataKey="value" fill="#0a9396" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (

@@ -25,13 +25,22 @@ import {
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { bottomNavHeightPx, minTouchTargetPx } from '@/lib/design-tokens';
+import { alpha } from '@mui/material/styles';
+import {
+  bottomNavHeightPx,
+  minTouchTargetPx,
+  glassBlur,
+  duration,
+  easing,
+  light,
+  dark,
+} from '@/lib/design-tokens';
 
 // Mitarbeiter-Navigation – genau 5 Reiter (wie gewünscht), kein Mehr-Button
 const employeeTabs: NavigationTab[] = [
   { href: '/employee/arbeitsplatz', icon: <Home />, label: 'Arbeitsplatz' },
   { href: '/employee/dienstplan', icon: <CalendarMonth />, label: 'Dienstplan' },
-  { href: '/employee/einsaetze', icon: <Description />, label: 'Einsatzmitteilungen' },
+  { href: '/employee/einsaetze', icon: <Description />, label: 'Einsätze' },
   { href: '/employee/zeiterfassung', icon: <AccessTime />, label: 'Zeit' },
   { href: '/employee/profil', icon: <Person />, label: 'Profil' },
 ];
@@ -104,6 +113,12 @@ export function BottomNav() {
     setAnchorEl(null);
   };
 
+  const isDark = theme.palette.mode === 'dark';
+  const surf = isDark ? dark : light;
+  // Im Dark Mode ist Petrol zu dunkel für aktive Tabs – helle Brand-Stufe nutzen
+  const activeColor = isDark ? theme.palette.primary.light : theme.palette.primary.main;
+  const colorTransition = `color ${duration.base}ms ${easing}`;
+
   // Immer anzeigen (auch auf Desktop)
   // if (!isMobile) {
   //   return null;
@@ -119,41 +134,42 @@ export function BottomNav() {
           right: 0,
           zIndex: 1000,
           minHeight: bottomNavHeightPx,
-          background: 'rgba(255,255,255,0.85)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          borderTop: '1px solid rgba(0,95,115,0.08)',
-          boxShadow: '0 -2px 8px rgba(0,0,0,0.04), 0 -1px 3px rgba(0,0,0,0.06)',
+          background: surf.appBar,
+          backdropFilter: glassBlur,
+          WebkitBackdropFilter: glassBlur,
+          border: 'none',
+          borderTop: `1px solid ${theme.palette.divider}`,
+          borderRadius: 0,
+          boxShadow: 'none',
           paddingBottom: 'env(safe-area-inset-bottom)',
-          transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
         elevation={0}
       >
         <BottomNavigation
-          value={showMoreButton && isMoreActive ? mainTabs.length : Math.max(0, currentIndex)}
+          // Kein Tab aktiv markieren, wenn die Route zu keinem Tab gehört
+          value={showMoreButton && isMoreActive ? mainTabs.length : currentIndex === -1 ? false : currentIndex}
           showLabels
           sx={{
             minHeight: bottomNavHeightPx,
+            backgroundColor: 'transparent',
             '& .MuiBottomNavigationAction-root': {
-              color: 'rgba(15,23,42,0.6)',
+              color: theme.palette.text.secondary,
               minWidth: minTouchTargetPx,
               minHeight: minTouchTargetPx,
-              paddingTop: 'env(safe-area-inset-top)',
-              transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+              transition: colorTransition,
               '&.Mui-selected': {
-                color: '#005f73',
+                color: activeColor,
                 '& .MuiBottomNavigationAction-label': {
                   fontWeight: 600,
                 },
               },
               '&:hover': {
-                backgroundColor: 'rgba(0,95,115,0.04)',
+                backgroundColor: alpha(theme.palette.primary.main, isDark ? 0.08 : 0.04),
               },
               '& .MuiBottomNavigationAction-label': {
-                fontSize: '0.75rem',
+                fontSize: 12,
                 fontWeight: 500,
                 color: 'inherit',
-                transition: 'font-weight 200ms cubic-bezier(0.4, 0, 0.2, 1)',
               },
             },
           }}
@@ -167,16 +183,12 @@ export function BottomNav() {
               onClick={() => router.push(tab.href)}
               sx={{
                 cursor: 'pointer',
-                transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+                transition: colorTransition,
                 '&.Mui-selected': {
-                  color: '#005f73',
+                  color: activeColor,
                   '& .MuiSvgIcon-root': {
-                    color: '#005f73',
-                    transform: 'scale(1.1)',
+                    color: activeColor,
                   },
-                },
-                '& .MuiSvgIcon-root': {
-                  transition: 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1)',
                 },
               }}
             />
@@ -190,11 +202,11 @@ export function BottomNav() {
               value={mainTabs.length}
               onClick={handleMoreClick}
               sx={{
-                color: isMoreActive ? '#005f73' : 'rgba(0,0,0,0.6)',
+                color: isMoreActive ? activeColor : theme.palette.text.secondary,
                 '&.Mui-selected': {
-                  color: '#005f73',
+                  color: activeColor,
                   '& .MuiSvgIcon-root': {
-                    color: '#005f73',
+                    color: activeColor,
                   },
                 },
               }}
@@ -218,12 +230,12 @@ export function BottomNav() {
         }}
         sx={{
           '& .MuiPaper-root': {
-            background: 'rgba(255,255,255,0.98)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            border: '1px solid rgba(0,95,115,0.08)',
-            borderRadius: 16,
-            boxShadow: '0 12px 32px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.15)',
+            background: surf.surface.main,
+            backdropFilter: glassBlur,
+            WebkitBackdropFilter: glassBlur,
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: '16px',
+            boxShadow: 'var(--shadow-medium)',
             marginTop: 1,
           },
         }}
@@ -235,13 +247,12 @@ export function BottomNav() {
             href={tab.href}
             onClick={handleMoreClose}
             sx={{
-              color: 'rgba(15,23,42,0.95)',
-              borderRadius: 2,
+              color: theme.palette.text.primary,
+              borderRadius: 1,
               margin: '4px 8px',
-              transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+              transition: colorTransition,
               '&:hover': {
-                backgroundColor: 'rgba(0,95,115,0.06)',
-                transform: 'translateX(4px)',
+                backgroundColor: alpha(theme.palette.primary.main, isDark ? 0.12 : 0.06),
               },
               '& .MuiSvgIcon-root': {
                 marginRight: 1.5,

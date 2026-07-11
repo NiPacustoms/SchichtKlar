@@ -303,7 +303,7 @@ export default function AssignmentsPage() {
   };
 
   if (isLoading) {
-    return <LoadingSpinner message="Einsätze werden geladen..." />;
+    return <LoadingSpinner variant="skeleton" message="Einsätze werden geladen..." />;
   }
 
   if (error) {
