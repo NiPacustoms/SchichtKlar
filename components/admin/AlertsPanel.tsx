@@ -1,21 +1,22 @@
 'use client';
 
 import Link from 'next/link';
-import { Fragment } from 'react';
 import {
-  Alert,
-  AlertTitle,
+  alpha,
+  Avatar,
   Box,
   Chip,
   List,
   ListItem,
+  ListItemAvatar,
   ListItemButton,
-  ListItemIcon,
   ListItemText,
   Typography,
+  useTheme,
 } from '@mui/material';
 import {
   CheckCircle as CheckIcon,
+  ChevronRight as ChevronRightIcon,
   Description as DocumentIcon,
   Error as ErrorIcon,
   Info as InfoIcon,
@@ -43,48 +44,96 @@ interface AlertsPanelProps {
 function getTypeIcon(type: DashboardAlert['type']) {
   switch (type) {
     case 'document-expiry':
-      return <DocumentIcon />;
+      return <DocumentIcon fontSize="small" />;
     case 'open-shift':
-      return <ScheduleIcon />;
+      return <ScheduleIcon fontSize="small" />;
     case 'time-conflict':
-      return <WarningIcon />;
+      return <WarningIcon fontSize="small" />;
     case 'unverified-timesheet':
-      return <CheckIcon />;
+      return <CheckIcon fontSize="small" />;
     case 'arbzg-violation':
-      return <ErrorIcon />;
+      return <ErrorIcon fontSize="small" />;
     default:
-      return <InfoIcon />;
+      return <InfoIcon fontSize="small" />;
   }
 }
 
+/** Eine Zeile pro Warnung: getöntes Icon links, Titel + Meldung, Chevron rechts */
+function AlertRow({
+  alert,
+  onAlertClick,
+}: {
+  alert: DashboardAlert;
+  onAlertClick?: (alert: DashboardAlert) => void;
+}) {
+  const theme = useTheme();
+  const semantic = theme.palette[alert.severity];
+  const isDark = theme.palette.mode === 'dark';
+
+  return (
+    <ListItem disablePadding>
+      <ListItemButton
+        component={Link}
+        href={alert.actionUrl}
+        onClick={() => onAlertClick?.(alert)}
+        sx={{
+          borderRadius: 1,
+          px: 1.5,
+          py: 1,
+          minHeight: 56,
+        }}
+      >
+        <ListItemAvatar sx={{ minWidth: 48 }}>
+          <Avatar
+            sx={{
+              width: 36,
+              height: 36,
+              backgroundColor: alpha(semantic.main, isDark ? 0.24 : 0.1),
+              color: isDark ? semantic.light : semantic.main,
+            }}
+          >
+            {getTypeIcon(alert.type)}
+          </Avatar>
+        </ListItemAvatar>
+        <ListItemText
+          primary={alert.title}
+          secondary={alert.message}
+          primaryTypographyProps={{ variant: 'subtitle2', noWrap: true }}
+          secondaryTypographyProps={{ variant: 'body2', color: 'text.secondary', noWrap: true }}
+        />
+        <ChevronRightIcon sx={{ color: 'text.disabled', ml: 1 }} fontSize="small" />
+      </ListItemButton>
+    </ListItem>
+  );
+}
+
 export function AlertsPanel({ alerts, onAlertClick }: AlertsPanelProps) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const criticalAlerts = alerts.filter(a => a.severity === 'error');
   const warningAlerts = alerts.filter(a => a.severity === 'warning');
   const infoAlerts = alerts.filter(a => a.severity === 'info');
 
   if (alerts.length === 0) {
     return (
-      <GlassCard>
+      <GlassCard hover={false}>
         <Box sx={{ p: 4, textAlign: 'center' }}>
-          <Box
+          <Avatar
             sx={{
-              width: 64,
-              height: 64,
-              borderRadius: '50%',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              width: 56,
+              height: 56,
+              backgroundColor: alpha(theme.palette.success.main, isDark ? 0.24 : 0.1),
+              color: isDark ? 'success.light' : 'success.main',
               mx: 'auto',
               mb: 2,
             }}
           >
-            <CheckIcon sx={{ fontSize: 32, color: 'success.main' }} />
-          </Box>
-          <Typography variant="h6" color="success.main" sx={{ mb: 1, fontWeight: 600 }}>
+            <CheckIcon />
+          </Avatar>
+          <Typography variant="h5" sx={{ mb: 0.5 }}>
             Alles in Ordnung
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '14px' }}>
+          <Typography variant="body2" color="text.secondary">
             Keine kritischen Warnungen oder ToDos
           </Typography>
         </Box>
@@ -92,117 +141,54 @@ export function AlertsPanel({ alerts, onAlertClick }: AlertsPanelProps) {
     );
   }
 
+  const sections: { key: string; label: string; items: DashboardAlert[]; max: number }[] = [
+    { key: 'critical', label: 'Kritisch', items: criticalAlerts, max: 3 },
+    { key: 'warning', label: 'Warnungen', items: warningAlerts, max: 3 },
+    { key: 'info', label: 'Informationen', items: infoAlerts, max: 2 },
+  ];
+
   return (
-    <GlassCard>
+    <GlassCard hover={false}>
       <Box sx={{ p: 3 }}>
         <Box
           sx={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            mb: 3,
+            mb: 2,
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '18px' }}>
-            Warnungen & ToDos
+          <Typography variant="h5" component="h2">
+            Warnungen &amp; ToDos
           </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
             {criticalAlerts.length > 0 && (
-              <Chip
-                icon={<ErrorIcon sx={{ fontSize: 16 }} />}
-                label={`${criticalAlerts.length} kritisch`}
-                color="error"
-                size="small"
-              />
+              <Chip label={`${criticalAlerts.length} kritisch`} color="error" size="small" />
             )}
             {warningAlerts.length > 0 && (
-              <Chip
-                icon={<WarningIcon sx={{ fontSize: 16 }} />}
-                label={`${warningAlerts.length} Warnung`}
-                color="warning"
-                size="small"
-              />
+              <Chip label={`${warningAlerts.length} Warnung`} color="warning" size="small" />
             )}
           </Box>
         </Box>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {criticalAlerts.length > 0 && (
-            <Fragment key="alerts-critical">
-              <Alert
-                severity="error"
-                sx={{
-                  mb: 2,
-                  borderRadius: 2,
-                  border: '1px solid',
-                  borderColor: 'error.main',
-                }}
+        {sections
+          .filter(section => section.items.length > 0)
+          .map(section => (
+            <Box key={section.key} sx={{ '& + &': { mt: 2 } }}>
+              <Typography
+                variant="overline"
+                component="h3"
+                sx={{ color: 'text.secondary', display: 'block', px: 1.5, mb: 0.5 }}
               >
-                <AlertTitle sx={{ fontWeight: 700, fontSize: '15px' }}>
-                  Kritische Probleme ({criticalAlerts.length})
-                </AlertTitle>
-                <List dense>
-                  {criticalAlerts.slice(0, 3).map(alert => (
-                    <ListItem key={alert.id} disablePadding>
-                      <ListItemButton
-                        component={Link}
-                        href={alert.actionUrl}
-                        onClick={() => onAlertClick?.(alert)}
-                      >
-                        <ListItemIcon sx={{ minWidth: 40 }}>{getTypeIcon(alert.type)}</ListItemIcon>
-                        <ListItemText primary={alert.title} secondary={alert.message} />
-                      </ListItemButton>
-                    </ListItem>
-                  ))}
-                </List>
-              </Alert>
-            </Fragment>
-          )}
-
-          {warningAlerts.length > 0 && (
-            <Fragment key="alerts-warning">
-              <Alert severity="warning" sx={{ mb: 2 }}>
-                <AlertTitle>Warnungen ({warningAlerts.length})</AlertTitle>
-                <List dense>
-                  {warningAlerts.slice(0, 3).map(alert => (
-                    <ListItem key={alert.id} disablePadding>
-                      <ListItemButton
-                        component={Link}
-                        href={alert.actionUrl}
-                        onClick={() => onAlertClick?.(alert)}
-                      >
-                        <ListItemIcon sx={{ minWidth: 40 }}>{getTypeIcon(alert.type)}</ListItemIcon>
-                        <ListItemText primary={alert.title} secondary={alert.message} />
-                      </ListItemButton>
-                    </ListItem>
-                  ))}
-                </List>
-              </Alert>
-            </Fragment>
-          )}
-
-          {infoAlerts.length > 0 && (
-            <Fragment key="alerts-info">
-              <Alert severity="info">
-                <AlertTitle>Informationen ({infoAlerts.length})</AlertTitle>
-                <List dense>
-                  {infoAlerts.slice(0, 2).map(alert => (
-                    <ListItem key={alert.id} disablePadding>
-                      <ListItemButton
-                        component={Link}
-                        href={alert.actionUrl}
-                        onClick={() => onAlertClick?.(alert)}
-                      >
-                        <ListItemIcon sx={{ minWidth: 40 }}>{getTypeIcon(alert.type)}</ListItemIcon>
-                        <ListItemText primary={alert.title} secondary={alert.message} />
-                      </ListItemButton>
-                    </ListItem>
-                  ))}
-                </List>
-              </Alert>
-            </Fragment>
-          )}
-        </Box>
+                {section.label} ({section.items.length})
+              </Typography>
+              <List disablePadding>
+                {section.items.slice(0, section.max).map(alert => (
+                  <AlertRow key={alert.id} alert={alert} onAlertClick={onAlertClick} />
+                ))}
+              </List>
+            </Box>
+          ))}
       </Box>
     </GlassCard>
   );

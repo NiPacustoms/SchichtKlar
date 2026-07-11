@@ -40,7 +40,7 @@ import {
 const employeeTabs: NavigationTab[] = [
   { href: '/employee/arbeitsplatz', icon: <Home />, label: 'Arbeitsplatz' },
   { href: '/employee/dienstplan', icon: <CalendarMonth />, label: 'Dienstplan' },
-  { href: '/employee/einsaetze', icon: <Description />, label: 'Einsatzmitteilungen' },
+  { href: '/employee/einsaetze', icon: <Description />, label: 'Einsätze' },
   { href: '/employee/zeiterfassung', icon: <AccessTime />, label: 'Zeit' },
   { href: '/employee/profil', icon: <Person />, label: 'Profil' },
 ];
