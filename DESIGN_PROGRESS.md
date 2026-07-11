@@ -42,6 +42,9 @@ Alle Festlegungen leben in `lib/design-tokens.ts` (Single Source of Truth) + `li
 - Landing-Features erscheinen erst beim Scrollen (IntersectionObserver) — in Fullpage-Screenshots unsichtbar, im Browser korrekt
 - E2E dispatcher/assignment-workflow „redirect param is preserved“: vorbestehend rot (auch auf main)
 
+## Folgearbeit nach Abschluss
+- **Landing-Page neu (Nutzerwunsch, nach Marathon-Abschluss)**: High-End-cleane Startseite für den Pflegebereich — ruhige Kopfzeile (kleines Logo + Login), zentrierter Hero (Overline, H1 34/48, eine Primäraktion), sachliche Vertrauens-Hinweise (DSGVO, § 11 AÜG, digitale Signatur — nur real vorhandene Funktionen, keine erfundenen Claims), 6er-Feature-Grid im Icon-Kreis-Muster, 3-Schritte-Ablauf, zwei Zielgruppen-Karten, getöntes CTA-Band, Footer mit Hairline. Statische Deko-Blobs und IO-Scroll-Animation entfernt. Hero-Zweitaktion als Text-Button „Ich habe bereits ein Konto“ (behebt zugleich Playwright-Strict-Mode bei doppeltem „Login“). Verifiziert 390/768/1440 + e2e home.spec 2/2. Bewertung 9/10.
+
 ## Screenshot-/Emulator-Setup (für Folge-Sessions)
 - Firebase-Emulator: `cd <scratchpad>/emu && <repo>/node_modules/.bin/firebase emulators:start --only auth,firestore --project demo-schichtklar` (Hintergrund; Minimal-firebase.json nötig, Repo-Config scheitert am Hosting-Framework)
 - Seed: `node <scratchpad>/seed-emulator.mjs` (admin@demo.de/admin123, nurse@demo.de/nurse123)

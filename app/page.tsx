@@ -3,28 +3,33 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AppLogo } from '@/components/ui/AppLogo';
 import {
+  alpha,
   Box,
   Button,
   Container,
   Stack,
   Typography,
   useScrollTrigger,
+  useTheme,
   Zoom,
   Fab,
 } from '@mui/material';
 import {
+  AccessTime,
   ArrowForward,
-  KeyboardArrowUp,
-  People,
   Assessment,
-  Security,
+  CalendarMonth,
+  CheckCircleOutline,
+  Description,
+  Draw,
+  KeyboardArrowUp,
+  VerifiedUser,
   PhoneAndroid,
-  Schedule,
 } from '@mui/icons-material';
 import { useBrandingSettings } from '@/lib/hooks/useBrandingSettings';
 
@@ -46,13 +51,108 @@ function ScrollToTop() {
   );
 }
 
+/** Getönter Icon-Kreis – dasselbe Muster wie im App-Inneren */
+function TintedIcon({ children }: { children: React.ReactNode }) {
+  const theme = useTheme();
+  return (
+    <Box
+      sx={{
+        width: 44,
+        height: 44,
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        backgroundColor: alpha(
+          theme.palette.primary.main,
+          theme.palette.mode === 'dark' ? 0.24 : 0.1
+        ),
+        color: theme.palette.mode === 'dark' ? 'primary.light' : 'primary.main',
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+const FEATURES = [
+  {
+    icon: <CalendarMonth fontSize="small" />,
+    title: 'Dienstplanung',
+    desc: 'Schichten anlegen, Einsätze zuweisen und den Dienstplan für alle sichtbar halten – Kalender- und Listenansicht inklusive.',
+  },
+  {
+    icon: <AccessTime fontSize="small" />,
+    title: 'Zeiterfassung',
+    desc: 'Schichten starten, Pausen erfassen, Zeitkonto und Überstunden im Blick – minutengenau und nachvollziehbar.',
+  },
+  {
+    icon: <Draw fontSize="small" />,
+    title: 'Digitale Signatur',
+    desc: 'Arbeitszeiten direkt in der Einrichtung digital gegenzeichnen lassen – ohne Papier und ohne Nachlauf.',
+  },
+  {
+    icon: <Description fontSize="small" />,
+    title: 'Einsatzmitteilungen',
+    desc: 'Einsatzmitteilungen nach § 11 AÜG digital erstellen, unterschreiben und revisionssicher ablegen.',
+  },
+  {
+    icon: <Assessment fontSize="small" />,
+    title: 'Berichte & Exporte',
+    desc: 'Stunden, Auslastung und Einsätze auswerten – als PDF oder CSV exportieren, bereit für die Abrechnung.',
+  },
+  {
+    icon: <VerifiedUser fontSize="small" />,
+    title: 'Rollen & Datenschutz',
+    desc: 'Klare Rollentrennung zwischen Verwaltung und Pflegekräften, DSGVO-konforme Datenhaltung und Löschkonzepte.',
+  },
+];
+
+const STEPS = [
+  {
+    step: '1',
+    title: 'Einrichtung registrieren',
+    desc: 'Firma anlegen, Standorte und Stationen hinterlegen – in wenigen Minuten startklar.',
+  },
+  {
+    step: '2',
+    title: 'Team einladen',
+    desc: 'Pflegekräfte per E-Mail einladen. Qualifikationen und Nachweise werden zentral gepflegt.',
+  },
+  {
+    step: '3',
+    title: 'Einsätze planen & erfassen',
+    desc: 'Schichten zuweisen, Zeiten erfassen, digital signieren – alles in einem Ablauf.',
+  },
+];
+
+const AUDIENCE = [
+  {
+    title: 'Für Einrichtungen & Agenturen',
+    points: [
+      'Offene Schichten und Besetzung auf einen Blick',
+      'Wochenlimits nach ArbZG/MiLoG automatisch im Blick',
+      'Nachweise und Dokumente zentral verwaltet',
+    ],
+  },
+  {
+    title: 'Für Pflegekräfte',
+    points: [
+      'Dienstplan und Einsätze mobil auf dem eigenen Gerät',
+      'Zeiten erfassen und Zeitkonto jederzeit einsehen',
+      'Einsätze mit einem Fingertipp annehmen oder ablehnen',
+    ],
+  },
+];
+
 export default function HomePage() {
   const { user, loading } = useAuth();
   const { canAccessAdminArea } = usePermissions();
   const { branding, isLoading: _brandingLoading } = useBrandingSettings();
+  const theme = useTheme();
   const router = useRouter();
-  const featuresRef = useRef<HTMLDivElement>(null);
-  const [featuresInView, setFeaturesInView] = useState(false);
+  const isDark = theme.palette.mode === 'dark';
 
   // Fallback für branding, falls es undefined ist
   const brandingData = branding || {
@@ -67,19 +167,6 @@ export default function HomePage() {
       else if (user.role === 'nurse') router.push('/employee/arbeitsplatz');
     }
   }, [user, loading, router, canAccessAdminArea]);
-
-  useEffect(() => {
-    const el = featuresRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) setFeaturesInView(true);
-      },
-      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
 
   // Minimales Loading/Weiterleitung ohne LoadingSpinner (vermeidet Absturz durch Branding/Theme)
   if (loading) {
@@ -128,210 +215,117 @@ export default function HomePage() {
 
   return (
     <Box>
-      {/* Hero mit Motion Graphics */}
-      <Box
-        sx={{
-          position: 'relative',
-          overflow: 'hidden',
-          pt: { xs: 10, md: 16 },
-          pb: 0,
-        }}
-      >
-        {/* Animierter Hintergrund: schwebende Formen (Brand-Farben) */}
+      {/* Kopfzeile: Logo links, Login rechts – ruhig und klein */}
+      <Container maxWidth="lg">
         <Box
-          aria-hidden
+          component="header"
           sx={{
-            position: 'absolute',
-            inset: 0,
-            pointerEvents: 'none',
-            zIndex: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            py: 2,
           }}
         >
-          <Box
-            className="landing-blob"
-            sx={{
-              position: 'absolute',
-              width: 320,
-              height: 320,
-              borderRadius: '50%',
-              background: (t) =>
-                `radial-gradient(circle, ${t.palette.primary.main}08 0%, transparent 70%)`,
-              top: '10%',
-              left: '5%',
-              animationDelay: '0s',
-            }}
-          />
-          <Box
-            className="landing-blob-slow"
-            sx={{
-              position: 'absolute',
-              width: 240,
-              height: 240,
-              borderRadius: '50%',
-              background: (t) =>
-                `radial-gradient(circle, ${t.palette.secondary?.main || '#e8aa42'}0c 0%, transparent 65%)`,
-              top: '50%',
-              right: '8%',
-              animationDelay: '-4s',
-            }}
-          />
-          <Box
-            className="landing-blob"
-            sx={{
-              position: 'absolute',
-              width: 180,
-              height: 180,
-              borderRadius: '50%',
-              background: (t) =>
-                `radial-gradient(circle, ${t.palette.primary.main}0a 0%, transparent 60%)`,
-              bottom: '15%',
-              left: '25%',
-              animationDelay: '-8s',
-            }}
-          />
-          <Box
-            className="landing-blob-slow"
-            sx={{
-              position: 'absolute',
-              width: 120,
-              height: 120,
-              borderRadius: '50%',
-              background: (t) =>
-                `radial-gradient(circle, ${t.palette.secondary?.main || '#e8aa42'}08 0%, transparent 55%)`,
-              top: '25%',
-              right: '25%',
-              animationDelay: '-2s',
-            }}
-          />
-        </Box>
-
-        {/* zentriertes, großes Logo ohne Layout-Verschiebung */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: { xs: 8, md: 12 },
-            left: '50%',
-            transform: 'translateX(-50%)',
-            pointerEvents: 'none',
-            userSelect: 'none',
-            zIndex: 1,
-          }}
-        >
-          <AppLogo
-            branding={brandingData}
-            showLogo={brandingData?.showLogo !== false}
-            width={320}
-            height={320}
-            sx={{ width: { xs: 240, md: 320 }, height: { xs: 240, md: 320 } }}
-            showSkeleton={false}
-            fallbackBgColor="transparent"
-          />
-        </Box>
-
-        <Container maxWidth="xl" sx={{ maxWidth: '1280px', position: 'relative', zIndex: 2 }}>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '1fr',
-              gap: 6,
-              alignItems: 'center',
-              justifyItems: 'center',
-            }}
-          >
-            <Box sx={{ mt: { xs: 16, md: 24 }, textAlign: 'center', maxWidth: 760 }}>
-              <Typography
-                variant="h1"
-                sx={{ lineHeight: 1.15, mb: 2, textAlign: 'center' }}
-              >
-                Personalplanung im Gesundheitswesen – einfach. sicher. schnell.
-              </Typography>
-              <Typography
-                variant="subtitle1"
-                color="text.secondary"
-                sx={{ mb: 4, textAlign: 'center' }}
-              >
-                Von Schichtplanung bis Auswertung – alles in einer modernen App, die zu Ihrem
-                Workflow passt.
-              </Typography>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
-                <Button
-                  key="admin-registrieren"
-                  component={Link}
-                  href="/admin-registrieren"
-                  variant="contained"
-                  size="large"
-                  endIcon={<ArrowForward />}
-                >
-                  Firma registrieren
-                </Button>
-                <Button key="login" component={Link} href="/anmelden" size="large" variant="outlined">
-                  Login
-                </Button>
-              </Stack>
-            </Box>
-            {/* rechte Spalte entfernt, um weißen Balken zu vermeiden */}
+          <Box sx={{ display: 'flex', alignItems: 'center', height: 44 }}>
+            <AppLogo
+              branding={brandingData}
+              showLogo={brandingData?.showLogo !== false}
+              width={96}
+              height={44}
+              sx={{ width: 96, height: 44 }}
+              showSkeleton={false}
+              fallbackBgColor="transparent"
+              priority
+            />
           </Box>
-        </Container>
-      </Box>
+          <Button component={Link} href="/anmelden" variant="outlined" size="small">
+            Login
+          </Button>
+        </Box>
+      </Container>
 
-      {/* Features mit Scroll-Animation */}
-      <Container
-        maxWidth="xl"
-        sx={{ maxWidth: '1280px', pt: { xs: 8, md: 12 }, pb: { xs: 8, md: 12 } }}
-      >
+      {/* Hero – viel Weißraum, eine Botschaft */}
+      <Container maxWidth="md" sx={{ textAlign: 'center', pt: { xs: 8, md: 14 }, pb: { xs: 8, md: 12 } }}>
+        <Typography
+          variant="overline"
+          component="p"
+          sx={{ color: isDark ? 'primary.light' : 'primary.main', mb: 2 }}
+        >
+          Digitale Personalplanung für die Pflege
+        </Typography>
+        <Typography
+          variant="h1"
+          sx={{
+            fontSize: { xs: 34, md: 48 },
+            lineHeight: 1.12,
+            letterSpacing: '-0.02em',
+            mb: 3,
+          }}
+        >
+          Dienstplan, Zeiterfassung und Einsätze – an einem Ort.
+        </Typography>
+        <Typography
+          variant="body1"
+          color="text.secondary"
+          sx={{ fontSize: 17, maxWidth: 620, mx: 'auto', mb: 5 }}
+        >
+          Schichtklar verbindet Einrichtungen und Pflegekräfte: Einsätze planen, Arbeitszeiten
+          erfassen und digital signieren – ohne Zettelwirtschaft, konform mit § 11 AÜG.
+        </Typography>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center" sx={{ mb: 6 }}>
+          <Button
+            component={Link}
+            href="/admin-registrieren"
+            variant="contained"
+            size="large"
+            endIcon={<ArrowForward />}
+          >
+            Firma registrieren
+          </Button>
+          <Button component={Link} href="/anmelden" size="large" variant="text">
+            Ich habe bereits ein Konto
+          </Button>
+        </Stack>
+
+        {/* Sachliche Vertrauens-Hinweise – Text statt Deko */}
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={{ xs: 1, sm: 4 }}
+          justifyContent="center"
+          sx={{ color: 'text.secondary' }}
+        >
+          {['DSGVO-konforme Datenhaltung', 'Einsatzmitteilungen nach § 11 AÜG', 'Digitale Signatur'].map(
+            item => (
+              <Stack key={item} direction="row" spacing={1} alignItems="center" justifyContent="center">
+                <CheckCircleOutline sx={{ fontSize: 18, color: 'success.main' }} />
+                <Typography variant="body2">{item}</Typography>
+              </Stack>
+            )
+          )}
+        </Stack>
+      </Container>
+
+      {/* Funktionen */}
+      <Container maxWidth="lg" sx={{ pb: { xs: 8, md: 12 } }}>
+        <Typography variant="overline" component="p" sx={{ color: 'text.secondary', textAlign: 'center', mb: 1 }}>
+          Funktionen
+        </Typography>
+        <Typography variant="h2" sx={{ textAlign: 'center', mb: 6 }}>
+          Alles, was der Pflegealltag braucht
+        </Typography>
         <Box
-          ref={featuresRef}
           sx={{
             display: 'grid',
             gap: 3,
             gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' },
           }}
         >
-          {[
-            {
-              icon: <People />,
-              title: 'Mitarbeiterverwaltung',
-              desc: 'Profile, Qualifikationen und Nachweise zentral verwalten.',
-            },
-            {
-              icon: <Schedule />,
-              title: 'Schichtplanung & Einsätze',
-              desc: 'Dienstplan erstellen, Schichten anlegen und Einsätze zuweisen.',
-            },
-            {
-              icon: <Assessment />,
-              title: 'Berichte & Auswertungen',
-              desc: 'KPIs, Berichte und Export für Stunden und Auslastung.',
-            },
-            {
-              icon: <Security />,
-              title: 'Sicherheit & DSGVO',
-              desc: 'Rollen & Rechte, Datenexport und -löschung, Datenschutz-Seiten.',
-            },
-            {
-              icon: <PhoneAndroid />,
-              title: 'Mobil nutzbar',
-              desc: 'Responsive Web-App – auf allen Geräten nutzbar.',
-            },
-          ].map((f, index) => (
-            <GlassCard
-              key={f.title}
-              hover={false}
-              sx={{
-                p: 3,
-                height: '100%',
-                opacity: featuresInView ? 1 : 0,
-                transform: featuresInView ? 'translateY(0)' : 'translateY(24px)',
-                ...(featuresInView && {
-                  animation: 'landing-fade-in-up 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards',
-                  animationDelay: `${index * 80}ms`,
-                }),
-              }}
-            >
-              <Stack direction="row" spacing={2} alignItems="flex-start">
-                <Box color="primary.main">{f.icon}</Box>
+          {FEATURES.map(f => (
+            <GlassCard key={f.title} hover={false} sx={{ p: 3, height: '100%' }}>
+              <Stack spacing={2}>
+                <TintedIcon>{f.icon}</TintedIcon>
                 <Box>
-                  <Typography variant="h6" component="h3">
+                  <Typography variant="h5" component="h3" sx={{ mb: 0.5 }}>
                     {f.title}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -343,8 +337,140 @@ export default function HomePage() {
           ))}
         </Box>
       </Container>
+
+      {/* So funktioniert es */}
+      <Container maxWidth="lg" sx={{ pb: { xs: 8, md: 12 } }}>
+        <Typography variant="overline" component="p" sx={{ color: 'text.secondary', textAlign: 'center', mb: 1 }}>
+          So funktioniert es
+        </Typography>
+        <Typography variant="h2" sx={{ textAlign: 'center', mb: 6 }}>
+          In drei Schritten startklar
+        </Typography>
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 3,
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+          }}
+        >
+          {STEPS.map(s => (
+            <Box key={s.step} sx={{ textAlign: 'center', px: 2 }}>
+              <Box
+                aria-hidden
+                sx={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mx: 'auto',
+                  mb: 2,
+                  backgroundColor: alpha(theme.palette.primary.main, isDark ? 0.24 : 0.1),
+                  color: isDark ? 'primary.light' : 'primary.main',
+                  fontWeight: 600,
+                  fontSize: 17,
+                }}
+                className="tabular-nums"
+              >
+                {s.step}
+              </Box>
+              <Typography variant="h5" component="h3" sx={{ mb: 1 }}>
+                {s.title}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {s.desc}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      </Container>
+
+      {/* Zielgruppen */}
+      <Container maxWidth="lg" sx={{ pb: { xs: 8, md: 12 } }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 3,
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+          }}
+        >
+          {AUDIENCE.map(a => (
+            <GlassCard key={a.title} hover={false} sx={{ p: 4, height: '100%' }}>
+              <Typography variant="h4" component="h3" sx={{ mb: 3 }}>
+                {a.title}
+              </Typography>
+              <Stack spacing={1.5}>
+                {a.points.map(p => (
+                  <Stack key={p} direction="row" spacing={1.5} alignItems="flex-start">
+                    <CheckCircleOutline
+                      sx={{ fontSize: 20, color: 'success.main', mt: '2px', flexShrink: 0 }}
+                    />
+                    <Typography variant="body2" color="text.secondary">
+                      {p}
+                    </Typography>
+                  </Stack>
+                ))}
+              </Stack>
+            </GlassCard>
+          ))}
+        </Box>
+      </Container>
+
+      {/* Abschluss-CTA */}
+      <Container maxWidth="lg" sx={{ pb: { xs: 8, md: 12 } }}>
+        <Box
+          sx={{
+            textAlign: 'center',
+            borderRadius: 4,
+            px: { xs: 3, md: 8 },
+            py: { xs: 6, md: 8 },
+            backgroundColor: alpha(theme.palette.primary.main, isDark ? 0.16 : 0.06),
+            border: '1px solid',
+            borderColor: alpha(theme.palette.primary.main, isDark ? 0.3 : 0.12),
+          }}
+        >
+          <Typography variant="h2" sx={{ mb: 2 }}>
+            Bereit für klare Schichten?
+          </Typography>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ maxWidth: 560, mx: 'auto', mb: 4 }}
+          >
+            Registrieren Sie Ihre Einrichtung und planen Sie den ersten Dienstplan noch heute.
+          </Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
+            <Button
+              component={Link}
+              href="/admin-registrieren"
+              variant="contained"
+              size="large"
+              endIcon={<ArrowForward />}
+            >
+              Firma registrieren
+            </Button>
+            <Button component={Link} href="/anmelden" size="large" variant="text">
+              Ich habe bereits ein Konto
+            </Button>
+          </Stack>
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            justifyContent="center"
+            sx={{ mt: 3, color: 'text.secondary' }}
+          >
+            <PhoneAndroid sx={{ fontSize: 16 }} />
+            <Typography variant="caption">
+              Läuft im Browser – auf Smartphone, Tablet und Desktop
+            </Typography>
+          </Stack>
+        </Box>
+      </Container>
+
       {/* Footer */}
-      <Container maxWidth="xl" sx={{ maxWidth: '1280px', py: 6 }}>
+      <Container maxWidth="lg" sx={{ pb: 6 }}>
         <Box
           sx={{
             display: 'flex',
@@ -352,6 +478,9 @@ export default function HomePage() {
             justifyContent: 'space-between',
             gap: 2,
             flexWrap: 'wrap',
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            pt: 3,
           }}
         >
           <Typography variant="body2" color="text.secondary">
