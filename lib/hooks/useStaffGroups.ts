@@ -1,69 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/lib/utils/logger';
+import { staffGroupService } from '@/lib/services/staffGroups';
+import type { StaffGroup, StaffGroupData } from '@/lib/types/staffGroup';
 
 // Echter useAuth - kein Mock mehr
 import { useAuth as useAuthReal } from '@/contexts/AuthContext';
 const useAuth = useAuthReal;
 
-// Lokale Typen (Service noch nicht implementiert)
-interface StaffGroup {
-  id: string;
-  name: string;
-  description?: string;
-  memberIds: string[];
-  createdAt: Date;
-  updatedAt: Date;
-  color?: string;
-}
-
-interface StaffGroupCreateForm {
-  name: string;
-  description?: string;
-  memberIds: string[];
-}
-
-interface StaffGroupUpdateForm {
-  name?: string;
-  description?: string;
-  memberIds?: string[];
-}
-
-// TODO: Implementiere echten StaffGroupService - aktuell gibt es keinen Service
-// Für jetzt: Leere Funktionen, die Fehler werfen
-const staffGroupService = {
-  getAll: async (): Promise<StaffGroup[]> => {
-    logger.warn('staffGroupService.getAll not yet implemented');
-    return [];
-  },
-  getById: async (id: string): Promise<StaffGroup | null> => {
-    logger.warn('staffGroupService.getById not yet implemented', { id });
-    throw new Error('StaffGroup service not implemented');
-  },
-  getByCreator: async (creatorId: string): Promise<StaffGroup[]> => {
-    logger.warn('staffGroupService.getByCreator not yet implemented', { creatorId });
-    return [];
-  },
-  create: async (data: StaffGroupCreateForm): Promise<string> => {
-    logger.warn('staffGroupService.create not yet implemented', { data });
-    throw new Error('StaffGroup service not implemented');
-  },
-  update: async (id: string, data: StaffGroupUpdateForm): Promise<void> => {
-    logger.warn('staffGroupService.update not yet implemented', { id, data });
-    throw new Error('StaffGroup service not implemented');
-  },
-  delete: async (id: string): Promise<void> => {
-    logger.warn('staffGroupService.delete not yet implemented', { id });
-    throw new Error('StaffGroup service not implemented');
-  },
-  addMember: async (groupId: string, memberId: string): Promise<void> => {
-    logger.warn('staffGroupService.addMember not yet implemented', { groupId, memberId });
-    throw new Error('StaffGroup service not implemented');
-  },
-  removeMember: async (groupId: string, memberId: string): Promise<void> => {
-    logger.warn('staffGroupService.removeMember not yet implemented', { groupId, memberId });
-    throw new Error('StaffGroup service not implemented');
-  }
-};
+type StaffGroupCreateForm = StaffGroupData;
+type StaffGroupUpdateForm = Partial<StaffGroupData>;
 
 // Stub-Toast (verwendet Logger für bessere Performance)
 const toast = {
@@ -90,13 +35,13 @@ export const useStaffGroups = () => {
 
   const groups: StaffGroup[] = Array.isArray(groupsResponse) ? groupsResponse : [];
 
-  // Gruppen nach Ersteller laden
+  // Gruppen laden, in denen der aktuelle User Mitglied ist
   const {
     data: myGroups,
     isLoading: loadingMyGroups,
   } = useQuery<StaffGroup[]>({
-    queryKey: ['staffGroups', 'my'],
-    queryFn: () => staffGroupService.getByCreator(user?.id || ''),
+    queryKey: ['staffGroups', 'my', user?.id],
+    queryFn: () => staffGroupService.getGroupsForUser(user?.id || ''),
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000, // 5 Minuten
   });
@@ -169,7 +114,7 @@ export const useStaffGroups = () => {
   // Statistiken berechnen
   const myGroupsList: StaffGroup[] = myGroups ?? [];
 
-  const totalMembers = groups.reduce((acc, group) => acc + (group.memberIds?.length ?? 0), 0);
+  const totalMembers = groups.reduce((acc, group) => acc + (group.members?.length ?? 0), 0);
   const colorDistribution = groups.reduce<Record<string, number>>((acc, group) => {
     const key = group.color ?? 'unknown';
     acc[key] = (acc[key] || 0) + 1;

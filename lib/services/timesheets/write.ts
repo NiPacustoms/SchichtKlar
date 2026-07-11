@@ -33,7 +33,7 @@ export async function create(userId: string, data: TimesheetForm): Promise<strin
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
-  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     return await offlineQueueService.addToQueue('timesheet', 'create', timesheetData);
   }
   if (!db) return await offlineQueueService.addToQueue('timesheet', 'create', timesheetData);
@@ -41,7 +41,7 @@ export async function create(userId: string, data: TimesheetForm): Promise<strin
     const docRef = await addDoc(collection(getDb(), COLLECTION_NAME), timesheetData);
     return docRef.id;
   } catch (error) {
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
       let fallbackCompanyId: string | null = null;
       try {
         const userDoc = await getDoc(doc(getDb(), 'users', userId));
@@ -68,7 +68,7 @@ export async function create(userId: string, data: TimesheetForm): Promise<strin
 }
 
 export async function update(id: string, data: Partial<TimesheetForm>): Promise<void> {
-  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     await offlineQueueService.addToQueue('timesheet', 'update', { id, ...data });
     return;
   }

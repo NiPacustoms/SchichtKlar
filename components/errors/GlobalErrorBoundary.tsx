@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import { Box, Button, Typography, Alert, AlertTitle, Collapse } from '@mui/material';
 import { ErrorOutline, Refresh, Home, BugReport } from '@mui/icons-material';
 import { AppError, ErrorSeverity, createAppError, ErrorCode } from '@/lib/errors';
@@ -67,6 +68,10 @@ export class GlobalErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoun
         errorInfo,
       });
       if (this.props.onError) this.props.onError(appError, errorInfo);
+      Sentry.captureException(error, {
+        contexts: { react: { componentStack: errorInfo.componentStack } },
+        tags: { boundary: this.props.component ?? 'GlobalErrorBoundary' },
+      });
       try {
         logger.error('Global Error Boundary caught an error:', appError.toObject());
       } catch {
@@ -116,7 +121,6 @@ export class GlobalErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoun
     const { error, errorInfo } = this.state;
     if (!error) return;
 
-    // In a real application, this would send the error to a bug reporting service
     const bugReport = {
       error: error.toObject(),
       errorInfo: errorInfo
@@ -129,9 +133,12 @@ export class GlobalErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoun
       timestamp: new Date().toISOString(),
     };
 
+    Sentry.captureMessage('User-submitted bug report', {
+      level: 'error',
+      extra: bugReport,
+    });
     logger.info('Bug Report:', bugReport);
 
-    // TODO: Integrate with bug reporting service
     alert('Fehler wurde zur Analyse übermittelt. Vielen Dank für Ihr Feedback!');
   };
 

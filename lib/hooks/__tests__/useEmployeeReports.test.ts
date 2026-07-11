@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import React, { type ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
@@ -198,4 +199,3 @@ describe('useEmployeeReports', () => {
     expect((filtersArg as { startDate: Date; endDate: Date }).endDate).toBeInstanceOf(Date);
   });
 });
-

@@ -416,7 +416,7 @@ export const timesheetService = {
       };
 
       // Offline-Support: Wenn offline, zur Queue hinzufügen
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
         return await offlineQueueService.addToQueue('timesheet', 'create', timesheetData);
       }
 
@@ -430,7 +430,7 @@ export const timesheetService = {
       return docRef.id;
     } catch (error) {
       // Bei Fehler: Zur Offline-Queue hinzufügen
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
         // Versuche companyId zu holen
         let companyId: string | null = null;
         try {
@@ -466,7 +466,7 @@ export const timesheetService = {
   // GoBD-konform: approved/submitted Timesheets können nicht geändert werden
   async update(id: string, data: Partial<TimesheetForm>): Promise<void> {
     try {
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
         await offlineQueueService.addToQueue('timesheet', 'update', { id, ...data });
         return;
       }

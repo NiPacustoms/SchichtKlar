@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { assignmentService } from '../assignments';
+import { getCompanyIdFromAuth } from '@/lib/utils/companyId';
 
 // Mock Firebase
 vi.mock('@/lib/firebase', () => ({
@@ -29,6 +30,9 @@ vi.mock('firebase/firestore', () => ({
 describe('assignmentService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // vi.clearAllMocks() setzt keine Implementierungen zurück – Standardwert
+    // explizit wiederherstellen, damit Tests nicht von der Reihenfolge abhängen.
+    vi.mocked(getCompanyIdFromAuth).mockResolvedValue('company123');
   });
 
   describe('getById', () => {

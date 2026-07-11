@@ -30,7 +30,7 @@ interface ExportFilters {
   [key: string]: unknown;
 }
 
-export function useEmployeeReports(_filters?: EmployeeReportFilters) {
+export function useEmployeeReports(filters?: EmployeeReportFilters) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -149,25 +149,189 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
   const getStatusLabel = (status: string) => status;
   type TrendValue = 'up' | 'down' | 'flat';
   const getTrendIcon = (_trend: TrendValue) => null;
-  const getTrendText = (_trend: TrendValue) => '';
+  const getTrendText = (trend: TrendValue) =>
+    trend === 'up' ? 'steigend' : trend === 'down' ? 'fallend' : 'stabil';
 
-  const workTimeReport = useMemo(
-    () => ({
-      data: [] as unknown[],
-      summary: {},
-      totalHours: 0,
-      regularHours: 0,
-      overtimeHours: 0,
-      averageHoursPerDay: 0,
-      averageHoursPerWeek: 0,
-      workingDays: 0,
-      trend: 'flat' as TrendValue,
-      hoursByDay: [] as unknown[],
-    }),
-    []
-  );
-  const exportWorkTimeReport = async (_format: 'pdf' | 'excel') => { toast.info('Export wird vorbereitet'); };
-  const exportAllReports = async (_format: 'pdf' | 'excel') => { toast.info('Export wird vorbereitet'); };
+  // Auf Filterzeitraum eingeschränkte Timesheets (ohne Filter: alle)
+  const filteredTimesheets = useMemo(() => {
+    const start = filters?.startDate;
+    const end = filters?.endDate;
+    if (!start && !end) return timesheets;
+    return timesheets.filter((ts) => {
+      const date = ts.date instanceof Date ? ts.date : new Date(ts.date);
+      if (start && date < start) return false;
+      if (end && date > end) return false;
+      return true;
+    });
+  }, [timesheets, filters?.startDate, filters?.endDate]);
+
+  const workTimeReport = useMemo(() => {
+    const dayMap = new Map<string, { totalHours: number; overtimeHours: number }>();
+    for (const ts of filteredTimesheets) {
+      const date = ts.date instanceof Date ? ts.date : new Date(ts.date);
+      const dayKey = format(date, 'yyyy-MM-dd');
+      const entry = dayMap.get(dayKey) ?? { totalHours: 0, overtimeHours: 0 };
+      entry.totalHours += ts.totalHours || 0;
+      entry.overtimeHours += ts.overtimeHours || 0;
+      dayMap.set(dayKey, entry);
+    }
+
+    const hoursByDay = Array.from(dayMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([day, hours]) => ({
+        day,
+        totalHours: hours.totalHours,
+        overtimeHours: hours.overtimeHours,
+        regularHours: Math.max(0, hours.totalHours - hours.overtimeHours),
+      }));
+
+    const totalHours = hoursByDay.reduce((sum, d) => sum + d.totalHours, 0);
+    const overtimeHours = hoursByDay.reduce((sum, d) => sum + d.overtimeHours, 0);
+    const regularHours = Math.max(0, totalHours - overtimeHours);
+    const workingDays = hoursByDay.length;
+
+    const weekKeys = new Set(
+      hoursByDay.map((d) => format(new Date(d.day), "RRRR-'W'II"))
+    );
+    const weeks = weekKeys.size;
+
+    // Trend: zweite Hälfte des Zeitraums vs. erste Hälfte (±5 % Toleranz)
+    let trend: TrendValue = 'flat';
+    if (workingDays >= 4) {
+      const mid = Math.floor(workingDays / 2);
+      const firstAvg =
+        hoursByDay.slice(0, mid).reduce((sum, d) => sum + d.totalHours, 0) / mid;
+      const secondAvg =
+        hoursByDay.slice(mid).reduce((sum, d) => sum + d.totalHours, 0) /
+        (workingDays - mid);
+      if (secondAvg > firstAvg * 1.05) trend = 'up';
+      else if (secondAvg < firstAvg * 0.95) trend = 'down';
+    }
+
+    // ArbZG: max. 10h/Tag (§3), im Schnitt max. 48h/Woche
+    const violations: string[] = [];
+    for (const d of hoursByDay) {
+      if (d.totalHours > 10) {
+        violations.push(`Mehr als 10 Stunden am ${format(new Date(d.day), 'dd.MM.yyyy')}`);
+      }
+    }
+    if (weeks > 0 && totalHours / weeks > 48) {
+      violations.push('Durchschnittliche Wochenarbeitszeit über 48 Stunden');
+    }
+
+    return {
+      data: hoursByDay as unknown[],
+      summary: { totalHours, regularHours, overtimeHours, workingDays },
+      totalHours,
+      regularHours,
+      overtimeHours,
+      averageHoursPerDay: workingDays > 0 ? totalHours / workingDays : 0,
+      averageHoursPerWeek: weeks > 0 ? totalHours / weeks : 0,
+      workingDays,
+      trend,
+      hoursByDay,
+      arbzgCompliance: { isCompliant: violations.length === 0, violations },
+    };
+  }, [filteredTimesheets]);
+
+  // Zuschläge: surchargeAmount pro Timesheet, anteilig nach Stundenart aufgeteilt
+  const surchargesReport = useMemo(() => {
+    let totalSurcharge = 0;
+    let nightSurcharge = 0;
+    let weekendSurcharge = 0;
+    let holidaySurcharge = 0;
+    let overtimeSurcharge = 0;
+
+    for (const ts of filteredTimesheets) {
+      const amount = ts.surchargeAmount || 0;
+      if (amount <= 0) continue;
+      totalSurcharge += amount;
+
+      const night = ts.nightHours || 0;
+      const weekend = ts.weekendHours || 0;
+      const holiday = ts.holidayHours || 0;
+      const overtime = ts.overtimeHours || 0;
+      const surchargeHours = night + weekend + holiday + overtime;
+      if (surchargeHours <= 0) continue;
+
+      nightSurcharge += (amount * night) / surchargeHours;
+      weekendSurcharge += (amount * weekend) / surchargeHours;
+      holidaySurcharge += (amount * holiday) / surchargeHours;
+      overtimeSurcharge += (amount * overtime) / surchargeHours;
+    }
+
+    return {
+      totalSurcharge,
+      nightSurcharge,
+      weekendSurcharge,
+      holidaySurcharge,
+      overtimeSurcharge,
+    };
+  }, [filteredTimesheets]);
+
+  const getExportRange = (): ExportFilters => {
+    if (filters?.startDate && filters?.endDate) {
+      return { startDate: filters.startDate, endDate: filters.endDate };
+    }
+    const dates = filteredTimesheets.map((ts) =>
+      ts.date instanceof Date ? ts.date : new Date(ts.date)
+    );
+    if (dates.length === 0) {
+      const now = new Date();
+      return { startDate: new Date(now.getFullYear(), 0, 1), endDate: now };
+    }
+    return {
+      startDate: new Date(Math.min(...dates.map((d) => d.getTime()))),
+      endDate: new Date(Math.max(...dates.map((d) => d.getTime()))),
+    };
+  };
+
+  const exportWorkTimeReport = async (exportFormat: 'pdf' | 'excel') => {
+    const range = getExportRange();
+    const data: ExportData = { reportId: 'employee-worktime', ...workTimeReport.summary };
+    try {
+      if (exportFormat === 'pdf') {
+        await reportService.exportTimeAccountReportPDF(data, range);
+      } else {
+        await reportService.exportTimeAccountReportExcel(data, range);
+      }
+      toast.success('Arbeitszeit-Bericht exportiert');
+    } catch (error) {
+      logger.error('Error exporting work time report:', error);
+      toast.error('Fehler beim Exportieren des Arbeitszeit-Berichts');
+      throw error;
+    }
+  };
+
+  const exportAllReports = async (exportFormat: 'pdf' | 'excel') => {
+    const range = getExportRange();
+    try {
+      if (exportFormat === 'pdf') {
+        await reportService.exportTimeAccountReportPDF(
+          { reportId: 'employee-worktime', ...workTimeReport.summary },
+          range
+        );
+        await reportService.exportSurchargeReportPDF(
+          { reportId: 'employee-surcharges', ...surchargesReport },
+          range
+        );
+      } else {
+        await reportService.exportTimeAccountReportExcel(
+          { reportId: 'employee-worktime', ...workTimeReport.summary },
+          range
+        );
+        await reportService.exportSurchargeReportExcel(
+          { reportId: 'employee-surcharges', ...surchargesReport },
+          range
+        );
+      }
+      toast.success('Berichte exportiert');
+    } catch (error) {
+      logger.error('Error exporting reports:', error);
+      toast.error('Fehler beim Exportieren der Berichte');
+      throw error;
+    }
+  };
 
   const refetch = () => { void refetchTimesheets(); queryClient.invalidateQueries({ queryKey: ['employeeTimeEntries'] }); };
 
@@ -219,6 +383,7 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
     timeEntries,
     user,
     workTimeReport,
+    surchargesReport,
     // Loading states
     isLoading,
     loadingTimesheets,
