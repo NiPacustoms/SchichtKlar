@@ -28,13 +28,15 @@ export const breakpoints = {
   xxl: 1920,
 } as const;
 
-/** Eckenradien – Clean & Flat: kompakt und einheitlich */
+/** Eckenradien – Apple/iOS-HIG: großzügige, weiche Radien */
 export const radius = {
-  sm: 6,
-  md: 8,
-  lg: 12,
-  xl: 16,
-  dialog: 12,
+  sm: 8,
+  md: 12, // Buttons/Felder
+  lg: 16, // Karten (iOS-Inset)
+  xl: 22, // große/Hero-Karten
+  hero: 24,
+  pill: 999, // Pillen/Badges/Segmented
+  dialog: 16,
 } as const;
 
 export const duration = {
@@ -86,23 +88,32 @@ export const grey = {
   900: '#1c1917',
 } as const;
 
-// Light theme surfaces & text – flach & opak (kein Blur, keine Transparenz)
+// Light theme surfaces & text – iOS „grouped": ruhige Flächen + Haarlinien
 export const light = {
   background: {
     default: '#fafaf9',
     alt: '#f5f5f4',
+    /** iOS „grouped background" für App-Bereiche (hinter Inset-Karten) */
+    grouped: '#f2f2f7',
   },
   surface: {
     main: '#ffffff',
     hover: '#fafaf9',
+    /** Feld-Grau (iOS Search/Segmented-Track) */
+    field: '#e9e9ed',
+    /** Teal-Tint-Fläche (aktive Zeile, Chips) */
+    tint: 'rgba(15,118,110,0.10)',
   },
   border: {
     main: 'rgba(28,25,23,0.10)',
     hover: 'rgba(28,25,23,0.20)',
+    /** iOS-Haarlinie (Listentrenner) */
+    hairline: '#ececee',
   },
   text: {
-    primary: '#1c1917',
-    secondary: 'rgba(28,25,23,0.66)', // ≥5.5:1 auf #fafaf9 (AA+ für Fließtext)
+    primary: '#1c1c1e', // iOS-Label
+    secondary: '#8e8e93', // iOS Secondary Label
+    tertiary: '#c7c7cc', // iOS Tertiary Label
     disabled: 'rgba(28,25,23,0.42)',
   },
   input: {
@@ -142,11 +153,15 @@ export const dark = {
   tableHeaderBg: 'rgba(255,255,255,0.04)',
 } as const;
 
-/** Schatten – Clean & Flat: sehr dezent; Tiefe kommt primär aus Borders */
+/** Schatten – Apple/iOS: Karten flach (Fläche+Haarlinie); Tiefe nur für CTAs/Overlays */
 export const shadows = {
-  soft: '0 1px 2px rgba(28,25,23,0.05)',
+  soft: '0 1px 2px rgba(0,0,0,0.04)',
   medium: '0 2px 8px rgba(28,25,23,0.07)',
   large: '0 8px 24px rgba(28,25,23,0.12)',
+  /** Primär-CTA (Teal) – dezenter farbiger Auftrieb */
+  ctaPrimary: '0 10px 22px -8px rgba(15,118,110,0.45)',
+  /** Sheet/Modal – stärker */
+  sheet: '0 12px 40px -8px rgba(28,25,23,0.28)',
   // Dark mode (stärkere Schatten auf dunklem Grund)
   softDark: '0 1px 2px rgba(0,0,0,0.25)',
   mediumDark: '0 2px 8px rgba(0,0,0,0.3)',
@@ -227,7 +242,10 @@ export const shimmerGradient =
 /** Mindest-Tap-Target (weltweit a11y): 48px */
 export const minTouchTargetPx = 48;
 
-/** BottomNav Höhe (px) */
-export const bottomNavHeightPx = 56;
+/** BottomNav / iOS Tab Bar Höhe (px) – inkl. Label + Home-Indicator-Zone */
+export const bottomNavHeightPx = 64;
+
+/** Hero-Gradient (Teal) für Hauptaktions-Karten (Aktueller Einsatz, Berichte) */
+export const heroGradient = 'linear-gradient(155deg, #127c73 0%, #0b5850 100%)';
 
 export type ThemeMode = 'light' | 'dark';

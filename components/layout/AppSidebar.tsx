@@ -21,6 +21,7 @@ import {
   ViewModule,
 } from '@mui/icons-material';
 import {
+  Avatar,
   Box,
   List,
   ListItem,
@@ -29,7 +30,6 @@ import {
   ListItemText,
   Drawer,
   useTheme,
-  alpha,
   Divider,
   Typography,
 } from '@mui/material';
@@ -37,8 +37,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getThemeConstants, type ThemeMode } from '@/lib/theme';
 import { ROUTES } from '@/lib/constants/routes';
+import { AppLogo } from '@/components/ui/AppLogo';
+import { useBrandingSettings } from '@/lib/hooks/useBrandingSettings';
 
-const SIDEBAR_WIDTH = 280;
+const SIDEBAR_WIDTH = 248;
 
 type FeatureFlagCheck =
   | 'canAccessAssignments'
@@ -138,6 +140,17 @@ export function AppSidebar() {
   );
   const allItems = [...mainItems, ...moreItems];
 
+  const { branding } = useBrandingSettings();
+  const brandingData = branding ?? { companyName: 'Schichtklar', companyLogo: undefined, showLogo: true };
+  const displayName = user?.displayName || user?.email || '';
+  const initials = displayName
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase())
+    .join('');
+  const roleLabel = isNurse ? 'Mitarbeiter/in' : 'Administration';
+
   const content = (
     <Box
       sx={{
@@ -147,46 +160,62 @@ export function AppSidebar() {
         flexDirection: 'column',
         background: theme.palette.background.paper,
         borderRight: `1px solid ${themeConstants.CARD_BORDER_LIGHT}`,
-        boxShadow: themeConstants.SHADOW_SOFT,
       }}
     >
-      <Box sx={{ px: 2, py: 2 }}>
-        <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 600 }}>
-          {isNurse ? 'Navigation' : 'Admin'}
-        </Typography>
+      {/* Marke oben */}
+      <Box
+        component={Link}
+        href={isNurse ? ROUTES.EMPLOYEE.DASHBOARD : ROUTES.ADMIN.UEBERSICHT}
+        sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2.5, py: 2.25, textDecoration: 'none' }}
+        aria-label="Zur Startseite"
+      >
+        <AppLogo
+          branding={brandingData}
+          showLogo
+          width={140}
+          height={34}
+          sx={{ width: 'auto', height: 34, borderRadius: 0 }}
+          showSkeleton={false}
+          fallbackBgColor="transparent"
+        />
       </Box>
-      <Divider />
-      <List component="nav" sx={{ flex: 1, py: 1 }}>
+      <Divider sx={{ borderColor: '#ececee' }} />
+
+      <List component="nav" sx={{ flex: 1, py: 1.5, px: 1 }}>
         {allItems.map(item => {
           const isActive =
             pathname === item.href ||
             (item.href !== '/' && (pathname ?? '').startsWith(item.href + '/'));
           return (
-            <ListItem key={item.href} disablePadding sx={{ px: 1 }}>
+            <ListItem key={item.href} disablePadding sx={{ mb: 0.25 }}>
               <ListItemButton
                 component={Link}
                 href={item.href}
                 selected={isActive}
                 sx={{
-                  borderRadius: 2,
+                  borderRadius: '10px',
+                  minHeight: 44,
+                  px: 1.5,
+                  m: 0,
                   '&.Mui-selected': {
-                    backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                    '&:hover': {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.18),
-                    },
+                    backgroundColor: 'rgba(15,118,110,0.10)',
+                    color: 'primary.main',
+                    '&:hover': { backgroundColor: 'rgba(15,118,110,0.16)' },
+                    '& .MuiListItemIcon-root': { color: 'primary.main' },
                   },
                 }}
               >
                 <ListItemIcon
-                  sx={{ minWidth: 40, color: isActive ? 'primary.main' : 'text.secondary' }}
+                  sx={{ minWidth: 36, color: isActive ? 'primary.main' : 'text.secondary' }}
                 >
                   {item.icon}
                 </ListItemIcon>
                 <ListItemText
                   primary={item.label}
                   primaryTypographyProps={{
-                    variant: 'body2',
+                    fontSize: 15,
                     fontWeight: isActive ? 600 : 500,
+                    letterSpacing: '-0.01em',
                   }}
                 />
               </ListItemButton>
@@ -194,6 +223,24 @@ export function AppSidebar() {
           );
         })}
       </List>
+
+      {/* User-Zeile unten */}
+      {displayName && (
+        <>
+          <Divider sx={{ borderColor: '#ececee' }} />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, px: 2, py: 1.75 }}>
+            <Avatar sx={{ width: 34, height: 34, fontSize: 14 }}>{initials || '·'}</Avatar>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography noWrap sx={{ fontSize: 14, fontWeight: 600, lineHeight: 1.25 }}>
+                {displayName}
+              </Typography>
+              <Typography noWrap sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.2 }}>
+                {roleLabel}
+              </Typography>
+            </Box>
+          </Box>
+        </>
+      )}
     </Box>
   );
 

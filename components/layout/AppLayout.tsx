@@ -11,19 +11,20 @@ interface AppLayoutProps {
 export function AppLayout({ children, hideHeader = false }: AppLayoutProps) {
   return (
     <Box
-      className="gradient-background"
       sx={{
         position: 'relative',
         overflowX: 'hidden',
+        minHeight: '100dvh',
+        backgroundColor: 'var(--color-grouped, #f2f2f7)',
       }}
     >
       {!hideHeader && <GlobalHeader />}
       <Box
         sx={{
           pt: { xs: 2, sm: 3 },
-          pb: 'calc(env(safe-area-inset-bottom) + 72px)',
+          pb: 'calc(env(safe-area-inset-bottom) + 84px)',
           px: { xs: 2, sm: 3 },
-          maxWidth: '1440px',
+          maxWidth: '1180px',
           margin: '0 auto',
           width: '100%',
         }}

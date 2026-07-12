@@ -46,7 +46,16 @@ export function PageHeader({ title, subtitle, actions, children }: PageHeaderPro
       >
         <Fragment key="page-header-title">
           {typeof title === 'string' ? (
-            <Typography variant="h2" component="h1">
+            <Typography
+              component="h1"
+              sx={{
+                fontSize: { xs: 28, sm: 32 },
+                fontWeight: 700,
+                letterSpacing: '-0.02em',
+                lineHeight: 1.08,
+                color: 'text.primary',
+              }}
+            >
               {title}
             </Typography>
           ) : (
