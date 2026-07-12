@@ -1,6 +1,7 @@
 'use client';
 import { ProfileForm } from '@/components/profile/ProfileForm';
 import { ProfileStats } from '@/components/profile/ProfileStats';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { PageContainer } from '@/components/layout/PageContainer';
@@ -20,12 +21,14 @@ import {
   Settings,
 } from '@mui/icons-material';
 import {
+  alpha,
   Alert,
   Avatar,
   Box,
   Button,
   Card,
   CardContent,
+  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -164,16 +167,17 @@ export default function ProfilePage() {
       <PageContainer maxWidth="standard">
         <Box sx={{ mb: 4 }}>
           <Typography
-            variant="h4"
             sx={{
-              color: 'text.primary',
+              fontSize: { xs: 28, sm: 32 },
               fontWeight: 700,
-              mb: 1,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.08,
+              color: 'text.primary',
             }}
           >
             Mein Profil
           </Typography>
-          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+          <Typography variant="body1" sx={{ color: 'text.secondary', mt: 0.75 }}>
             Verwalte deine persönlichen Daten und Einstellungen
           </Typography>
         </Box>
@@ -219,44 +223,108 @@ export default function ProfilePage() {
             <Grid container spacing={3}>
               {/* Profile Info */}
               <Grid size={{ xs: 12, md: 4 }}>
-                <Card className="glass">
-                  <CardContent sx={{ textAlign: 'center' }}>
+                <GlassCard hover={false}>
+                  <CardContent sx={{ textAlign: 'center', py: 3 }}>
                     <Avatar
                       sx={{
-                        width: 80,
-                        height: 80,
+                        width: 96,
+                        height: 96,
                         mx: 'auto',
-                        mb: 2,
+                        mb: 1.5,
                         bgcolor: 'primary.main',
-                        fontSize: '2rem',
+                        fontSize: '2.25rem',
                         fontWeight: 600,
                       }}
                     >
                       {profile.displayName?.charAt(0) || 'U'}
                     </Avatar>
                     <Typography
-                      variant="h5"
                       sx={{
+                        fontSize: 20,
+                        fontWeight: 700,
+                        letterSpacing: '-0.01em',
                         color: 'text.primary',
-                        fontWeight: 600,
-                        mb: 1,
                       }}
                     >
                       {profile.displayName}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
                       {canAccessAdminArea ? 'Administrator' : 'Pflegekraft'}
                     </Typography>
                     <Button
                       variant="outlined"
                       size="small"
                       onClick={() => setActiveTab(1)}
-                      sx={{ mb: 3 }}
+                      sx={{ mt: 2 }}
                     >
                       Profil bearbeiten
                     </Button>
                   </CardContent>
-                </Card>
+                </GlassCard>
+
+                {/* Persönliche Daten */}
+                <Typography className="ios-section-label" component="div">
+                  Persönliche Daten
+                </Typography>
+                <Box className="ios-group">
+                  <Box className="ios-row" sx={{ justifyContent: 'space-between', gap: 2 }}>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', flexShrink: 0 }}>
+                      E-Mail
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'text.primary',
+                        fontWeight: 500,
+                        textAlign: 'right',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      {profile.email}
+                    </Typography>
+                  </Box>
+                  {profile.phone ? (
+                    <Box className="ios-row" sx={{ justifyContent: 'space-between', gap: 2 }}>
+                      <Typography variant="body2" sx={{ color: 'text.secondary', flexShrink: 0 }}>
+                        Telefon
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                        {profile.phone}
+                      </Typography>
+                    </Box>
+                  ) : null}
+                  <Box className="ios-row" sx={{ justifyContent: 'space-between', gap: 2 }}>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', flexShrink: 0 }}>
+                      Rolle
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                      {canAccessAdminArea ? 'Administrator' : 'Pflegekraft'}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Qualifikationen */}
+                {profile.qualifications?.length ? (
+                  <>
+                    <Typography className="ios-section-label" component="div">
+                      Qualifikationen
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {profile.qualifications.map(qualification => (
+                        <Chip
+                          key={qualification}
+                          label={qualification}
+                          sx={{
+                            borderRadius: 999,
+                            fontWeight: 600,
+                            bgcolor: theme => alpha(theme.palette.primary.main, 0.1),
+                            color: 'primary.dark',
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  </>
+                ) : null}
               </Grid>
 
               {/* Settings Menu */}

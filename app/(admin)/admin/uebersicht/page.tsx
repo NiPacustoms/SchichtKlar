@@ -13,6 +13,7 @@ import { UpcomingShiftsCards } from '@/components/admin/UpcomingShiftsCards';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { DashboardSkeleton } from '@/components/admin/DashboardSkeleton';
+import { GlassCard } from '@/components/ui/GlassCard';
 import {
   People,
   Assignment as AssignmentIcon,
@@ -21,7 +22,7 @@ import {
   AccessTime,
   Block,
 } from '@mui/icons-material';
-import { Box, Typography, Paper, Chip, Stack } from '@mui/material';
+import { Box, Typography, Chip, Stack } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -131,7 +132,7 @@ export default function AdminDashboardPage() {
 
       {/* KPI Cards – alle auf einen Blick (Grid statt Karussell) */}
       <Grid key="kpi-grid" container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
+        <Grid size={{ xs: 6, sm: 6, lg: 2.4 }}>
           <AdminKPICard
             title="Aktive Mitarbeiter"
             value={kpis.activeStaff}
@@ -142,7 +143,7 @@ export default function AdminDashboardPage() {
             onClick={() => router.push('/admin/mitarbeiter')}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
+        <Grid size={{ xs: 6, sm: 6, lg: 2.4 }}>
           <AdminKPICard
             title="Offene Schichten"
             value={kpis.openShifts}
@@ -154,7 +155,7 @@ export default function AdminDashboardPage() {
             priority={kpis.openShifts > 0 ? 1 : 2}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
+        <Grid size={{ xs: 6, sm: 6, lg: 2.4 }}>
           <AdminKPICard
             title="Auslastung"
             value={`${kpis.utilization}%`}
@@ -165,7 +166,7 @@ export default function AdminDashboardPage() {
             onClick={() => router.push('/admin/berichte')}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
+        <Grid size={{ xs: 6, sm: 6, lg: 2.4 }}>
           <AdminKPICard
             title="Einrichtungen"
             value={kpis.facilities}
@@ -176,7 +177,7 @@ export default function AdminDashboardPage() {
             onClick={() => router.push('/admin/berichte')}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
+        <Grid size={{ xs: 6, sm: 6, lg: 2.4 }}>
           <AdminKPICard
             title="Wochenlimit"
             value={kpis.weeklyLimitBlocked > 0 ? `${kpis.weeklyLimitBlocked} überschritten` : 'OK'}
@@ -214,12 +215,12 @@ export default function AdminDashboardPage() {
           <UpcomingShiftsCards shifts={allShifts} maxItems={5} />
         </Grid>
         <Grid key="recent-activities" size={{ xs: 12, lg: 6 }}>
-          <Paper sx={{ p: 2 }} elevation={0}>
+          <GlassCard sx={{ p: 2 }}>
             <Typography variant="overline" sx={{ display: 'block', mb: 1.5, color: 'text.secondary' }}>
               Letzte Aktivitäten
             </Typography>
             <RecentActivities activities={recentActivities} />
-          </Paper>
+          </GlassCard>
         </Grid>
       </Grid>
     </PageContainer>

@@ -28,15 +28,17 @@ import {
   Alert,
   Tabs,
   Tab,
+  Avatar,
+  Divider,
   List,
   ListItem,
   ListItemText,
+  ListItemAvatar,
+  ListItemIcon,
   ListItemSecondaryAction,
-  Avatar,
-  Divider,
+  Badge,
   Switch,
   FormControlLabel,
-  Badge,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -72,6 +74,7 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { colors, semanticColors } from '@/lib/design-tokens';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -295,16 +298,18 @@ export default function EmployeeNotificationsPage() {
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography
-          variant="h3"
+          component="h1"
           sx={{
-            color: 'rgba(0,0,0,0.95)',
+            fontSize: { xs: 28, sm: 32 },
             fontWeight: 700,
-            mb: 1,
+            letterSpacing: '-0.02em',
+            lineHeight: 1.08,
+            color: 'text.primary',
           }}
         >
           Benachrichtigungen
         </Typography>
-        <Typography variant="body1" sx={{ color: 'rgba(0,0,0,0.7)' }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
           Verwalten Sie Ihre Benachrichtigungen und Einstellungen
         </Typography>
       </Box>

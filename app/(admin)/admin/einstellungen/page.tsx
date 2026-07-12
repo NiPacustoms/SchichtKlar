@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { PageContainer } from '@/components/layout/PageContainer';
+import { GlassCard } from '@/components/ui/GlassCard';
 import {
   useAdminSettings,
   Role,
@@ -103,6 +104,42 @@ function TabPanel(props: TabPanelProps) {
     >
       {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
     </div>
+  );
+}
+
+/** iOS-Sektionslabel über einer gruppierten Liste. */
+function SettingsSectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Typography component="p" className="ios-section-label">
+      {children}
+    </Typography>
+  );
+}
+
+/** Eine Zeile in einer iOS-Gruppe: Label links, optionaler Sekundärtext, Aktion rechts. */
+function SettingsRow({
+  primary,
+  secondary,
+  action,
+}: {
+  primary: React.ReactNode;
+  secondary?: React.ReactNode;
+  action?: React.ReactNode;
+}) {
+  return (
+    <Box className="ios-row">
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography sx={{ fontWeight: 500, color: 'text.primary', lineHeight: 1.3 }}>
+          {primary}
+        </Typography>
+        {secondary ? (
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.25 }}>
+            {secondary}
+          </Typography>
+        ) : null}
+      </Box>
+      {action ? <Box sx={{ flexShrink: 0, ml: 1 }}>{action}</Box> : null}
+    </Box>
   );
 }
 
@@ -384,22 +421,25 @@ export default function AdminSettingsPage() {
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Typography
-            variant="h3"
+            component="h1"
             sx={{
-              color: 'text.primary',
+              fontSize: { xs: 28, sm: 32 },
               fontWeight: 700,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.08,
+              color: 'text.primary',
               mb: 1,
             }}
           >
             System-Einstellungen
           </Typography>
-          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             Verwalten Sie Systemkonfiguration, Rollen und Dokumenttypen
           </Typography>
         </Box>
 
         {/* Branding */}
-        <Card className="glass" sx={{ mb: 4 }}>
+        <GlassCard hover={false} sx={{ mb: 4 }}>
           <CardContent>
             <Box
               sx={{
@@ -485,57 +525,77 @@ export default function AdminSettingsPage() {
               </Box>
             </Box>
           </CardContent>
-        </Card>
+        </GlassCard>
 
         {/* System Status */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card className="glass">
+          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+            <GlassCard hover={false} sx={{ height: '100%' }}>
               <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" color="success.main" sx={{ fontWeight: 600 }}>
+                <Typography
+                  variant="h4"
+                  color="success.main"
+                  className="tabular-nums"
+                  sx={{ fontWeight: 700 }}
+                >
                   {systemInfo.status}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   System-Status
                 </Typography>
               </CardContent>
-            </Card>
+            </GlassCard>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card className="glass">
+          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+            <GlassCard hover={false} sx={{ height: '100%' }}>
               <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" color="primary" sx={{ fontWeight: 600 }}>
+                <Typography
+                  variant="h4"
+                  color="primary"
+                  className="tabular-nums"
+                  sx={{ fontWeight: 700 }}
+                >
                   {systemInfo.version}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Version
                 </Typography>
               </CardContent>
-            </Card>
+            </GlassCard>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card className="glass">
+          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+            <GlassCard hover={false} sx={{ height: '100%' }}>
               <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" color="info.main" sx={{ fontWeight: 600 }}>
+                <Typography
+                  variant="h4"
+                  color="info.main"
+                  className="tabular-nums"
+                  sx={{ fontWeight: 700 }}
+                >
                   {systemInfo.uptime}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Uptime
                 </Typography>
               </CardContent>
-            </Card>
+            </GlassCard>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card className="glass">
+          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
+            <GlassCard hover={false} sx={{ height: '100%' }}>
               <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" color="warning.main" sx={{ fontWeight: 600 }}>
+                <Typography
+                  variant="h4"
+                  color="warning.main"
+                  className="tabular-nums"
+                  sx={{ fontWeight: 700 }}
+                >
                   {systemInfo.storage}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Speicher
                 </Typography>
               </CardContent>
-            </Card>
+            </GlassCard>
           </Grid>
         </Grid>
 
@@ -590,117 +650,92 @@ export default function AdminSettingsPage() {
         <TabPanel value={activeTab} index={0}>
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 6 }}>
-              <Card className="glass">
-                <CardContent>
-                  <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-                    <Settings sx={{ mr: 1 }} />
-                    Allgemeine Einstellungen
-                  </Typography>
-
-                  <List>
-                    <ListItem>
-                      <ListItemText primary="System-Name" secondary={settings.systemName} />
-                      <ListItemSecondaryAction>
-                        <IconButton size="small">
-                          <Edit />
-                        </IconButton>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary="Standard-Zeitzone" secondary={settings.timezone} />
-                      <ListItemSecondaryAction>
-                        <IconButton size="small">
-                          <Edit />
-                        </IconButton>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary="Sprache" secondary={settings.language} />
-                      <ListItemSecondaryAction>
-                        <IconButton size="small">
-                          <Edit />
-                        </IconButton>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary="Währung" secondary={settings.currency} />
-                      <ListItemSecondaryAction>
-                        <IconButton size="small">
-                          <Edit />
-                        </IconButton>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                  </List>
-                </CardContent>
-              </Card>
+              <SettingsSectionLabel>Allgemeine Einstellungen</SettingsSectionLabel>
+              <Box className="ios-group">
+                <SettingsRow
+                  primary="System-Name"
+                  secondary={settings.systemName}
+                  action={
+                    <IconButton size="small">
+                      <Edit />
+                    </IconButton>
+                  }
+                />
+                <SettingsRow
+                  primary="Standard-Zeitzone"
+                  secondary={settings.timezone}
+                  action={
+                    <IconButton size="small">
+                      <Edit />
+                    </IconButton>
+                  }
+                />
+                <SettingsRow
+                  primary="Sprache"
+                  secondary={settings.language}
+                  action={
+                    <IconButton size="small">
+                      <Edit />
+                    </IconButton>
+                  }
+                />
+                <SettingsRow
+                  primary="Währung"
+                  secondary={settings.currency}
+                  action={
+                    <IconButton size="small">
+                      <Edit />
+                    </IconButton>
+                  }
+                />
+              </Box>
             </Grid>
 
             <Grid size={{ xs: 12, md: 6 }}>
-              <Card className="glass">
-                <CardContent>
-                  <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-                    <Security sx={{ mr: 1 }} />
-                    Sicherheits-Einstellungen
-                  </Typography>
-
-                  <List>
-                    <ListItem>
-                      <ListItemText
-                        primary="Passwort-Policy"
-                        secondary="Mindestens 8 Zeichen, Groß-/Kleinbuchstaben, Zahlen"
-                      />
-                      <ListItemSecondaryAction>
-                        <IconButton size="small">
-                          <Edit />
-                        </IconButton>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText
-                        primary="Session-Timeout"
-                        secondary={`${settings.sessionTimeout} Minuten`}
-                      />
-                      <ListItemSecondaryAction>
-                        <IconButton size="small">
-                          <Edit />
-                        </IconButton>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText
-                        primary="2FA erforderlich"
-                        secondary={settings.twoFactorRequired ? 'Ja' : 'Nein'}
-                      />
-                      <ListItemSecondaryAction>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={settings.twoFactorRequired}
-                              onChange={() =>
-                                handleUpdateSettings({
-                                  twoFactorRequired: !settings.twoFactorRequired,
-                                })
-                              }
-                            />
-                          }
-                          label=""
-                        />
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText
-                        primary="Login-Versuche"
-                        secondary={`Maximal ${settings.maxLoginAttempts} Versuche`}
-                      />
-                      <ListItemSecondaryAction>
-                        <IconButton size="small">
-                          <Edit />
-                        </IconButton>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                  </List>
-                </CardContent>
-              </Card>
+              <SettingsSectionLabel>Sicherheits-Einstellungen</SettingsSectionLabel>
+              <Box className="ios-group">
+                <SettingsRow
+                  primary="Passwort-Policy"
+                  secondary="Mindestens 8 Zeichen, Groß-/Kleinbuchstaben, Zahlen"
+                  action={
+                    <IconButton size="small">
+                      <Edit />
+                    </IconButton>
+                  }
+                />
+                <SettingsRow
+                  primary="Session-Timeout"
+                  secondary={`${settings.sessionTimeout} Minuten`}
+                  action={
+                    <IconButton size="small">
+                      <Edit />
+                    </IconButton>
+                  }
+                />
+                <SettingsRow
+                  primary="2FA erforderlich"
+                  secondary={settings.twoFactorRequired ? 'Ja' : 'Nein'}
+                  action={
+                    <Switch
+                      checked={settings.twoFactorRequired}
+                      onChange={() =>
+                        handleUpdateSettings({
+                          twoFactorRequired: !settings.twoFactorRequired,
+                        })
+                      }
+                    />
+                  }
+                />
+                <SettingsRow
+                  primary="Login-Versuche"
+                  secondary={`Maximal ${settings.maxLoginAttempts} Versuche`}
+                  action={
+                    <IconButton size="small">
+                      <Edit />
+                    </IconButton>
+                  }
+                />
+              </Box>
             </Grid>
           </Grid>
         </TabPanel>
