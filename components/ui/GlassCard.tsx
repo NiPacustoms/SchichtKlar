@@ -42,7 +42,7 @@ export function GlassCard({
         backgroundColor: theme.palette.background.paper,
         backgroundImage: 'none',
         border: `1px solid ${theme.palette.divider}`,
-        borderRadius: radius.lg,
+        borderRadius: `${radius.lg}px`,
         boxShadow: shadowCurrent,
         transition: transitionBase,
         position: 'relative',

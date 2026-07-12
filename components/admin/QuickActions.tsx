@@ -68,14 +68,14 @@ export function QuickActions({
   const menuPaperSx = {
     minWidth: 200,
     mt: 1,
-    borderRadius: radius.lg,
+    borderRadius: `${radius.lg}px`,
     boxShadow: '0 2px 8px rgba(28,25,23,0.07)',
     border: '1px solid',
     borderColor: 'divider',
   };
 
   return (
-    <GlassCard sx={{ p: 0, borderRadius: radius.md }} hover={false}>
+    <GlassCard sx={{ p: 0, borderRadius: `${radius.md}px` }} hover={false}>
       {/* Sektions-Header – ausreichend Abstand zu den Ecken, damit nichts abgeschnitten wird */}
       <Box
         sx={{
@@ -121,7 +121,7 @@ export function QuickActions({
             onClick={onCreateShift}
             aria-label="Dienst anlegen"
             sx={{
-              borderRadius: radius.md,
+              borderRadius: `${radius.md}px`,
               textTransform: 'none',
               fontWeight: 600,
               px: 3,
@@ -147,7 +147,7 @@ export function QuickActions({
             onClick={onAddStaff}
             aria-label="Mitarbeiter hinzufügen"
             sx={{
-              borderRadius: radius.md,
+              borderRadius: `${radius.md}px`,
               textTransform: 'none',
               fontWeight: 600,
               px: 3,
@@ -190,7 +190,7 @@ export function QuickActions({
                   height: 40,
                   border: '1.5px solid',
                   borderColor: 'divider',
-                  borderRadius: radius.md,
+                  borderRadius: `${radius.md}px`,
                   backgroundColor: 'action.hover',
                   '&:hover': {
                     backgroundColor: alpha(theme.palette.primary.main, 0.08),
@@ -214,7 +214,7 @@ export function QuickActions({
                   height: 40,
                   border: '1.5px solid',
                   borderColor: 'divider',
-                  borderRadius: radius.md,
+                  borderRadius: `${radius.md}px`,
                   backgroundColor: 'action.hover',
                   '&:hover': {
                     backgroundColor: alpha(theme.palette.primary.main, 0.08),
@@ -238,7 +238,7 @@ export function QuickActions({
                 clickable
                 sx={{
                   borderWidth: 1.5,
-                  borderRadius: radius.md,
+                  borderRadius: `${radius.md}px`,
                   fontWeight: 500,
                   py: 1.25,
                   '&:hover': {
@@ -258,7 +258,7 @@ export function QuickActions({
                 clickable
                 sx={{
                   borderWidth: 1.5,
-                  borderRadius: radius.md,
+                  borderRadius: `${radius.md}px`,
                   fontWeight: 500,
                   py: 1.25,
                   '&:hover': {

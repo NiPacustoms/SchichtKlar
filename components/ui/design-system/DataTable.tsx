@@ -43,7 +43,7 @@ export function DataTable({
       elevation={0}
       sx={{
         overflowX: 'auto',
-        borderRadius: radius.md,
+        borderRadius: `${radius.md}px`,
         ...scrollbarSx,
         ...containerProps.sx,
       }}
