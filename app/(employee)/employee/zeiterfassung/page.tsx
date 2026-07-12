@@ -4,6 +4,7 @@ import { TimesheetHistory } from '@/components/time/TimesheetHistory';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { PageContainer } from '@/components/layout/PageContainer';
+import { LiveShiftTimer } from '@/components/ui/LiveShiftTimer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTimesheet } from '@/lib/hooks/useTimesheet';
 import { TimesheetForm as TimesheetFormType, Timesheet } from '@/lib/types';
@@ -442,28 +443,33 @@ export default function TimePage() {
             </Typography>
             {timesheet && timesheet.status === 'draft' && (!timesheet.endTime || timesheet.endTime === timesheet.startTime) ? (
               <>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                  Gestartet um {timesheet.startTime} – Schicht läuft
-                </Typography>
-                <Stack direction="row" spacing={2} flexWrap="wrap">
+                <LiveShiftTimer
+                  startTime={timesheet.startTime}
+                  endTime={assignmentDetails?.shift?.endTime}
+                />
+                <Stack direction="row" spacing={2} flexWrap="wrap" justifyContent="center" sx={{ mt: 1 }}>
                   <Button
                     variant="contained"
-                    color="primary"
                     startIcon={<Pause />}
-                    size="medium"
-                    sx={{ textTransform: 'none' }}
+                    size="large"
+                    sx={{
+                      backgroundColor: 'warning.main',
+                      color: '#ffffff',
+                      boxShadow: 'none',
+                      '&:hover': { backgroundColor: 'warning.dark', boxShadow: 'none' },
+                    }}
                     data-testid="pause-button"
                     aria-label="Pause erfassen (in zukünftiger Version)"
                     onClick={() => toast.info('Pause wird in einer zukünftigen Version unterstützt. Bitte erfassen Sie Pausen im Formular unten.')}
                   >
-                    II Pause
+                    Pause
                   </Button>
                   <Button
                     variant="contained"
                     color="error"
                     startIcon={<Stop />}
-                    size="medium"
-                    sx={{ textTransform: 'none' }}
+                    size="large"
+                    sx={{ boxShadow: 'none', '&:hover': { boxShadow: 'none' } }}
                     data-testid="end-shift-button"
                     aria-label="Schicht beenden"
                     disabled={updateTimesheet.isPending}
