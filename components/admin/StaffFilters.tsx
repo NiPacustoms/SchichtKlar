@@ -3,6 +3,7 @@
 import { FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import DebouncedSearch from '@/components/ui/DebouncedSearch';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { roleOptions, roleLabelMap, type RoleOption } from '@/lib/validations/staff';
 import { useQuery } from '@tanstack/react-query';
 import { categoriesService } from '@/lib/services/categories';
@@ -78,18 +79,16 @@ export function StaffFilters({
       </Grid>
 
       <Grid key="filter-status" size={{ xs: 12, sm: 6, md: 3 }}>
-        <FormControl fullWidth>
-          <InputLabel>Status</InputLabel>
-          <Select
-            value={statusFilter}
-            onChange={e => onStatusFilterChange?.(e.target.value)}
-            label="Status"
-          >
-            <MenuItem value="all">Alle Status</MenuItem>
-            <MenuItem value="active">Aktiv</MenuItem>
-            <MenuItem value="inactive">Inaktiv</MenuItem>
-          </Select>
-        </FormControl>
+        <SegmentedControl
+          aria-label="Status-Filter"
+          value={statusFilter ?? 'all'}
+          onChange={(v) => onStatusFilterChange?.(v)}
+          options={[
+            { value: 'all', label: 'Alle' },
+            { value: 'active', label: 'Aktiv' },
+            { value: 'inactive', label: 'Inaktiv' },
+          ]}
+        />
       </Grid>
 
       <Grid key="filter-group" size={{ xs: 12, sm: 6, md: 3 }}>
