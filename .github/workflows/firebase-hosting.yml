@@ -77,19 +77,37 @@ jobs:
           echo "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${FB_MESSAGING_SENDER_ID}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_FIREBASE_APP_ID=${FB_APP_ID}" >> $GITHUB_ENV
 
-      - name: Set legal/company environment variables (from Vars)
+      - name: Set legal/company environment variables (Vars mit AufAbruf-Fallbacks)
         env:
-          LEGAL_COMPANY_NAME: ${{ vars.NEXT_PUBLIC_COMPANY_NAME || '' }}
-          LEGAL_STREET: ${{ vars.NEXT_PUBLIC_COMPANY_STREET || '' }}
-          LEGAL_CITY: ${{ vars.NEXT_PUBLIC_COMPANY_CITY || '' }}
-          LEGAL_ZIP: ${{ vars.NEXT_PUBLIC_COMPANY_ZIP || '' }}
-          LEGAL_EMAIL: ${{ vars.NEXT_PUBLIC_COMPANY_EMAIL || '' }}
+          LEGAL_COMPANY_NAME: ${{ vars.NEXT_PUBLIC_COMPANY_NAME || 'AufAbruf GmbH' }}
+          LEGAL_FORM: ${{ vars.NEXT_PUBLIC_LEGAL_FORM || 'GmbH' }}
+          LEGAL_STREET: ${{ vars.NEXT_PUBLIC_COMPANY_STREET || 'Herner Straße 134' }}
+          LEGAL_CITY: ${{ vars.NEXT_PUBLIC_COMPANY_CITY || 'Herten' }}
+          LEGAL_ZIP: ${{ vars.NEXT_PUBLIC_COMPANY_ZIP || '45699' }}
+          LEGAL_COUNTRY: ${{ vars.NEXT_PUBLIC_COMPANY_COUNTRY || 'Deutschland' }}
+          LEGAL_EMAIL: ${{ vars.NEXT_PUBLIC_COMPANY_EMAIL || 'info@aufabruf.eu' }}
+          LEGAL_PHONE: ${{ vars.NEXT_PUBLIC_COMPANY_PHONE || '02366 58 292 58' }}
+          LEGAL_WEBSITE: ${{ vars.NEXT_PUBLIC_COMPANY_WEBSITE || 'https://www.aufabruf.eu' }}
+          LEGAL_REGISTER_NUMBER: ${{ vars.NEXT_PUBLIC_REGISTER_NUMBER || 'HRB 9754' }}
+          LEGAL_REGISTER_COURT: ${{ vars.NEXT_PUBLIC_REGISTER_COURT || 'Amtsgericht Recklinghausen' }}
+          LEGAL_VAT_ID: ${{ vars.NEXT_PUBLIC_VAT_ID || 'DE369 553 099' }}
+          LEGAL_RESPONSIBLE_NAME: ${{ vars.NEXT_PUBLIC_RESPONSIBLE_NAME || 'Christian Zak' }}
+          LEGAL_RESPONSIBLE_POSITION: ${{ vars.NEXT_PUBLIC_RESPONSIBLE_POSITION || 'Geschäftsführer' }}
         run: |
           echo "NEXT_PUBLIC_COMPANY_NAME=${LEGAL_COMPANY_NAME}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_LEGAL_FORM=${LEGAL_FORM}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_COMPANY_STREET=${LEGAL_STREET}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_COMPANY_CITY=${LEGAL_CITY}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_COMPANY_ZIP=${LEGAL_ZIP}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_COMPANY_COUNTRY=${LEGAL_COUNTRY}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_COMPANY_EMAIL=${LEGAL_EMAIL}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_COMPANY_PHONE=${LEGAL_PHONE}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_COMPANY_WEBSITE=${LEGAL_WEBSITE}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_REGISTER_NUMBER=${LEGAL_REGISTER_NUMBER}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_REGISTER_COURT=${LEGAL_REGISTER_COURT}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_VAT_ID=${LEGAL_VAT_ID}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_RESPONSIBLE_NAME=${LEGAL_RESPONSIBLE_NAME}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_RESPONSIBLE_POSITION=${LEGAL_RESPONSIBLE_POSITION}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_APP_ENV=production" >> $GITHUB_ENV
 
       - name: Install Functions Dependencies
@@ -142,10 +160,19 @@ jobs:
           {
             echo "NEXT_PUBLIC_APP_ENV=production"
             echo "NEXT_PUBLIC_COMPANY_NAME=$NEXT_PUBLIC_COMPANY_NAME"
+            echo "NEXT_PUBLIC_LEGAL_FORM=$NEXT_PUBLIC_LEGAL_FORM"
             echo "NEXT_PUBLIC_COMPANY_STREET=$NEXT_PUBLIC_COMPANY_STREET"
             echo "NEXT_PUBLIC_COMPANY_CITY=$NEXT_PUBLIC_COMPANY_CITY"
             echo "NEXT_PUBLIC_COMPANY_ZIP=$NEXT_PUBLIC_COMPANY_ZIP"
+            echo "NEXT_PUBLIC_COMPANY_COUNTRY=$NEXT_PUBLIC_COMPANY_COUNTRY"
             echo "NEXT_PUBLIC_COMPANY_EMAIL=$NEXT_PUBLIC_COMPANY_EMAIL"
+            echo "NEXT_PUBLIC_COMPANY_PHONE=$NEXT_PUBLIC_COMPANY_PHONE"
+            echo "NEXT_PUBLIC_COMPANY_WEBSITE=$NEXT_PUBLIC_COMPANY_WEBSITE"
+            echo "NEXT_PUBLIC_REGISTER_NUMBER=$NEXT_PUBLIC_REGISTER_NUMBER"
+            echo "NEXT_PUBLIC_REGISTER_COURT=$NEXT_PUBLIC_REGISTER_COURT"
+            echo "NEXT_PUBLIC_VAT_ID=$NEXT_PUBLIC_VAT_ID"
+            echo "NEXT_PUBLIC_RESPONSIBLE_NAME=$NEXT_PUBLIC_RESPONSIBLE_NAME"
+            echo "NEXT_PUBLIC_RESPONSIBLE_POSITION=$NEXT_PUBLIC_RESPONSIBLE_POSITION"
           } >> .env.production
           echo "Created .env.production with legal vars for next build"
       - name: Deploy to Firebase Hosting (production)
@@ -219,19 +246,37 @@ jobs:
           echo "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${FB_MESSAGING_SENDER_ID}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_FIREBASE_APP_ID=${FB_APP_ID}" >> $GITHUB_ENV
 
-      - name: Set legal/company environment variables (from Vars)
+      - name: Set legal/company environment variables (Vars mit AufAbruf-Fallbacks)
         env:
-          LEGAL_COMPANY_NAME: ${{ vars.NEXT_PUBLIC_COMPANY_NAME || '' }}
-          LEGAL_STREET: ${{ vars.NEXT_PUBLIC_COMPANY_STREET || '' }}
-          LEGAL_CITY: ${{ vars.NEXT_PUBLIC_COMPANY_CITY || '' }}
-          LEGAL_ZIP: ${{ vars.NEXT_PUBLIC_COMPANY_ZIP || '' }}
-          LEGAL_EMAIL: ${{ vars.NEXT_PUBLIC_COMPANY_EMAIL || '' }}
+          LEGAL_COMPANY_NAME: ${{ vars.NEXT_PUBLIC_COMPANY_NAME || 'AufAbruf GmbH' }}
+          LEGAL_FORM: ${{ vars.NEXT_PUBLIC_LEGAL_FORM || 'GmbH' }}
+          LEGAL_STREET: ${{ vars.NEXT_PUBLIC_COMPANY_STREET || 'Herner Straße 134' }}
+          LEGAL_CITY: ${{ vars.NEXT_PUBLIC_COMPANY_CITY || 'Herten' }}
+          LEGAL_ZIP: ${{ vars.NEXT_PUBLIC_COMPANY_ZIP || '45699' }}
+          LEGAL_COUNTRY: ${{ vars.NEXT_PUBLIC_COMPANY_COUNTRY || 'Deutschland' }}
+          LEGAL_EMAIL: ${{ vars.NEXT_PUBLIC_COMPANY_EMAIL || 'info@aufabruf.eu' }}
+          LEGAL_PHONE: ${{ vars.NEXT_PUBLIC_COMPANY_PHONE || '02366 58 292 58' }}
+          LEGAL_WEBSITE: ${{ vars.NEXT_PUBLIC_COMPANY_WEBSITE || 'https://www.aufabruf.eu' }}
+          LEGAL_REGISTER_NUMBER: ${{ vars.NEXT_PUBLIC_REGISTER_NUMBER || 'HRB 9754' }}
+          LEGAL_REGISTER_COURT: ${{ vars.NEXT_PUBLIC_REGISTER_COURT || 'Amtsgericht Recklinghausen' }}
+          LEGAL_VAT_ID: ${{ vars.NEXT_PUBLIC_VAT_ID || 'DE369 553 099' }}
+          LEGAL_RESPONSIBLE_NAME: ${{ vars.NEXT_PUBLIC_RESPONSIBLE_NAME || 'Christian Zak' }}
+          LEGAL_RESPONSIBLE_POSITION: ${{ vars.NEXT_PUBLIC_RESPONSIBLE_POSITION || 'Geschäftsführer' }}
         run: |
           echo "NEXT_PUBLIC_COMPANY_NAME=${LEGAL_COMPANY_NAME}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_LEGAL_FORM=${LEGAL_FORM}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_COMPANY_STREET=${LEGAL_STREET}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_COMPANY_CITY=${LEGAL_CITY}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_COMPANY_ZIP=${LEGAL_ZIP}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_COMPANY_COUNTRY=${LEGAL_COUNTRY}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_COMPANY_EMAIL=${LEGAL_EMAIL}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_COMPANY_PHONE=${LEGAL_PHONE}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_COMPANY_WEBSITE=${LEGAL_WEBSITE}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_REGISTER_NUMBER=${LEGAL_REGISTER_NUMBER}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_REGISTER_COURT=${LEGAL_REGISTER_COURT}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_VAT_ID=${LEGAL_VAT_ID}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_RESPONSIBLE_NAME=${LEGAL_RESPONSIBLE_NAME}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_RESPONSIBLE_POSITION=${LEGAL_RESPONSIBLE_POSITION}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_APP_ENV=production" >> $GITHUB_ENV
 
       - name: Install Functions Dependencies
@@ -275,10 +320,19 @@ jobs:
           {
             echo "NEXT_PUBLIC_APP_ENV=production"
             echo "NEXT_PUBLIC_COMPANY_NAME=$NEXT_PUBLIC_COMPANY_NAME"
+            echo "NEXT_PUBLIC_LEGAL_FORM=$NEXT_PUBLIC_LEGAL_FORM"
             echo "NEXT_PUBLIC_COMPANY_STREET=$NEXT_PUBLIC_COMPANY_STREET"
             echo "NEXT_PUBLIC_COMPANY_CITY=$NEXT_PUBLIC_COMPANY_CITY"
             echo "NEXT_PUBLIC_COMPANY_ZIP=$NEXT_PUBLIC_COMPANY_ZIP"
+            echo "NEXT_PUBLIC_COMPANY_COUNTRY=$NEXT_PUBLIC_COMPANY_COUNTRY"
             echo "NEXT_PUBLIC_COMPANY_EMAIL=$NEXT_PUBLIC_COMPANY_EMAIL"
+            echo "NEXT_PUBLIC_COMPANY_PHONE=$NEXT_PUBLIC_COMPANY_PHONE"
+            echo "NEXT_PUBLIC_COMPANY_WEBSITE=$NEXT_PUBLIC_COMPANY_WEBSITE"
+            echo "NEXT_PUBLIC_REGISTER_NUMBER=$NEXT_PUBLIC_REGISTER_NUMBER"
+            echo "NEXT_PUBLIC_REGISTER_COURT=$NEXT_PUBLIC_REGISTER_COURT"
+            echo "NEXT_PUBLIC_VAT_ID=$NEXT_PUBLIC_VAT_ID"
+            echo "NEXT_PUBLIC_RESPONSIBLE_NAME=$NEXT_PUBLIC_RESPONSIBLE_NAME"
+            echo "NEXT_PUBLIC_RESPONSIBLE_POSITION=$NEXT_PUBLIC_RESPONSIBLE_POSITION"
           } >> .env.production
           echo "Created .env.production with legal vars for next build"
       - name: Deploy to Firebase Hosting (preview)

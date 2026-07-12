@@ -23,11 +23,13 @@ describe('AuthService', () => {
     await expect(AuthService.signOut()).rejects.toThrow(/Firebase Auth is not initialized/);
   });
 
-  it('getUserProfile wirft Fehler, wenn Firestore nicht initialisiert ist', async () => {
+  it('getUserProfile wirft Fehler, wenn Firestore serverseitig (ohne window) verwendet wird', async () => {
+    // In der Node-Testumgebung gibt es kein window, daher wirft getDb()
+    // "Firestore kann nur clientseitig initialisiert werden."
     const { AuthService } = await import('../authService');
 
     await expect(AuthService.getUserProfile('user-1')).rejects.toThrow(
-      /Firestore ist nicht initialisiert/,
+      /Firestore kann nur clientseitig initialisiert werden/,
     );
   });
 });
