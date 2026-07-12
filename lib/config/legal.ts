@@ -37,6 +37,16 @@ export interface LegalInfo {
     name: string;
     position: string; // z.B. "Geschäftsführer"
   };
+
+  // Steuerliche Angaben (für Dokument-Fußzeilen)
+  taxNumber?: string; // Steuernummer, z. B. "359/5742/0930"
+
+  // Bankverbindung (für Dokument-Fußzeilen)
+  bank?: {
+    name: string; // z. B. "Sparkasse Gelsenkirchen"
+    iban: string;
+    bic: string;
+  };
 }
 
 /**
@@ -70,6 +80,15 @@ export const DEFAULT_LEGAL_INFO: LegalInfo = {
     name: process.env.NEXT_PUBLIC_RESPONSIBLE_NAME || 'Max Mustermann',
     position: process.env.NEXT_PUBLIC_RESPONSIBLE_POSITION || 'Geschäftsführer',
   },
+  taxNumber: process.env.NEXT_PUBLIC_TAX_NUMBER || undefined,
+  bank:
+    process.env.NEXT_PUBLIC_BANK_NAME || process.env.NEXT_PUBLIC_BANK_IBAN
+      ? {
+          name: process.env.NEXT_PUBLIC_BANK_NAME || '',
+          iban: process.env.NEXT_PUBLIC_BANK_IBAN || '',
+          bic: process.env.NEXT_PUBLIC_BANK_BIC || '',
+        }
+      : undefined,
 };
 
 /**

@@ -85,6 +85,17 @@ async function makeLogo(): Promise<string> {
   return `data:image/png;base64,${buf.toString('base64')}`;
 }
 
+// AufAbruf-Firmenlogo (aus der Kunden-Vorlage) – nur fürs Muster, als PNG
+let aufAbrufLogo: string | undefined;
+async function makeAufAbrufLogo(): Promise<string | undefined> {
+  const { readFileSync, existsSync } = await import('node:fs');
+  const p = process.env.AUFABRUF_LOGO_PATH;
+  if (!p || !existsSync(p)) return undefined;
+  const sharp = (await import('sharp')).default;
+  const png = await sharp(readFileSync(p)).png().toBuffer();
+  return `data:image/png;base64,${png.toString('base64')}`;
+}
+
 // ——— Mocks: Datenzugriff + Storage (Upload → Datei auf Platte) ———
 vi.mock('@/lib/firebase', () => ({ db: {}, auth: {}, getDb: () => ({}) }));
 vi.mock('@/lib/logging', () => ({
@@ -131,9 +142,29 @@ vi.mock('@/lib/services/firebaseStorage', () => ({
 
 describe.runIf(ENABLED)('Dokument-Muster rendern', () => {
   beforeAll(async () => {
+    // Firmendaten für die Dokument-Fußzeile (analog .env.production.local)
+    Object.assign(process.env, {
+      NEXT_PUBLIC_COMPANY_NAME: 'AufAbruf GmbH',
+      NEXT_PUBLIC_LEGAL_FORM: 'GmbH',
+      NEXT_PUBLIC_COMPANY_STREET: 'Herner Straße 134',
+      NEXT_PUBLIC_COMPANY_CITY: 'Herten',
+      NEXT_PUBLIC_COMPANY_ZIP: '45699',
+      NEXT_PUBLIC_COMPANY_EMAIL: 'info@aufabruf.eu',
+      NEXT_PUBLIC_COMPANY_PHONE: '02366 58 292 58',
+      NEXT_PUBLIC_COMPANY_WEBSITE: 'www.aufabruf.eu',
+      NEXT_PUBLIC_REGISTER_NUMBER: 'HRB 9754',
+      NEXT_PUBLIC_VAT_ID: 'DE369 553 099',
+      NEXT_PUBLIC_RESPONSIBLE_NAME: 'Christian Zak',
+      NEXT_PUBLIC_RESPONSIBLE_POSITION: 'Geschäftsführer',
+      NEXT_PUBLIC_TAX_NUMBER: '359/5742/0930',
+      NEXT_PUBLIC_BANK_NAME: 'Sparkasse Gelsenkirchen',
+      NEXT_PUBLIC_BANK_IBAN: 'DE88 4205 0001 0102 0122 10',
+      NEXT_PUBLIC_BANK_BIC: 'WELADED1GEK',
+    });
     mkdirSync(OUT, { recursive: true });
     signatureDataUrl = await makeSignature();
     logoDataUrl = await makeLogo();
+    aufAbrufLogo = await makeAufAbrufLogo();
     // jsdom lädt keine Bilder → Image-Stub, damit onload feuert (Signatur/Logo-Einbettung)
     class FakeImage {
       onload: (() => void) | null = null;
@@ -186,24 +217,44 @@ describe.runIf(ENABLED)('Dokument-Muster rendern', () => {
       type: 'custom-report', title: 'Individueller Bericht', dateRange,
       customData: { Bereich: 'Pflege ambulant', Auswertung: 'Juli 2026', Autor: 'Verwaltung' },
     });
+    const notificationBase = {
+      employeeName: employee.displayName,
+      facilityName: facility.name,
+      facilityAddress: facility.address,
+      stationName: 'Station 2b',
+      shiftTimes: '06:30 – 14:30 Uhr (Frühdienst)',
+      assignmentCreationDate: new Date('2026-07-01'),
+      assignmentDate: shift.date,
+      date: new Date('2026-07-05'),
+      shiftType: 'Frühdienst',
+      contactPerson: 'Hr. Verwalter',
+      branding: { companyName: 'AufAbruf GmbH', companyLogo: aufAbrufLogo },
+    };
+    // Variante A: angenommen
+    await documentGenerationService.generateDocument({
+      type: 'assignment-notification',
+      assignmentNotificationData: { ...notificationBase, isDeclined: false, signatureDataUrl },
+    });
+    {
+      const { readdirSync, renameSync } = await import('node:fs');
+      const f = readdirSync(OUT).find(n => n.startsWith('Einsatzmitteilung_'));
+      if (f) renameSync(path.join(OUT, f), path.join(OUT, 'Einsatzmitteilung_angenommen.pdf'));
+    }
+    // Variante B: abgelehnt (mit Begründung)
     await documentGenerationService.generateDocument({
       type: 'assignment-notification',
       assignmentNotificationData: {
-        employeeName: employee.displayName,
-        facilityName: facility.name,
-        facilityAddress: facility.address,
-        stationName: 'Station 2b',
-        shiftTimes: '06:30 – 14:30 Uhr (Frühdienst)',
-        assignmentCreationDate: new Date('2026-07-01'),
-        assignmentDate: shift.date,
-        date: new Date('2026-07-05'),
-        isDeclined: false,
+        ...notificationBase,
+        isDeclined: true,
         signatureDataUrl,
-        shiftType: 'Frühdienst',
-        contactPerson: 'Hr. Verwalter',
-        branding: { companyName: 'Schichtklar', companyLogo: logoDataUrl },
+        declineReason: 'Bereits anderweitig verplant an diesem Tag.',
       },
     });
+    {
+      const { readdirSync, renameSync } = await import('node:fs');
+      const f = readdirSync(OUT).find(n => n.startsWith('Einsatzmitteilung_2'));
+      if (f) renameSync(path.join(OUT, f), path.join(OUT, 'Einsatzmitteilung_abgelehnt.pdf'));
+    }
     await documentGenerationService.generateDocument({
       type: 'assignment-signatures', assignmentId: assignment.id,
       timesheetIds: ['ts-01'], includeSignatures: true,

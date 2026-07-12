@@ -8,14 +8,46 @@ import { firebaseStorageService } from './firebaseStorage';
 import { logger } from '@/lib/logging';
 import { getAppLogoUrl } from '@/lib/config/logo';
 import {
+  PDF_COLORS,
   PDF_MARGIN,
   brandedTableOptions,
+  drawCompanyFooter,
   drawFooters,
   drawLetterhead,
   kvLine,
   sectionTitle,
   signatureLine,
+  type CompanyFooterInfo,
 } from '@/lib/services/pdf/brandedPdf';
+import { getLegalInfo } from '@/lib/config/legal';
+
+/** Baut die Firmen-Fußzeilen-Daten aus der Legal-Konfiguration (Env). */
+function buildCompanyFooterInfo(): CompanyFooterInfo {
+  const legal = getLegalInfo();
+  const responsible = legal.responsiblePerson
+    ? `${legal.responsiblePerson.position} ${legal.responsiblePerson.name}`
+    : undefined;
+  const registerLine = legal.registration?.registerNumber
+    ? `${legal.registration.registerType} ${legal.registration.registerNumber}`
+    : undefined;
+  return {
+    // Fußzeile trägt immer die rechtliche Firma (Impressum), nicht den Branding-Anzeigenamen
+    companyName: legal.companyName,
+    legalForm: legal.legalForm,
+    responsible,
+    street: legal.address.street,
+    cityLine: `${legal.address.zipCode} ${legal.address.city}`.trim(),
+    phone: legal.contact.phone,
+    email: legal.contact.email,
+    website: legal.contact.website,
+    bankName: legal.bank?.name,
+    iban: legal.bank?.iban,
+    bic: legal.bank?.bic,
+    taxNumber: legal.taxNumber,
+    vatId: legal.registration?.vatId,
+    registerLine,
+  };
+}
 
 export type DocumentType = 
   | 'timesheet-report'      // Zeiterfassungsbericht
@@ -706,151 +738,121 @@ class DocumentGenerationService {
     }
 
     const data = options.assignmentNotificationData;
-    const margin = 14;
+    const m = PDF_MARGIN;
     const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 20;
+    const contentW = pageWidth - 2 * m;
+    const companyName = data.branding?.companyName || 'AufAbruf GmbH';
 
     const formatDate = (d: Date) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const creationDateStr = formatDate(data.assignmentCreationDate);
     const assignmentDateStr = formatDate(data.assignmentDate);
 
-    // Oben rechts: Erstellungsdatum und Einsatzdatum (ordentlich)
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    const rightX = pageWidth - margin;
-    doc.text(`Erstellt am: ${creationDateStr}`, rightX, y, { align: 'right' });
-    y += 6;
-    doc.text(`Einsatzdatum: ${assignmentDateStr}`, rightX, y, { align: 'right' });
-    y += 14;
+    // ——— Briefkopf: Logo, Titel, § 11-Untertitel, Teal-Linie ———
+    let y = await drawLetterhead(doc, {
+      title: 'Einsatzmitteilung',
+      subtitle: 'nach § 11 Absatz 2 Satz 4 AÜG',
+      companyName,
+      logoDataUrl: data.branding?.companyLogo ?? undefined,
+      metaLines: [`Erstellt am ${creationDateStr}`, `Einsatzdatum ${assignmentDateStr}`],
+    });
 
-    // Titel links
-    doc.setFontSize(14);
+    // ——— Status-Badge: angenommen (Teal) / abgelehnt (Rot) ———
+    const badgeLabel = data.isDeclined ? 'Einsatz abgelehnt' : 'Einsatz angenommen';
+    const badgeFill = data.isDeclined ? PDF_COLORS.redSoft : PDF_COLORS.tealSoft;
+    const badgeText = data.isDeclined ? PDF_COLORS.red : PDF_COLORS.tealDark;
     doc.setFont('helvetica', 'bold');
-    doc.text('Einsatzmitteilung nach § 11 Absatz 2 Satz 4 AÜG', margin, y);
-    y += 10;
+    doc.setFontSize(9.5);
+    const badgeTextW = doc.getTextWidth(badgeLabel.toUpperCase());
+    const badgeW = badgeTextW + 10;
+    const badgeH = 7;
+    doc.setFillColor(...badgeFill);
+    doc.roundedRect(m, y - 1, badgeW, badgeH, 1.6, 1.6, 'F');
+    doc.setTextColor(...badgeText);
+    doc.text(badgeLabel.toUpperCase(), m + 5, y + 4);
+    doc.setTextColor(...PDF_COLORS.ink);
+    y += badgeH + 6;
 
-    const companyName = data.branding?.companyName || 'AufAbruf GmbH';
-    doc.setFontSize(11);
+    // ——— Einleitungssatz ———
     doc.setFont('helvetica', 'normal');
-    doc.text(companyName, margin, y);
-    y += 8;
+    doc.setFontSize(10.5);
+    doc.setTextColor(...PDF_COLORS.ink);
+    const introLines = doc.splitTextToSize(
+      `Hiermit setzen wir Sie in Kenntnis, dass Sie als Zeitarbeitnehmer/in für die ${companyName} tätig werden.`,
+      contentW
+    );
+    introLines.forEach((line: string) => {
+      doc.text(line, m, y);
+      y += 5.4;
+    });
+    y += 5;
 
-    // Status: EINSATZ ANGENOMMEN / EINSATZ ABGELEHNT (deutlich sichtbar)
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text(data.isDeclined ? 'EINSATZ ABGELEHNT' : 'EINSATZ ANGENOMMEN', margin, y);
-    y += 10;
+    // ——— Einsatzdetails (Label/Wert) ———
+    y = sectionTitle(doc, y, 'Einsatzdetails');
+    y = kvLine(doc, y, 'Mitarbeiter/in', data.employeeName || '–');
+    const einsatzort = [data.facilityName, data.facilityAddress].filter(Boolean).join(', ') || '–';
+    y = kvLine(doc, y, 'Einsatzort', einsatzort);
+    y = kvLine(doc, y, 'Station/Etage', data.stationName || '–');
+    if (data.shiftType) y = kvLine(doc, y, 'Schichtart', data.shiftType);
+    if (data.contactPerson) y = kvLine(doc, y, 'Ansprechpartner', data.contactPerson);
+    y += 3;
 
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.setFont('helvetica', 'bold');
-    doc.text('Mitarbeiter:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(data.employeeName, margin + 45, y);
-    y += 10;
-
-    // Hinweistext: Zeitarbeitnehmer für AufAbruf GmbH
-    doc.text(`Hiermit setze ich Sie in Kenntnis, dass Sie als Zeitarbeitnehmer für die ${companyName} tätig werden.`, margin, y);
-    y += 10;
-
-    // Einsatzort
-    doc.setFont('helvetica', 'bold');
-    doc.text('Einsatzort:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    const facilityText = [data.facilityName, data.stationName, data.facilityAddress].filter(Boolean).join(', ');
-    doc.text(facilityText || '–', margin + 45, y);
-    y += 8;
-
-    // Schichtart
-    if (data.shiftType) {
-      doc.setFont('helvetica', 'bold');
-      doc.text('Schichtart:', margin, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(data.shiftType, margin + 45, y);
-      y += 8;
-    }
-
-    // Ansprechpartner
-    if (data.contactPerson) {
-      doc.setFont('helvetica', 'bold');
-      doc.text('Ansprechpartner:', margin, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(data.contactPerson, margin + 45, y);
-      y += 8;
-    }
-
-    // Einsatzzeiten als Tabelle (Datum | Zeiten)
-    doc.setFont('helvetica', 'bold');
-    doc.text('Einsatzzeiten:', margin, y);
-    y += 7;
-    doc.setFont('helvetica', 'normal');
+    // ——— Einsatzzeiten (Tabelle Datum | Zeiten) ———
+    y = sectionTitle(doc, y, 'Einsatzzeiten');
     autoTable(doc, {
       startY: y,
       head: [['Datum', 'Zeiten']],
-      body: [[assignmentDateStr, data.shiftTimes]],
-      margin: { left: margin },
-      theme: 'plain',
-      headStyles: { fontStyle: 'bold' },
+      body: [[assignmentDateStr, data.shiftTimes || '–']],
+      ...brandedTableOptions(),
     });
-    y = (doc as any).lastAutoTable.finalY + 10;
+    y = (doc as any).lastAutoTable.finalY + 9;
 
-    // Zeiterfassungs- und Arbeitsschutz-Hinweise (bei Annahme nur diese; bei Ablehnung danach noch Ablehnungsblock)
-    doc.setFontSize(10);
-    const hintText1 = `Die Einsatzzeit wird über die App erfasst. Bitte lassen Sie die Zeiterfassung vom Berechtigten am Einsatzort in der App digital unterschreiben. Die erfassten Zeiten werden automatisch an die ${companyName} Zentrale übermittelt.`;
-    const hintLines1 = doc.splitTextToSize(hintText1, 180);
-    hintLines1.forEach((line: string) => {
-      doc.text(line, margin, y);
-      y += 6;
+    // ——— Hinweise (Zeiterfassung + Arbeitsschutz) in weicher Box ———
+    const hints = [
+      `Bitte denken Sie daran, die Einsatzzeit mittels der zur Verfügung gestellten Zeiterfassungsbögen zu dokumentieren und vom Berechtigten am Einsatzort unterschreiben zu lassen. Die Zeiterfassungsbögen müssen wöchentlich an die ${companyName} Zentrale übermittelt werden (${getLegalInfo().contact.email}).`,
+      'Bitte denken Sie an entsprechende Arbeitsschutzkleidung (Kasack, festes Schuhwerk) und achten Sie die Hygienevorschriften sowie den zur Verfügung gestellten Hautschutzplan.',
+    ];
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    const hintInnerW = contentW - 10;
+    const hintWrapped = hints.map((h) => doc.splitTextToSize(h, hintInnerW) as string[]);
+    const hintBoxH = hintWrapped.reduce((s, lines) => s + lines.length * 4.6, 0) + (hints.length - 1) * 3 + 8;
+    doc.setFillColor(...PDF_COLORS.tealSoft);
+    doc.roundedRect(m, y, contentW, hintBoxH, 2, 2, 'F');
+    let hy = y + 6;
+    doc.setTextColor(...PDF_COLORS.ink);
+    hintWrapped.forEach((lines, idx) => {
+      lines.forEach((line: string) => {
+        doc.text(line, m + 5, hy);
+        hy += 4.6;
+      });
+      if (idx < hintWrapped.length - 1) hy += 3;
     });
-    y += 4;
-    const hintText2 = 'Bitte denken Sie an entsprechende Arbeitsschutzkleidung (Kasack, festes Schuhwerk) und achten die Hygienevorschriften sowie den zur Verfügung gestellten Hautschutzplan.';
-    const hintLines2 = doc.splitTextToSize(hintText2, 180);
-    hintLines2.forEach((line: string) => {
-      doc.text(line, margin, y);
-      y += 6;
-    });
-    y += 6;
+    y += hintBoxH + 8;
 
-    // Nur bei Ablehnung: zusätzlicher Abschnitt „Ablehnung der angeforderten Dienste“
+    // ——— Nur bei Ablehnung: Abschnitt „Ablehnung der angeforderten Dienste" ———
     if (data.isDeclined) {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('Ablehnung der angeforderten Dienste', margin, y);
-      y += 10;
+      y = sectionTitle(doc, y, 'Ablehnung der angeforderten Dienste');
       doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9.5);
+      doc.setTextColor(...PDF_COLORS.ink);
       const declineLines = doc.splitTextToSize(
         `Hiermit lehne ich den angeforderten Dienst am ${assignmentDateStr} ab. Mir ist bewusst, dass mir diese Zeit von meiner vertraglich vereinbarten Betriebszeit in Abzug gebracht wird.`,
-        180
+        contentW
       );
       declineLines.forEach((line: string) => {
-        doc.text(line, margin, y);
-        y += 6;
+        doc.text(line, m, y);
+        y += 4.8;
       });
-      y += 8;
+      y += 4;
       if (data.declineReason) {
-        doc.setFont('helvetica', 'bold');
-        doc.text('Begründung:', margin, y);
-        y += 7;
-        doc.setFont('helvetica', 'normal');
-        const reasonLines = doc.splitTextToSize(data.declineReason, 180);
-        reasonLines.forEach((line: string) => {
-          doc.text(line, margin, y);
-          y += 6;
-        });
-        y += 6;
+        y = kvLine(doc, y, 'Begründung', data.declineReason);
+        y += 2;
       }
     }
 
-    // Unterschriftsbereich
-    y += 14;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    const signatureY = y + 18;
-    doc.line(margin, signatureY, margin + 100, signatureY);
-    y = signatureY + 8;
-    doc.text('Datum / Unterschrift Mitarbeiter/in', margin, y);
-
-    // Unterschrift einfügen bei Annahme und Ablehnung, wenn vorhanden
+    // ——— Unterschriftsbereich ———
+    y += 6;
+    const sigLineY = y + 16;
     if (data.signatureDataUrl) {
       try {
         const img = new Image();
@@ -859,22 +861,27 @@ class DocumentGenerationService {
           img.onerror = reject;
           img.src = data.signatureDataUrl!;
         });
-        const maxWidth = 80;
-        const maxHeight = 30;
-        let imgWidth = img.width;
-        let imgHeight = img.height;
-        const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
-        imgWidth = imgWidth * ratio;
-        imgHeight = imgHeight * ratio;
-        doc.addImage(data.signatureDataUrl, 'PNG', margin, signatureY - imgHeight - 2, imgWidth, imgHeight);
+        const maxWidth = 60;
+        const maxHeight = 22;
+        const ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
+        const imgW = img.width * ratio;
+        const imgH = img.height * ratio;
+        doc.addImage(data.signatureDataUrl, 'PNG', m, sigLineY - imgH - 1, imgW, imgH);
       } catch (error) {
         logger.error('Fehler beim Einfügen der Unterschrift', error instanceof Error ? error : new Error(String(error)));
-        doc.text('[Unterschrift vorhanden]', margin, signatureY - 5);
       }
     }
+    doc.setDrawColor(...PDF_COLORS.grayLight);
+    doc.setLineWidth(0.3);
+    doc.line(m, sigLineY, m + 90, sigLineY);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...PDF_COLORS.gray);
+    doc.text(`${formatDate(data.date)}   ·   Unterschrift Mitarbeiter/in`, m, sigLineY + 4.5);
+    doc.setTextColor(...PDF_COLORS.ink);
 
-    y += 14;
-    doc.text(`Datum: ${formatDate(data.date)}`, margin, y);
+    // ——— Professionelle Firmen-Fußzeile (Firma · Kontakt · Bank + Steuerzeile) ———
+    drawCompanyFooter(doc, buildCompanyFooterInfo());
 
     return doc.output('blob');
   }
