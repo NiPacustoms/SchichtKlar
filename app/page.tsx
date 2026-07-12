@@ -33,7 +33,7 @@ import {
 import { useBrandingSettings } from '@/lib/hooks/useBrandingSettings';
 import { ThemeProvider } from '@mui/material/styles';
 import { createAppTheme } from '@/lib/theme';
-import { colors, gradients } from '@/lib/design-tokens';
+import { colors, gradients, heroGradient } from '@/lib/design-tokens';
 
 function ScrollToTop() {
   const trigger = useScrollTrigger({ disableHysteresis: true, threshold: 120 });
@@ -441,21 +441,20 @@ export default function HomePage() {
         <Box
           sx={{
             textAlign: 'center',
-            borderRadius: 4,
+            borderRadius: 6,
             px: { xs: 3, md: 8 },
-            py: { xs: 6, md: 8 },
-            backgroundColor: alpha(colors.brand, 0.06),
-            border: '1px solid',
-            borderColor: alpha(colors.brand, 0.12),
+            py: { xs: 6, md: 9 },
+            background: heroGradient,
+            color: '#ffffff',
+            boxShadow: '0 20px 44px -18px rgba(11,88,80,0.6)',
           }}
         >
-          <Typography variant="h2" sx={{ mb: 2 }}>
+          <Typography variant="h2" sx={{ mb: 2, color: '#ffffff' }}>
             Bereit für klare Schichten?
           </Typography>
           <Typography
             variant="body1"
-            color="text.secondary"
-            sx={{ maxWidth: 560, mx: 'auto', mb: 4 }}
+            sx={{ maxWidth: 560, mx: 'auto', mb: 4, color: 'rgba(255,255,255,0.9)' }}
           >
             Registrieren Sie Ihre Einrichtung und planen Sie den ersten Dienstplan noch heute.
           </Typography>
@@ -463,13 +462,24 @@ export default function HomePage() {
             <Button
               component={Link}
               href="/admin-registrieren"
-              variant="contained"
               size="large"
               endIcon={<ArrowForward />}
+              sx={{
+                backgroundColor: '#ffffff',
+                color: colors.brandDark,
+                boxShadow: '0 10px 22px -10px rgba(0,0,0,0.4)',
+                '&:hover': { backgroundColor: '#f5f5f4' },
+              }}
             >
               Firma registrieren
             </Button>
-            <Button component={Link} href="/anmelden" size="large" variant="text">
+            <Button
+              component={Link}
+              href="/anmelden"
+              size="large"
+              variant="text"
+              sx={{ color: '#ffffff', '&:hover': { backgroundColor: 'rgba(255,255,255,0.12)' } }}
+            >
               Ich habe bereits ein Konto
             </Button>
           </Stack>
@@ -478,7 +488,7 @@ export default function HomePage() {
             spacing={1}
             alignItems="center"
             justifyContent="center"
-            sx={{ mt: 3, color: 'text.secondary' }}
+            sx={{ mt: 3, color: 'rgba(255,255,255,0.85)' }}
           >
             <PhoneAndroid sx={{ fontSize: 16 }} />
             <Typography variant="caption">
