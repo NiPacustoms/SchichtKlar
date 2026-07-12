@@ -2,8 +2,8 @@
 
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Document } from '@/lib/types';
-import { Delete, Download, Edit, MoreVert, Visibility } from '@mui/icons-material';
-import { Box, Button, Chip, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import { Delete, Download, Edit, MoreVert, Visibility, InsertDriveFileOutlined } from '@mui/icons-material';
+import { Box, Button, Chip, IconButton, Menu, MenuItem, Typography, alpha } from '@mui/material';
 import { format } from 'date-fns';
 import { useState } from 'react';
 
@@ -68,7 +68,23 @@ export function DocumentCard({
         <Box
           sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}
         >
-          <Box sx={{ flex: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1.5, flex: 1, minWidth: 0 }}>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                flexShrink: 0,
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: alpha(typeColor, 0.12),
+                color: typeColor,
+              }}
+            >
+              <InsertDriveFileOutlined />
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
               {document.name}
             </Typography>
@@ -92,6 +108,7 @@ export function DocumentCard({
               <Typography variant="body2" sx={{ color: typeColor }}>
                 {document.type}
               </Typography>
+            </Box>
             </Box>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
