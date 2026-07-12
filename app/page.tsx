@@ -233,13 +233,13 @@ export default function HomePage() {
             py: 2,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', height: 44 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', height: 48 }}>
             <AppLogo
               branding={brandingData}
               showLogo={brandingData?.showLogo !== false}
-              width={96}
-              height={44}
-              sx={{ width: 96, height: 44 }}
+              width={160}
+              height={48}
+              sx={{ width: 160, height: 48 }}
               showSkeleton={false}
               fallbackBgColor="transparent"
               priority

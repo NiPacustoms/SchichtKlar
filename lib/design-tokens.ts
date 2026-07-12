@@ -99,7 +99,8 @@ export const light = {
   },
   text: {
     primary: 'rgba(15,23,42,0.95)',
-    secondary: 'rgba(15,23,42,0.65)',
+    // 0.72 statt 0.65: bessere Lesbarkeit von Sekundärtext (≈6,7:1 auf Hell)
+    secondary: 'rgba(15,23,42,0.72)',
     disabled: 'rgba(15,23,42,0.4)',
   },
   input: {
