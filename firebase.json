@@ -7,7 +7,10 @@
       "**/node_modules/**"
     ],
     "frameworksBackend": {
-      "region": "europe-west1"
+      "region": "europe-west1",
+      "memory": "1GiB",
+      "cpu": 1,
+      "maxInstances": 10
     }
   },
   "functions": [
