@@ -7,7 +7,7 @@ import { createAppError, ErrorCode } from '@/lib/errors/ErrorTypes';
 export const runtime = 'nodejs';
 
 const SESSION_COOKIE_NAME = '__session';
-const ROLE_COOKIE_NAME = 'jobflow_role';
+const ROLE_COOKIE_NAME = 'schichtklar_role';
 const SESSION_MAX_AGE_MS = 5 * 24 * 60 * 60 * 1000; // 5 Tage
 const ROUTE = '/api/auth/session';
 
@@ -34,7 +34,7 @@ async function resolveRouteRole(uid: string): Promise<RouteRole> {
 
 /**
  * POST: Session-Cookie setzen (nach Login).
- * Setzt __session und jobflow_role (admin|nurse) – Middleware erzwingt strikte Routentrennung.
+ * Setzt __session und schichtklar_role (admin|nurse) – Middleware erzwingt strikte Routentrennung.
  */
 export async function POST(req: NextRequest) {
   try {

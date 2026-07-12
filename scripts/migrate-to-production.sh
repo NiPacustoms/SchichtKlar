@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 JobFlow Migration Script"
+echo "🚀 Schichtklar Migration Script"
 echo "=========================="
 
 # Check if .env.local exists

@@ -3,8 +3,10 @@ import path from 'path';
 
 export default defineConfig({
   test: {
-    environment: 'node',
-    include: ['lib/**/__tests__/**/*.test.ts', 'lib/**/*.test.ts'],
+    // jsdom, damit clientseitige Service-/Hook-Guards (`typeof window`) und
+    // React-Rendering (@testing-library/react) funktionieren.
+    environment: 'jsdom',
+    include: ['lib/**/__tests__/**/*.test.ts', 'lib/**/__tests__/**/*.test.tsx', 'lib/**/*.test.ts'],
     exclude: ['node_modules', '.next', 'e2e', 'functions/**'],
     coverage: {
       provider: 'v8',

@@ -74,27 +74,14 @@ describe('useRealtimeUpdates', () => {
   it('setzt Listener für Assignments und Notifications und invalidiert Queries bei Updates', async () => {
     currentUser = { id: 'user-1', companyId: 'company-1' };
 
-    const unsubShifts = vi.fn();
-    const unsubAssignments = vi.fn();
-    const unsubNotifications = vi.fn();
-
-    // onSnapshot wird im Hook dreimal aufgerufen – wir simulieren drei Listener
-    onSnapshotMock
-      .mockImplementationOnce((_q, onNext) => {
-        // Shifts-Listener
-        onNext({ size: 1 });
-        return unsubShifts;
-      })
-      .mockImplementationOnce((_q, onNext) => {
-        // Assignments-Listener
-        onNext({ size: 2 });
-        return unsubAssignments;
-      })
-      .mockImplementationOnce((_q, onNext) => {
-        // Notifications-Listener
-        onNext({ size: 3 });
-        return unsubNotifications;
-      });
+    // Mit companyId wired der Hook 4 Listener: shifts, timesheets, assignments, notifications
+    const unsubs = [vi.fn(), vi.fn(), vi.fn(), vi.fn()];
+    let call = 0;
+    onSnapshotMock.mockImplementation((_q, onNext) => {
+      const idx = call++;
+      onNext({ size: idx + 1 });
+      return unsubs[idx];
+    });
 
     const { result, unmount } = renderHook(() => useRealtimeUpdates());
 
@@ -102,23 +89,23 @@ describe('useRealtimeUpdates', () => {
       expect(result.current.isConnected).toBe(true);
     });
 
-    // Shifts invalidiert 'shifts' und 'adminDashboard'
+    // Shifts-Listener invalidiert 'shifts' und 'admin'
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['shifts'] });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['adminDashboard'] });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['admin'] });
 
-    // Assignments invalidieren 'assignments' und 'dashboard'
+    // Assignments-Listener invalidiert 'assignments' und 'dashboard'
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['assignments'] });
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['dashboard'] });
 
-    // Notifications invalidieren 'notifications'
+    // Notifications-Listener invalidiert 'notifications'
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['notifications'] });
 
     // Beim Unmount werden alle Listener korrekt bereinigt
     unmount();
 
-    expect(unsubShifts).toHaveBeenCalledTimes(1);
-    expect(unsubAssignments).toHaveBeenCalledTimes(1);
-    expect(unsubNotifications).toHaveBeenCalledTimes(1);
+    for (const unsub of unsubs) {
+      expect(unsub).toHaveBeenCalledTimes(1);
+    }
   });
 });
 

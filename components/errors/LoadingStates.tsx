@@ -20,7 +20,7 @@ interface LoadingStateProps {
  * - Progress bars for operations
  * - Text-based loading indicators
  * 
- * Verwendet einheitliches Branding (#005f73)
+ * Verwendet einheitliches Branding (#0f766e)
  */
 export function LoadingState({ 
   variant = 'skeleton', 
@@ -97,7 +97,7 @@ export function LoadingState({
               width: sizeValue * 0.3,
               height: sizeValue * 0.3,
               borderRadius: '50%',
-              backgroundColor: theme.palette.primary.main,
+              background: `${theme.palette.primary.main}`,
               animation: 'pulse 2s ease-in-out infinite',
               '@keyframes pulse': {
                 '0%, 100%': { opacity: 1 },
@@ -287,7 +287,7 @@ export function DataLoadingState({ message = 'Daten werden geladen...' }: { mess
             width: 12,
             height: 12,
             borderRadius: '50%',
-            backgroundColor: theme.palette.primary.main,
+            background: `${theme.palette.primary.main}`,
             animation: 'pulse 2s ease-in-out infinite',
           }}
         />

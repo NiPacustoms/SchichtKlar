@@ -51,3 +51,9 @@ Alle Festlegungen leben in `lib/design-tokens.ts` (Single Source of Truth) + `li
 - Server: `FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 GCLOUD_PROJECT=demo-schichtklar FIREBASE_PROJECT_ID=demo-schichtklar npm run start` — nach JEDEM Build neu starten (sonst 400er auf alte Chunks)
 - Screenshots: `WIDTHS=390,1440 node <scratchpad>/shoot-auth.mjs <outdir> <email> <pw> <pfade...>` (bypassCSP, Cookie-Consent via initScript); Dark Mode: `shoot-auth-dark.mjs`; öffentlich: `shoot.mjs`
 - `.env.local` (gitignored) nötig für Build (Legal-ENV-Validierung)
+
+## Merge mit Rebrand-Branch (Session-Fortsetzung)
+- `chore/rename-jobflow-to-schichtklar` in den Design-Stand gemerged: Der Branch war die zuvor LIVE laufende Produktrichtung (Schichtklar-Branding, Teal #0f766e „Clean & Flat“, Stone-Neutraltöne, Logo-Assets, Logik-Fixes Zuschläge/Zeiterfassung).
+- Konfliktstrategie: Foundation/Kernkomponenten → Rebrand-Branch gewinnt (Tokens, Theme, globals, GlassCard flach ohne Blur, Header/Nav/Loading); neue Landing (app/page.tsx) → Marathon-Version, auf Teal/Schichtklar umgestellt; nicht überlappende Marathon-Verbesserungen (39 Dateien: Skeletons, tabular-nums, Seitentitel, Admin-Karten) bleiben erhalten.
+- `getShiftTypeColor`/`shiftTypeColors` in die Rebrand-Tokens übernommen (Teal-Welt).
+- WICHTIG für Deploys: IMMER von diesem zusammengeführten Stand deployen — main alleine ist JobFlow-Altstand!

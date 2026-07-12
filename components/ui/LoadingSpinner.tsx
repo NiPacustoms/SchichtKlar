@@ -29,13 +29,13 @@ interface LoadingSpinnerProps {
  * @param size - Größe: 'small' (24px), 'medium' (40px), 'large' (64px) oder Zahl
  * @param variant - Variante: 'spinner' (Standard), 'skeleton', 'fullscreen', 'inline' (für Buttons)
  * @param showLogo - Logo im fullscreen Modus anzeigen
- * @param color - MUI Theme-Farbe (Standard: 'primary' = #005f73)
+ * @param color - MUI Theme-Farbe (Standard: 'primary' = #0f766e)
  * @param aria-label - Überschreibt message für Screenreader
  */
 const DEFAULT_LOADING_LABEL = 'Wird geladen';
 
 export function LoadingSpinner({
-  message = 'JobFlow wird geladen...',
+  message = 'Schichtklar wird geladen...',
   size = 'medium',
   variant = 'spinner',
   showLogo = true,
@@ -85,7 +85,7 @@ export function LoadingSpinner({
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'background.default',
+          background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
           zIndex: 9999,
         }}
       >
@@ -93,9 +93,9 @@ export function LoadingSpinner({
           <AppLogo
             branding={branding}
             showLogo={shouldShowLogo}
-            width={160}
-            height={160}
-            sx={{ width: 160, height: 160 }}
+            width={240}
+            height={240}
+            sx={{ width: 240, height: 240 }}
             showSkeleton={false}
             fallbackBgColor="transparent"
             priority
@@ -130,7 +130,7 @@ export function LoadingSpinner({
               width: sizeValue * 0.4,
               height: sizeValue * 0.4,
               borderRadius: '50%',
-              backgroundColor: spinnerColor ?? theme.palette.primary.main,
+              background: `${spinnerColor}`,
             }}
           />
         </Box>
@@ -230,7 +230,7 @@ export function LoadingSpinner({
             width: sizeValue * 0.3,
             height: sizeValue * 0.3,
             borderRadius: '50%',
-            backgroundColor: spinnerColor ?? theme.palette.primary.main,
+            background: `${spinnerColor}`,
           }}
         />
       </Box>

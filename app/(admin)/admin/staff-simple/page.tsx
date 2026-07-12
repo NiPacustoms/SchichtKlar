@@ -146,19 +146,18 @@ export default function StaffSimplePage() {
         position="static"
         className="glass"
         sx={{
-          background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.95)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}`,
-          boxShadow: 'var(--shadow-soft)',
+          backgroundColor: 'background.paper',
+          borderBottom: '1px solid',
+          borderBottomColor: 'divider',
+          boxShadow: 'none',
           mb: 3,
         }}
       >
         <Toolbar>
-          <People sx={{ color: isDark ? 'primary.light' : 'primary.main', mr: 2 }} />
+          <People sx={{ color: 'primary.main', mr: 2 }} />
           <Typography
             variant="h6"
-            sx={{ color: isDark ? 'primary.light' : 'primary.main', fontWeight: 600, flexGrow: 1 }}
+            sx={{ color: 'primary.main', fontWeight: 600, flexGrow: 1 }}
           >
             Mitarbeiter Admin (Einfach)
           </Typography>
@@ -233,11 +232,10 @@ export default function StaffSimplePage() {
               <Card
                 className="glass"
                 sx={{
-                  background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.95)',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)'}`,
-                  boxShadow: 'var(--shadow-soft)',
+                  backgroundColor: 'background.paper',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  boxShadow: 'none',
                 }}
               >
                 <CardContent>

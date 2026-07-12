@@ -27,8 +27,12 @@ vi.mock('firebase/firestore', () => ({
 }));
 
 describe('assignmentService', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    // Standard-companyId nach jedem Reset wiederherstellen (der null-Test würde
+    // sonst nachfolgende Tests verunreinigen, da mockResolvedValue persistiert).
+    const { getCompanyIdFromAuth } = await import('@/lib/utils/companyId');
+    vi.mocked(getCompanyIdFromAuth).mockResolvedValue('company123');
   });
 
   describe('getById', () => {

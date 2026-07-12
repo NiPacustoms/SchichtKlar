@@ -122,7 +122,7 @@ const ORS_BASE = 'https://api.openrouteservice.org/v2/directions/driving-car';
 function getUserAgent(): string {
   // Nominatim policy requires a descriptive UA with contact URL/email
   // Configure via env if available
-  return process.env.NEXT_PUBLIC_APP_USER_AGENT || 'JobFlow/1.0 (contact: https://jobflow.example)';
+  return process.env.NEXT_PUBLIC_APP_USER_AGENT || 'Schichtklar/1.0 (contact: https://schichtklar.example)';
 }
 
 export async function geocodeAddress(address: string): Promise<Coordinates | null> {
@@ -136,7 +136,7 @@ export async function geocodeAddress(address: string): Promise<Coordinates | nul
       'Accept': 'application/json',
       'User-Agent': getUserAgent(),
       // Nominatim discourages repeated calls without caching
-      'Referer': 'https://app.jobflow.local',
+      'Referer': 'https://app.schichtklar.local',
     },
   });
   if (!res.ok) return null;

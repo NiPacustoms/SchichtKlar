@@ -331,7 +331,7 @@ export const StatisticsTabs = React.memo(
               <Paper
                 sx={{
                   p: 3,
-                  backgroundColor: 'rgba(0, 95, 115, 0.04)',
+                  backgroundColor: 'rgba(15, 118, 110, 0.04)',
                   border: '1px solid',
                   borderColor: 'divider',
                   borderRadius: 2,

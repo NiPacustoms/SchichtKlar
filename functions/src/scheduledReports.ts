@@ -91,12 +91,12 @@ async function runScheduledReports(): Promise<void> {
       });
 
       const reportLink = `${process.env.APP_URL || 'https://yourapp.web.app'}/admin/berichte?reportId=${reportRef.id}`;
-      const subject = `JobFlow: ${getReportTitle(config.type, config.period)}`;
+      const subject = `Schichtklar: ${getReportTitle(config.type, config.period)}`;
       const html = `
         <p>Der geplante Bericht wurde erstellt.</p>
         <p><strong>Typ:</strong> ${config.type}</p>
         <p><strong>Zeitraum:</strong> ${config.period}</p>
-        <p><a href="${reportLink}">Bericht in JobFlow öffnen</a></p>
+        <p><a href="${reportLink}">Bericht in Schichtklar öffnen</a></p>
       `;
 
       for (const to of config.recipientEmails) {

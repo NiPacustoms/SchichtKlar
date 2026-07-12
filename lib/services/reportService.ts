@@ -36,7 +36,8 @@ interface ShiftDoc {
   status?: string;
 }
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
+import { brandedTableOptions, drawFooters, drawLetterhead } from '@/lib/services/pdf/brandedPdf';
 import ExcelJS from 'exceljs';
 
 export interface ReportFilters {
@@ -333,14 +334,8 @@ class ReportService {
   // PDF-Export für Zeitkonten-Report
   async exportTimeAccountReportPDF(data: TimeAccountReport[], filename: string = 'zeitkonten-report.pdf'): Promise<void> {
     const doc = new jsPDF();
-    
-    // Header
-    doc.setFontSize(20);
-    doc.text('Zeitkonten-Übersicht', 14, 22);
-    
-    doc.setFontSize(12);
-    doc.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, 14, 30);
-    
+    const startY = await drawLetterhead(doc, { title: 'Zeitkonten-Übersicht' });
+
     // Tabelle
     const tableData = data.map(item => [
       item.userName,
@@ -352,14 +347,14 @@ class ReportService {
       `€${item.surchargeAmount.toFixed(2)}`
     ]);
 
-    (doc as unknown as { autoTable: (options: unknown) => void }).autoTable({
+    autoTable(doc, {
       head: [['Mitarbeiter', 'Gesamt', 'Regulär', 'Überstunden', 'Nacht', 'Wochenende', 'Zuschläge']],
       body: tableData,
-      startY: 40,
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [66, 139, 202] },
+      startY,
+      ...brandedTableOptions([1, 2, 3, 4, 5]),
     });
 
+    drawFooters(doc);
     doc.save(filename);
   }
 
@@ -407,14 +402,8 @@ class ReportService {
   // PDF-Export für Mitarbeiter-Statistik
   async exportEmployeeStatisticsPDF(data: EmployeeStatistics[], filename: string = 'mitarbeiter-statistik.pdf'): Promise<void> {
     const doc = new jsPDF();
-    
-    // Header
-    doc.setFontSize(20);
-    doc.text('Mitarbeiter-Statistik', 14, 22);
-    
-    doc.setFontSize(12);
-    doc.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, 14, 30);
-    
+    const startY = await drawLetterhead(doc, { title: 'Mitarbeiter-Statistik' });
+
     // Tabelle
     const tableData = data.map(item => [
       item.userName,
@@ -425,14 +414,14 @@ class ReportService {
       item.lastActive.toLocaleDateString('de-DE')
     ]);
 
-    (doc as unknown as { autoTable: (options: unknown) => void }).autoTable({
+    autoTable(doc, {
       head: [['Mitarbeiter', 'Schichten', 'Gesamtstunden', 'Ø Stunden/Schicht', 'Verfügbarkeit', 'Letzte Aktivität']],
       body: tableData,
-      startY: 40,
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [66, 139, 202] },
+      startY,
+      ...brandedTableOptions([1, 2, 3, 4, 5]),
     });
 
+    drawFooters(doc);
     doc.save(filename);
   }
 
@@ -486,11 +475,13 @@ class ReportService {
     filename: string = 'alle-berichte.pdf'
   ): Promise<void> {
     const doc = new jsPDF();
-    
+
     // Zeitkonten-Report
-    doc.setFontSize(20);
-    doc.text('Zeitkonten-Übersicht', 14, 22);
-    
+    const startY = await drawLetterhead(doc, {
+      title: 'Berichts-Sammlung',
+      subtitle: 'Zeitkonten · Zuschläge · Mitarbeiter-Statistik · Auslastung',
+    });
+
     const timeTableData = _timeAccountData.map(item => [
       item.userName,
       item.totalHours.toFixed(1),
@@ -499,18 +490,16 @@ class ReportService {
       `€${item.surchargeAmount.toFixed(2)}`
     ]);
 
-    (doc as unknown as { autoTable: (options: unknown) => void }).autoTable({
+    autoTable(doc, {
       head: [['Mitarbeiter', 'Gesamt', 'Regulär', 'Überstunden', 'Zuschläge']],
       body: timeTableData,
-      startY: 40,
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [66, 139, 202] },
+      startY,
+      ...brandedTableOptions([1, 2, 3, 4, 5]),
     });
 
     // Neue Seite für Zuschläge
     doc.addPage();
-    doc.setFontSize(20);
-    doc.text('Zuschläge-Report', 14, 22);
+    const startY2 = await drawLetterhead(doc, { title: 'Zuschläge-Report' });
     
     const surchargeTableData = _surchargeData.map(item => [
       item.userName,
@@ -520,18 +509,16 @@ class ReportService {
       `€${item.totalSurcharge.toFixed(2)}`
     ]);
 
-    (doc as unknown as { autoTable: (options: unknown) => void }).autoTable({
+    autoTable(doc, {
       head: [['Mitarbeiter', 'Nachtzuschlag', 'Wochenendzuschlag', 'Feiertagszuschlag', 'Gesamt']],
       body: surchargeTableData,
-      startY: 40,
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [66, 139, 202] },
+      startY: startY2,
+      ...brandedTableOptions([1, 2, 3, 4, 5]),
     });
 
     // Neue Seite für Mitarbeiter-Statistik
     doc.addPage();
-    doc.setFontSize(20);
-    doc.text('Mitarbeiter-Statistik', 14, 22);
+    const startY3 = await drawLetterhead(doc, { title: 'Mitarbeiter-Statistik' });
     
     const employeeTableData = _employeeData.map(item => [
       item.userName,
@@ -541,18 +528,16 @@ class ReportService {
       `${item.availabilityRate.toFixed(1)}%`
     ]);
 
-    (doc as unknown as { autoTable: (options: unknown) => void }).autoTable({
+    autoTable(doc, {
       head: [['Mitarbeiter', 'Schichten', 'Gesamtstunden', 'Ø Stunden/Schicht', 'Verfügbarkeit']],
       body: employeeTableData,
-      startY: 40,
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [66, 139, 202] },
+      startY: startY3,
+      ...brandedTableOptions([1, 2, 3, 4, 5]),
     });
 
     // Neue Seite für Schicht-Auslastung
     doc.addPage();
-    doc.setFontSize(20);
-    doc.text('Schicht-Auslastung', 14, 22);
+    const startY4 = await drawLetterhead(doc, { title: 'Schicht-Auslastung' });
     
     const utilizationTableData = _utilizationData.map(item => [
       item.facilityName,
@@ -562,14 +547,14 @@ class ReportService {
       `${item.utilizationRate.toFixed(1)}%`
     ]);
 
-    (doc as unknown as { autoTable: (options: unknown) => void }).autoTable({
+    autoTable(doc, {
       head: [['Einrichtung', 'Gesamt', 'Besetzt', 'Offen', 'Auslastung']],
       body: utilizationTableData,
-      startY: 40,
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [66, 139, 202] },
+      startY: startY4,
+      ...brandedTableOptions([1, 2, 3, 4, 5]),
     });
 
+    drawFooters(doc);
     doc.save(filename);
   }
 }

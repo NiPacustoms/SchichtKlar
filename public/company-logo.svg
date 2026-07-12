@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 470 140" width="470" height="140">
+  <g>
+    <circle cx="34" cy="44" r="22" fill="#1e8a4f"/>
+    <rect x="64" y="18" width="52" height="52" rx="8" fill="#1e8a4f"/>
+    <circle cx="90" cy="44" r="15" fill="#ffffff"/>
+    <rect x="8" y="74" width="52" height="52" rx="8" fill="#1e8a4f"/>
+    <circle cx="34" cy="100" r="15" fill="#ffffff"/>
+    <circle cx="90" cy="100" r="22" fill="#1e8a4f"/>
+  </g>
+  <rect x="130" y="16" width="3" height="110" rx="1.5" fill="#4a4a4a"/>
+  <text x="150" y="40" font-family="Inter, sans-serif" font-weight="500" font-size="21" fill="#3f3f3f">Personaldienstleistungs GmbH</text>
+  <text x="146" y="98" font-family="'Bree Serif', Georgia, serif" font-size="58" fill="#1e8a4f">AufAbruf</text>
+  <text x="150" y="126" font-family="Inter, sans-serif" font-weight="500" font-size="19" letter-spacing="0.5" fill="#3f3f3f">kompetent-teamfähig-engagiert</text>
+</svg>

@@ -1,11 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <defs>
-    <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0288D1;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#005f73;stop-opacity:1" />
-    </linearGradient>
-  </defs>
-  <rect width="32" height="32" rx="6" fill="url(#logo-grad)" />
-  <path d="M8 12h16v2H8zm0 4h16v2H8zm0 4h12v2H8z" fill="white" />
-  <circle cx="24" cy="8" r="3" fill="#e8aa42" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 96" width="420" height="96">
+  
+  <g>
+    <!-- Verbindungssteg TL→BR (liegt unter den Kacheln) -->
+    <rect x="38" y="42" width="18" height="18" rx="5" fill="#263250"/>
+    <!-- TL: Person (Blau) -->
+    <rect x="6" y="12" width="40" height="40" rx="12" fill="#2e6bf0"/>
+    <circle cx="26" cy="27" r="5.6" fill="#ffffff"/>
+    <path d="M16.5 45.5 v-1.2 c0-5.2 4.6-8.3 9.5-8.3 s9.5 3.1 9.5 8.3 v1.2 z" fill="#ffffff"/>
+    <!-- TR: Kalender (Salbei) -->
+    <rect x="52" y="6" width="36" height="36" rx="11" fill="#8fc0ab"/>
+    <rect x="59" y="15.5" width="22" height="18.5" rx="3" fill="#ffffff"/>
+    <rect x="63.5" y="11.5" width="2.6" height="7" rx="1.3" fill="#8fc0ab"/>
+    <rect x="73.9" y="11.5" width="2.6" height="7" rx="1.3" fill="#8fc0ab"/>
+    <g fill="#8fc0ab">
+      <circle cx="64.5" cy="24" r="1.5"/><circle cx="70" cy="24" r="1.5"/><circle cx="75.5" cy="24" r="1.5"/>
+      <circle cx="64.5" cy="29" r="1.5"/><circle cx="70" cy="29" r="1.5"/><circle cx="75.5" cy="29" r="1.5"/>
+    </g>
+    <!-- BL: Uhr (Blauviolett) -->
+    <rect x="6" y="56" width="36" height="36" rx="11" fill="#7d82ec"/>
+    <circle cx="24" cy="74" r="9.5" fill="#ffffff"/>
+    <path d="M24 68.5 V74 l4 2.6" stroke="#7d82ec" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+    <!-- BR: Solid (Navy) -->
+    <rect x="50" y="50" width="40" height="40" rx="12" fill="#263250"/>
+  </g>
+  <text x="112" y="63" font-family="Inter, 'Inter SemiBold', system-ui, sans-serif" font-weight="600"
+        font-size="46" letter-spacing="-1" fill="#263250">Schichtklar</text>
 </svg>

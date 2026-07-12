@@ -35,6 +35,7 @@ import {
 } from '@mui/material';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { getThemeConstants, type ThemeMode } from '@/lib/theme';
 import { ROUTES } from '@/lib/constants/routes';
 
 const SIDEBAR_WIDTH = 280;
@@ -123,6 +124,7 @@ function filterByFeatureFlags<T extends { feature?: FeatureFlagCheck }>(
 export function AppSidebar() {
   const pathname = usePathname();
   const theme = useTheme();
+  const themeConstants = getThemeConstants((theme.palette.mode || 'light') as ThemeMode);
   const { user } = useAuth();
   const featureFlags = useFeatureFlags();
 
@@ -143,10 +145,9 @@ export function AppSidebar() {
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        background: alpha(theme.palette.background.paper, 0.85),
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-        borderRight: `1px solid ${theme.palette.divider}`,
+        background: theme.palette.background.paper,
+        borderRight: `1px solid ${themeConstants.CARD_BORDER_LIGHT}`,
+        boxShadow: themeConstants.SHADOW_SOFT,
       }}
     >
       <Box sx={{ px: 2, py: 2 }}>
@@ -167,8 +168,7 @@ export function AppSidebar() {
                 href={item.href}
                 selected={isActive}
                 sx={{
-                  borderRadius: 1,
-                  minHeight: 44,
+                  borderRadius: 2,
                   '&.Mui-selected': {
                     backgroundColor: alpha(theme.palette.primary.main, 0.12),
                     '&:hover': {

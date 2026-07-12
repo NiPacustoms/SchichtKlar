@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# JobFlow Development Setup Script
-echo "🚀 JobFlow Development Setup"
+# Schichtklar Development Setup Script
+echo "🚀 Schichtklar Development Setup"
 
 # Kill any existing processes on port 3000
 echo "🛑 Killing existing processes on port 3000..."

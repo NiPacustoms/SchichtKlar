@@ -1,10 +1,37 @@
-import { db, getDb } from '@/lib/firebase';
+import { db, getDb, functions } from '@/lib/firebase';
 import { getCompanyIdFromAuth } from '@/lib/utils/companyId';
 import { offlineQueueService } from '../offlineQueue';
 import { addDoc, collection, doc, getDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import type { TimesheetForm } from './types';
 import type { FirestoreTimesheetData } from './types';
 import { COLLECTION_NAME } from './types';
+
+const TIME_PATTERN = /^([01]?\d|2[0-3]):[0-5]\d$/;
+
+/**
+ * Berechnet Netto-Arbeitsminuten aus HH:MM-Zeiten (Nachtschicht über Mitternacht
+ * wird erkannt) und validiert die Eingaben. Wirft bei unplausiblen Werten –
+ * verhindert negative oder NaN-Stundenwerte in der Datenbank.
+ */
+export function computeNetHours(startTime: string, endTime: string, breakMinutes: number): number {
+  if (!TIME_PATTERN.test(startTime) || !TIME_PATTERN.test(endTime)) {
+    throw new Error('Ungültiges Zeitformat – erwartet HH:MM (z. B. 06:30).');
+  }
+  if (!Number.isFinite(breakMinutes) || breakMinutes < 0) {
+    throw new Error('Pausenminuten müssen eine Zahl ≥ 0 sein.');
+  }
+  const start = new Date(`2000-01-01T${startTime}`);
+  const end = new Date(`2000-01-01T${endTime}`);
+  let totalMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
+  if (totalMinutes <= 0) totalMinutes += 24 * 60; // Nachtschicht über Mitternacht
+  if (breakMinutes >= totalMinutes) {
+    throw new Error(
+      `Pause (${breakMinutes} Min) ist länger als die Arbeitszeit (${totalMinutes} Min) – bitte Zeiten prüfen.`
+    );
+  }
+  return Math.round(((totalMinutes - breakMinutes) / 60) * 100) / 100;
+}
 
 export async function create(userId: string, data: TimesheetForm): Promise<string> {
   let companyId: string | null = null;
@@ -12,11 +39,7 @@ export async function create(userId: string, data: TimesheetForm): Promise<strin
   if (userDoc.exists()) companyId = userDoc.data().companyId || null;
   if (!companyId) companyId = await getCompanyIdFromAuth();
   if (!companyId) throw new Error('No companyId found for timesheet');
-  const startTime = new Date(`2000-01-01T${data.startTime}`);
-  const endTime = new Date(`2000-01-01T${data.endTime}`);
-  let totalMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
-  if (totalMinutes < 0) totalMinutes += 24 * 60;
-  const totalHours = (totalMinutes - data.breakMinutes) / 60;
+  const totalHours = computeNetHours(data.startTime, data.endTime, data.breakMinutes);
   const timesheetData = {
     userId,
     companyId,
@@ -24,7 +47,7 @@ export async function create(userId: string, data: TimesheetForm): Promise<strin
     startTime: data.startTime,
     endTime: data.endTime,
     breakMinutes: data.breakMinutes,
-    totalHours: Math.round(totalHours * 100) / 100,
+    totalHours,
     notes: data.notes,
     facilityId: data.facilityId,
     station: data.station,
@@ -84,21 +107,34 @@ export async function update(id: string, data: Partial<TimesheetForm>): Promise<
     const startTime = data.startTime || currentData.startTime;
     const endTime = data.endTime || currentData.endTime;
     const breakMinutes = data.breakMinutes !== undefined ? data.breakMinutes : (currentData.breakMinutes ?? 0);
-    const start = new Date(`2000-01-01T${startTime}`);
-    const end = new Date(`2000-01-01T${endTime}`);
-    let totalMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
-    if (totalMinutes < 0) totalMinutes += 24 * 60;
-    updateData.totalHours = Math.round(((totalMinutes - breakMinutes) / 60) * 100) / 100;
+    updateData.totalHours = computeNetHours(startTime, endTime, breakMinutes);
   }
   await updateDoc(timesheetRef, updateData);
 }
 
+/**
+ * Reicht eine Zeiterfassung über die Cloud Function `submitTimesheet` ein.
+ *
+ * WICHTIG: Bewusst KEIN direktes Status-Update im Client – die Function
+ * berechnet totalHours serverseitig (manipulationssicher) und erzwingt die
+ * vollständige ArbZG-Validierung (§3 Tages-/Wochenmaximum, §4 Pausen,
+ * §5 Ruhezeiten, Überschneidungen). Einreichen erfordert daher eine
+ * Online-Verbindung; Erfassen/Bearbeiten bleibt offlinefähig.
+ */
 export async function submit(id: string): Promise<void> {
-  await updateDoc(doc(getDb(), COLLECTION_NAME, id), {
-    status: 'submitted',
-    submittedAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    throw new Error(
+      'Einreichen erfordert eine Internetverbindung (serverseitige ArbZG-Prüfung). Die Erfassung bleibt gespeichert – bitte später erneut einreichen.'
+    );
+  }
+  if (!functions) {
+    throw new Error('Firebase Functions ist nicht initialisiert.');
+  }
+  const call = httpsCallable<{ timesheetId: string }, { success: boolean; totalHours: number }>(
+    functions,
+    'submitTimesheet'
+  );
+  await call({ timesheetId: id });
 }
 
 export async function approve(id: string, approvedBy: string): Promise<void> {

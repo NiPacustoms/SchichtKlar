@@ -1,5 +1,5 @@
 /**
- * JobFlow Types - Re-exports from domain modules
+ * Schichtklar Types - Re-exports from domain modules
  * Import from '@/lib/types' or '@/lib/types/user' etc.
  */
 

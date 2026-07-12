@@ -2,7 +2,7 @@
 
 ## Service Account
 
-**Email:** `jobflow25@jobflow25.iam.gserviceaccount.com`
+**Email:** `schichtklar@schichtklar.iam.gserviceaccount.com`
 
 ## Benötigte Rollen für Firebase Deployment
 
@@ -95,11 +95,11 @@
 
 ### Schritt 1: Zur IAM-Seite
 
-Gehe zu: https://console.cloud.google.com/iam-admin/iam?project=jobflow25
+Gehe zu: https://console.cloud.google.com/iam-admin/iam?project=schichtklar
 
 ### Schritt 2: Service Account finden
 
-Finde: `jobflow25@jobflow25.iam.gserviceaccount.com`
+Finde: `schichtklar@schichtklar.iam.gserviceaccount.com`
 
 ### Schritt 3: Rolle hinzufügen
 

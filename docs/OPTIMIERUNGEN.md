@@ -1,4 +1,4 @@
-# Optimierungsbedarf – JobFlow
+# Optimierungsbedarf – Schichtklar
 
 Kurzüberblick: Wo es Potenzial gibt und was priorisiert werden kann.
 

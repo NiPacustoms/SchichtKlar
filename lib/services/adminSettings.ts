@@ -96,7 +96,7 @@ export const adminSettingsService = {
       // Fallback: Wenn Firebase nicht initialisiert ist oder serverseitig aufgerufen wird, liefere Defaults
       if (!db || typeof window === 'undefined') {
         return {
-          systemName: 'JobFlow',
+          systemName: 'Schichtklar',
           timezone: 'Europe/Berlin',
           language: 'de',
           currency: 'EUR',
@@ -119,7 +119,7 @@ export const adminSettingsService = {
       if (snapshot.empty) {
         // Return default settings if none exist
         return {
-          systemName: 'JobFlow',
+          systemName: 'Schichtklar',
           timezone: 'Europe/Berlin',
           language: 'de',
           currency: 'EUR',
@@ -139,7 +139,7 @@ export const adminSettingsService = {
 
       const data = snapshot.docs[0].data();
       return {
-        systemName: data.systemName || 'JobFlow',
+        systemName: data.systemName || 'Schichtklar',
         timezone: data.timezone || 'Europe/Berlin',
         language: data.language || 'de',
         currency: data.currency || 'EUR',
@@ -161,7 +161,7 @@ export const adminSettingsService = {
     } catch (_error) {
       // Graceful Fallback bei fehlerhaften Datentypen
       return {
-        systemName: 'JobFlow',
+        systemName: 'Schichtklar',
         timezone: 'Europe/Berlin',
         language: 'de',
         currency: 'EUR',

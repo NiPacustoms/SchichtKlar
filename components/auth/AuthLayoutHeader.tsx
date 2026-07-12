@@ -8,7 +8,7 @@ import { BackButton } from '@/components/layout/BackButton';
 export function AuthLayoutHeader({ isLoginPage }: { isLoginPage: boolean }) {
   const { branding } = useBrandingSettings();
   const brandingData = branding || {
-    companyName: 'JobFlow',
+    companyName: 'Schichtklar',
     companyLogo: undefined,
     showLogo: true,
   };

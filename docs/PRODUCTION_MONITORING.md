@@ -4,7 +4,7 @@ Diese Dokumentation beschreibt das Monitoring und Alerting für Production.
 
 ## Übersicht
 
-JobFlow verwendet mehrere Monitoring-Tools und Alerting-Mechanismen:
+Schichtklar verwendet mehrere Monitoring-Tools und Alerting-Mechanismen:
 
 1. **Sentry** - Error Tracking & Performance Monitoring
 2. **Firebase Console** - Firebase-spezifisches Monitoring

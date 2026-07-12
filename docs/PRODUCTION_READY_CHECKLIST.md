@@ -1,4 +1,4 @@
-# JobFlow - Production Ready Checklist
+# Schichtklar - Production Ready Checklist
 
 ## 🎯 Ziel: 100% Verkaufsfertigkeit
 

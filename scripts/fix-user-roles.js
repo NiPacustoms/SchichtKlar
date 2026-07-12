@@ -13,7 +13,7 @@ const admin = require('firebase-admin');
 const DEFAULT_SERVICE_ACCOUNT = path.resolve(
   process.env.HOME || process.cwd(),
   '.keys',
-  'jobflow25-admin.json'
+  'schichtklar-admin.json'
 );
 
 const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || DEFAULT_SERVICE_ACCOUNT;

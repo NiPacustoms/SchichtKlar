@@ -91,7 +91,7 @@ print_info "Setze Variables..."
 
 # Firebase Project ID aus .firebaserc lesen
 if [ -f ".firebaserc" ]; then
-    FIREBASE_PROJECT_ID=$(grep -o '"default": "[^"]*"' .firebaserc | cut -d'"' -f4 || echo "jobflow25")
+    FIREBASE_PROJECT_ID=$(grep -o '"default": "[^"]*"' .firebaserc | cut -d'"' -f4 || echo "schichtklar")
     if [ -n "$FIREBASE_PROJECT_ID" ]; then
         gh variable set FIREBASE_PROJECT_ID --body "$FIREBASE_PROJECT_ID" --repo "$REPO_OWNER/$REPO_NAME" && print_success "FIREBASE_PROJECT_ID gesetzt: $FIREBASE_PROJECT_ID"
     fi

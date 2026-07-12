@@ -1,4 +1,4 @@
-# JobFlow Design System 2026
+# Schichtklar Design System 2026
 
 ## 1. Zielbild
 
@@ -6,7 +6,7 @@
 - **Marktführer-Anmutung**: Warm-professioneller Look (ähnlich Notion/Slack), klares Branding, dezentes Glasmorphism.
 - **Klarheit & Geschwindigkeit**: Fokus auf schnelle Erfassbarkeit von Informationen und wenigen, klaren Hauptaktionen pro Screen.
 
-**Basis:** Dieses Dokument konsolidiert die Design-Guidelines aus `.cursor/rules/01-design-system.mdc` und definiert die konkreten Implementierungsstandards für das JobFlow Design System 2026.
+**Basis:** Dieses Dokument konsolidiert die Design-Guidelines aus `.cursor/rules/01-design-system.mdc` und definiert die konkreten Implementierungsstandards für das Schichtklar Design System 2026.
 
 ---
 

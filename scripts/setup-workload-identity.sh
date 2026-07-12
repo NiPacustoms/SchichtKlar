@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Konfiguration
-PROJECT_ID="${PROJECT_ID:-jobflow25}"
+PROJECT_ID="${PROJECT_ID:-schichtklar}"
 GITHUB_USER="${GITHUB_USER:-NiPacustoms}"
 REPO_NAME="${REPO_NAME:-JobFlow}"
 SERVICE_ACCOUNT_NAME="${SERVICE_ACCOUNT_NAME:-github-actions}"
@@ -194,6 +194,6 @@ echo "2. Teste die Workflows mit einem Test-Commit"
 echo ""
 echo "3. Nach erfolgreichem Test kannst du diese Secrets aus GitHub entfernen:"
 echo "   ❌ FIREBASE_SERVICE_ACCOUNT"
-echo "   ❌ FIREBASE_SERVICE_ACCOUNT_JobFlow"
+echo "   ❌ FIREBASE_SERVICE_ACCOUNT_SCHICHTKLAR"
 echo ""
 echo -e "${GREEN}🎉 Fertig! Workload Identity ist eingerichtet.${NC}"

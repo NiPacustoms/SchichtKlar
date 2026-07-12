@@ -126,7 +126,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ user
     return NextResponse.json(exportData, {
       headers: {
         'Content-Type': 'application/json',
-        'Content-Disposition': `attachment; filename="jobflow-data-export-${userId}-${Date.now()}.json"`,
+        'Content-Disposition': `attachment; filename="schichtklar-data-export-${userId}-${Date.now()}.json"`,
       },
     });
   } catch (error: unknown) {

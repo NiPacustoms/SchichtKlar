@@ -1,8 +1,8 @@
-# Error Handling Guide - JobFlow Application
+# Error Handling Guide - Schichtklar Application
 
 ## Overview
 
-This guide provides comprehensive documentation for the error handling system implemented in the JobFlow application. The system follows State-of-the-Art (SOTA) practices and provides robust error management, user-friendly error messages, and comprehensive monitoring capabilities.
+This guide provides comprehensive documentation for the error handling system implemented in the Schichtklar application. The system follows State-of-the-Art (SOTA) practices and provides robust error management, user-friendly error messages, and comprehensive monitoring capabilities.
 
 ## Architecture
 
@@ -555,7 +555,7 @@ const logger = Logger.getInstance({
 
 ## Conclusion
 
-The JobFlow error handling system provides:
+The Schichtklar error handling system provides:
 
 - **Robust Error Management**: Centralized, typed, and consistent
 - **User-Friendly Experience**: Clear messages and recovery options

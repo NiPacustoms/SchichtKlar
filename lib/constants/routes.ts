@@ -1,4 +1,4 @@
-// Zentrale Route-Constants für JobFlow App
+// Zentrale Route-Constants für Schichtklar App
 
 export const ROUTES = {
   // Root & Auth

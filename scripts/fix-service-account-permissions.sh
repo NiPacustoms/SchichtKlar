@@ -5,7 +5,7 @@
 
 set -e
 
-PROJECT_ID="jobflow25"
+PROJECT_ID="schichtklar"
 
 # Farben für Output
 GREEN='\033[0;32m'

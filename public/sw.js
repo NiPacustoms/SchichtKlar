@@ -1,7 +1,7 @@
-// Service Worker für JobFlow PWA
+// Service Worker für Schichtklar PWA
 const VERSION = 'v4';
-const STATIC_CACHE = `jobflow-static-${VERSION}`;
-const RUNTIME_CACHE = `jobflow-runtime-${VERSION}`;
+const STATIC_CACHE = `schichtklar-static-${VERSION}`;
+const RUNTIME_CACHE = `schichtklar-runtime-${VERSION}`;
 
 const PRECACHE_URLS = [
   '/',
@@ -208,7 +208,7 @@ self.addEventListener('fetch', (event) => {
 // Push-Benachrichtigungen
 self.addEventListener('push', (event) => {
   let notificationData = {
-    title: 'JobFlow',
+    title: 'Schichtklar',
     body: 'Sie haben eine neue Benachrichtigung',
     icon: '/favicon-192.png',
     badge: '/favicon-96.png',

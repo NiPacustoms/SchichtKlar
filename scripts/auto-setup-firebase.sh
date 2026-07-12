@@ -5,8 +5,8 @@
 
 set -e
 
-PROJECT_ID="jobflow25"
-SERVICE_ACCOUNT="jobflow25@jobflow25.iam.gserviceaccount.com"
+PROJECT_ID="schichtklar"
+SERVICE_ACCOUNT="schichtklar@schichtklar.iam.gserviceaccount.com"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'

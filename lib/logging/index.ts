@@ -2,7 +2,7 @@
  * Logging Configuration and Setup
  * 
  * Provides centralized logging configuration and initialization
- * for the JobFlow application.
+ * for the Schichtklar application.
  */
 
 import { Logger, LogLevel, LoggerConfig } from '../errors/ErrorLogger';

@@ -9,38 +9,52 @@ import {
   spacing,
   duration,
   easing,
-  glassBlur,
   semanticColors,
   grey,
 } from '@/lib/design-tokens';
 
 export type ThemeMode = 'light' | 'dark';
 
-const transitionColors = `background-color ${duration.base}ms ${easing}, border-color ${duration.base}ms ${easing}, box-shadow ${duration.base}ms ${easing}, color ${duration.base}ms ${easing}`;
+const transitionBase = `all ${duration.base}ms ${easing}`;
+const transitionColors = `background-color ${duration.fast}ms ${easing}, border-color ${duration.fast}ms ${easing}, color ${duration.fast}ms ${easing}, box-shadow ${duration.fast}ms ${easing}`;
 
+/**
+ * Schichtklar Theme – „Clean & Flat"
+ *
+ * Grundsätze:
+ * 1. Tiefe durch Borders und Tonwert-Stufen, nicht durch Blur oder große Schatten.
+ * 2. Ein Akzent (Teal) trägt alle interaktiven Zustände; Amber nur als Sekundär-Akzent.
+ * 3. Zustände sind Ton-Schichten: hover 4 %, selected 8 %, pressed 12 % der Markenfarbe.
+ * 4. Bewegung ist funktional: 150–200 ms, nur Farbe/Schatten – keine Sprünge.
+ * 5. Zahlen in Tabellen sind tabellarisch (font-variant-numeric) – Spalten fluchten.
+ */
 function createAppTheme(mode: PaletteMode) {
   const isDark = mode === 'dark';
   const surf = isDark ? dark : light;
   const shadowSoft = isDark ? shadows.softDark : shadows.soft;
   const shadowMedium = isDark ? shadows.mediumDark : shadows.medium;
   const shadowLarge = isDark ? shadows.largeDark : shadows.large;
+  // Im Dark Mode braucht Teal mehr Leuchtkraft für Kontrast auf dunklem Grund
+  const brand = isDark ? colors.brandLight : colors.brand;
+  const brandHover = isDark ? colors.brand : colors.brandDark;
 
+  // factor 3: Headings schrumpfen auf kleinen Screens moderater – bessere Lesbarkeit mobil
   return responsiveFontSizes(
     createTheme(
       {
         palette: {
           mode,
           primary: {
-            main: colors.petrol,
-            light: colors.petrolLight,
-            dark: colors.petrolDark,
-            contrastText: '#ffffff',
+            main: brand,
+            light: colors.brandLight,
+            dark: colors.brandDark,
+            contrastText: isDark ? '#0b2b28' : '#ffffff',
           },
           secondary: {
-            main: colors.mustard,
-            light: colors.mustardLight,
-            dark: colors.mustardDark,
-            contrastText: grey[900],
+            main: colors.accent,
+            light: colors.accentLight,
+            dark: colors.accentDark,
+            contrastText: '#ffffff',
           },
           error: semanticColors.error,
           warning: semanticColors.warning,
@@ -71,20 +85,26 @@ function createAppTheme(mode: PaletteMode) {
             'Arial',
             'sans-serif',
           ].join(','),
-          // Apple-HIG-Skala: 34/28/22/20/17/15/13 – Hierarchie über Größe + Gewicht + Farbe
-          h1: { fontSize: 34, fontWeight: 700, lineHeight: 40 / 34, letterSpacing: '-0.02em' },
-          h2: { fontSize: 28, fontWeight: 600, lineHeight: 36 / 28, letterSpacing: '-0.015em' },
-          h3: { fontSize: 22, fontWeight: 600, lineHeight: 28 / 22, letterSpacing: '-0.01em' },
-          h4: { fontSize: 20, fontWeight: 600, lineHeight: 28 / 20, letterSpacing: '-0.01em' },
-          h5: { fontSize: 17, fontWeight: 600, lineHeight: 24 / 17 },
-          h6: { fontSize: 15, fontWeight: 600, lineHeight: 20 / 15 },
-          body1: { fontSize: 16, lineHeight: 24 / 16, fontWeight: 400 },
-          body2: { fontSize: 14, lineHeight: 20 / 14, fontWeight: 400 },
-          button: { textTransform: 'none', fontWeight: 600, fontSize: 15, letterSpacing: 0 },
-          caption: { fontSize: 13, lineHeight: 16 / 13, fontWeight: 400 },
-          subtitle1: { fontSize: 16, lineHeight: 24 / 16, fontWeight: 500 },
-          subtitle2: { fontSize: 14, lineHeight: 20 / 14, fontWeight: 500 },
-          overline: { fontSize: 12, lineHeight: 16 / 12, fontWeight: 600, letterSpacing: '0.06em' },
+          // Präzise Skala: Headings eng gespannt (negatives Tracking), Body ruhig
+          h1: { fontSize: 32, fontWeight: 700, lineHeight: 40 / 32, letterSpacing: '-0.022em' },
+          h2: { fontSize: 26, fontWeight: 650, lineHeight: 34 / 26, letterSpacing: '-0.018em' },
+          h3: { fontSize: 22, fontWeight: 650, lineHeight: 30 / 22, letterSpacing: '-0.014em' },
+          h4: { fontSize: 19, fontWeight: 600, lineHeight: 1.35, letterSpacing: '-0.01em' },
+          h5: { fontSize: 17, fontWeight: 600, lineHeight: 1.4, letterSpacing: '-0.006em' },
+          h6: { fontSize: 15.5, fontWeight: 600, lineHeight: 1.45 },
+          body1: { fontSize: 15.5, lineHeight: 24 / 15.5, fontWeight: 400 },
+          body2: { fontSize: 14, lineHeight: 21 / 14, fontWeight: 400 },
+          button: { textTransform: 'none', fontWeight: 600, letterSpacing: '0.005em' },
+          caption: { fontSize: 12.5, lineHeight: 17 / 12.5, fontWeight: 400, letterSpacing: '0.01em' },
+          subtitle1: { fontSize: 15.5, lineHeight: 24 / 15.5, fontWeight: 550 },
+          subtitle2: { fontSize: 14, lineHeight: 20 / 14, fontWeight: 550 },
+          overline: {
+            fontSize: 11.5,
+            lineHeight: 16 / 11.5,
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+          },
         },
         components: {
           MuiCssBaseline: {
@@ -95,86 +115,121 @@ function createAppTheme(mode: PaletteMode) {
                 height: '100%',
                 backgroundColor: surf.background.default,
                 color: surf.text.primary,
+                fontFeatureSettings: '"cv11", "ss01"', // Inter: offenes g/a – freundlicher
+                WebkitFontSmoothing: 'antialiased',
+                MozOsxFontSmoothing: 'grayscale',
               },
               '#root': { minHeight: '100%' },
-              // A11y: sichtbarer Fokus-Ring für Tastatur (weltweit)
-              'a:focus-visible, button:focus-visible, [role="button"]:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible': {
-                outline: `2px solid ${colors.petrol}`,
-                outlineOffset: 2,
-                borderRadius: 4,
+              '::selection': {
+                backgroundColor: alpha(brand, 0.22),
               },
+              // A11y AA++: sichtbarer 2px-Fokusring in Markenfarbe – überall
+              'a:focus-visible, button:focus-visible, [role="button"]:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible': {
+                outline: `2px solid ${brand}`,
+                outlineOffset: 2,
+                borderRadius: radius.sm,
+              },
+              // Legacy-Klasse: früher Glassmorphism, jetzt flache Karte (API stabil)
               '.glass': {
                 background: surf.surface.main,
-                backdropFilter: glassBlur,
-                WebkitBackdropFilter: glassBlur,
                 border: `1px solid ${surf.border.main}`,
                 borderRadius: radius.lg,
                 boxShadow: shadowSoft,
               },
-              // Zahlen in Zeiterfassung/Beträgen: gleichbreite Ziffern
-              '.tabular-nums': { fontVariantNumeric: 'tabular-nums' },
             },
           },
+
+          // ——— Aktionen ———
           MuiButton: {
             styleOverrides: {
-              root: {
+              root: ({ theme }) => ({
+                minWidth: 104,
+                minHeight: 40,
                 borderRadius: radius.md,
-                padding: '10px 20px',
-                minHeight: 44,
-                fontSize: 15,
+                padding: '8px 18px',
+                fontSize: '14.5px',
                 fontWeight: 600,
                 textTransform: 'none',
                 transition: transitionColors,
                 '&:focus-visible': {
-                  outline: `2px solid ${colors.petrol}`,
+                  outline: `2px solid ${brand}`,
                   outlineOffset: 2,
                 },
-              },
-              sizeSmall: { minHeight: 36, padding: '6px 14px', fontSize: 14 },
+                [theme.breakpoints.down('sm')]: { minWidth: 'auto', width: '100%' },
+              }),
+              // Primär: satte, flache Teal-Fläche; Hover = eine Tonstufe dunkler
               containedPrimary: {
-                backgroundColor: colors.petrol,
-                color: '#fff',
+                backgroundColor: brand,
+                color: isDark ? '#0b2b28' : '#ffffff',
                 boxShadow: 'none',
-                '&:hover': {
-                  backgroundColor: colors.petrolHover,
-                  boxShadow: 'none',
-                },
-                '&:active': { backgroundColor: colors.petrolDark },
-                '&.Mui-disabled': {
-                  backgroundColor: alpha(colors.petrol, isDark ? 0.24 : 0.16),
-                  color: isDark ? 'rgba(255,255,255,0.4)' : alpha(colors.petrol, 0.5),
+                '&:hover': { backgroundColor: brandHover, boxShadow: 'none' },
+                '&:active': { backgroundColor: isDark ? colors.brand : '#0c4f4a' },
+                '&:disabled': {
+                  backgroundColor: alpha(brand, 0.28),
+                  color: isDark ? alpha('#0b2b28', 0.6) : alpha('#ffffff', 0.7),
                 },
               },
               outlinedPrimary: {
-                borderWidth: 1.5,
-                borderColor: alpha(colors.petrol, isDark ? 0.5 : 0.3),
-                color: isDark ? colors.petrolLight : colors.petrol,
+                borderWidth: 1,
+                borderColor: alpha(brand, 0.4),
+                color: brand,
                 backgroundColor: 'transparent',
                 '&:hover': {
-                  borderColor: isDark ? colors.petrolLight : colors.petrol,
-                  backgroundColor: alpha(colors.petrol, isDark ? 0.16 : 0.06),
-                  borderWidth: 1.5,
+                  borderWidth: 1,
+                  borderColor: brand,
+                  backgroundColor: alpha(brand, 0.04),
                 },
-                '&:active': {
-                  backgroundColor: alpha(colors.petrol, isDark ? 0.24 : 0.1),
-                },
+                '&:active': { backgroundColor: alpha(brand, 0.1) },
               },
               textPrimary: {
-                color: isDark ? colors.petrolLight : colors.petrol,
-                '&:hover': { backgroundColor: alpha(colors.petrol, isDark ? 0.16 : 0.08) },
+                color: brand,
+                '&:hover': { backgroundColor: alpha(brand, 0.06) },
+                '&:active': { backgroundColor: alpha(brand, 0.12) },
               },
+              containedSecondary: {
+                backgroundColor: colors.accent,
+                boxShadow: 'none',
+                '&:hover': { backgroundColor: colors.accentDark, boxShadow: 'none' },
+              },
+              sizeSmall: { minHeight: 32, padding: '4px 12px', fontSize: '13.5px', minWidth: 72 },
+              sizeLarge: { minHeight: 48, padding: '12px 24px', fontSize: '15.5px' },
             },
             defaultProps: { disableElevation: true, variant: 'contained' },
           },
+          MuiIconButton: {
+            styleOverrides: {
+              root: {
+                borderRadius: radius.sm,
+                transition: transitionColors,
+                '&:hover': { backgroundColor: alpha(brand, 0.06) },
+                '&:focus-visible': { outline: `2px solid ${brand}`, outlineOffset: 2 },
+              },
+            },
+          },
+          MuiToggleButton: {
+            styleOverrides: {
+              root: {
+                textTransform: 'none',
+                fontWeight: 550,
+                borderColor: surf.border.main,
+                '&.Mui-selected': {
+                  backgroundColor: alpha(brand, 0.1),
+                  color: brand,
+                  '&:hover': { backgroundColor: alpha(brand, 0.16) },
+                },
+              },
+            },
+          },
+
+          // ——— Flächen ———
           MuiPaper: {
             styleOverrides: {
               root: {
-                background: surf.surface.main,
-                backdropFilter: glassBlur,
-                WebkitBackdropFilter: glassBlur,
+                backgroundColor: surf.surface.main,
+                backgroundImage: 'none',
                 border: `1px solid ${surf.border.main}`,
                 borderRadius: radius.lg,
-                boxShadow: shadowSoft,
+                boxShadow: 'none',
               },
             },
             defaultProps: { elevation: 0 },
@@ -182,12 +237,13 @@ function createAppTheme(mode: PaletteMode) {
           MuiCard: {
             styleOverrides: {
               root: {
-                background: surf.surface.main,
-                backdropFilter: glassBlur,
-                WebkitBackdropFilter: glassBlur,
+                backgroundColor: surf.surface.main,
+                backgroundImage: 'none',
                 border: `1px solid ${surf.border.main}`,
                 borderRadius: radius.lg,
                 boxShadow: shadowSoft,
+                transition: transitionColors,
+                '&:hover': { borderColor: surf.border.hover },
               },
             },
             defaultProps: { elevation: 0 },
@@ -196,20 +252,21 @@ function createAppTheme(mode: PaletteMode) {
             styleOverrides: {
               root: {
                 backgroundColor: surf.appBar,
+                backgroundImage: 'none',
+                color: surf.text.primary,
                 borderBottom: `1px solid ${surf.border.main}`,
-                backdropFilter: glassBlur,
-                WebkitBackdropFilter: glassBlur,
                 boxShadow: 'none',
               },
             },
+            defaultProps: { elevation: 0 },
           },
           MuiDrawer: {
             styleOverrides: {
               paper: {
-                background: surf.surface.main,
-                backdropFilter: glassBlur,
-                WebkitBackdropFilter: glassBlur,
+                backgroundColor: surf.surface.main,
+                backgroundImage: 'none',
                 borderRight: `1px solid ${surf.border.main}`,
+                borderRadius: 0,
                 boxShadow: 'none',
               },
             },
@@ -217,9 +274,8 @@ function createAppTheme(mode: PaletteMode) {
           MuiDialog: {
             styleOverrides: {
               paper: {
-                background: surf.surface.main,
-                backdropFilter: glassBlur,
-                WebkitBackdropFilter: glassBlur,
+                backgroundColor: surf.surface.main,
+                backgroundImage: 'none',
                 border: `1px solid ${surf.border.main}`,
                 borderRadius: radius.dialog,
                 boxShadow: shadowLarge,
@@ -230,11 +286,93 @@ function createAppTheme(mode: PaletteMode) {
           MuiMenu: {
             styleOverrides: {
               paper: {
-                boxShadow: shadowMedium,
+                border: `1px solid ${surf.border.main}`,
                 borderRadius: radius.md,
+                boxShadow: shadowMedium,
+                marginTop: 4,
               },
             },
           },
+          MuiMenuItem: {
+            styleOverrides: {
+              root: {
+                borderRadius: radius.sm,
+                margin: '2px 6px',
+                padding: '8px 10px',
+                fontSize: '14px',
+                transition: transitionColors,
+                '&:hover': { backgroundColor: alpha(brand, 0.06) },
+                '&.Mui-selected': {
+                  backgroundColor: alpha(brand, 0.1),
+                  '&:hover': { backgroundColor: alpha(brand, 0.14) },
+                },
+              },
+            },
+          },
+          MuiPopover: {
+            styleOverrides: {
+              paper: { boxShadow: shadowMedium },
+            },
+          },
+          MuiTooltip: {
+            styleOverrides: {
+              tooltip: {
+                backgroundColor: isDark ? grey[100] : grey[900],
+                color: isDark ? grey[900] : grey[50],
+                fontSize: '12.5px',
+                fontWeight: 500,
+                borderRadius: radius.sm,
+                padding: '6px 10px',
+                boxShadow: shadowMedium,
+              },
+              arrow: { color: isDark ? grey[100] : grey[900] },
+            },
+          },
+
+          // ——— Navigation ———
+          MuiListItemButton: {
+            styleOverrides: {
+              root: {
+                borderRadius: radius.md,
+                margin: '2px 8px',
+                transition: transitionColors,
+                '&:hover': { backgroundColor: alpha(brand, 0.06) },
+                '&.Mui-selected': {
+                  backgroundColor: alpha(brand, 0.1),
+                  color: brand,
+                  fontWeight: 600,
+                  '&:hover': { backgroundColor: alpha(brand, 0.14) },
+                  '& .MuiListItemIcon-root': { color: brand },
+                },
+              },
+            },
+          },
+          MuiTabs: {
+            styleOverrides: {
+              root: { minHeight: 44 },
+              indicator: {
+                backgroundColor: brand,
+                height: 2,
+                borderRadius: 1,
+              },
+            },
+          },
+          MuiTab: {
+            styleOverrides: {
+              root: {
+                textTransform: 'none',
+                fontWeight: 550,
+                fontSize: '14.5px',
+                minHeight: 44,
+                color: surf.text.secondary,
+                transition: transitionColors,
+                '&:hover': { color: surf.text.primary },
+                '&.Mui-selected': { color: brand, fontWeight: 600 },
+              },
+            },
+          },
+
+          // ——— Formulare ———
           MuiTextField: {
             defaultProps: { size: 'medium', variant: 'outlined' },
             styleOverrides: {
@@ -243,22 +381,16 @@ function createAppTheme(mode: PaletteMode) {
                   borderRadius: radius.md,
                   backgroundColor: surf.input.bg,
                   transition: transitionColors,
-                  '&:hover': {
-                    backgroundColor: surf.input.bgHover,
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: alpha(colors.petrol, 0.4),
-                    },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: alpha(brand, 0.45),
                   },
-                  '&.Mui-focused': {
-                    backgroundColor: surf.input.bgFocused,
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: colors.petrol,
-                      borderWidth: 2,
-                    },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: brand,
+                    borderWidth: 2,
                   },
                   '& .MuiOutlinedInput-notchedOutline': {
                     borderColor: surf.border.main,
-                    borderWidth: 1.5,
+                    borderWidth: 1,
                   },
                 },
               },
@@ -266,15 +398,49 @@ function createAppTheme(mode: PaletteMode) {
           },
           MuiFormHelperText: {
             styleOverrides: {
-              root: { marginLeft: 0, fontSize: 13, marginTop: 6 },
+              root: { marginLeft: 0, fontSize: '13px', marginTop: 6 },
             },
           },
+          MuiSwitch: {
+            styleOverrides: {
+              root: {
+                '& .MuiSwitch-switchBase.Mui-checked': {
+                  color: brand,
+                  '& + .MuiSwitch-track': { backgroundColor: brand, opacity: 0.55 },
+                },
+              },
+            },
+          },
+          MuiCheckbox: {
+            styleOverrides: {
+              root: {
+                color: surf.text.secondary,
+                '&.Mui-checked': { color: brand },
+                '&:hover': { backgroundColor: alpha(brand, 0.06) },
+              },
+            },
+          },
+          MuiRadio: {
+            styleOverrides: {
+              root: {
+                color: surf.text.secondary,
+                '&.Mui-checked': { color: brand },
+                '&:hover': { backgroundColor: alpha(brand, 0.06) },
+              },
+            },
+          },
+
+          // ——— Daten ———
           MuiTableRow: {
             styleOverrides: {
               root: {
-                height: 56,
+                height: 52,
                 transition: `background-color ${duration.fast}ms ${easing}`,
-                '&:hover': { backgroundColor: alpha(colors.petrol, isDark ? 0.08 : 0.04) },
+                '&:hover': { backgroundColor: alpha(brand, 0.03) },
+                '&.Mui-selected': {
+                  backgroundColor: alpha(brand, 0.07),
+                  '&:hover': { backgroundColor: alpha(brand, 0.1) },
+                },
               },
             },
           },
@@ -286,79 +452,108 @@ function createAppTheme(mode: PaletteMode) {
                 paddingLeft: 16,
                 paddingRight: 16,
                 borderBottom: `1px solid ${surf.border.main}`,
+                fontVariantNumeric: 'tabular-nums', // Zahlenspalten fluchten
               },
               head: {
                 fontWeight: 600,
-                fontSize: 13,
+                fontSize: '12px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
                 color: surf.text.secondary,
                 borderBottom: `1px solid ${surf.border.main}`,
                 backgroundColor: surf.tableHeaderBg,
               },
-              body: {
-                borderBottom: `1px solid ${surf.border.main}`,
-                fontSize: 14,
-              },
+              body: { fontSize: '14px' },
             },
           },
           MuiChip: {
             styleOverrides: {
               root: {
-                borderRadius: radius.pill,
-                fontWeight: 500,
-                fontSize: 13,
-                height: 28,
-                '&:focus-visible': {
-                  outline: `2px solid ${colors.petrol}`,
-                  outlineOffset: 2,
-                },
+                borderRadius: 999, // Pill – ruhiger als eckige Chips im flachen Layout
+                fontWeight: 550,
+                fontSize: '12.5px',
+                height: 26,
+                transition: transitionColors,
+                '&:focus-visible': { outline: `2px solid ${brand}`, outlineOffset: 2 },
               },
+              // Getönte Chips statt Vollfarbe – flacher, lesbarer
               filledPrimary: {
-                backgroundColor: colors.petrol,
-                color: '#fff',
-                '&:hover': { backgroundColor: colors.petrolHover },
+                backgroundColor: alpha(brand, isDark ? 0.22 : 0.12),
+                color: isDark ? colors.brandLighter : colors.brandDark,
+                '&:hover': { backgroundColor: alpha(brand, isDark ? 0.3 : 0.18) },
+              },
+              filledSecondary: {
+                backgroundColor: alpha(colors.accent, isDark ? 0.24 : 0.14),
+                color: isDark ? colors.accentLight : colors.accentDark,
+                '&:hover': { backgroundColor: alpha(colors.accent, isDark ? 0.32 : 0.2) },
+              },
+              outlinedPrimary: {
+                borderColor: alpha(brand, 0.4),
+                color: brand,
+                '&:hover': { backgroundColor: alpha(brand, 0.06) },
               },
               outlinedSecondary: {
-                borderColor: alpha(colors.mustard, 0.5),
-                color: colors.mustardDark,
+                borderColor: alpha(colors.accent, 0.5),
+                color: colors.accentDark,
                 '&:hover': {
-                  borderColor: colors.mustard,
-                  backgroundColor: alpha(colors.mustard, 0.08),
+                  borderColor: colors.accent,
+                  backgroundColor: alpha(colors.accent, 0.06),
                 },
               },
             },
           },
-          MuiToggleButton: {
+          MuiAlert: {
+            styleOverrides: {
+              root: { borderRadius: radius.md, border: '1px solid transparent' },
+              standardSuccess: { borderColor: alpha(semanticColors.success.main, 0.3) },
+              standardError: { borderColor: alpha(semanticColors.error.main, 0.3) },
+              standardWarning: { borderColor: alpha(semanticColors.warning.main, 0.3) },
+              standardInfo: { borderColor: alpha(semanticColors.info.main, 0.3) },
+            },
+          },
+          MuiSkeleton: {
             styleOverrides: {
               root: {
-                textTransform: 'none',
-                fontWeight: 500,
-                color: surf.text.secondary,
-                borderColor: surf.border.main,
-                transition: transitionColors,
-                '&.Mui-selected': {
-                  backgroundColor: alpha(colors.petrol, isDark ? 0.24 : 0.1),
-                  color: isDark ? colors.petrolLight : colors.petrol,
-                  fontWeight: 600,
-                  '&:hover': {
-                    backgroundColor: alpha(colors.petrol, isDark ? 0.3 : 0.16),
-                  },
-                },
+                backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(28,25,23,0.06)',
+                borderRadius: radius.sm,
+              },
+            },
+            defaultProps: { animation: 'wave' },
+          },
+          MuiLinearProgress: {
+            styleOverrides: {
+              root: {
+                borderRadius: 999,
+                height: 6,
+                backgroundColor: alpha(brand, 0.12),
+              },
+              bar: { borderRadius: 999, backgroundColor: brand },
+            },
+          },
+          MuiDivider: {
+            styleOverrides: {
+              root: { borderColor: surf.border.main },
+            },
+          },
+          MuiAvatar: {
+            styleOverrides: {
+              root: {
+                backgroundColor: alpha(brand, isDark ? 0.3 : 0.14),
+                color: isDark ? colors.brandLighter : colors.brandDark,
+                fontWeight: 600,
               },
             },
           },
-          MuiTooltip: {
+          MuiBadge: {
             styleOverrides: {
-              tooltip: {
-                fontSize: 13,
-                borderRadius: radius.sm,
-                padding: '6px 10px',
-              },
+              colorPrimary: { backgroundColor: brand },
             },
           },
         },
       },
       coreDeDE
-    )
+    ),
+    { factor: 3 }
   );
 }
 
@@ -369,7 +564,10 @@ export function createAppThemeLegacy() {
   return createAppTheme('light');
 }
 
-// Theme-basierte Utility (nutzt aktuelles Theme; für useTheme()-Komponenten)
+/**
+ * Flache Karten-Optik (ehemals Glass-Effekt; Name aus Kompatibilitätsgründen erhalten).
+ * Für useTheme()-Komponenten.
+ */
 export function glassStyle(theme: {
   palette: { background: { paper: string }; divider: string; mode?: 'light' | 'dark' };
   shape: { borderRadius: number };
@@ -377,12 +575,10 @@ export function glassStyle(theme: {
   const isDark = theme.palette.mode === 'dark';
   return {
     background: theme.palette.background.paper,
-    backdropFilter: glassBlur,
-    WebkitBackdropFilter: glassBlur,
     border: `1px solid ${theme.palette.divider}`,
     borderRadius: theme.shape.borderRadius ?? radius.lg,
     boxShadow: isDark ? shadows.softDark : shadows.soft,
-    transition: transitionColors,
+    transition: transitionBase,
   };
 }
 
@@ -400,6 +596,6 @@ export function getThemeConstants(mode: ThemeMode) {
   return {
     ...THEME_CONSTANTS,
     SHADOW_SOFT: isDark ? shadows.softDark : shadows.soft,
-    CARD_BORDER_LIGHT: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+    CARD_BORDER_LIGHT: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(28,25,23,0.10)',
   };
 }

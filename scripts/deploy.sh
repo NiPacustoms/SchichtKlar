@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-echo "🚀 JobFlow Deployment Script"
+echo "🚀 Schichtklar Deployment Script"
 echo "============================"
 
 # Prüfe ob .env.local existiert

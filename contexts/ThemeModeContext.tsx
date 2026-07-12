@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
-const STORAGE_KEY = 'jobflow-theme-mode';
+const STORAGE_KEY = 'schichtklar-theme-mode';
 
 export type ThemeMode = 'light' | 'dark';
 

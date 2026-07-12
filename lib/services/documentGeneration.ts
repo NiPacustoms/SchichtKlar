@@ -7,6 +7,15 @@ import { userService } from './users';
 import { firebaseStorageService } from './firebaseStorage';
 import { logger } from '@/lib/logging';
 import { getAppLogoUrl } from '@/lib/config/logo';
+import {
+  PDF_MARGIN,
+  brandedTableOptions,
+  drawFooters,
+  drawLetterhead,
+  kvLine,
+  sectionTitle,
+  signatureLine,
+} from '@/lib/services/pdf/brandedPdf';
 
 export type DocumentType = 
   | 'timesheet-report'      // Zeiterfassungsbericht
@@ -158,29 +167,13 @@ class DocumentGenerationService {
     autoTable: any,
     options: DocumentGenerationOptions
   ): Promise<Blob> {
-    const margin = 14;
-    let y = 20;
-
-    // Header
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Zeiterfassungsbericht', margin, y);
-    
-    y += 10;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    
-    if (options.dateRange) {
-      doc.text(
-        `Zeitraum: ${options.dateRange.start.toLocaleDateString('de-DE')} - ${options.dateRange.end.toLocaleDateString('de-DE')}`,
-        margin,
-        y
-      );
-      y += 8;
-    }
-    
-    doc.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, margin, y);
-    y += 15;
+    const margin = PDF_MARGIN;
+    let y = await drawLetterhead(doc, {
+      title: 'Zeiterfassungsbericht',
+      subtitle: options.dateRange
+        ? `Zeitraum: ${options.dateRange.start.toLocaleDateString('de-DE')} – ${options.dateRange.end.toLocaleDateString('de-DE')}`
+        : undefined,
+    });
 
     // Lade echte Timesheet-Daten
     let timesheets: Timesheet[] = [];
@@ -225,9 +218,7 @@ class DocumentGenerationService {
       head: [['Datum', 'Start', 'Ende', 'Pause', 'Stunden', 'Status']],
       body: entriesToShow,
       startY: y,
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [66, 139, 202] },
-      theme: 'striped',
+      ...brandedTableOptions([3, 4]),
     });
     
     // Wenn mehr Einträge vorhanden sind, Hinweis hinzufügen
@@ -252,15 +243,12 @@ class DocumentGenerationService {
       const finalY = (doc as any).lastAutoTable?.finalY || y + (displayedEntries * 10) + 20;
       y = finalY + 15;
       
-      doc.setFont('helvetica', 'bold');
-      doc.text('Zusammenfassung:', margin, y);
-      y += 10;
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Gesamtstunden: ${totalHours.toFixed(2)}`, margin + 10, y);
-      y += 8;
-      doc.text(`Genehmigte Stunden: ${approvedHours.toFixed(2)}`, margin + 10, y);
+      y = sectionTitle(doc, y, 'Zusammenfassung');
+      y = kvLine(doc, y, 'Gesamtstunden', `${totalHours.toFixed(2)} h`);
+      y = kvLine(doc, y, 'Genehmigte Stunden', `${approvedHours.toFixed(2)} h`);
     }
 
+    drawFooters(doc);
     return doc.output('blob');
   }
 
@@ -272,18 +260,9 @@ class DocumentGenerationService {
     autoTable: any,
     options: DocumentGenerationOptions
   ): Promise<Blob> {
-    const margin = 14;
-    let y = 20;
+    const margin = PDF_MARGIN;
+    let y = await drawLetterhead(doc, { title: 'Einsatzbestätigung' });
 
-    // Header
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Einsatzbestätigung', margin, y);
-    
-    y += 15;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    
     // Lade Assignment-Daten
     let assignment: Assignment | null = null;
     let shift: any = null;
@@ -325,12 +304,9 @@ class DocumentGenerationService {
       ['Abgeschlossen am', assignment?.completedAt ? new Date(assignment.completedAt).toLocaleDateString('de-DE') : '-'],
     ];
 
+    y = sectionTitle(doc, y, 'Einsatzdaten');
     assignmentData.forEach(([label, value]) => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${label}:`, margin, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(String(value), margin + 80, y);
-      y += 10;
+      y = kvLine(doc, y, String(label), String(value));
     });
 
     if (assignment?.notes) {
@@ -361,15 +337,14 @@ class DocumentGenerationService {
       }
     }
 
+    y += 14;
+    y = sectionTitle(doc, y, 'Unterschriften');
+    y += 12;
+    y = signatureLine(doc, y, 'Datum / Unterschrift Mitarbeiter/in');
     y += 10;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Unterschriften:', margin, y);
-    y += 10;
-    doc.setFont('helvetica', 'normal');
-    doc.text('Mitarbeiter: _________________________', margin, y);
-    y += 10;
-    doc.text('Einrichtung: _________________________', margin, y);
+    y = signatureLine(doc, y, 'Datum / Unterschrift Einrichtung');
 
+    drawFooters(doc);
     return doc.output('blob');
   }
 
@@ -381,21 +356,11 @@ class DocumentGenerationService {
     autoTable: any,
     options: DocumentGenerationOptions
   ): Promise<Blob> {
-    const margin = 14;
-    let y = 20;
-
-    // Header
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Schichtzusammenfassung', margin, y);
-    
-    y += 10;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    
     const reportDate = options.dateRange?.start || new Date();
-    doc.text(`Datum: ${reportDate.toLocaleDateString('de-DE')}`, margin, y);
-    y += 15;
+    const y = await drawLetterhead(doc, {
+      title: 'Schichtzusammenfassung',
+      subtitle: `Datum: ${reportDate.toLocaleDateString('de-DE')}`,
+    });
 
     // Lade Timesheet-Daten für den Tag
     let timesheets: Timesheet[] = [];
@@ -434,11 +399,10 @@ class DocumentGenerationService {
       head: [['Datum', 'Schicht', 'Stunden', 'Status']],
       body: tableData,
       startY: y,
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [66, 139, 202] },
-      theme: 'striped',
+      ...brandedTableOptions([2]),
     });
 
+    drawFooters(doc);
     return doc.output('blob');
   }
 
@@ -450,22 +414,10 @@ class DocumentGenerationService {
     autoTable: any,
     options: DocumentGenerationOptions
   ): Promise<Blob> {
-    const margin = 14;
-    let y = 20;
-
-    // Header
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Monatsbericht', margin, y);
-    
-    y += 10;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    
+    const margin = PDF_MARGIN;
     const reportDate = options.dateRange?.start || new Date();
     const month = reportDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
-    doc.text(`Monat: ${month}`, margin, y);
-    y += 15;
+    let y = await drawLetterhead(doc, { title: 'Monatsbericht', subtitle: month });
 
     // Lade Timesheet-Daten für den Monat
     let timesheets: Timesheet[] = [];
@@ -502,15 +454,12 @@ class DocumentGenerationService {
       ['Nachtstunden', nightHours.toFixed(2)],
     ];
 
+    y = sectionTitle(doc, y, 'Kennzahlen');
     stats.forEach(([label, value]) => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${label}:`, margin, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(value, margin + 80, y);
-      y += 10;
+      y = kvLine(doc, y, label, value);
     });
 
-    y += 10;
+    y += 6;
     
     // Detaillierte Tabelle mit echten Daten
     const tableData = timesheets.length > 0
@@ -532,9 +481,7 @@ class DocumentGenerationService {
       head: [['Datum', 'Stunden', 'Einsätze', 'Durchschnitt']],
       body: entriesToShow,
       startY: y,
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [66, 139, 202] },
-      theme: 'striped',
+      ...brandedTableOptions([1, 2, 3]),
     });
     
     // Wenn mehr Einträge vorhanden sind, Hinweis hinzufügen
@@ -546,6 +493,7 @@ class DocumentGenerationService {
       doc.text(`Hinweis: Es werden nur die ersten ${maxEntriesPerPage} von ${tableData.length} Einträgen angezeigt.`, margin, y);
     }
 
+    drawFooters(doc);
     return doc.output('blob');
   }
 
@@ -557,19 +505,9 @@ class DocumentGenerationService {
     autoTable: any,
     options: DocumentGenerationOptions
   ): Promise<Blob> {
-    const margin = 14;
-    let y = 20;
-
-    // Header
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text(options.title || 'Benutzerdefinierter Bericht', margin, y);
-    
-    y += 15;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, margin, y);
-    y += 15;
+    const margin = PDF_MARGIN;
+    let y = await drawLetterhead(doc, { title: options.title || 'Benutzerdefinierter Bericht' });
+    doc.setFontSize(10);
 
     // Benutzerdefinierte Daten
     if (options.customData) {
@@ -620,6 +558,7 @@ class DocumentGenerationService {
       y += 10;
     }
 
+    drawFooters(doc);
     return doc.output('blob');
   }
 
@@ -677,7 +616,7 @@ class DocumentGenerationService {
     }
 
     // —— Firmenname (links, unterhalb Logo-Zone) ——
-    const companyName = data.branding?.companyName || 'JobFlow';
+    const companyName = data.branding?.companyName || 'Schichtklar';
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(40, 40, 40);
@@ -712,7 +651,7 @@ class DocumentGenerationService {
     const reportTypeLabel = this.getReportTypeLabel(data.reportType);
     doc.text(`Berichtstyp: ${reportTypeLabel}`, margin, y);
     y += 10;
-    doc.text('Dieses Dokument wurde automatisch von JobFlow erstellt.', margin, y);
+    doc.text('Dieses Dokument wurde automatisch von Schichtklar erstellt.', margin, y);
 
     // Footer-Zeile unten
     doc.setFontSize(9);
@@ -966,45 +905,26 @@ class DocumentGenerationService {
     const facility = shift.facilityId ? await facilityService.getById(shift.facilityId) : null;
     const employee = await userService.getById(assignment.userId);
 
-    const margin = 14;
-    let y = 20;
+    const margin = PDF_MARGIN;
+    let y = await drawLetterhead(doc, {
+      title: 'Zeiterfassung mit Unterschriften',
+      subtitle: `Einsatz ${assignment.id}`,
+    });
 
-    // Header
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Zeiterfassung mit Unterschriften', margin, y);
-    y += 10;
-
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Assignment-ID: ${assignment.id}`, margin, y);
-    y += 8;
-
-    // Assignment-Informationen
-    doc.setFont('helvetica', 'bold');
-    doc.text('Einsatzinformationen:', margin, y);
-    y += 8;
-    doc.setFont('helvetica', 'normal');
-
+    y = sectionTitle(doc, y, 'Einsatzinformationen');
     if (employee) {
-      doc.text(`Mitarbeiter: ${employee.displayName}`, margin, y);
-      y += 6;
+      y = kvLine(doc, y, 'Mitarbeiter/in', employee.displayName);
     }
-
     if (facility) {
-      doc.text(`Einrichtung: ${facility.name}`, margin, y);
-      y += 6;
+      y = kvLine(doc, y, 'Einrichtung', facility.name);
     }
-
     if (shift) {
       const shiftDate = typeof shift.date === 'string' ? new Date(shift.date) : (shift.date as Date);
-      doc.text(`Datum: ${shiftDate.toLocaleDateString('de-DE')}`, margin, y);
-      y += 6;
-      doc.text(`Zeiten: ${shift.startTime} - ${shift.endTime}`, margin, y);
-      y += 6;
+      y = kvLine(doc, y, 'Datum', shiftDate.toLocaleDateString('de-DE'));
+      y = kvLine(doc, y, 'Zeiten', `${shift.startTime} – ${shift.endTime}`);
     }
 
-    y += 10;
+    y += 6;
 
     // Employee Signature (bei Ablehnung)
     if (assignment.employeeSignatureUrl) {

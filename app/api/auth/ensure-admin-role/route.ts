@@ -14,8 +14,8 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 export const runtime = 'nodejs';
 
-/** Standard-Admin für Entwicklung: admin@jobflow.de = Admin, nurse1@jobflow.de = Nurse. */
-const DEFAULT_ADMIN_BOOTSTRAP_EMAIL = 'admin@jobflow.de';
+/** Standard-Admin für Entwicklung: admin@schichtklar.test = Admin, nurse1@schichtklar.test = Nurse. */
+const DEFAULT_ADMIN_BOOTSTRAP_EMAIL = 'admin@schichtklar.test';
 
 /**
  * Bootstrap: Setzt Rolle auf admin, wenn E-Mail der konfigurierten Bootstrap-E-Mail entspricht.

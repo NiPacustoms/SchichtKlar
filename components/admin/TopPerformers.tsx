@@ -2,7 +2,7 @@
 
 import { GlassCard } from '@/components/ui/GlassCard';
 import { User } from '@/lib/types';
-import { alpha, Avatar, Box, Chip, Typography } from '@mui/material';
+import { Avatar, Box, Chip, Typography } from '@mui/material';
 
 interface TopPerformersProps {
   performers: Array<{
@@ -45,12 +45,13 @@ export function TopPerformers({ performers }: TopPerformersProps) {
                 border: '1px solid',
                 borderColor: 'divider',
                 borderRadius: 2,
-                backgroundColor: index === 0 ? 'rgba(0, 95, 115, 0.06)' : 'transparent',
-                transition: 'background-color 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+                backgroundColor: index === 0 ? 'rgba(15, 118, 110, 0.06)' : 'transparent',
+                transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
                   borderColor: 'primary.main',
                   backgroundColor:
-                    index === 0 ? 'rgba(0, 95, 115, 0.08)' : 'rgba(0, 95, 115, 0.04)',
+                    index === 0 ? 'rgba(15, 118, 110, 0.08)' : 'rgba(15, 118, 110, 0.04)',
+                  transform: 'translateX(4px)',
                 },
               }}
             >
@@ -70,19 +71,11 @@ export function TopPerformers({ performers }: TopPerformersProps) {
                     sx={{
                       width: 40,
                       height: 40,
-                      backgroundColor: theme =>
-                        alpha(
-                          index === 0 ? theme.palette.primary.main : theme.palette.grey[500],
-                          theme.palette.mode === 'dark' ? 0.24 : 0.12
-                        ),
-                      color: theme =>
-                        index === 0
-                          ? theme.palette.mode === 'dark'
-                            ? theme.palette.primary.light
-                            : theme.palette.primary.main
-                          : 'text.secondary',
-                      fontSize: 16,
-                      fontWeight: 600,
+                      backgroundColor: index === 0 ? 'primary.main' : 'grey.500',
+                      color: '#fff',
+                      fontSize: '1rem',
+                      fontWeight: 700,
+                      boxShadow: 'none',
                     }}
                   >
                     {performer.user.displayName?.charAt(0) || 'U'}
@@ -106,7 +99,11 @@ export function TopPerformers({ performers }: TopPerformersProps) {
                     label="Bester"
                     color="primary"
                     size="small"
-                    sx={{ fontWeight: 600 }}
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: '12px',
+                      height: 28,
+                    }}
                   />
                 )}
               </Box>

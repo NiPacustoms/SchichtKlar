@@ -24,7 +24,7 @@ Nach `git:checkout-deployed` bist du auf dem Commit, der zuletzt erfolgreich auf
 
 ## Methode 2: Manuell über GitHub Actions
 
-1. **GitHub öffnen:** https://github.com/NiPacustoms/JobFlow/actions  
+1. **GitHub öffnen:** https://github.com/NiPacustoms/Schichtklar/actions  
 2. Links den Workflow **„Deploy to Firebase Hosting“** wählen.  
 3. Den **letzten grünen (erfolgreichen) Run** finden, der von **main** getriggert wurde.  
 4. Run anklicken – **oben** steht der Commit (z. B. `227f109` oder volle SHA).  

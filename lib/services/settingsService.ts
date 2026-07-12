@@ -118,7 +118,7 @@ class SettingsService {
   // Standard-Einstellungen
   private getDefaultSettings(): Omit<SystemSettings, 'id' | 'createdAt' | 'updatedAt' | 'updatedBy'> {
     return {
-      companyName: 'JobFlow',
+      companyName: 'Schichtklar',
       primaryColor: '#1976d2',
       secondaryColor: '#dc004e',
       showLogo: true,

@@ -8,11 +8,11 @@ Auch wenn die Firebase Extensions API aktiviert ist, schlägt das Deployment feh
 
 ### Schritt 1: Service Account identifizieren
 
-1. Gehe zu [IAM & Admin → Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts?project=jobflow25)
+1. Gehe zu [IAM & Admin → Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts?project=schichtklar)
 
 2. Finde das Service Account, das für das Deployment verwendet wird:
-   - Normalerweise: `firebase-adminsdk-xxxxx@jobflow25.iam.gserviceaccount.com`
-   - ODER: Das Service Account aus GitHub Secrets (`FIREBASE_SERVICE_ACCOUNT_JobFlow`)
+   - Normalerweise: `firebase-adminsdk-xxxxx@schichtklar.iam.gserviceaccount.com`
+   - ODER: Das Service Account aus GitHub Secrets (`FIREBASE_SERVICE_ACCOUNT_Schichtklar`)
 
 ### Schritt 2: Service Account öffnen
 
@@ -22,7 +22,7 @@ Klicke auf das Service Account, um die Details zu öffnen.
 
 **Option A: Über IAM (Empfohlen)**
 
-1. Gehe zu [IAM & Admin → IAM](https://console.cloud.google.com/iam-admin/iam?project=jobflow25)
+1. Gehe zu [IAM & Admin → IAM](https://console.cloud.google.com/iam-admin/iam?project=schichtklar)
 
 2. Finde das Service Account in der Liste
 
@@ -68,7 +68,7 @@ Nachdem die Berechtigung hinzugefügt wurde:
 
 Um zu prüfen, ob die Berechtigung funktioniert:
 
-1. Gehe zu [APIs & Services → Enabled APIs](https://console.cloud.google.com/apis/library?project=jobflow25)
+1. Gehe zu [APIs & Services → Enabled APIs](https://console.cloud.google.com/apis/library?project=schichtklar)
 
 2. Suche nach "Firebase Extensions API"
 
@@ -90,7 +90,7 @@ Du kannst die fehlenden Berechtigungen automatisch mit einem Script hinzufügen:
 
 1. Installiere die [Google Cloud CLI](https://cloud.google.com/sdk/docs/install)
 2. Logge dich ein: `gcloud auth login`
-3. Setze das Projekt: `gcloud config set project jobflow25`
+3. Setze das Projekt: `gcloud config set project schichtklar`
 
 ### Script ausführen
 

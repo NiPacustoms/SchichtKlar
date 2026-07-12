@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# JobFlow Worktree Cleanup Script
+# Schichtklar Worktree Cleanup Script
 # Bereinigt alte/verwaiste Git-Worktrees und stellt node_modules wieder her
 
-echo "🧹 JobFlow Worktree Cleanup"
+echo "🧹 Schichtklar Worktree Cleanup"
 echo ""
 
 # Zeige aktuelle Worktrees

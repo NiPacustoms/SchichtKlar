@@ -78,7 +78,7 @@ export const ariaLabels = {
   clear: 'Löschen',
   reset: 'Zurücksetzen',
   
-  // Navigation specific to JobFlow
+  // Navigation specific to Schichtklar
   goToDashboard: 'Zum Dashboard',
   goToSchedule: 'Zum Dienstplan',
   goToStaff: 'Zu den Mitarbeitern',
@@ -87,7 +87,7 @@ export const ariaLabels = {
   goToProfile: 'Zum Profil',
   goToDocuments: 'Zu den Dokumenten',
   goToTimeTracking: 'Zur Zeiterfassung',
-  // JobFlow specific actions
+  // Schichtklar specific actions
   startShift: 'Schicht beginnen',
   endShift: 'Schicht beenden',
   startBreak: 'Pause beginnen',

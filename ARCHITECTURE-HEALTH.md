@@ -1,4 +1,4 @@
-# Architecture Health – JobFlow L8 (Endgültige Fertigstellung)
+# Architecture Health – Schichtklar L8 (Endgültige Fertigstellung)
 
 **Ziel:** 3/10 → 10/10. **Stand:** Domain/Application/Infrastructure vollständig; App-Anbindung und Docs abgeschlossen.
 
@@ -120,7 +120,7 @@ Prüfen: Redirect auf `/anmelden` ohne Auth, Redirect-Param, Login-Seite (Headin
 | QUALITY | 10/10 | Typecheck/Lint/Build/E2E ✅ |
 | PRODUCTION | ✅ YES | L8 Enterprise |
 
-**JobFlow v0.2.0 = Google L8 Enterprise Architecture**
+**Schichtklar v0.2.0 = Google L8 Enterprise Architecture**
 
 - 100 Engineers können parallel entwickeln
 - Production Grade CI/CD + E2E + Storybook

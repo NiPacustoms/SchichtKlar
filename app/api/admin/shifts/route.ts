@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { shiftService } from '@/lib/services/shifts';
-import { verifyIdToken } from '@/lib/server/firebaseAdmin';
+import { verifyIdToken, getRoleFromToken } from '@/lib/server/firebaseAdmin';
 import { adminDb } from '@/lib/server/firebaseAdmin';
 import { checkRateLimit, addRateLimitHeaders } from '@/lib/middleware/rateLimit';
 import { validateRequest, shiftsQuerySchema, createShiftSchema } from '@/lib/validations';
 import { logger } from '@/lib/errors';
 export const runtime = 'nodejs';
+
+/** Antwort für authentifizierte, aber nicht-Admin-Nutzer auf /api/admin/*-Routen. */
+function forbiddenResponse() {
+  return NextResponse.json(
+    { success: false, error: 'Nur Administratoren dürfen diese Route aufrufen.', code: 'FORBIDDEN' },
+    { status: 403 }
+  );
+}
 
 /**
  * GET /api/admin/shifts
@@ -36,6 +44,10 @@ export async function GET(request: NextRequest) {
         },
         { status: 401 }
       );
+    }
+
+    if (getRoleFromToken(decoded) !== 'admin') {
+      return forbiddenResponse();
     }
 
     // Rate Limiting prüfen
@@ -192,6 +204,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (getRoleFromToken(decoded) !== 'admin') {
+      return forbiddenResponse();
+    }
+
     // Rate Limiting prüfen
     const rateLimitResponse = checkRateLimit(request, decoded.uid);
     if (rateLimitResponse) {
@@ -241,7 +257,7 @@ export async function POST(request: NextRequest) {
           : 'open',
       notes: body.notes,
       timezone: body.timezone || 'Europe/Berlin',
-      color: body.color || '#005f73', // DEFAULT_SHIFT_COLOR aus lib/constants/colorPresets
+      color: body.color || '#0f766e', // DEFAULT_SHIFT_COLOR aus lib/constants/colorPresets
       createdBy: body.createdBy || decoded.uid,
       stationId: body.stationId,
     });

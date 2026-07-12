@@ -65,7 +65,7 @@ function TintedIcon({ children }: { children: React.ReactNode }) {
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        backgroundColor: alpha(colors.petrol, 0.1),
+        backgroundColor: alpha(colors.brand, 0.1),
         color: 'primary.main',
       }}
     >
@@ -154,7 +154,7 @@ export default function HomePage() {
 
   // Fallback für branding, falls es undefined ist
   const brandingData = branding || {
-    companyName: 'JobFlow',
+    companyName: 'Schichtklar',
     companyLogo: undefined,
     showLogo: false,
   };
@@ -179,7 +179,7 @@ export default function HomePage() {
           gap: 2,
         }}
       >
-        <Typography variant="h6">JobFlow wird geladen…</Typography>
+        <Typography variant="h6">Schichtklar wird geladen…</Typography>
         <Button component={Link} href="/anmelden" variant="outlined">
           Zur Anmeldung
         </Button>
@@ -233,13 +233,13 @@ export default function HomePage() {
             py: 2,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', height: 44 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', height: 48 }}>
             <AppLogo
               branding={brandingData}
               showLogo={brandingData?.showLogo !== false}
-              width={96}
-              height={44}
-              sx={{ width: 96, height: 44 }}
+              width={160}
+              height={48}
+              sx={{ width: 160, height: 48 }}
               showSkeleton={false}
               fallbackBgColor="transparent"
               priority
@@ -373,7 +373,7 @@ export default function HomePage() {
                   justifyContent: 'center',
                   mx: 'auto',
                   mb: 2,
-                  backgroundColor: alpha(colors.petrol, 0.1),
+                  backgroundColor: alpha(colors.brand, 0.1),
                   color: 'primary.main',
                   fontWeight: 600,
                   fontSize: 17,
@@ -432,9 +432,9 @@ export default function HomePage() {
             borderRadius: 4,
             px: { xs: 3, md: 8 },
             py: { xs: 6, md: 8 },
-            backgroundColor: alpha(colors.petrol, 0.06),
+            backgroundColor: alpha(colors.brand, 0.06),
             border: '1px solid',
-            borderColor: alpha(colors.petrol, 0.12),
+            borderColor: alpha(colors.brand, 0.12),
           }}
         >
           <Typography variant="h2" sx={{ mb: 2 }}>
@@ -491,7 +491,7 @@ export default function HomePage() {
           }}
         >
           <Typography variant="body2" color="text.secondary">
-            © {new Date().getFullYear()} JobFlow
+            © {new Date().getFullYear()} Schichtklar
           </Typography>
           <Stack direction="row" spacing={3}>
             <Button key="impressum" component={Link} href="/recht/impressum" color="inherit" size="small">

@@ -18,7 +18,7 @@ const admin = require('firebase-admin');
 const DEFAULT_SERVICE_ACCOUNT = path.resolve(
   process.env.HOME || process.cwd(),
   '.keys',
-  'jobflow25-admin.json'
+  'schichtklar-admin.json'
 );
 
 const WHITELIST_PATH = path.resolve(__dirname, 'verified-emails-whitelist.txt');
@@ -35,7 +35,7 @@ if (!fs.existsSync(serviceAccountPath)) {
 function loadWhitelist() {
   if (!fs.existsSync(WHITELIST_PATH)) {
     console.error('❌ Whitelist-Datei nicht gefunden:', WHITELIST_PATH);
-    console.error('   Erstelle die Datei mit einer E-Mail-Adresse pro Zeile (z.B. admin@jobflow.de).');
+    console.error('   Erstelle die Datei mit einer E-Mail-Adresse pro Zeile (z.B. admin@schichtklar.test).');
     process.exit(1);
   }
   const content = fs.readFileSync(WHITELIST_PATH, 'utf8');

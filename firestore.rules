@@ -55,20 +55,33 @@ service cloud.firestore {
     // Users: Jede Mitarbeiter-Rolle ist von anderen getrennt – nur eigene Daten lesbar.
     // Nur Admin hat volle Kontrolle (alle User derselben Company lesen/schreiben).
     // WICHTIG: Eigene Dokumente können IMMER gelesen werden (Henne-Ei beim ersten Login).
+
+    // Sicherheitskritisch: Ein User darf beim Bearbeiten des EIGENEN Dokuments keine
+    // rechte-relevanten Felder verändern. Sonst könnte eine Pflegekraft ihr eigenes
+    // users-Dokument auf role='admin' setzen und würde über den Rules-Fallback
+    // hasRoleFromUserDoc('admin') zum Administrator (Privilege Escalation).
+    function selfUpdateKeepsPrivilegedFields() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['role', 'companyId', 'customRoleId']);
+    }
+
     match /users/{uid} {
       // Lesen: Nur eigenes Dokument ODER Admin derselben Company (Mitarbeiter sehen keine anderen Mitarbeiter)
       allow read: if isAuthenticated() && (
         request.auth.uid == uid ||
         (isAdmin() && belongsToSameCompany(resource.data.companyId))
       );
-      // Erstellen: Eigene Dokumente ODER Admin derselben Company
+      // Erstellen: Eigene Dokumente ODER Admin derselben Company.
+      // Selbst-Anlage darf sich nicht selbst zum Admin machen: role muss fehlen oder 'nurse' sein.
       allow create: if isAuthenticated() && (
-        request.auth.uid == uid ||
+        (request.auth.uid == uid &&
+         (!('role' in request.resource.data) || request.resource.data.role == 'nurse')) ||
         (hasRole('admin') && creatingForSameCompany(request.resource.data.companyId))
       );
-      // Aktualisieren: Eigene Dokumente ODER Admin derselben Company
+      // Aktualisieren: Eigenes Dokument (ohne Änderung rechte-relevanter Felder)
+      // ODER Admin derselben Company (darf Rollen vergeben).
       allow update: if isAuthenticated() && (
-        request.auth.uid == uid ||
+        (request.auth.uid == uid && selfUpdateKeepsPrivilegedFields()) ||
         (hasRole('admin') && belongsToSameCompany(resource.data.companyId) &&
          creatingForSameCompany(request.resource.data.companyId))
       );

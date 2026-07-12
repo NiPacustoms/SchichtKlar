@@ -11,11 +11,11 @@ export default function RootLoading() {
         minHeight: '100vh',
         fontFamily: 'system-ui, sans-serif',
         fontSize: '1.125rem',
-        color: 'var(--color-petrol-500)',
+        color: '#0f766e',
       }}
       aria-label="Seite wird geladen"
     >
-      JobFlow wird geladen…
+      Schichtklar wird geladen…
     </div>
   );
 }

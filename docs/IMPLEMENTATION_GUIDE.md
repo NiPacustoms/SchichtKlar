@@ -1,4 +1,4 @@
-# JobFlow - Implementation Guide: Mock → Production
+# Schichtklar - Implementation Guide: Mock → Production
 
 ## Quick Start Guide
 
@@ -61,7 +61,7 @@ export function isFeatureEnabled(flag: keyof typeof FEATURE_FLAGS): boolean {
 
 // Log current configuration (Development only)
 if (FEATURE_FLAGS.IS_DEVELOPMENT && typeof window !== 'undefined') {
-  console.group('🚀 JobFlow Feature Flags');
+  console.group('🚀 Schichtklar Feature Flags');
   console.log('Mock Auth:', FEATURE_FLAGS.USE_MOCK_AUTH);
   console.log('Mock Data:', FEATURE_FLAGS.USE_MOCK_DATA);
   console.log('Realtime:', FEATURE_FLAGS.USE_REALTIME);
@@ -87,7 +87,7 @@ useEffect(() => {
   if (FEATURE_FLAGS.USE_MOCK_AUTH) {
     const mockUser: User = {
       id: 'mock-user-id',
-      email: 'nurse@jobflow.de',
+      email: 'nurse@schichtklar.de',
       displayName: 'Pflegekraft Benutzer',
       role: 'nurse',
       active: true,

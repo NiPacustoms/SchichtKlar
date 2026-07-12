@@ -81,7 +81,7 @@ get_repo_info() {
         # Falls immer noch leer, interaktiv abfragen
         if [ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ]; then
             echo ""
-            read -p "GitHub Repository Owner (z.B. patrickschmidt): " REPO_OWNER
+            read -p "GitHub Repository Owner (z.B. mein-github-user): " REPO_OWNER
             read -p "GitHub Repository Name (z.B. JobFlow): " REPO_NAME
         fi
     fi
@@ -196,7 +196,7 @@ main() {
     E2E_BASE_URL_VALUE=$(prompt_value "E2E_BASE_URL" "$E2E_BASE_URL_VALUE" false)
     set_secret "E2E_BASE_URL" "$E2E_BASE_URL_VALUE" true
     
-    E2E_ADMIN_EMAIL_VALUE="${E2E_ADMIN_EMAIL:-admin@jobflow.de}"
+    E2E_ADMIN_EMAIL_VALUE="${E2E_ADMIN_EMAIL:-admin@schichtklar.test}"
     E2E_ADMIN_EMAIL_VALUE=$(prompt_value "E2E_ADMIN_EMAIL" "$E2E_ADMIN_EMAIL_VALUE" false)
     set_secret "E2E_ADMIN_EMAIL" "$E2E_ADMIN_EMAIL_VALUE" false
     
@@ -204,7 +204,7 @@ main() {
     E2E_ADMIN_PASSWORD_VALUE=$(prompt_value "E2E_ADMIN_PASSWORD" "$E2E_ADMIN_PASSWORD_VALUE" true)
     set_secret "E2E_ADMIN_PASSWORD" "$E2E_ADMIN_PASSWORD_VALUE" false
     
-    E2E_EMPLOYEE_EMAIL_VALUE="${E2E_EMPLOYEE_EMAIL:-nurse@jobflow.de}"
+    E2E_EMPLOYEE_EMAIL_VALUE="${E2E_EMPLOYEE_EMAIL:-nurse@schichtklar.test}"
     E2E_EMPLOYEE_EMAIL_VALUE=$(prompt_value "E2E_EMPLOYEE_EMAIL" "$E2E_EMPLOYEE_EMAIL_VALUE" false)
     set_secret "E2E_EMPLOYEE_EMAIL" "$E2E_EMPLOYEE_EMAIL_VALUE" false
     
@@ -253,7 +253,7 @@ main() {
     
     # Firebase Variables
     print_info "Firebase Variables"
-    FIREBASE_PROJECT_ID_VALUE="jobflow25"
+    FIREBASE_PROJECT_ID_VALUE="schichtklar"
     FIREBASE_PROJECT_ID_VALUE=$(prompt_value "FIREBASE_PROJECT_ID" "$FIREBASE_PROJECT_ID_VALUE" false)
     set_variable "FIREBASE_PROJECT_ID" "$FIREBASE_PROJECT_ID_VALUE" false
     
@@ -276,7 +276,7 @@ main() {
     echo ""
     read -p "FIREBASE_DEPLOYMENT_NOTIFICATION_URL setzen? (j/n) [n]: " SET_NOTIFICATION_URL
     if [[ "$SET_NOTIFICATION_URL" =~ ^[Jj]$ ]]; then
-        NOTIFICATION_URL_VALUE="https://us-central1-jobflow25.cloudfunctions.net/notifyDeployment"
+        NOTIFICATION_URL_VALUE="https://us-central1-schichtklar.cloudfunctions.net/notifyDeployment"
         NOTIFICATION_URL_VALUE=$(prompt_value "FIREBASE_DEPLOYMENT_NOTIFICATION_URL" "$NOTIFICATION_URL_VALUE" false)
         set_variable "FIREBASE_DEPLOYMENT_NOTIFICATION_URL" "$NOTIFICATION_URL_VALUE" true
     fi

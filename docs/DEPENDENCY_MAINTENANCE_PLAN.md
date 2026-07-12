@@ -1,4 +1,4 @@
-# Dependency Maintenance Plan - JobFlow
+# Dependency Maintenance Plan - Schichtklar
 
 **Erstellt:** $(date)  
 **Zweck:** Plan zur Wartung und Aktualisierung von Dependencies
@@ -32,7 +32,7 @@ Dieser Plan beschreibt die empfohlenen Schritte zur Wartung der Projekt-Dependen
 
 ```bash
 # 1. Root-Projekt prüfen
-cd /Users/patrickschmidt/Desktop/Apps/JobFlow
+cd <pfad-zum-repo>/Schichtklar
 npm audit
 
 # 2. Automatische Fixes (wenn möglich)
@@ -65,7 +65,7 @@ npm audit fix
 
 ```bash
 # Root-Projekt
-cd /Users/patrickschmidt/Desktop/Apps/JobFlow
+cd <pfad-zum-repo>/Schichtklar
 npm outdated
 
 # Functions-Projekt
@@ -142,7 +142,7 @@ cp package.json package.json.backup
 cp package-lock.json package-lock.json.backup
 
 # 2. Root-Projekt bereinigen
-cd /Users/patrickschmidt/Desktop/Apps/JobFlow
+cd <pfad-zum-repo>/Schichtklar
 rm -rf node_modules package-lock.json
 npm install
 
@@ -167,7 +167,7 @@ npm run build
 
 ```bash
 # 1. Dependency-Tree analysieren
-cd /Users/patrickschmidt/Desktop/Apps/JobFlow
+cd <pfad-zum-repo>/Schichtklar
 npm list --depth=0 > dependency-tree.txt
 
 # 2. Unbenutzte Dependencies identifizieren

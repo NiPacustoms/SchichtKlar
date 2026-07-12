@@ -2,7 +2,7 @@
 
 ## Übersicht
 
-Das System überwacht und optimiert die Nutzung der OpenRouteService API für Routenberechnungen in JobFlow.
+Das System überwacht und optimiert die Nutzung der OpenRouteService API für Routenberechnungen in Schichtklar.
 
 ## Features
 

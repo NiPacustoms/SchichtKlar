@@ -1,8 +1,8 @@
-# Service-Integration in JobFlow
+# Service-Integration in Schichtklar
 
 ## Übersicht
 
-JobFlow implementiert eine vollständige Service-Integration mit React Query, optimiertem Caching, Error Boundaries und Performance-Optimierungen.
+Schichtklar implementiert eine vollständige Service-Integration mit React Query, optimiertem Caching, Error Boundaries und Performance-Optimierungen.
 
 ## 🏗️ Architektur
 

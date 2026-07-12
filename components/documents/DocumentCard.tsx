@@ -101,6 +101,7 @@ export function DocumentCard({
               size="small"
               sx={{
                 fontWeight: 600,
+                fontSize: '12px',
                 height: 28,
               }}
             />
@@ -113,7 +114,7 @@ export function DocumentCard({
                 borderColor: 'divider',
                 '&:hover': {
                   borderColor: 'primary.main',
-                  backgroundColor: 'rgba(0,95,115,0.06)',
+                  backgroundColor: 'rgba(15, 118, 110, 0.06)',
                   color: 'primary.main',
                 },
               }}
@@ -179,9 +180,9 @@ export function DocumentCard({
           PaperProps={{
             sx: {
               borderRadius: 2,
-              boxShadow: 'var(--shadow-large)',
-              border: '1px solid rgba(0,95,115,0.08)',
-              backdropFilter: 'blur(20px) saturate(180%)',
+              boxShadow: '0 2px 8px rgba(28,25,23,0.07)',
+              border: '1px solid',
+              borderColor: 'divider',
               mt: 1,
             },
           }}

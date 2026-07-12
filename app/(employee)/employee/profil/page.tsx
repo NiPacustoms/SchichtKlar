@@ -147,7 +147,7 @@ export default function ProfilePage() {
       >
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="h3" sx={{ color: 'text.primary', fontWeight: 700, mb: 2 }}>
-            JobFlow
+            Schichtklar
           </Typography>
           <Typography variant="body1" sx={{ color: 'text.secondary' }}>
             Bitte melde dich an, um fortzufahren
@@ -758,7 +758,7 @@ export default function ProfilePage() {
                                           const url = window.URL.createObjectURL(blob);
                                           const a = document.createElement('a');
                                           a.href = url;
-                                          a.download = `jobflow-data-export-${Date.now()}.json`;
+                                          a.download = `schichtklar-data-export-${Date.now()}.json`;
                                           document.body.appendChild(a);
                                           a.click();
                                           document.body.removeChild(a);
