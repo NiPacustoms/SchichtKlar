@@ -166,6 +166,17 @@ export default function HomePage() {
     }
   }, [user, loading, router, canAccessAdminArea]);
 
+  // Marketing-Seite ist immer hell: data-theme für die Dauer der Landing auf 'light'
+  // pinnen (sonst scheint der dunkle Body-Hintergrund durch); beim Verlassen zurücksetzen.
+  useEffect(() => {
+    const root = document.documentElement;
+    const prev = root.getAttribute('data-theme');
+    root.setAttribute('data-theme', 'light');
+    return () => {
+      if (prev) root.setAttribute('data-theme', prev);
+    };
+  }, []);
+
   // Minimales Loading/Weiterleitung ohne LoadingSpinner (vermeidet Absturz durch Branding/Theme)
   if (loading) {
     return (
@@ -216,9 +227,10 @@ export default function HomePage() {
       <Box
         sx={{
           minHeight: '100dvh',
-          backgroundColor: '#fafbfc',
+          backgroundColor: '#fafaf9',
           backgroundImage: gradients.light.brandLight,
-          backgroundAttachment: 'fixed',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: '100% 100vh',
           color: 'text.primary',
         }}
       >
