@@ -1,4 +1,4 @@
-# Dependency-Check Report - JobFlow
+# Dependency-Check Report - Schichtklar
 
 **Datum:** $(date)  
 **Version:** 0.1.0  
@@ -165,7 +165,7 @@ Die folgenden Pakete haben neuere Versionen verfügbar, sind aber aktuell auf de
 
 ```bash
 # Root-Projekt
-cd /Users/patrickschmidt/Desktop/Apps/JobFlow
+cd <pfad-zum-repo>/Schichtklar
 npm audit
 
 # Functions-Projekt

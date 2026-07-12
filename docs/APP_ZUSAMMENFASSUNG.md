@@ -1,13 +1,13 @@
-# JobFlow – App-Zusammenfassung
+# Schichtklar – App-Zusammenfassung
 
 **Stand:** 17. Februar 2026  
 **Zweck:** Vollständige, aktuelle Übersicht über alle Workflows, alle Funktionen (API, Cloud Functions, Services) und sämtliche UI (Seiten, Komponenten).
 
 ---
 
-## 1. Was ist JobFlow?
+## 1. Was ist Schichtklar?
 
-**JobFlow** ist eine **DSGVO-konforme Webanwendung** für **Zeitarbeitsfirmen im medizinischen Bereich**. Zielgruppe: Pflegekräfte, Ärzte, medizinisches Personal. Keine KI-Funktionen – nur bewährte Business-Logik.
+**Schichtklar** ist eine **DSGVO-konforme Webanwendung** für **Zeitarbeitsfirmen im medizinischen Bereich**. Zielgruppe: Pflegekräfte, Ärzte, medizinisches Personal. Keine KI-Funktionen – nur bewährte Business-Logik.
 
 - **Version:** 0.1.0  
 - **Sprache:** Deutsch (UI, Routen, Labels)  
@@ -60,7 +60,7 @@
 
 ### 5.1 Auth-Workflow
 
-1. **Anmelden:** `/anmelden` → E-Mail/Passwort (oder OIDC-SSO) → Session + Cookie `jobflow_role` (admin/nurse) → Redirect nach Rolle: Admin → `/admin/uebersicht`, Nurse → `/employee/arbeitsplatz`.  
+1. **Anmelden:** `/anmelden` → E-Mail/Passwort (oder OIDC-SSO) → Session + Cookie `schichtklar_role` (admin/nurse) → Redirect nach Rolle: Admin → `/admin/uebersicht`, Nurse → `/employee/arbeitsplatz`.  
 2. **Registrieren (öffentlich):** `/registrieren` – deprecated/deaktiviert.  
 3. **Admin-Registrieren:** `/admin-registrieren` → API `auth/register-admin` → User + Custom Claims.  
 4. **Passwort vergessen:** `/passwort-vergessen` → Firebase sendPasswordResetEmail.  
@@ -484,4 +484,4 @@ e2e/               – Playwright (admin, dispatcher, nurse, shared)
 
 ---
 
-Diese Zusammenfassung deckt **alle Workflows, alle Funktionen (API, Cloud Functions, Services) und die gesamte UI (Seiten + Komponenten)** der JobFlow-App ab und kann für Onboarding, Sachstandsauswertung und Planung verwendet werden.
+Diese Zusammenfassung deckt **alle Workflows, alle Funktionen (API, Cloud Functions, Services) und die gesamte UI (Seiten + Komponenten)** der Schichtklar-App ab und kann für Onboarding, Sachstandsauswertung und Planung verwendet werden.

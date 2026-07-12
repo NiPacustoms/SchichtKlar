@@ -1,4 +1,4 @@
-# JobFlow Design – Plan „Nächstes Level“
+# Schichtklar Design – Plan „Nächstes Level“
 
 Dieser Plan baut auf dem bestehenden Design-System (`.cursor/rules/01-design-system.mdc`, `docs/DESIGN_SYSTEM_2026.md`) und der aktuellen Implementierung (`lib/theme.ts`, `globals.css`, GlassCard, etc.) auf. Ziel ist eine spürbare Qualitätssteigerung bei gleichbleibender Markenidentität und technischer Stabilität.
 
@@ -19,7 +19,7 @@ Dieser Plan baut auf dem bestehenden Design-System (`.cursor/rules/01-design-sys
 
 ## 2. Vision „Nächstes Level“
 
-- **Weniger „Template“, mehr Marke**: JobFlow wirkt bewusst als eigene Produktmarke (Petrol/Mustard, Glasmorphism) statt generisches Admin-UI.
+- **Weniger „Template“, mehr Marke**: Schichtklar wirkt bewusst als eigene Produktmarke (Petrol/Mustard, Glasmorphism) statt generisches Admin-UI.
 - **Dark Mode als gleichwertige Option**: Nutzer:innen können zwischen Hell/Dunkel wählen; beide Modi sind voll durchdesigned.
 - **Ein Token-System**: Eine Quelle für Farben, Abstände, Schatten, Radius – genutzt von MUI und CSS.
 - **Konsistente Interaktion**: Jede Aktion hat klares Feedback (Hover, Focus, Loading, Success/Error); wo sinnvoll dezente Animation.
@@ -95,7 +95,7 @@ Dieser Plan baut auf dem bestehenden Design-System (`.cursor/rules/01-design-sys
 - **Ziel**: Überall dense, Sticky Header, einheitliche Toolbar (Suche, Filter, Export).
 - **Schritte**:
   1. Wiederverwendbare Wrapper-Komponente oder Hook (z. B. `DataTableToolbar`, `useTableState`) für Suche/Filter/Export.
-  2. MUI DataGrid-Konfiguration (RowHeight 40–44px, Sticky Header) im Theme oder in einer gemeinsamen `JobFlowDataGrid`-Komponente bündeln.
+  2. MUI DataGrid-Konfiguration (RowHeight 40–44px, Sticky Header) im Theme oder in einer gemeinsamen `SchichtklarDataGrid`-Komponente bündeln.
   3. Bestehende Tabellen-Views prüfen und angleichen.
 
 ---
@@ -182,7 +182,7 @@ Dieser Plan baut auf dem bestehenden Design-System (`.cursor/rules/01-design-sys
 - Keine doppelten Definitionen für Farben/Shadows; Änderungen an einer Stelle wirken überall.
 - Leere Listen/Ansichten zeigen ein einheitliches Empty-State-Pattern mit klarer Handlungsoption.
 - WCAG AA bei Kontrast und Fokus erfüllt; alle IconButtons mit ARIA-Label.
-- Das Design wirkt bewusster „JobFlow“ (Marke, Glasmorphism, Petrol/Mustard) und nicht wie ein generisches Template.
+- Das Design wirkt bewusster „Schichtklar“ (Marke, Glasmorphism, Petrol/Mustard) und nicht wie ein generisches Template.
 
 ---
 

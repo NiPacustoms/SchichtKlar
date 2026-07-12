@@ -1,4 +1,4 @@
-# JobFlow L8 – Architecture Audit (16.02.2026)
+# Schichtklar L8 – Architecture Audit (16.02.2026)
 
 **Nach Umsetzung der Plan-Actions.**
 

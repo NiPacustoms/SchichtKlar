@@ -1,6 +1,6 @@
 ---
 # Projekt
-- Name: **JobFlow**
+- Name: **Schichtklar**
 - Zweck: Zeitarbeits-App für medizinisches Personal (ohne KI-Funktionen)
 - Ziel: **Desktop-First** (optimiert für ≥1280px), responsive auf Mobile
 - Tech: React 18 + TypeScript + Webpack + MUI 5 + Firebase + React Query

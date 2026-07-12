@@ -2,7 +2,7 @@
 
 /**
  * Firestore Seed Script
- * Erstellt Test-Daten für die JobFlow App
+ * Erstellt Test-Daten für die Schichtklar App
  * 
  * ⚠️ WICHTIG: Dieses Script sollte NUR manuell ausgeführt werden!
  * 
@@ -37,14 +37,27 @@ const {
   signOut,
 } = require('firebase/auth');
 
-// Firebase Konfiguration
+// Firebase Konfiguration – ausschließlich aus der Umgebung (.env.local), keine Fallbacks
+const requiredEnv = [
+  'NEXT_PUBLIC_FIREBASE_API_KEY',
+  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
+  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+  'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+  'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+  'NEXT_PUBLIC_FIREBASE_APP_ID',
+];
+const missing = requiredEnv.filter((k) => !process.env[k]);
+if (missing.length > 0) {
+  console.error(`Fehlende Umgebungsvariablen: ${missing.join(', ')} – bitte .env.local konfigurieren.`);
+  process.exit(1);
+}
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyB__nXEaSa4Hx_0up_onhmIdUMkx4tcuYk",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "jobflow25.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "jobflow25",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "jobflow25.firebasestorage.app",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "350790971531",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:350790971531:web:ac2a19940aa9317a54e48e",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase
@@ -57,7 +70,7 @@ const auth = getAuth(app);
 // Test-Daten
 const testUsers = [
   {
-    email: 'admin@jobflow.de',
+    email: 'admin@schichtklar.test',
     password: 'admin123',
     displayName: 'Admin User',
     role: 'admin',
@@ -74,7 +87,7 @@ const testUsers = [
     }
   },
   {
-    email: 'dispatcher@jobflow.de',
+    email: 'dispatcher@schichtklar.test',
     password: 'dispatcher123',
     displayName: 'Admin 2',
     role: 'admin',
@@ -91,7 +104,7 @@ const testUsers = [
     }
   },
   {
-    email: 'nurse1@jobflow.de',
+    email: 'nurse1@schichtklar.test',
     password: 'nurse123',
     displayName: 'Maria Schmidt',
     role: 'nurse',
@@ -108,7 +121,7 @@ const testUsers = [
     }
   },
   {
-    email: 'nurse2@jobflow.de',
+    email: 'nurse2@schichtklar.test',
     password: 'nurse123',
     displayName: 'Thomas Müller',
     role: 'nurse',
@@ -449,10 +462,10 @@ async function seedFirestore() {
     console.log(`- Assignments created: ${shiftIds.length}`);
     
     console.log('\n🔑 Test Login Credentials:');
-    console.log('Admin: admin@jobflow.de / admin123');
-    console.log('Admin 2: dispatcher@jobflow.de / dispatcher123');
-    console.log('Nurse 1: nurse1@jobflow.de / nurse123');
-    console.log('Nurse 2: nurse2@jobflow.de / nurse123');
+    console.log('Admin: admin@schichtklar.test / admin123');
+    console.log('Admin 2: dispatcher@schichtklar.test / dispatcher123');
+    console.log('Nurse 1: nurse1@schichtklar.test / nurse123');
+    console.log('Nurse 2: nurse2@schichtklar.test / nurse123');
     
   } catch (error) {
     console.error('❌ Seeding failed:', error);

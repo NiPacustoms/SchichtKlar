@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Button, Avatar, alpha, useTheme } from '@mui/material';
+import { Box, Typography, Button, Avatar } from '@mui/material';
 import { GlassCard } from './GlassCard';
 import {
   Assignment as AssignmentIcon,
@@ -41,13 +41,11 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   size = 'medium',
   className: _className = 'glass',
 }) => {
-  const theme = useTheme();
-  const iconSize = size === 'small' ? 40 : size === 'medium' ? 56 : 72;
-  const spacing = size === 'small' ? 2 : size === 'medium' ? 4 : 5;
+  const iconSize = size === 'small' ? 40 : size === 'medium' ? 64 : 80;
+  const spacing = size === 'small' ? 2 : size === 'medium' ? 3 : 4;
 
   return (
     <GlassCard
-      hover={false}
       sx={{
         p: spacing,
         display: 'flex',
@@ -62,9 +60,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         sx={{
           width: iconSize,
           height: iconSize,
-          backgroundColor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.2 : 0.08),
-          color: theme.palette.mode === 'dark' ? 'primary.light' : 'primary.main',
+          backgroundColor: 'primary.main',
+          color: 'primary.contrastText',
           mb: 2,
+          boxShadow: 'none',
         }}
       >
         {icon}
@@ -72,18 +71,25 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 
       <Typography
         variant={size === 'small' ? 'h6' : size === 'medium' ? 'h5' : 'h4'}
-        sx={{ mb: 1, color: 'text.primary' }}
+        sx={{
+          fontWeight: 700,
+          mb: 1,
+          color: 'text.primary',
+          fontSize: size === 'small' ? '18px' : size === 'medium' ? '24px' : '32px',
+        }}
       >
         {title}
       </Typography>
 
       {description && (
         <Typography
-          variant="body2"
+          variant="body1"
           sx={{
             color: 'text.secondary',
             mb: 3,
             maxWidth: 400,
+            fontSize: '15px',
+            lineHeight: 1.6,
           }}
         >
           {description}
@@ -97,6 +103,13 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
               variant="contained"
               onClick={action.onClick}
               size={size === 'small' ? 'small' : 'medium'}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                px: 3,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
+              }}
             >
               {action.label}
             </Button>
@@ -106,6 +119,13 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
               variant="outlined"
               onClick={secondaryAction.onClick}
               size={size === 'small' ? 'small' : 'medium'}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                px: 3,
+                borderWidth: 1.5,
+              }}
             >
               {secondaryAction.label}
             </Button>

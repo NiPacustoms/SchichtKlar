@@ -40,12 +40,12 @@ export const DEFAULT_PRESET_COLOR = COLOR_PRESETS[0].value;
 
 /** Genau 8 Vorauswahlen für Schichtfarben – keine Pipette, nur diese Farben. */
 export const SHIFT_COLOR_PRESETS: ColorPreset[] = [
-  { value: '#005f73', label: 'Petrol' },
-  { value: '#0a9396', label: 'Teal' },
+  { value: '#0f766e', label: 'Teal' },
+  { value: '#14b8a6', label: 'Türkis' },
   { value: '#388e3c', label: 'Grün' },
   { value: '#1976d2', label: 'Blau' },
   { value: '#7b1fa2', label: 'Lila' },
-  { value: '#e8aa42', label: 'Senf' },
+  { value: '#d97706', label: 'Amber' },
   { value: '#f57c00', label: 'Orange' },
   { value: '#d32f2f', label: 'Rot' },
 ];

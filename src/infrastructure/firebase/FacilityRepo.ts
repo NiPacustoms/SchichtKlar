@@ -42,7 +42,7 @@ function mapDocToFacility(
     phone: String(data.phone ?? ''),
     email: String(data.email ?? ''),
     stations,
-    colorCode: String(data.colorCode ?? '#005f73'),
+    colorCode: String(data.colorCode ?? '#0f766e'),
     debtorNumber: String(data.debtorNumber ?? ''),
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),

@@ -1,4 +1,4 @@
-# JobFlow Environment Configuration
+# Schichtklar Environment Configuration
 
 ## Development Setup (Mock Mode)
 
@@ -40,7 +40,7 @@ NEXT_PUBLIC_USE_EMULATOR=false
 
 # Application Configuration
 NEXT_PUBLIC_APP_ENV=staging
-NEXT_PUBLIC_APP_URL=https://staging.jobflow.app
+NEXT_PUBLIC_APP_URL=https://staging.schichtklar.app
 
 # Feature Flags - STAGING (Partial Migration)
 NEXT_PUBLIC_ENABLE_MOCK_AUTH=false
@@ -64,7 +64,7 @@ NEXT_PUBLIC_USE_EMULATOR=false
 
 # Application Configuration
 NEXT_PUBLIC_APP_ENV=production
-NEXT_PUBLIC_APP_URL=https://jobflow.app
+NEXT_PUBLIC_APP_URL=https://schichtklar.app
 
 # Feature Flags - PRODUCTION (Full Migration)
 NEXT_PUBLIC_ENABLE_MOCK_AUTH=false
@@ -119,7 +119,7 @@ npm run deploy:staging
 cp .env.staging .env.production
 
 # Update URLs and project IDs for production
-sed -i 's/staging.jobflow.app/jobflow.app/' .env.production
+sed -i 's/staging.schichtklar.app/schichtklar.app/' .env.production
 sed -i 's/your_staging_project/your_production_project/' .env.production
 
 # Deploy to production
@@ -133,7 +133,7 @@ Create `scripts/migrate-to-production.sh`:
 ```bash
 #!/bin/bash
 
-echo "🚀 JobFlow Migration Script"
+echo "🚀 Schichtklar Migration Script"
 echo "=========================="
 
 # Check if .env.local exists

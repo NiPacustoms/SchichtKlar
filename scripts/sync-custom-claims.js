@@ -25,10 +25,10 @@ const force = args.includes('--force');
 
 // Lade Service Account Credentials
 const possiblePaths = [
-  path.join(__dirname, '../.keys/jobflow25-admin.json'),
-  path.join(process.env.HOME || process.env.USERPROFILE || '', '.keys/jobflow25-admin.json'),
-  '/Users/patrickschmidt/.keys/jobflow25-admin.json',
-];
+  process.env.GOOGLE_APPLICATION_CREDENTIALS || '',
+  path.join(__dirname, '../.keys/service-account.json'),
+  path.join(process.env.HOME || process.env.USERPROFILE || '', '.keys/service-account.json'),
+].filter(Boolean);
 
 let serviceAccountPath = null;
 for (const p of possiblePaths) {

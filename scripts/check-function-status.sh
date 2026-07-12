@@ -4,9 +4,9 @@
 
 set -euo pipefail
 
-FUNCTION_NAME="${1:-ssrjobflow25}"
+FUNCTION_NAME="${1:-ssrschichtklar}"
 REGION="${2:-europe-west1}"
-PROJECT_ID="${3:-jobflow25}"
+PROJECT_ID="${3:-schichtklar}"
 
 echo "🔍 Prüfe Status der Function: $FUNCTION_NAME"
 echo "=============================================="

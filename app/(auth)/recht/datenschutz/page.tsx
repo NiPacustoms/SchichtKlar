@@ -32,8 +32,8 @@ export default function PrivacyPage() {
     }
   }, []);
 
-  const companyName = legalInfo?.companyName || 'JobFlow';
-  const companyEmail = legalInfo?.contact?.email || 'info@jobflow.de';
+  const companyName = legalInfo?.companyName || 'Schichtklar';
+  const companyEmail = legalInfo?.contact?.email || 'info@example.com';
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>

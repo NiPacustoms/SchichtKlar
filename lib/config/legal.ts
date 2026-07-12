@@ -46,7 +46,7 @@ export interface LegalInfo {
  * Alternativ: Daten aus SystemSettings oder ENV-Variablen laden
  */
 export const DEFAULT_LEGAL_INFO: LegalInfo = {
-  companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || 'JobFlow GmbH',
+  companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || 'Musterfirma GmbH',
   legalForm: process.env.NEXT_PUBLIC_LEGAL_FORM || 'GmbH',
   address: {
     street: process.env.NEXT_PUBLIC_COMPANY_STREET || 'Musterstraße 123',
@@ -55,10 +55,10 @@ export const DEFAULT_LEGAL_INFO: LegalInfo = {
     country: process.env.NEXT_PUBLIC_COMPANY_COUNTRY || 'Deutschland',
   },
   contact: {
-    email: process.env.NEXT_PUBLIC_COMPANY_EMAIL || 'info@jobflow.de',
+    email: process.env.NEXT_PUBLIC_COMPANY_EMAIL || 'info@example.com',
     phone: process.env.NEXT_PUBLIC_COMPANY_PHONE || '+49 123 456789',
     fax: process.env.NEXT_PUBLIC_COMPANY_FAX,
-    website: process.env.NEXT_PUBLIC_COMPANY_WEBSITE || process.env.NEXT_PUBLIC_APP_URL || 'https://jobflow.app',
+    website: process.env.NEXT_PUBLIC_COMPANY_WEBSITE || process.env.NEXT_PUBLIC_APP_URL || 'https://example.com',
   },
   registration: {
     registerType: 'Handelsregister',
@@ -104,7 +104,7 @@ export function validateLegalConfig(): void {
   const companyStreet = process.env.NEXT_PUBLIC_COMPANY_STREET;
   const companyEmail = process.env.NEXT_PUBLIC_COMPANY_EMAIL;
 
-  if (companyName === 'JobFlow GmbH' || companyName === 'JobFlow' || companyStreet === 'Musterstraße 123' || companyEmail === 'info@jobflow.de') {
+  if (companyName === 'Musterfirma GmbH' || companyStreet === 'Musterstraße 123' || companyEmail === 'info@example.com') {
     throw new Error(
       'PRODUCTION BLOCKER: Legal configuration contains mock data. ' +
       'Please set the following ENV variables with real company data: ' +

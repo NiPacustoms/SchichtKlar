@@ -1,4 +1,4 @@
-# JobFlow – Sachstand & Konsolidierte Dokumentations-Zusammenfassung
+# Schichtklar – Sachstand & Konsolidierte Dokumentations-Zusammenfassung
 
 **Stand:** 2026-02-16  
 **Zweck:** Zentrale Referenz für Sachstandsauswertung und Onboarding. Basiert auf der vollständigen Projekt-Dokumentation (ALLE_DOKUMENTATION.md, APP_ZUSAMMENFASSUNG, README, Audits, Roadmaps, Checklisten).
@@ -7,9 +7,9 @@
 
 ## 1. App-Überblick
 
-### 1.1 Was ist JobFlow?
+### 1.1 Was ist Schichtklar?
 
-JobFlow ist eine **DSGVO-konforme Webanwendung** für Zeitarbeitsfirmen im **medizinischen Bereich**. Kernzweck:
+Schichtklar ist eine **DSGVO-konforme Webanwendung** für Zeitarbeitsfirmen im **medizinischen Bereich**. Kernzweck:
 
 - **Personalplanung** für Pflegekräfte, Ärzte etc.
 - **Zeiterfassung** mit GPS, ArbZG-Compliance, Pausen und Nettozeit

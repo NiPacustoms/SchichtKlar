@@ -33,9 +33,8 @@ if (!userId && !syncAll && !findMissing) {
 
 // Lade Service Account Credentials
 const possiblePaths = [
-  path.join(__dirname, '../.keys/jobflow25-admin.json'),
-  path.join(process.env.HOME || process.env.USERPROFILE || '', '.keys/jobflow25-admin.json'),
-  '/Users/patrickschmidt/.keys/jobflow25-admin.json',
+  path.join(__dirname, '../.keys/schichtklar-admin.json'),
+  path.join(process.env.HOME || process.env.USERPROFILE || '', '.keys/schichtklar-admin.json'),
 ];
 
 let serviceAccountPath = null;

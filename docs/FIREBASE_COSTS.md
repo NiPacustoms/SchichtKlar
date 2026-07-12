@@ -1,8 +1,8 @@
-# Firebase Hosting Kostenübersicht - JobFlow
+# Firebase Hosting Kostenübersicht - Schichtklar
 
 ## Konfiguration
 
-- **Projekt:** jobflow25
+- **Projekt:** schichtklar
 - **Region:** europe-west1 (Belgien)
 - **Tarif:** Blaze Plan (Pay-as-you-go)
 - **Hosting:** Firebase Hosting mit Next.js SSR
@@ -154,7 +154,7 @@ Kosten: ~$63-65/Monat
 # Budget-Alarm erstellen
 gcloud billing budgets create \
   --billing-account=BILLING_ACCOUNT_ID \
-  --display-name="JobFlow Monthly Budget" \
+  --display-name="Schichtklar Monthly Budget" \
   --budget-amount=50USD \
   --threshold-rule=percent=50 \
   --threshold-rule=percent=90 \

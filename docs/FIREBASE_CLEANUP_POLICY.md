@@ -22,7 +22,7 @@ Die Cleanup Policy ist **optional** und dient zur automatischen Bereinigung alte
 Nach dem ersten erfolgreichen Deployment:
 
 ```bash
-firebase functions:artifacts:setpolicy --project=jobflow25 --location=europe-west1
+firebase functions:artifacts:setpolicy --project=schichtklar --location=europe-west1
 ```
 
 ### Option 2: Automatisch im Workflow

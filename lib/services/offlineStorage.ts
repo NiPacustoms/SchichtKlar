@@ -3,7 +3,7 @@
  * Robuster als localStorage, höhere Kapazität, überlebt Browser-Neustart.
  */
 
-const DB_NAME = 'JobFlowOffline';
+const DB_NAME = 'SchichtklarOffline';
 const DB_VERSION = 1;
 const STORE_NAME = 'queue';
 

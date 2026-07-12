@@ -3,6 +3,6 @@
 # Alle anderen und alle neuen Nutzer müssen sich weiter per E-Mail-Link verifizieren.
 # Leerzeilen und Zeilen mit # werden ignoriert.
 
-admin@jobflow.de
-dispatcher@jobflow.de
-nurse1@jobflow.de
+admin@schichtklar.test
+dispatcher@schichtklar.test
+nurse1@schichtklar.test

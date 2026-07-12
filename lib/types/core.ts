@@ -1,5 +1,5 @@
 /**
- * Core Types - Foundation Types for JobFlow Application
+ * Core Types - Foundation Types for Schichtklar Application
  * 
  * These are the core domain types that form the foundation of the application.
  * They should be imported and extended by feature-specific types.

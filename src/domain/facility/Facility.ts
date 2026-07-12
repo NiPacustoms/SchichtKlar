@@ -41,7 +41,7 @@ export class Facility {
     this.phone = data.phone;
     this.email = data.email;
     this.stations = data.stations ?? [];
-    this.colorCode = data.colorCode ?? '#005f73';
+    this.colorCode = data.colorCode ?? '#0f766e';
     this.debtorNumber = data.debtorNumber ?? '';
     this.createdAt = toDate(data.createdAt);
     this.updatedAt = toDate(data.updatedAt);

@@ -11,23 +11,23 @@ Jeder Agent hat seine eigene Prompt-Datei im `.cursor/` Verzeichnis:
 ## 📁 Worktree erstellen
 
 ```bash
-cd /Users/patrickschmidt/Desktop/Apps/JobFlow
+cd <pfad-zum-repo>/Schichtklar
 
 # Agent 1 Worktree
-git worktree add ../JobFlow-agent1 agent1-mui-grid-fixes
-cd ../JobFlow-agent1
+git worktree add ../Schichtklar-agent1 agent1-mui-grid-fixes
+cd ../Schichtklar-agent1
 cat .cursor/AGENT1-PROMPT.md
 
 # Agent 2 Worktree
-cd /Users/patrickschmidt/Desktop/Apps/JobFlow
-git worktree add ../JobFlow-agent2 agent2-api-routes-fixes
-cd ../JobFlow-agent2
+cd <pfad-zum-repo>/Schichtklar
+git worktree add ../Schichtklar-agent2 agent2-api-routes-fixes
+cd ../Schichtklar-agent2
 cat .cursor/AGENT2-PROMPT.md
 
 # Agent 3 Worktree
-cd /Users/patrickschmidt/Desktop/Apps/JobFlow
-git worktree add ../JobFlow-agent3 agent3-type-system-fixes
-cd ../JobFlow-agent3
+cd <pfad-zum-repo>/Schichtklar
+git worktree add ../Schichtklar-agent3 agent3-type-system-fixes
+cd ../Schichtklar-agent3
 cat .cursor/AGENT3-PROMPT.md
 ```
 
@@ -45,7 +45,7 @@ Jeder Agent:
 
 ```bash
 # 1. In den Worktree wechseln
-cd ../JobFlow-agent1  # oder agent2/agent3
+cd ../Schichtklar-agent1  # oder agent2/agent3
 
 # 2. Prompt lesen
 cat .cursor/AGENT1-PROMPT.md  # oder AGENT2/AGENT3
@@ -75,7 +75,7 @@ git commit -m "Agent1: Grid-Komponenten-Fehler behoben"
 Nach Abschluss aller drei Agenten:
 
 ```bash
-cd /Users/patrickschmidt/Desktop/Apps/JobFlow
+cd <pfad-zum-repo>/Schichtklar
 
 # Alle Branches mergen
 git checkout main

@@ -1,4 +1,4 @@
-# JobFlow – Architektur-Implementierungs-Roadmap
+# Schichtklar – Architektur-Implementierungs-Roadmap
 
 **Basis:** [ARCHITECTURE_AUDIT_REPORT.md](./ARCHITECTURE_AUDIT_REPORT.md)  
 **Stand:** 2025-02-16  

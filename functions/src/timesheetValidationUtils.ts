@@ -85,25 +85,37 @@ export async function validateTimesheetArbZG(
     errors.push('Startzeit kann nicht in der Zukunft liegen');
   }
 
-  // Endzeit muss nach Startzeit liegen
-  if (endTime <= startTime) {
-    // Nachtschicht: Endzeit am nächsten Tag
-    const nextDayEnd = new Date(endTime);
-    nextDayEnd.setDate(nextDayEnd.getDate() + 1);
-    if (nextDayEnd <= startTime) {
+  // Endzeit normalisieren: Nachtschicht über Mitternacht → Endzeit auf Folgetag.
+  // WICHTIG: Alle nachfolgenden Prüfungen (Überschneidung!) nutzen die
+  // normalisierte Endzeit – vorher wurde die Roh-Endzeit verwendet, wodurch
+  // Überschneidungsprüfungen bei Nachtschichten wirkungslos waren.
+  let normalizedEnd = new Date(endTime);
+  if (normalizedEnd <= startTime) {
+    normalizedEnd = new Date(normalizedEnd.getTime() + 24 * 60 * 60 * 1000);
+    if (normalizedEnd <= startTime) {
       errors.push('Endzeit muss nach der Startzeit liegen');
+      return { isValid: false, errors, warnings };
     }
   }
 
-  // 2. Arbeitszeitberechnung
-  let workingMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
-  
-  // Nachtschicht-Handling
-  if (workingMinutes < 0) {
-    workingMinutes += 24 * 60;
-  }
+  // 2. Arbeitszeitberechnung (auf Basis der normalisierten Endzeit)
+  const workingMinutes = Math.floor(
+    (normalizedEnd.getTime() - startTime.getTime()) / (1000 * 60)
+  );
 
   const breakMinutes = timesheet.breakMinutes || 0;
+
+  // Plausibilität: Pause darf die Arbeitszeit nicht aufzehren (verhindert
+  // negative Netto-Stunden in der Datenbank)
+  if (breakMinutes < 0) {
+    errors.push('Pausenminuten dürfen nicht negativ sein');
+  }
+  if (breakMinutes >= workingMinutes) {
+    errors.push(
+      `Pause (${breakMinutes} Min) ist länger oder gleich der Arbeitszeit (${workingMinutes} Min)`
+    );
+    return { isValid: false, errors, warnings };
+  }
   const grossWorkingHours = workingMinutes / 60; // Brutto-Arbeitszeit (vor Pausenabzug)
   const netWorkingHours = (workingMinutes - breakMinutes) / 60; // Netto-Arbeitszeit (nach Pausenabzug)
 
@@ -146,11 +158,11 @@ export async function validateTimesheetArbZG(
     );
   }
 
-  // 7. Überschneidungsprüfung
+  // 7. Überschneidungsprüfung (normalisierte Endzeit – korrekt für Nachtschichten)
   const overlaps = await checkTimesheetOverlaps(
     timesheet.userId,
     startTime,
-    endTime,
+    normalizedEnd,
     timesheet.id
   );
   if (overlaps.length > 0) {
@@ -209,9 +221,17 @@ async function validateRestPeriod(
       const endDateTime = new Date(timesheetDate);
       endDateTime.setHours(hours, minutes || 0, 0, 0);
 
-      // Wenn Endzeit nach Mitternacht liegt (Nachtschicht)
-      if (endDateTime < timesheetDate) {
-        endDateTime.setDate(endDateTime.getDate() + 1);
+      // Nachtschicht: Endzeit liegt VOR der Startzeit derselben Schicht
+      // → Ende ist am Folgetag. (Vorher wurde fälschlich gegen Mitternacht
+      // verglichen – die Bedingung konnte nie zutreffen, die Ruhezeit wurde
+      // bei Nachtschichten um bis zu 24h zu früh angesetzt.)
+      if (data.startTime) {
+        const [sh, sm] = String(data.startTime).split(':').map(Number);
+        const startDateTime = new Date(timesheetDate);
+        startDateTime.setHours(sh, sm || 0, 0, 0);
+        if (endDateTime <= startDateTime) {
+          endDateTime.setDate(endDateTime.getDate() + 1);
+        }
       }
 
       if (endDateTime < newStartTime) {

@@ -1,4 +1,4 @@
-# JobFlow Production Readiness Audit (RE-RUN)
+# Schichtklar Production Readiness Audit (RE-RUN)
 
 **Datum:** 2025-01-27  
 **Auditor:** Senior Production-Readiness Auditor  
@@ -16,7 +16,7 @@
 ## BLOCKERS (must fix before go-live)
 
 - **[B1] Legal-Config: Mock-Daten in Production** ✅ **BEHEBBAR**
-  - **Problem:** `lib/config/legal.ts` verwendet noch Platzhalter-Daten (JobFlow GmbH, Musterstraße 123, etc.)
+  - **Problem:** `lib/config/legal.ts` verwendet noch Platzhalter-Daten (Schichtklar GmbH, Musterstraße 123, etc.)
   - **Impact:** Rechtlich nicht zulässig für Produktion
   - **Lösung:** ENV-Variablen `NEXT_PUBLIC_COMPANY_*` mit echten Firmendaten setzen
   - **Status:** Echte Firmendaten bereitgestellt (AufAbruf GmbH):
@@ -326,7 +326,7 @@
 
 ## Fazit
 
-Die JobFlow-App ist **grundsätzlich produktionsreif**, hat aber **3 kritische BLOCKER**, die vor Go-Live behoben werden müssen:
+Die Schichtklar-App ist **grundsätzlich produktionsreif**, hat aber **3 kritische BLOCKER**, die vor Go-Live behoben werden müssen:
 
 1. Legal-Config mit echten Firmendaten
 2. Sentry DSN für Error-Tracking

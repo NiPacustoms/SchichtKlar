@@ -1,5 +1,5 @@
 /**
- * Zentrales Logging-Utility für JobFlow
+ * Zentrales Logging-Utility für Schichtklar
  * 
  * Optimiert für Performance:
  * - In Production werden Logs deaktiviert (tree-shaking)

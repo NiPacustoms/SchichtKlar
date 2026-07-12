@@ -30,7 +30,7 @@ export function GlobalHeader() {
   }, []);
 
   const brandingData = branding ?? {
-    companyName: 'JobFlow',
+    companyName: 'Schichtklar',
     companyLogo: undefined,
     showLogo: true,
   };

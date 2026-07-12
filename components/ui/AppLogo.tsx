@@ -3,10 +3,10 @@
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import { getAppLogoAlt, getAppLogoUrl } from '@/lib/config/logo';
 import type { BrandingSettings } from '@/lib/hooks/useBrandingSettings';
-import { Box } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 
 export interface AppLogoProps {
-  /** Branding (companyLogo, companyName). Wenn nicht gesetzt, wird Fallback-Logo + "JobFlow" genutzt. */
+  /** Branding (companyLogo, companyName). Wenn nicht gesetzt, wird Fallback-Logo + "Schichtklar" genutzt. */
   branding?: Pick<BrandingSettings, 'companyLogo' | 'companyName'> | null;
   /** Logo anzeigen nur wenn true (z.B. branding?.showLogo). Default: true */
   showLogo?: boolean;
@@ -34,9 +34,12 @@ export function AppLogo({
   fallbackBgColor = 'transparent',
   priority = false,
 }: AppLogoProps) {
+  const theme = useTheme();
+
   if (showLogo === false) return null;
 
-  const src = getAppLogoUrl(branding?.companyLogo);
+  // Fallback-Logo ist theme-bewusst: helle Wortmarke im Dark Mode (Lesbarkeit)
+  const src = getAppLogoUrl(branding?.companyLogo, theme.palette.mode === 'dark');
   const alt = getAppLogoAlt(branding?.companyName);
 
   return (

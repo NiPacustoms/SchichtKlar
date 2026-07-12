@@ -2,8 +2,8 @@
 # Minimal notwendige Rollen für Firebase Hosting mit Next.js SSR
 # Diese Rollen sind die absoluten Minimum-Requirements
 
-PROJECT_ID="jobflow25"
-SERVICE_ACCOUNT="jobflow25@jobflow25.iam.gserviceaccount.com"
+PROJECT_ID="schichtklar"
+SERVICE_ACCOUNT="schichtklar@schichtklar.iam.gserviceaccount.com"
 
 echo "Granting MINIMAL required permissions to $SERVICE_ACCOUNT..."
 

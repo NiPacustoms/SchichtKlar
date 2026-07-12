@@ -8,7 +8,23 @@
 export const DEFAULT_APP_LOGO_URL = '/logo.svg';
 
 /** Anzeigename der App, wenn kein Firmenname in den Einstellungen gesetzt ist. */
-export const DEFAULT_APP_NAME = 'JobFlow';
+export const DEFAULT_APP_NAME = 'Schichtklar';
+
+/**
+ * Zentrale Marken-/Produktkonfiguration (Single Source of Truth).
+ * Sichtbare Produktbezeichnungen ausschließlich von hier beziehen.
+ */
+export const branding = {
+  /** Offizieller Produktname (sichtbar). */
+  appName: 'Schichtklar',
+  /** Kleinschreibung für URL-/technik-nahe Darstellung. */
+  appNameLowercase: 'schichtklar',
+  /** Kurzname (z. B. PWA short_name). */
+  appShortName: 'Schichtklar',
+  /** Produktbeschreibung (SEO/Manifest/Onboarding). */
+  appDescription:
+    'Einsatzplanung, Zeiterfassung und digitale Nachweise für moderne Personaldienstleister.',
+} as const;
 
 /**
  * Ermittelt die effektive Logo-URL: Firmenlogo oder Fallback.

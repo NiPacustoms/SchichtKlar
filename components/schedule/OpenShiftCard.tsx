@@ -1,6 +1,5 @@
 'use client';
 
-import { semanticColors } from '@/lib/design-tokens';
 import { useEffect, useMemo, useState } from 'react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { facilityService } from '@/lib/services/facilities';
@@ -149,6 +148,7 @@ export function OpenShiftCard({
             size="small"
             sx={{
               fontWeight: 600,
+              fontSize: '12px',
               height: 28,
             }}
           />
@@ -206,16 +206,17 @@ export function OpenShiftCard({
             value={occupancyPercentage}
             sx={{
               height: 8,
-              borderRadius: '999px',
+              borderRadius: 4,
               backgroundColor: 'rgba(0,0,0,0.06)',
               '& .MuiLinearProgress-bar': {
+                // Semantikfarben flach (Clean & Flat: keine Verläufe)
                 backgroundColor:
                   occupancyPercentage >= 80
-                    ? semanticColors.success.main
+                    ? 'success.main'
                     : occupancyPercentage >= 50
-                      ? semanticColors.warning.main
-                      : semanticColors.error.main,
-                borderRadius: '999px',
+                      ? 'warning.main'
+                      : 'error.main',
+                borderRadius: 4,
               },
             }}
           />
@@ -243,6 +244,7 @@ export function OpenShiftCard({
                     icon={hasQualification ? <CheckCircle /> : <Warning />}
                     sx={{
                       fontWeight: 600,
+                      fontSize: '12px',
                       height: 28,
                     }}
                   />
@@ -264,13 +266,13 @@ export function OpenShiftCard({
               borderColor: 'warning.main',
             }}
           >
-            <Typography variant="body2" fontWeight={600}>
+            <Typography variant="body2" fontWeight={600} sx={{ fontSize: '14px' }}>
               ⚠️ Fehlende Qualifikationen: {missingQualifications.join(', ')}
             </Typography>
             <Typography
               variant="caption"
               display="block"
-              sx={{ mt: 0.5 }}
+              sx={{ mt: 0.5, fontSize: '12px', lineHeight: 1.5 }}
             >
               Du kannst dich trotzdem bewerben, aber die Zuweisung ist nicht garantiert.
             </Typography>
@@ -303,7 +305,7 @@ export function OpenShiftCard({
             textTransform: 'none',
             fontWeight: 600,
             borderRadius: 2,
-            boxShadow: 'var(--shadow-soft)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
           }}
         >
           {isLoading ? 'Wird gesendet...' : isQualified ? 'Schicht anfragen' : 'Trotzdem anfragen'}

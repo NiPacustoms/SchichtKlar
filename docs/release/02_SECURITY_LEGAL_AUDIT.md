@@ -1,4 +1,4 @@
-# JobFlow - Security & Legal Audit
+# Schichtklar - Security & Legal Audit
 
 **Erstellt:** 2025-01-27  
 **Zweck:** Security-Rules, API-Validierung und Legal-Compliance prüfen
@@ -274,9 +274,9 @@
 **Datei:** `app/(auth)/legal/imprint/page.tsx`
 
 **Inhalt:**
-- JobFlow GmbH (Platzhalter)
+- Schichtklar GmbH (Platzhalter)
 - Musterstraße 123, 12345 Musterstadt (Platzhalter)
-- E-Mail: info@jobflow.de (Platzhalter)
+- E-Mail: info@schichtklar.de (Platzhalter)
 - Telefon: +49 123 456789 (Platzhalter)
 - HRB 12345 (Platzhalter)
 - Max Mustermann, Geschäftsführer (Platzhalter)

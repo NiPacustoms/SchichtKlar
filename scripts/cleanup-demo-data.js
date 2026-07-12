@@ -16,10 +16,10 @@
 const admin = require('firebase-admin');
 
 const DEMO_USER_EMAILS = [
-  'admin@jobflow.de',
-  'dispatcher@jobflow.de',
-  'nurse1@jobflow.de',
-  'nurse2@jobflow.de',
+  'admin@schichtklar.test',
+  'dispatcher@schichtklar.test',
+  'nurse1@schichtklar.test',
+  'nurse2@schichtklar.test',
 ];
 
 const DEMO_FACILITY_NAMES = [

@@ -146,7 +146,7 @@ export function SchedulePreviewCardDashboard({
                   '&:hover': onDayClick
                     ? {
                         borderColor: 'primary.main',
-                        backgroundColor: 'rgba(0, 95, 115, 0.04)',
+                        backgroundColor: 'rgba(15, 118, 110, 0.04)',
                         transform: 'translateX(4px)',
                       }
                     : {},

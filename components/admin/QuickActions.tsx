@@ -10,8 +10,11 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
+  Chip,
   Stack,
   Typography,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -25,7 +28,7 @@ import {
 import { useState } from 'react';
 import Link from 'next/link';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { radius } from '@/lib/design-tokens';
+import { radius, duration, easing } from '@/lib/design-tokens';
 
 interface QuickActionsProps {
   onCreateShift?: () => void;
@@ -34,12 +37,15 @@ interface QuickActionsProps {
   onOpenSettings?: () => void;
 }
 
+const chipTransition = `all ${duration.base}ms ${easing}`;
+
 export function QuickActions({
   onCreateShift,
   onAddStaff,
   onExportReport,
   onOpenSettings,
 }: QuickActionsProps) {
+  const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -57,123 +63,266 @@ export function QuickActions({
     handleClose();
   };
 
+  const primaryGradient = `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark ?? theme.palette.primary.main} 100%)`;
+
+  const menuPaperSx = {
+    minWidth: 200,
+    mt: 1,
+    borderRadius: radius.lg,
+    boxShadow: '0 2px 8px rgba(28,25,23,0.07)',
+    border: '1px solid',
+    borderColor: 'divider',
+  };
+
   return (
-    <GlassCard sx={{ p: 0 }} hover={false}>
-      <Box sx={{ px: 3, pt: 2.5, pb: 0 }}>
-        <Typography variant="overline" sx={{ color: 'text.secondary' }}>
+    <GlassCard sx={{ p: 0, borderRadius: radius.md }} hover={false}>
+      {/* Sektions-Header – ausreichend Abstand zu den Ecken, damit nichts abgeschnitten wird */}
+      <Box
+        sx={{
+          px: 3,
+          pt: 3,
+          pb: 0,
+        }}
+      >
+        <Typography
+          variant="overline"
+          sx={{
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            color: 'text.secondary',
+          }}
+        >
           Schnellaktionen
         </Typography>
       </Box>
 
       <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        spacing={1.5}
-        sx={{ p: 3, pt: 1.5, alignItems: { xs: 'stretch', md: 'center' } }}
+        direction={{ xs: 'column', lg: 'row' }}
+        spacing={{ xs: 2, lg: 3 }}
+        sx={{
+          p: 3,
+          pt: 2,
+          flexWrap: 'wrap',
+          alignItems: { xs: 'stretch', lg: 'center' },
+          gap: 1,
+        }}
       >
-        {/* Eine Primäraktion, eine Sekundäraktion */}
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={onCreateShift}>
+        {/* Primäre Aktionen */}
+        <Stack
+          key="primary-actions"
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1.5}
+          sx={{ width: { xs: '100%', lg: 'auto' }, minWidth: 0 }}
+        >
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={onCreateShift}
+            aria-label="Dienst anlegen"
+            sx={{
+              borderRadius: radius.md,
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3,
+              py: 1.5,
+              fontSize: '0.9375rem',
+              width: { xs: '100%', sm: 'auto' },
+              minWidth: { sm: 160 },
+              background: primaryGradient,
+              boxShadow: `0 2px 12px ${alpha(theme.palette.primary.main, 0.35)}`,
+              '&:hover': {
+                background: primaryGradient,
+                boxShadow: `0 4px 16px ${alpha(theme.palette.primary.main, 0.45)}`,
+                filter: 'brightness(1.05)',
+              },
+            }}
+          >
             Dienst anlegen
           </Button>
-          <Button variant="outlined" startIcon={<PersonAddIcon />} onClick={onAddStaff}>
+
+          <Button
+            variant="outlined"
+            startIcon={<PersonAddIcon />}
+            onClick={onAddStaff}
+            aria-label="Mitarbeiter hinzufügen"
+            sx={{
+              borderRadius: radius.md,
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3,
+              py: 1.5,
+              fontSize: '0.9375rem',
+              borderWidth: 1.5,
+              width: { xs: '100%', sm: 'auto' },
+              minWidth: { sm: 180 },
+              '&:hover': {
+                borderWidth: 1.5,
+                borderColor: 'primary.main',
+                color: 'primary.main',
+                backgroundColor: alpha(theme.palette.primary.main, 0.06),
+              },
+            }}
+          >
             Mitarbeiter hinzufügen
           </Button>
         </Stack>
 
-        {/* Sekundäre Aktionen: Quick-Links + Export + Mehr */}
+        {/* Sekundäre Aktionen (Export, Menü) + Quick-Links als eine Gruppe */}
         <Stack
-          direction="row"
-          spacing={0.5}
-          sx={{ ml: { md: 'auto' }, alignItems: 'center', flexWrap: 'wrap' }}
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1.5}
+          sx={{
+            ml: { lg: 'auto' },
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 1,
+          }}
         >
-          <Button
-            component={Link}
-            href="/admin/schichten"
-            variant="text"
-            startIcon={<ScheduleIcon />}
-            sx={{ color: 'text.secondary' }}
-          >
-            Dienstplan
-          </Button>
-          <Button
-            component={Link}
-            href="/admin/einstellungen"
-            variant="text"
-            startIcon={<SettingsIcon />}
-            sx={{ color: 'text.secondary' }}
-          >
-            Einstellungen
-          </Button>
-          <Tooltip title="Bericht exportieren">
-            <IconButton
-              onClick={onExportReport}
-              aria-label="Bericht exportieren"
-              sx={{ width: 44, height: 44, color: 'text.secondary' }}
-            >
-              <ExportIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Weitere Aktionen">
-            <IconButton
-              onClick={handleClick}
-              aria-label="Weitere Aktionen"
-              sx={{ width: 44, height: 44, color: 'text.secondary' }}
-            >
-              <MoreIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+            <Tooltip title="Bericht exportieren">
+              <IconButton
+                onClick={onExportReport}
+                aria-label="Bericht exportieren"
+                size="medium"
+                sx={{
+                  width: 40,
+                  height: 40,
+                  border: '1.5px solid',
+                  borderColor: 'divider',
+                  borderRadius: radius.md,
+                  backgroundColor: 'action.hover',
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                  },
+                  transition: chipTransition,
+                }}
+              >
+                <ExportIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Weitere Aktionen">
+              <IconButton
+                onClick={handleClick}
+                aria-label="Weitere Aktionen"
+                size="medium"
+                sx={{
+                  width: 40,
+                  height: 40,
+                  border: '1.5px solid',
+                  borderColor: 'divider',
+                  borderRadius: radius.md,
+                  backgroundColor: 'action.hover',
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                  },
+                  transition: chipTransition,
+                }}
+              >
+                <MoreIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Box component={Link} href="/admin/schichten" sx={{ textDecoration: 'none' }}>
+              <Chip
+                icon={<ScheduleIcon sx={{ fontSize: 18 }} />}
+                label="Dienstplan"
+                variant="outlined"
+                clickable
+                sx={{
+                  borderWidth: 1.5,
+                  borderRadius: radius.md,
+                  fontWeight: 500,
+                  py: 1.25,
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                  },
+                  transition: chipTransition,
+                }}
+              />
+            </Box>
+            <Box component={Link} href="/admin/einstellungen" sx={{ textDecoration: 'none' }}>
+              <Chip
+                icon={<SettingsIcon sx={{ fontSize: 18 }} />}
+                label="Einstellungen"
+                variant="outlined"
+                clickable
+                sx={{
+                  borderWidth: 1.5,
+                  borderRadius: radius.md,
+                  fontWeight: 500,
+                  py: 1.25,
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                  },
+                  transition: chipTransition,
+                }}
+              />
+            </Box>
+          </Stack>
         </Stack>
       </Stack>
 
       {/* More Actions Menu */}
-      <Menu
-        key="more-menu"
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        PaperProps={{ sx: { minWidth: 200, mt: 1, borderRadius: `${radius.md}px` } }}
-      >
-        <MenuItem onClick={() => handleAction(() => onCreateShift?.())}>
-          <ListItemIcon>
-            <AssignmentIcon />
-          </ListItemIcon>
-          <ListItemText primary="Neue Schicht" />
-        </MenuItem>
-
-        <MenuItem onClick={() => handleAction(() => onAddStaff?.())}>
-          <ListItemIcon>
-            <PersonAddIcon />
-          </ListItemIcon>
-          <ListItemText primary="Mitarbeiter hinzufügen" />
-        </MenuItem>
-
-        <Divider />
-
-        <MenuItem onClick={() => handleAction(() => onExportReport?.())}>
-          <ListItemIcon>
-            <ExportIcon />
-          </ListItemIcon>
-          <ListItemText primary="Bericht exportieren" />
-        </MenuItem>
-
-        <MenuItem onClick={() => handleAction(() => onOpenSettings?.())}>
-          <ListItemIcon>
-            <SettingsIcon />
-          </ListItemIcon>
-          <ListItemText primary="Einstellungen" />
-        </MenuItem>
-
-        <Divider />
-
-        <Link href="/admin/schichten" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <MenuItem onClick={handleClose}>
+        <Menu
+          key="more-menu"
+          anchorEl={anchorEl}
+          open={open}
+          onClose={handleClose}
+          PaperProps={{ sx: menuPaperSx }}
+        >
+          <MenuItem onClick={() => handleAction(() => onCreateShift?.())}>
             <ListItemIcon>
-              <ScheduleIcon />
+              <AssignmentIcon />
             </ListItemIcon>
-            <ListItemText primary="Dienstplan verwalten" />
+            <ListItemText primary="Neue Schicht" />
           </MenuItem>
-        </Link>
-      </Menu>
+
+          <MenuItem onClick={() => handleAction(() => onAddStaff?.())}>
+            <ListItemIcon>
+              <PersonAddIcon />
+            </ListItemIcon>
+            <ListItemText primary="Mitarbeiter hinzufügen" />
+          </MenuItem>
+
+          <Divider />
+
+          <MenuItem onClick={() => handleAction(() => onExportReport?.())}>
+            <ListItemIcon>
+              <ExportIcon />
+            </ListItemIcon>
+            <ListItemText primary="Bericht exportieren" />
+          </MenuItem>
+
+          <MenuItem onClick={() => handleAction(() => onOpenSettings?.())}>
+            <ListItemIcon>
+              <SettingsIcon />
+            </ListItemIcon>
+            <ListItemText primary="Einstellungen" />
+          </MenuItem>
+
+          <Divider />
+
+          <Link href="/admin/schichten" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <MenuItem onClick={handleClose}>
+              <ListItemIcon>
+                <ScheduleIcon />
+              </ListItemIcon>
+              <ListItemText primary="Dienstplan verwalten" />
+            </MenuItem>
+          </Link>
+        </Menu>
     </GlassCard>
   );
 }

@@ -270,7 +270,7 @@ export function useAdminSettings() {
 
   return {
     settings: settings || {
-      systemName: 'JobFlow',
+      systemName: 'Schichtklar',
       timezone: 'Europe/Berlin',
       language: 'de',
       currency: 'EUR',

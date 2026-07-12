@@ -2,7 +2,7 @@ import type { Plugin } from '@/src/plugins/registry';
 import { pluginRegistry } from '@/src/plugins/registry';
 import type { AssignmentStatusChangedEvent } from '@/src/domain/assignment/events';
 
-const PLUGIN_ID = 'jobflow/notifications';
+const PLUGIN_ID = 'schichtklar/notifications';
 
 const notificationsPlugin: Plugin = {
   meta: {

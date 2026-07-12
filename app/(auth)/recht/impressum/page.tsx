@@ -45,7 +45,7 @@ export default function ImprintPage() {
 
   // Warnung anzeigen, wenn noch Mock-Daten verwendet werden
   const isMockData =
-    legalInfo.companyName === 'JobFlow GmbH' && legalInfo.address.street === 'Musterstraße 123';
+    legalInfo.companyName === 'Musterfirma GmbH' && legalInfo.address.street === 'Musterstraße 123';
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>

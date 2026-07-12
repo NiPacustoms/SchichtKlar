@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
 import { validateTimesheetArbZG, TimesheetValidationData } from './timesheetValidationUtils';
+import { computeWorkHoursBreakdown } from './utils/workHoursBreakdown';
 
 const db = admin.firestore();
 
@@ -68,9 +69,27 @@ export const submitTimesheet = functions.https.onCall(async (data, context) => {
         end.setDate(end.getDate() + 1);
       }
 
-      let totalMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
+      const totalMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
+      if ((breakMinutes || 0) >= totalMinutes) {
+        throw new functions.https.HttpsError(
+          'invalid-argument',
+          `Pause (${breakMinutes} Min) ist länger oder gleich der Arbeitszeit (${totalMinutes} Min)`
+        );
+      }
       const totalHours = (totalMinutes - (breakMinutes || 0)) / 60;
       const roundedTotalHours = Math.round(totalHours * 100) / 100;
+
+      // Stunden-Breakdown (Nacht/Wochenende/Feiertag/Überstunden) + Zuschlag.
+      // Stundenlohn aus dem User-Dokument; ohne Lohn bleibt surchargeAmount 0.
+      let hourlyRate = 0;
+      try {
+        const userSnap = await db.collection('users').doc(timesheet.userId).get();
+        const rateRaw = userSnap.exists ? userSnap.data()?.hourlyRate : 0;
+        hourlyRate = typeof rateRaw === 'number' && rateRaw > 0 ? rateRaw : 0;
+      } catch {
+        hourlyRate = 0;
+      }
+      const breakdown = computeWorkHoursBreakdown(start, end, breakMinutes || 0, hourlyRate);
 
       // 5. VOLLSTÄNDIGE ARBZG-VALIDIERUNG (inkl. Ruhezeiten, 45-Minuten-Pause, etc.)
       const validationData: TimesheetValidationData = {
@@ -107,9 +126,14 @@ export const submitTimesheet = functions.https.onCall(async (data, context) => {
         );
       }
 
-      // 7. Timesheet aktualisieren
+      // 7. Timesheet aktualisieren (inkl. serverseitigem Stunden-Breakdown)
       transaction.update(timesheetRef, {
         totalHours: roundedTotalHours, // SERVER setzt den Wert
+        nightHours: breakdown.nightHours,
+        weekendHours: breakdown.weekendHours,
+        holidayHours: breakdown.holidayHours,
+        overtimeHours: breakdown.overtimeHours,
+        surchargeAmount: breakdown.surchargeAmount,
         status: 'submitted',
         submittedAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),

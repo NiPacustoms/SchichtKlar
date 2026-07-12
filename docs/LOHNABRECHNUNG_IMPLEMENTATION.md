@@ -2,7 +2,7 @@
 
 ## Übersicht
 
-Das Lohnabrechnungssystem für JobFlow wurde erfolgreich implementiert und bietet eine vollständige, rechtskonforme Lösung für die Gehaltsabrechnung deutscher Zeitarbeitsfirmen.
+Das Lohnabrechnungssystem für Schichtklar wurde erfolgreich implementiert und bietet eine vollständige, rechtskonforme Lösung für die Gehaltsabrechnung deutscher Zeitarbeitsfirmen.
 
 ## Implementierte Features
 
@@ -268,7 +268,7 @@ firebase deploy --only hosting
 
 ## Fazit
 
-Das Lohnabrechnungssystem für JobFlow wurde erfolgreich implementiert und bietet:
+Das Lohnabrechnungssystem für Schichtklar wurde erfolgreich implementiert und bietet:
 
 - ✅ **Vollständige Rechtskonformität** nach deutschem Recht
 - ✅ **Moderne Technologie** mit React, TypeScript, Firebase
@@ -277,4 +277,4 @@ Das Lohnabrechnungssystem für JobFlow wurde erfolgreich implementiert und biete
 - ✅ **Automatisierte Prozesse** für Effizienz
 - ✅ **Umfassende Dokumentation** für Wartung
 
-Das System ist produktionsreif und kann sofort in der JobFlow-Anwendung eingesetzt werden.
+Das System ist produktionsreif und kann sofort in der Schichtklar-Anwendung eingesetzt werden.

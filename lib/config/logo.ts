@@ -6,15 +6,20 @@
 /** Fallback-App-Logo, wenn kein Firmenlogo (companyLogo) gesetzt ist. URL-sicher, kein Sonderzeichen. */
 export const DEFAULT_APP_LOGO = '/logo-default.png';
 
+/** Dark-Mode-Variante (helle Wortmarke) – Lesbarkeit auf dunklen Flächen */
+export const DEFAULT_APP_LOGO_DARK = '/logo-default-dark.png';
+
 /** App-Name für Alt-Texte und Fallbacks */
-export const APP_NAME = 'JobFlow';
+export const APP_NAME = 'Schichtklar';
 
 /**
  * Gibt die anzuzeigende Logo-URL zurück: Firmenlogo oder Fallback.
  * @param companyLogo - Optional: vom Branding hochgeladenes Logo
+ * @param isDark - true → Dark-Mode-Variante des Fallback-Logos (helle Wortmarke)
  */
-export function getAppLogoUrl(companyLogo?: string | null): string {
-  return companyLogo && companyLogo.trim() !== '' ? companyLogo : DEFAULT_APP_LOGO;
+export function getAppLogoUrl(companyLogo?: string | null, isDark = false): string {
+  if (companyLogo && companyLogo.trim() !== '') return companyLogo;
+  return isDark ? DEFAULT_APP_LOGO_DARK : DEFAULT_APP_LOGO;
 }
 
 /**

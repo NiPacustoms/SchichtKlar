@@ -10,8 +10,8 @@ export interface InviteEmailPayload {
 export function renderInviteEmailHtml(payload: InviteEmailPayload): string {
   return `
     <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111;">
-      <h2>Einladung zu JobFlow</h2>
-      <p>Sie wurden von <strong>${payload.companyName}</strong> eingeladen, JobFlow beizutreten.</p>
+      <h2>Einladung zu Schichtklar</h2>
+      <p>Sie wurden von <strong>${payload.companyName}</strong> eingeladen, Schichtklar beizutreten.</p>
       <p>Bitte klicken Sie innerhalb von 24 Stunden auf den folgenden Link, um Ihr Konto zu erstellen:</p>
       <p>
         <a href="${payload.acceptLink}" style="display:inline-block;background:#3b82f6;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">

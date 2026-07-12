@@ -16,8 +16,8 @@ export interface InviteEmailPayload {
 
 const INVITE_HTML = (companyName: string, acceptLink: string) => `
 <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111;">
-  <h2>Einladung zu JobFlow</h2>
-  <p>Sie wurden von <strong>${companyName}</strong> eingeladen, JobFlow beizutreten.</p>
+  <h2>Einladung zu Schichtklar</h2>
+  <p>Sie wurden von <strong>${companyName}</strong> eingeladen, Schichtklar beizutreten.</p>
   <p>Bitte klicken Sie innerhalb von 24 Stunden auf den folgenden Link, um Ihr Konto zu erstellen:</p>
   <p>
     <a href="${acceptLink}" style="display:inline-block;background:#3b82f6;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
@@ -40,14 +40,14 @@ export async function sendInvitationEmailServer(
   const companyName = payload.companyName || 'Ihre Firma';
   const html = INVITE_HTML(companyName, payload.acceptLink);
   const text = [
-    `Sie wurden von ${companyName} eingeladen, JobFlow zu nutzen.`,
+    `Sie wurden von ${companyName} eingeladen, Schichtklar zu nutzen.`,
     `Bitte öffnen Sie innerhalb von 24 Stunden folgenden Link: ${payload.acceptLink}`,
   ].join('\n\n');
 
   const resendKey = process.env.RESEND_API_KEY?.trim();
   if (resendKey) {
     try {
-      const from = process.env.RESEND_FROM?.trim() || 'JobFlow <onboarding@resend.dev>';
+      const from = process.env.RESEND_FROM?.trim() || 'Schichtklar <onboarding@resend.dev>';
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -57,7 +57,7 @@ export async function sendInvitationEmailServer(
         body: JSON.stringify({
           from,
           to: payload.to,
-          subject: 'Einladung zu JobFlow',
+          subject: 'Einladung zu Schichtklar',
           html,
           text,
         }),

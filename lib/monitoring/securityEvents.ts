@@ -19,7 +19,9 @@ async function postWebhook(url: string, payload: unknown) {
 
 export async function emitSecurityEvent(event: Omit<SecurityEvent, 'createdAt'>) {
   const created = { ...event, createdAt: Date.now() };
-  const webhook = process.env.NEXT_PUBLIC_SECURITY_WEBHOOK_URL || process.env.SECURITY_WEBHOOK_URL;
+  // Nur serverseitige Variable: Ein Security-Webhook darf niemals ins Client-Bundle
+  // gelangen (NEXT_PUBLIC_* wäre öffentlich einsehbar und missbrauchbar).
+  const webhook = process.env.SECURITY_WEBHOOK_URL;
   if (webhook) {
     await postWebhook(webhook, created);
   }

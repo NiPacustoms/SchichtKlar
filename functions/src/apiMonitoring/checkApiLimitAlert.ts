@@ -61,7 +61,7 @@ export const checkApiLimitAlert = functions.pubsub
           }
 
           const remaining = Math.max(0, DAILY_LIMIT - dailyCount);
-          const subject = `⚠️ JobFlow: API-Limit fast erreicht (${percentageUsed.toFixed(1)}%)`;
+          const subject = `⚠️ Schichtklar: API-Limit fast erreicht (${percentageUsed.toFixed(1)}%)`;
           const html = `
             <!DOCTYPE html>
             <html>
@@ -109,7 +109,7 @@ export const checkApiLimitAlert = functions.pubsub
                   </ul>
                   
                   <div class="footer">
-                    <p>Diese E-Mail wurde automatisch von JobFlow generiert.</p>
+                    <p>Diese E-Mail wurde automatisch von Schichtklar generiert.</p>
                     <p>Sie erhalten diese E-Mail nur einmal pro Tag, auch wenn das Limit weiter steigt.</p>
                   </div>
                 </div>
@@ -132,7 +132,7 @@ Empfehlungen:
 - Das Caching-System reduziert bereits die API-Calls um ~60-80%
 - Bei regelmäßiger Überschreitung: Self-Hosting von OpenRouteService in Betracht ziehen
 
-Diese E-Mail wurde automatisch von JobFlow generiert.
+Diese E-Mail wurde automatisch von Schichtklar generiert.
           `;
 
           try {

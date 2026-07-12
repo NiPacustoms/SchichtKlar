@@ -39,7 +39,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'JobFlow - Zeitarbeits-App',
+  title: 'Schichtklar - Zeitarbeits-App',
   description: 'DSGVO-konforme Zeitarbeits-App für medizinisches Personal',
   icons: {
     icon: [
@@ -89,11 +89,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="emotion-insertion-point" content="" />
         {/* PWA Manifest */}
         <link rel="manifest" href="/manifest.webmanifest" />
-        <meta name="theme-color" content="#005f73" />
+        <meta name="theme-color" content="#0f766e" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="JobFlow" />
+        <meta name="apple-mobile-web-app-title" content="Schichtklar" />
         {/* Service Worker Registration - nur in Production */}
         <script
           suppressHydrationWarning
@@ -340,7 +340,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               (function() {
                 if (typeof document !== 'undefined' && document.body && document.body.getAttribute('data-e2e-test') === 'true') {
                   window.__E2E_TEST_MODE__ = true;
-                  window.__JOBFLOW_E2E_TEST = true;
+                  window.__SCHICHTKLAR_E2E_TEST = true;
                 }
               })();
             `,
@@ -355,10 +355,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 (function() {
                   if (typeof window === 'undefined') return;
                   window.onerror = function(msg, url, line, col, err) {
-                    console.error('[JobFlow] Unbehandelter Fehler:', msg, url, line, col, err);
+                    console.error('[Schichtklar] Unbehandelter Fehler:', msg, url, line, col, err);
                   };
                   window.addEventListener('unhandledrejection', function(e) {
-                    console.error('[JobFlow] Unbehandelte Promise-Ablehnung:', e.reason);
+                    console.error('[Schichtklar] Unbehandelte Promise-Ablehnung:', e.reason);
                   });
                 })();
               `,

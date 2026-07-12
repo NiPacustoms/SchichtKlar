@@ -22,7 +22,7 @@ test.describe('1. Login – Formular klickbar und ausfüllbar', () => {
   test('Login-Button bleibt nach Klick in Ladezustand (oder Redirect)', async ({ page }) => {
     await page.goto('/anmelden');
     await page.waitForSelector('[data-testid="email-input"]', { state: 'visible' });
-    await page.fill('[data-testid="email-input"]', 'nurse@test.jobflow.local');
+    await page.fill('[data-testid="email-input"]', 'nurse@test.schichtklar.local');
     await page.fill('[data-testid="password-input"]', 'test-nurse-password');
     await page.click('[data-testid="login-button"]');
     // Entweder Redirect (Erfolg) oder Button disabled / Fehlermeldung

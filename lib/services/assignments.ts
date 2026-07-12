@@ -347,9 +347,16 @@ export const assignmentService = {
     return docRef.id;
   },
 
-  // Accept assignment
+  // Accept assignment (nur aus offenen Zuständen – kein Wiederbeleben
+  // abgelehnter/abgeschlossener Einsätze)
   async accept(id: string): Promise<void> {
     const assignmentRef = doc(getDb(), COLLECTION_NAME, id);
+    const snap = await getDoc(assignmentRef);
+    if (!snap.exists()) throw new Error('Einsatz nicht gefunden');
+    const status = snap.data().status as string;
+    if (!['pending', 'assigned', 'requested'].includes(status)) {
+      throw new Error(`Einsatz kann im Status „${status}" nicht angenommen werden`);
+    }
     await updateDoc(assignmentRef, {
       status: 'accepted',
       acceptedAt: serverTimestamp(),
@@ -357,9 +364,15 @@ export const assignmentService = {
     });
   },
 
-  // Decline assignment
+  // Decline assignment (nur aus offenen Zuständen)
   async decline(id: string): Promise<void> {
     const assignmentRef = doc(getDb(), COLLECTION_NAME, id);
+    const snap = await getDoc(assignmentRef);
+    if (!snap.exists()) throw new Error('Einsatz nicht gefunden');
+    const status = snap.data().status as string;
+    if (!['pending', 'assigned', 'requested', 'accepted'].includes(status)) {
+      throw new Error(`Einsatz kann im Status „${status}" nicht abgelehnt werden`);
+    }
     await updateDoc(assignmentRef, {
       status: 'declined',
       declinedAt: serverTimestamp(),
@@ -367,9 +380,15 @@ export const assignmentService = {
     });
   },
 
-  // Complete assignment
+  // Complete assignment (nur angenommene/zugewiesene Einsätze)
   async complete(id: string): Promise<void> {
     const assignmentRef = doc(getDb(), COLLECTION_NAME, id);
+    const snap = await getDoc(assignmentRef);
+    if (!snap.exists()) throw new Error('Einsatz nicht gefunden');
+    const status = snap.data().status as string;
+    if (!['accepted', 'assigned'].includes(status)) {
+      throw new Error(`Einsatz kann im Status „${status}" nicht abgeschlossen werden`);
+    }
     await updateDoc(assignmentRef, {
       status: 'completed',
       completedAt: serverTimestamp(),
@@ -824,10 +843,16 @@ return assignments;
 
   // Helper method for time overlap checking
   checkTimeOverlap(shift1: { date: string; startTime: string; endTime: string }, shift2: { date: string; startTime: string; endTime: string }): boolean {
+    const DAY_MS = 24 * 60 * 60 * 1000;
     const start1 = new Date(shift1.date).getTime() + this.timeToMs(shift1.startTime);
-    const end1 = new Date(shift1.date).getTime() + this.timeToMs(shift1.endTime);
+    let end1 = new Date(shift1.date).getTime() + this.timeToMs(shift1.endTime);
     const start2 = new Date(shift2.date).getTime() + this.timeToMs(shift2.startTime);
-    const end2 = new Date(shift2.date).getTime() + this.timeToMs(shift2.endTime);
+    let end2 = new Date(shift2.date).getTime() + this.timeToMs(shift2.endTime);
+
+    // Nachtschicht über Mitternacht: Ende auf den Folgetag normalisieren
+    // (vorher wurden Konflikte mit Nachtschichten nie erkannt)
+    if (end1 <= start1) end1 += DAY_MS;
+    if (end2 <= start2) end2 += DAY_MS;
 
     return start1 < end2 && start2 < end1;
   },
