@@ -13,20 +13,15 @@ import { logger } from '@/lib/logging';
 import {
   Box,
   Typography,
-  Tabs,
-  Tab,
-  Alert,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   Button,
-  Chip,
+  Stack,
+  CardContent,
+  alpha,
 } from '@mui/material';
-import { AccessTime, LocationOn, Description } from '@mui/icons-material';
+import { AccessTime, LocationOn, Description, CalendarMonth } from '@mui/icons-material';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { assignmentStatusColors, grey } from '@/lib/design-tokens';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { useState, useMemo } from 'react';
@@ -115,12 +110,6 @@ export default function MyAssignmentsPage() {
     return '–';
   };
 
-  const getFormStatusColor = (formStatus: string | undefined): 'success' | 'error' | 'default' => {
-    if (formStatus === 'acknowledged') return 'success';
-    if (formStatus === 'declined') return 'error';
-    return 'default';
-  };
-
   if (authLoading || isLoading || loadingDetails) {
     return <LoadingSpinner variant="skeleton" message="Einsätze werden geladen..." />;
   }
@@ -149,125 +138,143 @@ export default function MyAssignmentsPage() {
   return (
     <PageContainer maxWidth="standard">
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ color: 'text.primary', fontWeight: 700, mb: 0.5 }}>
+        <Typography
+          sx={{
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            color: 'text.secondary',
+            mb: 0.5,
+          }}
+        >
+          § 11 AÜG
+        </Typography>
+        <Typography sx={{ fontSize: { xs: 28, sm: 32 }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.08 }}>
           Meine Einsatzmitteilungen
         </Typography>
-        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-          Ihre unterschriebenen Einsatzmitteilungen (§ 11 AÜG)
+        <Typography variant="body1" sx={{ color: 'text.secondary', mt: 0.75 }}>
+          Ihre unterschriebenen Einsatzmitteilungen
         </Typography>
       </Box>
 
-      <Tabs
-        value={activeTab}
-        onChange={handleTabChange}
-        sx={{
-          mb: 3,
-          borderBottom: 1,
-          borderColor: 'divider',
-          '& .MuiTab-root': { textTransform: 'none', fontWeight: 600 },
-          '& .Mui-selected': { color: 'primary.main' },
-        }}
-      >
-        <Tab label={`Alle (${countAll})`} id="einsatz-tab-0" aria-controls="einsatz-tabpanel-0" />
-        <Tab label={`Angenommen (${countAccepted})`} id="einsatz-tab-1" aria-controls="einsatz-tabpanel-1" />
-        <Tab label={`Abgelehnt (${countDeclined})`} id="einsatz-tab-2" aria-controls="einsatz-tabpanel-2" />
-      </Tabs>
+      <Box sx={{ mb: 3 }}>
+        <SegmentedControl
+          options={[
+            { value: '0', label: `Alle (${countAll})` },
+            { value: '1', label: `Angenommen (${countAccepted})` },
+            { value: '2', label: `Abgelehnt (${countDeclined})` },
+          ]}
+          value={String(activeTab)}
+          onChange={value => handleTabChange(undefined as unknown as React.SyntheticEvent, Number(value))}
+          aria-label="Einsatzmitteilungen filtern"
+        />
+      </Box>
 
       {filteredAssignments.length === 0 ? (
-        <Alert severity="info">
-          {activeTab === 0
-            ? 'Sie haben noch keine unterschriebenen Einsatzmitteilungen.'
-            : 'Keine Einträge in dieser Kategorie.'}
-        </Alert>
+        <GlassCard hover={false}>
+          <CardContent sx={{ py: 5, textAlign: 'center' }}>
+            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+              {activeTab === 0
+                ? 'Sie haben noch keine unterschriebenen Einsatzmitteilungen.'
+                : 'Keine Einträge in dieser Kategorie.'}
+            </Typography>
+          </CardContent>
+        </GlassCard>
       ) : (
-        <TableContainer component={Paper} className="glass" sx={{ borderRadius: 2, overflow: 'hidden' }}>
-          <Table size="medium" aria-label="Einsatzmitteilungen">
-            <TableHead>
-              <TableRow sx={{ bgcolor: 'action.hover' }}>
-                <TableCell sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.75rem', color: 'text.secondary' }}>
-                  Einrichtung / Adresse
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.75rem', color: 'text.secondary' }}>
-                  Zeitraum
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.75rem', color: 'text.secondary' }}>
-                  Status
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.75rem', color: 'text.secondary' }}>
-                  Unterschrieben am
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.75rem', color: 'text.secondary' }}>
-                  Dokument
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredAssignments.map(({ assignment, shift, facility }) => {
-                if (!assignment) return null;
-                const formStatus = (assignment as { formStatus?: string }).formStatus;
-                const formSignedAt = (assignment as { formSignedAt?: Date | string }).formSignedAt;
-                const signedAtStr = formSignedAt
-                  ? format(new Date(formSignedAt), 'dd.MM.yyyy HH:mm', { locale: de })
-                  : '–';
-                const facilityAddress = facility
-                  ? [facility.name, facility.address].filter(Boolean).join(', ') || '–'
-                  : '–';
-                const shiftDateStr = shift?.date
-                  ? format(new Date(shift.date), 'dd.MM.yyyy', { locale: de })
-                  : '–';
-                const pdfUrl = getPdfUrl(assignment.id, assignment as { pdfUrl?: string });
+        <Stack spacing={2}>
+          {filteredAssignments.map(({ assignment, shift, facility }) => {
+            if (!assignment) return null;
+            const formStatus = (assignment as { formStatus?: string }).formStatus;
+            const formSignedAt = (assignment as { formSignedAt?: Date | string }).formSignedAt;
+            const signedAtStr = formSignedAt
+              ? format(new Date(formSignedAt), 'dd.MM.yyyy HH:mm', { locale: de })
+              : '–';
+            const facilityAddress = facility
+              ? [facility.name, facility.address].filter(Boolean).join(', ') || '–'
+              : '–';
+            const shiftDateStr = shift?.date
+              ? format(new Date(shift.date), 'dd.MM.yyyy', { locale: de })
+              : '–';
+            const pdfUrl = getPdfUrl(assignment.id, assignment as { pdfUrl?: string });
+            const statusColor =
+              formStatus === 'acknowledged'
+                ? assignmentStatusColors.accepted
+                : formStatus === 'declined'
+                  ? assignmentStatusColors.declined
+                  : grey[500];
 
-                return (
-                  <TableRow key={assignment.id} hover sx={{ '&:last-child td': { borderBottom: 0 } }}>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            return (
+              <GlassCard key={assignment.id}>
+                <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
+                  <Stack spacing={1.75}>
+                    <Stack
+                      direction="row"
+                      alignItems="flex-start"
+                      justifyContent="space-between"
+                      spacing={1.5}
+                    >
+                      <Typography sx={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.25 }}>
+                        {facility?.name || 'Einsatzmitteilung'}
+                      </Typography>
+                      <Box
+                        sx={{
+                          flexShrink: 0,
+                          px: 1.25,
+                          py: 0.4,
+                          borderRadius: 999,
+                          backgroundColor: alpha(statusColor, 0.14),
+                          color: statusColor,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {getFormStatusLabel(formStatus)}
+                      </Box>
+                    </Stack>
+
+                    <Stack spacing={0.75}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
                         <LocationOn sx={{ fontSize: 18, color: 'text.secondary' }} />
-                        <Typography variant="body2">{facilityAddress}</Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                          {facilityAddress}
+                        </Typography>
+                      </Stack>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <CalendarMonth sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        <Typography variant="body2" className="tabular-nums" sx={{ color: 'text.secondary' }}>
+                          {shiftDateStr}
+                        </Typography>
+                      </Stack>
+                      <Stack direction="row" alignItems="center" spacing={1}>
                         <AccessTime sx={{ fontSize: 18, color: 'text.secondary' }} />
-                        <Typography variant="body2">{shiftDateStr}</Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={getFormStatusLabel(formStatus)}
-                        color={getFormStatusColor(formStatus)}
-                        size="small"
-                        sx={{ fontWeight: 600 }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{signedAtStr}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      {pdfUrl ? (
+                        <Typography variant="body2" className="tabular-nums" sx={{ color: 'text.secondary' }}>
+                          Unterschrieben: {signedAtStr}
+                        </Typography>
+                      </Stack>
+                    </Stack>
+
+                    {pdfUrl ? (
+                      <Box>
                         <Button
                           variant="contained"
-                          size="small"
                           component="a"
                           href={pdfUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           startIcon={<Description />}
-                          sx={{ textTransform: 'none' }}
                         >
                           PDF anzeigen
                         </Button>
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          –
-                        </Typography>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                      </Box>
+                    ) : null}
+                  </Stack>
+                </CardContent>
+              </GlassCard>
+            );
+          })}
+        </Stack>
       )}
     </PageContainer>
   );

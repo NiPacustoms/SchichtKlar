@@ -5,14 +5,6 @@ import {
   Box,
   CardContent,
   Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
   CircularProgress,
   Alert,
   Button,
@@ -22,8 +14,10 @@ import {
   InputLabel,
   IconButton,
   Tooltip,
+  Divider,
 } from '@mui/material';
-import { Download } from '@mui/icons-material';
+import Grid from '@mui/material/Grid';
+import { Download, CheckCircleRounded, WarningAmberRounded } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -31,11 +25,19 @@ import { de } from 'date-fns/locale';
 import { useFacilityHours } from '@/lib/hooks/useFacilityHours';
 import { AppError } from '@/lib/errors';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { radius } from '@/lib/design-tokens';
 import { format } from 'date-fns';
 
 interface FacilityHoursDashboardProps {
   facilityId?: string;
 }
+
+/** Tönung der Status-/ArbZG-Pille – OK = grün, sonst amber/rot Warnung */
+const STATUS_TONE: Record<'success' | 'warning' | 'error', { fg: string; bg: string }> = {
+  success: { fg: '#16a34a', bg: 'rgba(22,163,74,0.12)' },
+  warning: { fg: '#d97706', bg: 'rgba(217,119,6,0.12)' },
+  error: { fg: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
+};
 
 export function FacilityHoursDashboard({ facilityId }: FacilityHoursDashboardProps) {
   const [startDate, setStartDate] = useState<Date | null>(null);
@@ -177,11 +179,28 @@ export function FacilityHoursDashboard({ facilityId }: FacilityHoursDashboardPro
             Stunden sind unvollständig und müssen über eine Migration nachgezogen werden.
           </Alert>
         )}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', md: 'center' },
+            flexWrap: { xs: 'wrap', md: 'nowrap' },
+            gap: 2,
+            mb: 1,
+          }}
+        >
+          <Typography
+            component="h1"
+            sx={{
+              fontSize: { xs: 28, sm: 32 },
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.08,
+            }}
+          >
             Stundenübersicht Einrichtungen
           </Typography>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
             <FormControl size="small" sx={{ minWidth: 150 }}>
               <InputLabel>Zeitraum</InputLabel>
               <Select
@@ -215,12 +234,17 @@ export function FacilityHoursDashboard({ facilityId }: FacilityHoursDashboardPro
                 onClick={handleExportCSV}
                 disabled={isLoading || summaries.length === 0}
                 color="primary"
-                sx={{ border: '1px solid', borderColor: 'divider' }}
+                sx={{ border: '1px solid', borderColor: 'divider', borderRadius: `${radius.md}px` }}
               >
                 <Download />
               </IconButton>
             </Tooltip>
-            <Button variant="outlined" onClick={() => refetch()} disabled={isLoading}>
+            <Button
+              variant="outlined"
+              onClick={() => refetch()}
+              disabled={isLoading}
+              sx={{ minHeight: 44, borderRadius: `${radius.md}px` }}
+            >
               Aktualisieren
             </Button>
           </Box>
@@ -243,126 +267,142 @@ export function FacilityHoursDashboard({ facilityId }: FacilityHoursDashboardPro
         ) : summaries.length === 0 ? (
           <Alert severity="info">Keine Daten für den ausgewählten Zeitraum gefunden.</Alert>
         ) : (
-          <TableContainer
-            component={Paper}
-            sx={{ borderRadius: 2, overflow: 'hidden', overflowX: 'auto' }}
-          >
-            <Table stickyHeader size="medium">
-              <TableHead>
-                <TableRow sx={{ backgroundColor: 'primary.main' }}>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Einrichtung</TableCell>
-                  <TableCell align="right" sx={{ color: 'white', fontWeight: 600 }}>
-                    Geplant (h)
-                  </TableCell>
-                  <TableCell align="right" sx={{ color: 'white', fontWeight: 600 }}>
-                    Geleistet (h)
-                  </TableCell>
-                  <TableCell align="right" sx={{ color: 'white', fontWeight: 600 }}>
-                    Differenz (h)
-                  </TableCell>
-                  <TableCell align="right" sx={{ color: 'white', fontWeight: 600 }}>
-                    Schichten
-                  </TableCell>
-                  <TableCell align="right" sx={{ color: 'white', fontWeight: 600 }}>
-                    Timesheets
-                  </TableCell>
-                  <TableCell align="right" sx={{ color: 'white', fontWeight: 600 }}>
-                    Fehlend
-                  </TableCell>
-                  <TableCell align="right" sx={{ color: 'white', fontWeight: 600 }}>
-                    Ausstehend
-                  </TableCell>
-                  <TableCell align="center" sx={{ color: 'white', fontWeight: 600 }}>
-                    Status
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {summaries.map(summary => {
-                  const diff = summary.workedHours - summary.plannedHours;
-                  const diffPercent =
-                    summary.plannedHours > 0 ? Math.round((diff / summary.plannedHours) * 100) : 0;
+          <Grid container spacing={2}>
+            {summaries.map(summary => {
+              const diff = summary.workedHours - summary.plannedHours;
+              const diffPercent =
+                summary.plannedHours > 0 ? Math.round((diff / summary.plannedHours) * 100) : 0;
+              const status = getStatusColor(summary);
+              const tone = STATUS_TONE[status];
+              const StatusIcon = status === 'success' ? CheckCircleRounded : WarningAmberRounded;
 
-                  return (
-                    <TableRow key={summary.facilityId} hover>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {summary.facilityName}
-                        </Typography>
-                        {summary.incompleteData && (
-                          <Typography variant="caption" color="warning.main">
-                            Daten unvollständig (Migration erforderlich)
+              return (
+                <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={summary.facilityId}>
+                  <GlassCard sx={{ height: '100%' }}>
+                    <CardContent
+                      sx={{
+                        p: 2.5,
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        '&:last-child': { pb: 2.5 },
+                      }}
+                    >
+                      {/* Kopf: Einrichtung + ArbZG-/Status-Badge */}
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          justifyContent: 'space-between',
+                          gap: 1.5,
+                          mb: 2,
+                        }}
+                      >
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography
+                            sx={{
+                              fontSize: 17,
+                              fontWeight: 700,
+                              letterSpacing: '-0.01em',
+                              lineHeight: 1.25,
+                            }}
+                          >
+                            {summary.facilityName}
                           </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2">{summary.plannedHours.toFixed(1)}</Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {summary.workedHours.toFixed(1)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography
-                          variant="body2"
+                          {summary.incompleteData && (
+                            <Typography variant="caption" color="warning.main">
+                              Daten unvollständig (Migration erforderlich)
+                            </Typography>
+                          )}
+                        </Box>
+                        <Box
                           sx={{
-                            color: diff >= 0 ? 'success.main' : 'error.main',
-                            fontWeight: 500,
+                            flexShrink: 0,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            px: 1.25,
+                            py: 0.4,
+                            borderRadius: 999,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap',
+                            color: tone.fg,
+                            bgcolor: tone.bg,
                           }}
                         >
-                          {diff >= 0 ? '+' : ''}
-                          {diff.toFixed(1)} ({diffPercent >= 0 ? '+' : ''}
-                          {diffPercent}%)
+                          <StatusIcon sx={{ fontSize: 15 }} />
+                          {getStatusLabel(summary)}
+                        </Box>
+                      </Box>
+
+                      {/* Kernzahl: geleistete vs. geplante Stunden */}
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
+                        <Typography
+                          sx={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em' }}
+                          className="tabular-nums"
+                        >
+                          {summary.workedHours.toFixed(1)} h
                         </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2">{summary.shiftCount}</Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2">{summary.timesheetCount}</Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        {summary.missingEntries > 0 ? (
-                          <Chip
-                            label={summary.missingEntries}
-                            size="small"
-                            color="error"
-                            variant="outlined"
-                          />
-                        ) : (
-                          <Typography variant="body2" color="text.secondary">
-                            -
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell align="right">
-                        {summary.pendingTimesheets > 0 ? (
-                          <Chip
-                            label={summary.pendingTimesheets}
-                            size="small"
-                            color="warning"
-                            variant="outlined"
-                          />
-                        ) : (
-                          <Typography variant="body2" color="text.secondary">
-                            -
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Chip
-                          label={getStatusLabel(summary)}
-                          size="small"
-                          color={getStatusColor(summary)}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                        <Typography variant="body2" color="text.secondary" className="tabular-nums">
+                          von {summary.plannedHours.toFixed(1)} h geplant
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="body2"
+                        className="tabular-nums"
+                        sx={{
+                          mt: 0.25,
+                          fontWeight: 600,
+                          color: diff >= 0 ? 'success.main' : 'error.main',
+                        }}
+                      >
+                        {diff >= 0 ? '+' : ''}
+                        {diff.toFixed(1)} h ({diffPercent >= 0 ? '+' : ''}
+                        {diffPercent}%)
+                      </Typography>
+
+                      <Divider sx={{ my: 2 }} />
+
+                      {/* Kennzahlen */}
+                      <Grid container spacing={1.5} sx={{ mt: 'auto' }}>
+                        {[
+                          { label: 'Schichten', value: summary.shiftCount, color: undefined },
+                          { label: 'Timesheets', value: summary.timesheetCount, color: undefined },
+                          {
+                            label: 'Fehlend',
+                            value: summary.missingEntries,
+                            color:
+                              summary.missingEntries > 0 ? 'error.main' : ('text.primary' as const),
+                          },
+                          {
+                            label: 'Ausstehend',
+                            value: summary.pendingTimesheets,
+                            color:
+                              summary.pendingTimesheets > 0
+                                ? 'warning.main'
+                                : ('text.primary' as const),
+                          },
+                        ].map(stat => (
+                          <Grid size={6} key={stat.label}>
+                            <Typography variant="caption" color="text.secondary">
+                              {stat.label}
+                            </Typography>
+                            <Typography
+                              className="tabular-nums"
+                              sx={{ fontSize: 17, fontWeight: 600, color: stat.color }}
+                            >
+                              {stat.value}
+                            </Typography>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </CardContent>
+                  </GlassCard>
+                </Grid>
+              );
+            })}
+          </Grid>
         )}
 
         {summaries.length > 0 && (
@@ -373,7 +413,7 @@ export function FacilityHoursDashboard({ facilityId }: FacilityHoursDashboardPro
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Gesamt geplant
                   </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 600 }} className="tabular-nums">
                     {summaries.reduce((sum, s) => sum + s.plannedHours, 0).toFixed(1)} h
                   </Typography>
                 </CardContent>
@@ -385,7 +425,11 @@ export function FacilityHoursDashboard({ facilityId }: FacilityHoursDashboardPro
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Gesamt geleistet
                   </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                  <Typography
+                    variant="h5"
+                    sx={{ fontWeight: 600, color: 'primary.main' }}
+                    className="tabular-nums"
+                  >
                     {summaries.reduce((sum, s) => sum + s.workedHours, 0).toFixed(1)} h
                   </Typography>
                 </CardContent>
@@ -397,7 +441,11 @@ export function FacilityHoursDashboard({ facilityId }: FacilityHoursDashboardPro
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Fehlende Einträge
                   </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 600, color: 'error.main' }}>
+                  <Typography
+                    variant="h5"
+                    sx={{ fontWeight: 600, color: 'error.main' }}
+                    className="tabular-nums"
+                  >
                     {summaries.reduce((sum, s) => sum + s.missingEntries, 0)}
                   </Typography>
                 </CardContent>

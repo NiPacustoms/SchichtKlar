@@ -4,27 +4,27 @@ import { FacilityCreateDialog } from '@/components/admin/FacilityCreateDialog';
 import { FacilityEditDialog } from '@/components/admin/FacilityEditDialog';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { radius } from '@/lib/design-tokens';
 import { facilityService } from '@/lib/services';
 import { Facility } from '@/lib/types';
 import { toast } from '@/lib/utils/toast';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Add,
+  Apartment,
   Business,
   Delete,
   Edit,
   Email,
   LocationOn,
+  Person,
   Phone,
-  Receipt,
 } from '@mui/icons-material';
 import {
-  Avatar,
   Box,
   Button,
-  Card,
   CardContent,
-  Chip,
   IconButton,
   Typography,
   Tooltip,
@@ -33,6 +33,7 @@ import {
   DialogContent,
   DialogActions,
   Divider,
+  Stack,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -116,22 +117,37 @@ export default function AdminEinrichtungenPage() {
       <Box
         sx={{
           display: 'flex',
-          alignItems: 'center',
-          mb: 3,
-          borderBottom: 1,
-          borderColor: 'divider',
-          pb: 2,
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          justifyContent: 'space-between',
+          flexWrap: { xs: 'wrap', sm: 'nowrap' },
+          gap: 2,
+          mb: 4,
         }}
       >
-        <Business sx={{ mr: 1 }} />
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1, color: 'text.primary' }}>
-          Einrichtungsverwaltung
-        </Typography>
+        <Box>
+          <Typography
+            component="h1"
+            sx={{
+              fontSize: { xs: 28, sm: 32 },
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.08,
+              color: 'text.primary',
+            }}
+          >
+            Einrichtungen
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+            Standorte, Stationen und Kontaktdaten verwalten
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           startIcon={<Add />}
           onClick={() => setCreateDialogOpen(true)}
           sx={{
+            minHeight: 44,
+            borderRadius: `${radius.md}px`,
             bgcolor: 'primary.main',
             '&:hover': { bgcolor: 'primary.dark' },
           }}
@@ -140,7 +156,7 @@ export default function AdminEinrichtungenPage() {
         </Button>
       </Box>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
           {facilities.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 8, width: '100%' }}>
             <Business sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
@@ -154,6 +170,7 @@ export default function AdminEinrichtungenPage() {
               variant="contained"
               startIcon={<Add />}
               onClick={() => setCreateDialogOpen(true)}
+              sx={{ minHeight: 44, borderRadius: `${radius.md}px` }}
             >
               Erste Einrichtung erstellen
             </Button>
@@ -161,111 +178,153 @@ export default function AdminEinrichtungenPage() {
         ) : (
           facilities.map(facility => (
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={facility.id}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'all 0.2s ease-in-out',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: 3,
-                  },
-                }}
-              >
-                <CardContent sx={{ flexGrow: 1, p: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Avatar
+              <GlassCard sx={{ height: '100%' }}>
+                <CardContent
+                  sx={{
+                    p: 2.5,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    '&:last-child': { pb: 2.5 },
+                  }}
+                >
+                  {/* Kopf: Icon-Kachel + Name + Status-Badge */}
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 2 }}>
+                    <Box
                       sx={{
-                        bgcolor: facility.colorCode,
-                        mr: 2,
                         width: 48,
                         height: 48,
+                        flexShrink: 0,
+                        borderRadius: `${radius.md}px`,
+                        bgcolor: facility.colorCode || 'primary.main',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
                       <Business />
-                    </Avatar>
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                    </Box>
+                    <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                      <Typography
+                        sx={{
+                          fontSize: 17,
+                          fontWeight: 700,
+                          letterSpacing: '-0.01em',
+                          lineHeight: 1.25,
+                        }}
+                        noWrap
+                      >
                         {facility.name}
                       </Typography>
-                      <Chip
-                        label={`Debitor: ${facility.debtorNumber}`}
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                        icon={<Receipt />}
-                      />
-                    </Box>
-                  </Box>
-
-                  <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <LocationOn sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                      <Typography variant="body2" color="text.secondary">
-                        {facility.address}
+                      <Typography
+                        variant="body2"
+                        sx={{ color: 'text.secondary' }}
+                        className="tabular-nums"
+                      >
+                        Debitor {facility.debtorNumber}
                       </Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Phone sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                      <Typography variant="body2" color="text.secondary">
-                        {facility.phone}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Email sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                      <Typography variant="body2" color="text.secondary">
-                        {facility.email}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      Ansprechpartner: {facility.contactPerson}
-                    </Typography>
-                    {facility.stations && facility.stations.length > 0 && (
-                      <Typography variant="body2" color="text.secondary">
-                        {facility.stations.length} Station(en)
-                      </Typography>
+                    {facility.status && (
+                      <Box
+                        sx={{
+                          flexShrink: 0,
+                          px: 1.25,
+                          py: 0.4,
+                          borderRadius: 999,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          whiteSpace: 'nowrap',
+                          bgcolor: 'rgba(15,118,110,0.10)',
+                          color: 'primary.main',
+                        }}
+                      >
+                        {facility.status}
+                      </Box>
                     )}
                   </Box>
 
-                  <Divider sx={{ my: 2 }} />
-
-                  <Box
-                    sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                  >
-                    <Box>
-                      {facility.taxId && (
-                        <Typography variant="caption" color="text.secondary">
-                          Steuernummer: {facility.taxId}
-                        </Typography>
-                      )}
+                  {/* Kennzahlen / Meta-Zeilen */}
+                  <Stack spacing={1.25}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LocationOn sx={{ fontSize: 18, color: 'text.secondary', flexShrink: 0 }} />
+                      <Typography variant="body2" color="text.secondary" noWrap>
+                        {facility.address}
+                      </Typography>
                     </Box>
-                    <Box>
-                      <Tooltip title="Bearbeiten">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEdit(facility)}
-                          sx={{ mr: 1 }}
-                        >
-                          <Edit />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Löschen">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDelete(facility)}
-                          color="error"
-                        >
-                          <Delete />
-                        </IconButton>
-                      </Tooltip>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Phone sx={{ fontSize: 18, color: 'text.secondary', flexShrink: 0 }} />
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        className="tabular-nums"
+                        noWrap
+                      >
+                        {facility.phone}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Email sx={{ fontSize: 18, color: 'text.secondary', flexShrink: 0 }} />
+                      <Typography variant="body2" color="text.secondary" noWrap>
+                        {facility.email}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Person sx={{ fontSize: 18, color: 'text.secondary', flexShrink: 0 }} />
+                      <Typography variant="body2" color="text.secondary" noWrap>
+                        {facility.contactPerson}
+                      </Typography>
+                    </Box>
+                    {facility.stations && facility.stations.length > 0 && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Apartment sx={{ fontSize: 18, color: 'text.secondary', flexShrink: 0 }} />
+                        <Typography variant="body2" color="text.secondary">
+                          <Box component="span" className="tabular-nums">
+                            {facility.stations.length}
+                          </Box>{' '}
+                          Station(en)
+                        </Typography>
+                      </Box>
+                    )}
+                  </Stack>
+
+                  {/* Fuß: Steuernummer + Aktionen */}
+                  <Box sx={{ mt: 'auto', pt: 2 }}>
+                    <Divider sx={{ mb: 1.5 }} />
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                    >
+                      <Box sx={{ minWidth: 0 }}>
+                        {facility.taxId && (
+                          <Typography variant="caption" color="text.secondary" noWrap>
+                            Steuernummer: {facility.taxId}
+                          </Typography>
+                        )}
+                      </Box>
+                      <Box sx={{ flexShrink: 0 }}>
+                        <Tooltip title="Bearbeiten">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEdit(facility)}
+                            sx={{ mr: 1 }}
+                          >
+                            <Edit />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Löschen">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDelete(facility)}
+                            color="error"
+                          >
+                            <Delete />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
                     </Box>
                   </Box>
                 </CardContent>
-              </Card>
+              </GlassCard>
             </Grid>
           ))
         )}
