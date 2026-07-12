@@ -300,43 +300,60 @@ export function NurseScheduleView() {
                       <Box
                         key={key}
                         sx={{
-                          minHeight: 44,
+                          minHeight: 56,
                           p: 0.5,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
                           borderRight: (theme: { palette: { divider: string } }) =>
                             (monthInterval.indexOf(day) + 1) % 7 !== 0 ? `1px solid ${theme.palette.divider}` : 'none',
                           borderBottom: 1,
                           borderColor: 'divider',
-                          bgcolor: theme =>
-                            !isCurrentMonth
-                              ? 'transparent'
-                              : today
-                                ? alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.2 : 0.08)
-                                : 'transparent',
+                          bgcolor: 'transparent',
                           color: !isCurrentMonth ? 'text.disabled' : 'text.primary',
                           borderRadius: 0,
                         }}
                       >
-                        <Typography
-                          variant="body2"
-                          className="tabular-nums"
+                        <Box
                           sx={{
-                            fontWeight: today ? 700 : 400,
-                            color: today ? 'primary.main' : 'inherit',
+                            width: 30,
+                            height: 30,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '50%',
+                            mt: 0.25,
+                            bgcolor: today ? 'primary.main' : 'transparent',
                           }}
                         >
-                          {format(day, 'd')}
-                        </Typography>
-                        {dayAssignments.length > 0 && (
-                          <Box
+                          <Typography
+                            variant="body2"
+                            className="tabular-nums"
                             sx={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: '50%',
-                              bgcolor: isCurrentMonth ? 'primary.main' : 'text.disabled',
-                              mt: 0.25,
-                              ml: 0.5,
+                              fontWeight: today ? 700 : 500,
+                              color: today ? '#ffffff' : 'inherit',
+                              lineHeight: 1,
                             }}
-                          />
+                          >
+                            {format(day, 'd')}
+                          </Typography>
+                        </Box>
+                        {dayAssignments.length > 0 && (
+                          <Box sx={{ display: 'flex', gap: '3px', mt: 0.5, height: 6 }}>
+                            {dayAssignments.slice(0, 3).map((a: any, i: number) => (
+                              <Box
+                                key={i}
+                                sx={{
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: '50%',
+                                  bgcolor: isCurrentMonth
+                                    ? getShiftTypeColor(a?.shift?.type ?? a?.type)
+                                    : 'text.disabled',
+                                }}
+                              />
+                            ))}
+                          </Box>
                         )}
                       </Box>
                     );
