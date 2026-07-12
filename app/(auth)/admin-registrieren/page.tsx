@@ -108,9 +108,21 @@ export default function AdminRegisterPage() {
       className="min-height-viewport"
       sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3 }}
     >
-      <Paper className="glass" sx={{ p: 4, maxWidth: 520, width: '100%' }}>
-        <Typography variant="h4" sx={{ fontWeight: 600, mb: 3 }}>
-          Admin registrieren
+      <Paper className="glass" sx={{ p: { xs: 3, sm: 4 }, maxWidth: 480, width: '100%', textAlign: 'center' }}>
+        <Box
+          component="img"
+          src="/logo-mark.png"
+          alt="Schichtklar"
+          sx={{ width: 56, height: 56, mx: 'auto', mb: 2, display: 'block' }}
+        />
+        <Typography
+          component="h1"
+          sx={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1, mb: 0.75 }}
+        >
+          Firma registrieren
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
+          Legen Sie Ihr Unternehmen an und starten Sie mit der Dienstplanung.
         </Typography>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -120,7 +132,7 @@ export default function AdminRegisterPage() {
         <Box
           component="form"
           onSubmit={onSubmit}
-          sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+          sx={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left' }}
         >
           <TextField
             label="Firmenname"
