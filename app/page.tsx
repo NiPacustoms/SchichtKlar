@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AppLogo } from '@/components/ui/AppLogo';
@@ -15,7 +15,6 @@ import {
   Stack,
   Typography,
   useScrollTrigger,
-  useTheme,
   Zoom,
   Fab,
 } from '@mui/material';
@@ -32,6 +31,9 @@ import {
   PhoneAndroid,
 } from '@mui/icons-material';
 import { useBrandingSettings } from '@/lib/hooks/useBrandingSettings';
+import { ThemeProvider } from '@mui/material/styles';
+import { createAppTheme } from '@/lib/theme';
+import { colors, gradients } from '@/lib/design-tokens';
 
 function ScrollToTop() {
   const trigger = useScrollTrigger({ disableHysteresis: true, threshold: 120 });
@@ -53,7 +55,6 @@ function ScrollToTop() {
 
 /** Getönter Icon-Kreis – dasselbe Muster wie im App-Inneren */
 function TintedIcon({ children }: { children: React.ReactNode }) {
-  const theme = useTheme();
   return (
     <Box
       sx={{
@@ -64,11 +65,8 @@ function TintedIcon({ children }: { children: React.ReactNode }) {
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        backgroundColor: alpha(
-          theme.palette.primary.main,
-          theme.palette.mode === 'dark' ? 0.24 : 0.1
-        ),
-        color: theme.palette.mode === 'dark' ? 'primary.light' : 'primary.main',
+        backgroundColor: alpha(colors.petrol, 0.1),
+        color: 'primary.main',
       }}
     >
       {children}
@@ -150,9 +148,9 @@ export default function HomePage() {
   const { user, loading } = useAuth();
   const { canAccessAdminArea } = usePermissions();
   const { branding, isLoading: _brandingLoading } = useBrandingSettings();
-  const theme = useTheme();
   const router = useRouter();
-  const isDark = theme.palette.mode === 'dark';
+  // Marketing-Seite ist immer hell – unabhängig von System-/App-Theme
+  const lightTheme = useMemo(() => createAppTheme('light'), []);
 
   // Fallback für branding, falls es undefined ist
   const brandingData = branding || {
@@ -214,7 +212,16 @@ export default function HomePage() {
   }
 
   return (
-    <Box>
+    <ThemeProvider theme={lightTheme}>
+      <Box
+        sx={{
+          minHeight: '100dvh',
+          backgroundColor: '#fafbfc',
+          backgroundImage: gradients.light.brandLight,
+          backgroundAttachment: 'fixed',
+          color: 'text.primary',
+        }}
+      >
       {/* Kopfzeile: Logo links, Login rechts – ruhig und klein */}
       <Container maxWidth="lg">
         <Box
@@ -249,7 +256,7 @@ export default function HomePage() {
         <Typography
           variant="overline"
           component="p"
-          sx={{ color: isDark ? 'primary.light' : 'primary.main', mb: 2 }}
+          sx={{ color: 'primary.main', mb: 2 }}
         >
           Digitale Personalplanung für die Pflege
         </Typography>
@@ -366,8 +373,8 @@ export default function HomePage() {
                   justifyContent: 'center',
                   mx: 'auto',
                   mb: 2,
-                  backgroundColor: alpha(theme.palette.primary.main, isDark ? 0.24 : 0.1),
-                  color: isDark ? 'primary.light' : 'primary.main',
+                  backgroundColor: alpha(colors.petrol, 0.1),
+                  color: 'primary.main',
                   fontWeight: 600,
                   fontSize: 17,
                 }}
@@ -425,9 +432,9 @@ export default function HomePage() {
             borderRadius: 4,
             px: { xs: 3, md: 8 },
             py: { xs: 6, md: 8 },
-            backgroundColor: alpha(theme.palette.primary.main, isDark ? 0.16 : 0.06),
+            backgroundColor: alpha(colors.petrol, 0.06),
             border: '1px solid',
-            borderColor: alpha(theme.palette.primary.main, isDark ? 0.3 : 0.12),
+            borderColor: alpha(colors.petrol, 0.12),
           }}
         >
           <Typography variant="h2" sx={{ mb: 2 }}>
@@ -498,6 +505,7 @@ export default function HomePage() {
       </Container>
 
       <ScrollToTop />
-    </Box>
+      </Box>
+    </ThemeProvider>
   );
 }
