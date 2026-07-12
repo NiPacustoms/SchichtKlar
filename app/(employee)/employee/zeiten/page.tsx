@@ -406,7 +406,10 @@ export default function EmployeeTimesPage() {
     <PageContainer maxWidth="wide">
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h2" component="h1" sx={{ color: 'text.primary', mb: 1 }}>
+        <Typography
+          component="h1"
+          sx={{ fontSize: { xs: 28, sm: 32 }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.08, color: 'text.primary', mb: 0.5 }}
+        >
           Zeiten &amp; Zeitkonto
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
