@@ -83,10 +83,31 @@ export async function drawLetterhead(doc: any, opts: LetterheadOptions): Promise
   const m = PDF_MARGIN;
   const logo = opts.logoDataUrl !== undefined ? opts.logoDataUrl : await loadLogoDataUrl();
 
-  // Logo (Seitenverhältnis der Wortmarke ~3.9:1) oder Text-Fallback
+  // Logo seitenverhältnis­treu in eine Box max. 45×16 mm einpassen (kein Quetschen),
+  // vertikal in der Kopfzone zentriert. Fällt auf Firmenname zurück, wenn kein Logo.
   if (logo) {
     try {
-      doc.addImage(logo, 'PNG', m, 12, 42, 10.5);
+      const boxX = m;
+      const boxTop = 11;
+      const boxMaxW = 45;
+      const boxMaxH = 16;
+      let drawW = boxMaxW;
+      let drawH = boxMaxH;
+      try {
+        const props = doc.getImageProperties(logo);
+        if (props?.width && props?.height) {
+          const ratio = Math.min(boxMaxW / props.width, boxMaxH / props.height);
+          drawW = props.width * ratio;
+          drawH = props.height * ratio;
+        }
+      } catch {
+        // Kein Zugriff auf Bildmaße → sichere Standardhöhe mit Wortmarken-Ratio (~3.9:1)
+        drawH = 10.5;
+        drawW = Math.min(boxMaxW, drawH * 3.9);
+      }
+      const offsetY = boxTop + (boxMaxH - drawH) / 2;
+      const fmt = /^data:image\/jpe?g/i.test(logo) ? 'JPEG' : 'PNG';
+      doc.addImage(logo, fmt, boxX, offsetY, drawW, drawH);
     } catch {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(14);
