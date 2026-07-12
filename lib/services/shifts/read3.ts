@@ -8,8 +8,11 @@ import { COLLECTION_NAME } from './types';
 import { mapDocToShift } from './mapDoc';
 
 export async function getAll(filters?: ShiftFilters): Promise<Shift[]> {
+  // Client-SDK-Firestore lässt sich nur im Browser initialisieren.
+  // Serverseitige Aufrufe (z. B. API-Route) dürfen nicht crashen.
+  if (typeof window === 'undefined') return [];
   const db = getDb();
-  if (!db || typeof window === 'undefined') return [];
+  if (!db) return [];
   try {
     let companyId = filters?.companyId;
     if (!companyId && typeof window !== 'undefined') companyId = await getCompanyIdFromAuth() || undefined;
