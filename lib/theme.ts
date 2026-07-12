@@ -72,24 +72,27 @@ function createAppTheme(mode: PaletteMode) {
           divider: surf.border.main,
           grey,
         },
-        shape: { borderRadius: radius.md },
+        shape: { borderRadius: 14 },
         spacing,
         typography: {
           fontFamily: [
-            'Inter',
             '-apple-system',
             'BlinkMacSystemFont',
+            '"SF Pro Display"',
+            '"SF Pro Text"',
             '"Segoe UI"',
+            'system-ui',
+            'Inter',
             'Roboto',
             '"Helvetica Neue"',
             'Arial',
             'sans-serif',
           ].join(','),
-          // Präzise Skala: Headings eng gespannt (negatives Tracking), Body ruhig
-          h1: { fontSize: 32, fontWeight: 700, lineHeight: 40 / 32, letterSpacing: '-0.022em' },
-          h2: { fontSize: 26, fontWeight: 650, lineHeight: 34 / 26, letterSpacing: '-0.018em' },
-          h3: { fontSize: 22, fontWeight: 650, lineHeight: 30 / 22, letterSpacing: '-0.014em' },
-          h4: { fontSize: 19, fontWeight: 600, lineHeight: 1.35, letterSpacing: '-0.01em' },
+          // iOS-orientierte Skala: Large Titles groß & eng, Body ruhig
+          h1: { fontSize: 34, fontWeight: 700, lineHeight: 1.08, letterSpacing: '-0.022em' },
+          h2: { fontSize: 28, fontWeight: 700, lineHeight: 1.12, letterSpacing: '-0.02em' },
+          h3: { fontSize: 22, fontWeight: 700, lineHeight: 28 / 22, letterSpacing: '-0.018em' },
+          h4: { fontSize: 19, fontWeight: 600, lineHeight: 1.35, letterSpacing: '-0.012em' },
           h5: { fontSize: 17, fontWeight: 600, lineHeight: 1.4, letterSpacing: '-0.006em' },
           h6: { fontSize: 15.5, fontWeight: 600, lineHeight: 1.45 },
           body1: { fontSize: 15.5, lineHeight: 24 / 15.5, fontWeight: 400 },
@@ -144,10 +147,10 @@ function createAppTheme(mode: PaletteMode) {
             styleOverrides: {
               root: ({ theme }) => ({
                 minWidth: 104,
-                minHeight: 40,
-                borderRadius: radius.md,
-                padding: '8px 18px',
-                fontSize: '14.5px',
+                minHeight: 44,
+                borderRadius: 14,
+                padding: '10px 20px',
+                fontSize: '15px',
                 fontWeight: 600,
                 textTransform: 'none',
                 transition: transitionColors,
@@ -157,16 +160,17 @@ function createAppTheme(mode: PaletteMode) {
                 },
                 [theme.breakpoints.down('sm')]: { minWidth: 'auto', width: '100%' },
               }),
-              // Primär: satte, flache Teal-Fläche; Hover = eine Tonstufe dunkler
+              // Primär: satte Teal-Fläche mit dezentem farbigem Auftrieb (iOS-CTA)
               containedPrimary: {
                 backgroundColor: brand,
                 color: isDark ? '#0b2b28' : '#ffffff',
-                boxShadow: 'none',
-                '&:hover': { backgroundColor: brandHover, boxShadow: 'none' },
+                boxShadow: isDark ? 'none' : shadows.ctaPrimary,
+                '&:hover': { backgroundColor: brandHover, boxShadow: isDark ? 'none' : shadows.ctaPrimary },
                 '&:active': { backgroundColor: isDark ? colors.brand : '#0c4f4a' },
                 '&:disabled': {
                   backgroundColor: alpha(brand, 0.28),
                   color: isDark ? alpha('#0b2b28', 0.6) : alpha('#ffffff', 0.7),
+                  boxShadow: 'none',
                 },
               },
               outlinedPrimary: {
@@ -378,7 +382,7 @@ function createAppTheme(mode: PaletteMode) {
             styleOverrides: {
               root: {
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: radius.md,
+                  borderRadius: 14,
                   backgroundColor: surf.input.bg,
                   transition: transitionColors,
                   '&:hover .MuiOutlinedInput-notchedOutline': {
@@ -401,12 +405,34 @@ function createAppTheme(mode: PaletteMode) {
               root: { marginLeft: 0, fontSize: '13px', marginTop: 6 },
             },
           },
+          // iOS-Switch: 51×31-Track, 27px weißer Knopf, Teal an / Grau aus
           MuiSwitch: {
             styleOverrides: {
               root: {
-                '& .MuiSwitch-switchBase.Mui-checked': {
-                  color: brand,
-                  '& + .MuiSwitch-track': { backgroundColor: brand, opacity: 0.55 },
+                width: 51,
+                height: 31,
+                padding: 0,
+                overflow: 'visible',
+                '& .MuiSwitch-switchBase': {
+                  padding: 2,
+                  '&.Mui-checked': {
+                    transform: 'translateX(20px)',
+                    color: '#fff',
+                    '& + .MuiSwitch-track': { backgroundColor: brand, opacity: 1 },
+                  },
+                  '&.Mui-disabled + .MuiSwitch-track': { opacity: 0.4 },
+                },
+                '& .MuiSwitch-thumb': {
+                  width: 27,
+                  height: 27,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                  color: '#fff',
+                },
+                '& .MuiSwitch-track': {
+                  borderRadius: 999,
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.25)' : '#e3e3e8',
+                  opacity: 1,
+                  transition: `background-color ${duration.base}ms ${easing}`,
                 },
               },
             },

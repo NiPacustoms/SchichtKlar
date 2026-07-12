@@ -127,67 +127,100 @@ function DashboardPageContent() {
     ? new Date(todayShift.date)
     : todayAssignment?.assignedAt || null;
 
+  const todayLabel = new Intl.DateTimeFormat('de-DE', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+  }).format(new Date());
+
+  const kpiTiles = [
+    { label: 'Heute', value: safeKpis.todayHours, icon: <AccessTime sx={{ fontSize: 18 }} /> },
+    { label: 'Woche', value: safeKpis.weekHours, icon: <CalendarMonth sx={{ fontSize: 18 }} /> },
+    { label: 'Monat', value: safeKpis.monthHours, icon: <Description sx={{ fontSize: 18 }} /> },
+  ];
+
   return (
     <PageContainer maxWidth="standard">
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ color: 'text.primary', fontWeight: 700, mb: 0.5 }}>
-          {isNurse ? 'Willkommen zurück!' : 'Übersicht'}
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          sx={{
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            color: 'text.secondary',
+            mb: 0.5,
+          }}
+        >
+          {todayLabel}
         </Typography>
-        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-          {isNurse ? 'Hier ist dein Überblick für heute' : 'Aktuelle Kennzahlen im Überblick'}
+        <Typography sx={{ fontSize: { xs: 28, sm: 32 }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.08 }}>
+          {isNurse ? 'Willkommen zurück' : 'Übersicht'}
         </Typography>
       </Box>
 
       {isNurse ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', py: 1.5, px: 0 }}>
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <AccessTime sx={{ color: 'text.secondary', fontSize: 20 }} />
-              <Typography variant="body1">Heute: <strong>{safeKpis.todayHours.toFixed(1)} h</strong></Typography>
-            </Stack>
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <CalendarMonth sx={{ color: 'text.secondary', fontSize: 20 }} />
-              <Typography variant="body1">Woche: <strong>{safeKpis.weekHours.toFixed(1)} h</strong></Typography>
-            </Stack>
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Description sx={{ color: 'text.secondary', fontSize: 20 }} />
-              <Typography variant="body1">Monat: <strong>{safeKpis.monthHours.toFixed(1)} h</strong></Typography>
-            </Stack>
-          </Box>
+          <Grid container spacing={2}>
+            {kpiTiles.map((t) => (
+              <Grid size={4} key={t.label}>
+                <GlassCard hover={false} sx={{ height: '100%' }}>
+                  <CardContent sx={{ py: 2, px: 2.25, '&:last-child': { pb: 2 } }}>
+                    <Stack direction="row" alignItems="center" spacing={0.75} sx={{ color: 'text.secondary', mb: 0.5 }}>
+                      {t.icon}
+                      <Typography sx={{ fontSize: 12.5, fontWeight: 600 }}>{t.label}</Typography>
+                    </Stack>
+                    <Typography sx={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em' }} className="tabular-nums">
+                      {t.value.toFixed(1)}
+                      <Box component="span" sx={{ fontSize: 14, fontWeight: 600, color: 'text.secondary', ml: 0.5 }}>h</Box>
+                    </Typography>
+                  </CardContent>
+                </GlassCard>
+              </Grid>
+            ))}
+          </Grid>
 
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 7 }}>
               <Stack spacing={0}>
-                <GlassCard>
-                  <CardContent>
+                <GlassCard tone="hero" sx={{ height: '100%' }}>
+                  <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
                     <Stack spacing={2}>
                       <Stack direction="row" alignItems="center" justifyContent="space-between">
-                        <Typography variant="h6">Aktueller Einsatz</Typography>
+                        <Typography sx={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.85 }}>
+                          Aktueller Einsatz
+                        </Typography>
                         {todayAssignment?.status && (
-                          <Chip
-                            size="small"
-                            color="success"
-                            label={formatAssignmentStatus(todayAssignment.status)}
-                            sx={{ fontWeight: 600 }}
-                          />
+                          <Box
+                            sx={{
+                              px: 1.25,
+                              py: 0.4,
+                              borderRadius: 999,
+                              backgroundColor: 'rgba(255,255,255,0.18)',
+                              fontSize: 12,
+                              fontWeight: 700,
+                            }}
+                          >
+                            {formatAssignmentStatus(todayAssignment.status)}
+                          </Box>
                         )}
                       </Stack>
                       {todayAssignment && todayShift ? (
                         <Stack spacing={1.5}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                            {todayShift.title || 'Schicht'} – {todayShift.startTime}
+                          <Typography sx={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
+                            {todayShift.title || 'Schicht'} · {todayShift.startTime}
                           </Typography>
                           <Stack direction="row" alignItems="center" spacing={1}>
-                            <AccessTime fontSize="small" sx={{ color: 'text.secondary' }} />
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                            <AccessTime fontSize="small" sx={{ opacity: 0.85 }} />
+                            <Typography variant="body2" sx={{ opacity: 0.9 }}>
                               {formatDate(todaysAssignmentScheduledDate)} · {todayShift.startTime} –{' '}
                               {todayShift.endTime}
                             </Typography>
                           </Stack>
                           {todayFacility && (
                             <Stack direction="row" alignItems="center" spacing={1}>
-                              <Place fontSize="small" sx={{ color: 'text.secondary' }} />
-                              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                              <Place fontSize="small" sx={{ opacity: 0.85 }} />
+                              <Typography variant="body2" sx={{ opacity: 0.9 }}>
                                 {todayFacility.name}
                                 {todayShift.stationId &&
                                   todayFacility.stations?.find(
@@ -199,29 +232,49 @@ function DashboardPageContent() {
                           )}
                           {todayFacility?.contactPerson && (
                             <Stack direction="row" alignItems="center" spacing={1}>
-                              <Person fontSize="small" sx={{ color: 'text.secondary' }} />
-                              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                              <Person fontSize="small" sx={{ opacity: 0.85 }} />
+                              <Typography variant="body2" sx={{ opacity: 0.9 }}>
                                 Ansprechpartner: {todayFacility.contactPerson}
                               </Typography>
                             </Stack>
                           )}
                           {todayAssignment.notes && (
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                            <Typography variant="body2" sx={{ opacity: 0.9 }}>
                               Hinweis: {todayAssignment.notes}
                             </Typography>
                           )}
-                          <Button
-                            component={Link}
-                            href={todayAssignment.id ? `/employee/formulare/einsaetze/${todayAssignment.id}` : '/employee/einsaetze'}
-                            variant="contained"
-                            size="medium"
-                            sx={{ mt: 1, alignSelf: 'flex-start' }}
-                          >
-                            Einsatzdetails
-                          </Button>
+                          <Stack direction="row" spacing={1.5} sx={{ mt: 1 }}>
+                            <Button
+                              component={Link}
+                              href="/employee/zeiterfassung"
+                              size="medium"
+                              startIcon={<AccessTime />}
+                              sx={{
+                                backgroundColor: '#ffffff',
+                                color: 'primary.dark',
+                                boxShadow: 'none',
+                                '&:hover': { backgroundColor: '#f5f5f4', boxShadow: 'none' },
+                              }}
+                            >
+                              Zeit starten
+                            </Button>
+                            <Button
+                              component={Link}
+                              href={todayAssignment.id ? `/employee/formulare/einsaetze/${todayAssignment.id}` : '/employee/einsaetze'}
+                              size="medium"
+                              variant="outlined"
+                              sx={{
+                                borderColor: 'rgba(255,255,255,0.6)',
+                                color: '#ffffff',
+                                '&:hover': { borderColor: '#ffffff', backgroundColor: 'rgba(255,255,255,0.12)' },
+                              }}
+                            >
+                              Details
+                            </Button>
+                          </Stack>
                         </Stack>
                       ) : (
-                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
                           Heute ist kein Einsatz geplant.
                         </Typography>
                       )}
