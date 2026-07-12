@@ -1,8 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-
-const STORAGE_KEY = 'schichtklar-theme-mode';
+import { createContext, useContext, useEffect, type ReactNode } from 'react';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -14,71 +12,32 @@ interface ThemeModeContextValue {
 
 const ThemeModeContext = createContext<ThemeModeContextValue | null>(null);
 
-function getInitialMode(): ThemeMode {
-  if (typeof document === 'undefined') return 'light';
-  const dataTheme = document.documentElement.getAttribute('data-theme');
-  if (dataTheme === 'dark' || dataTheme === 'light') return dataTheme;
-  return 'light';
-}
-
+/**
+ * Produktentscheidung: Schichtklar ist immer hell („Clean & Light“).
+ * Der Modus ist fest auf 'light' gepinnt – Systemeinstellung und frühere
+ * gespeicherte Dunkel-Wahl werden ignoriert. Die Context-API bleibt aus
+ * Kompatibilität bestehen (setMode/toggleMode sind No-ops).
+ */
 export function ThemeModeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>(getInitialMode);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-      if (stored === 'light' || stored === 'dark') {
-        setModeState(stored);
-      } else if (
-        typeof window !== 'undefined' &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches
-      ) {
-        setModeState('dark');
-      }
-    } catch {
-      // ignore
-    }
-    setMounted(true);
-  }, []);
-
-  // Sync mode to DOM for globals.css and Tailwind dark:
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
-    if (mode === 'dark') {
-      root.setAttribute('data-theme', 'dark');
-      root.classList.add('dark');
-    } else {
-      root.setAttribute('data-theme', 'light');
-      root.classList.remove('dark');
-    }
-  }, [mode]);
-
-  const setMode = useCallback((next: ThemeMode) => {
-    setModeState(next);
+    root.setAttribute('data-theme', 'light');
+    root.classList.remove('dark');
     try {
-      localStorage.setItem(STORAGE_KEY, next);
+      // Alte gespeicherte Dunkel-Wahl aufräumen, damit nichts mehr kippen kann
+      localStorage.removeItem('schichtklar-theme-mode');
+      localStorage.removeItem('jobflow-theme-mode');
     } catch {
       // ignore
     }
   }, []);
 
-  const toggleMode = useCallback(() => {
-    setModeState(prev => {
-      const next = prev === 'light' ? 'dark' : 'light';
-      try {
-        localStorage.setItem(STORAGE_KEY, next);
-      } catch {
-        // ignore
-      }
-      return next;
-    });
-  }, []);
-
-  const value: ThemeModeContextValue = mounted
-    ? { mode, setMode, toggleMode }
-    : { mode, setMode: () => {}, toggleMode: () => {} };
+  const value: ThemeModeContextValue = {
+    mode: 'light',
+    setMode: () => {},
+    toggleMode: () => {},
+  };
 
   return <ThemeModeContext.Provider value={value}>{children}</ThemeModeContext.Provider>;
 }

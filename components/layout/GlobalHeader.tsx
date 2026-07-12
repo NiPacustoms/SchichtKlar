@@ -3,17 +3,14 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { AppLogo } from '@/components/ui/AppLogo';
 import Link from 'next/link';
-import { AppBar, Box, Toolbar, Typography, Button, IconButton } from '@mui/material';
+import { AppBar, Box, Toolbar, Typography, Button } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import DarkModeIcon from '@mui/icons-material/DarkMode';
-import LightModeIcon from '@mui/icons-material/LightMode';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useBrandingSettings } from '@/lib/hooks/useBrandingSettings';
 import { NotificationBell } from '@/components/layout/NotificationBell';
 import { BackButton } from '@/components/layout/BackButton';
-import { useThemeMode } from '@/contexts/ThemeModeContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
 
 export function GlobalHeader() {
@@ -23,7 +20,6 @@ export function GlobalHeader() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { branding } = useBrandingSettings();
-  const { mode, toggleMode } = useThemeMode();
 
   useEffect(() => {
     setMounted(true);
@@ -102,15 +98,6 @@ export function GlobalHeader() {
         </Box>
 
         <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton
-            onClick={toggleMode}
-            color="inherit"
-            sx={{ color: 'text.secondary' }}
-            aria-label={mode === 'dark' ? 'Hellmodus aktivieren' : 'Dunkelmodus aktivieren'}
-          >
-            {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
-          </IconButton>
-
           {user && <NotificationBell />}
 
           {user && !isOnDashboard && (
