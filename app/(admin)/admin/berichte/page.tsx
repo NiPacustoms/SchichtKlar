@@ -5,6 +5,8 @@ import { logger } from '@/lib/logging';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useAdminReports } from '@/lib/hooks/useAdminReports';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { facilityService } from '@/lib/services/facilities';
 import { useTheme } from '@/contexts/ThemeContext';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
@@ -66,6 +68,13 @@ import {
 
 export default function AdminBerichtePage() {
   const { user } = useAuth();
+
+  // Echte Einrichtungen der eigenen Firma für den Filter laden
+  const { data: facilityOptions = [] } = useQuery({
+    queryKey: ['facilities', user?.companyId],
+    queryFn: () => facilityService.getAll(user?.companyId),
+    enabled: !!user?.companyId,
+  });
   useTheme();
 
   const [filters, setFilters] = useState({
@@ -236,9 +245,11 @@ export default function AdminBerichtePage() {
                   onChange={e => handleFilterChange({ facilityId: e.target.value || undefined })}
                 >
                   <MenuItem value="">Alle</MenuItem>
-                  {/* Hier würden echte Einrichtungen geladen */}
-                  <MenuItem value="facility1">Krankenhaus A</MenuItem>
-                  <MenuItem value="facility2">Krankenhaus B</MenuItem>
+                  {facilityOptions.map((f) => (
+                    <MenuItem key={f.id} value={f.id}>
+                      {f.name}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>
