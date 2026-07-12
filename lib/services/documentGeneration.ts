@@ -808,7 +808,7 @@ class DocumentGenerationService {
 
     // ——— Hinweise (Zeiterfassung + Arbeitsschutz) in weicher Box ———
     const hints = [
-      `Bitte denken Sie daran, die Einsatzzeit mittels der zur Verfügung gestellten Zeiterfassungsbögen zu dokumentieren und vom Berechtigten am Einsatzort unterschreiben zu lassen. Die Zeiterfassungsbögen müssen wöchentlich an die ${companyName} Zentrale übermittelt werden (${getLegalInfo().contact.email}).`,
+      `Bitte erfassen Sie Ihre Einsatzzeit direkt in der App und lassen Sie sie vom Berechtigten am Einsatzort digital bestätigen. Die erfassten Zeiten werden automatisch an die ${companyName} Zentrale übermittelt – ein Versand von Papier-Zeiterfassungsbögen ist nicht mehr erforderlich.`,
       'Bitte denken Sie an entsprechende Arbeitsschutzkleidung (Kasack, festes Schuhwerk) und achten Sie die Hygienevorschriften sowie den zur Verfügung gestellten Hautschutzplan.',
     ];
     doc.setFont('helvetica', 'normal');
