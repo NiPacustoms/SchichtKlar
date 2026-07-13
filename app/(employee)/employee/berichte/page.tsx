@@ -5,7 +5,6 @@ import { logger } from '@/lib/logging';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useEmployeeReports, EmployeeReportFilters } from '@/lib/hooks/useEmployeeReports';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { toast } from '@/lib/utils/toast';
@@ -64,7 +63,6 @@ import {
 
 export default function BerichtePage() {
   const { user } = useAuth();
-  useTheme();
 
   const [filters, setFilters] = useState<EmployeeReportFilters>({});
   const [activeTab, setActiveTab] = useState(0);
