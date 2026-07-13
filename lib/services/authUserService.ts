@@ -4,7 +4,7 @@
  * SOTA: Kein direkter Firestore-Zugriff in AuthContext.
  */
 import { User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { db, getDb } from '@/lib/firebase';
 import { User } from '@/lib/types';
 import { SINGLE_COMPANY_ID } from '@/lib/constants/company';
@@ -30,7 +30,28 @@ function isPermissionDeniedError(error: unknown): boolean {
   return getFirestoreErrorCode(error) === 'permission-denied';
 }
 
-function buildDefaultUserDocumentPayload(firebaseUser: FirebaseUser, includeCreatedAt = true) {
+/**
+ * Default-User-Dokument. Rolle & companyId werden aus den Custom Claims
+ * übernommen (register-admin setzt admin + eigene companyId) – nur wenn keine
+ * Claims vorhanden sind, gilt der nurse/Einzeltenant-Fallback. So kann ein
+ * paralleler Default-Schreib beim Registrieren die Admin-Rolle nicht mehr
+ * fälschlich auf 'nurse' zurücksetzen.
+ */
+async function buildDefaultUserDocumentPayload(
+  firebaseUser: FirebaseUser,
+  includeCreatedAt = true
+) {
+  let role: User['role'] = 'nurse';
+  let companyId = SINGLE_COMPANY_ID;
+  try {
+    const tokenResult = await firebaseUser.getIdTokenResult();
+    const claimsRole = tokenResult.claims.role as string | undefined;
+    if (claimsRole === 'admin' || claimsRole === 'nurse') role = claimsRole;
+    const claimsCompanyId = tokenResult.claims.companyId as string | undefined;
+    if (claimsCompanyId) companyId = claimsCompanyId;
+  } catch {
+    // Claims nicht lesbar → Fallback (nurse/Einzeltenant)
+  }
   return {
     id: firebaseUser.uid,
     email: firebaseUser.email || '',
@@ -38,8 +59,8 @@ function buildDefaultUserDocumentPayload(firebaseUser: FirebaseUser, includeCrea
       firebaseUser.displayName ||
       firebaseUser.email?.split('@')[0] ||
       'Unbekannter Benutzer',
-    role: 'nurse',
-    companyId: SINGLE_COMPANY_ID,
+    role,
+    companyId,
     active: true,
     qualifications: [],
     documents: [],
@@ -143,8 +164,14 @@ export async function getOrCreateAuthUser(firebaseUser: FirebaseUser): Promise<U
 
       if (!userDoc.exists() && !attemptedDefaultDocCreation) {
         try {
-          await setDoc(userDocRef, buildDefaultUserDocumentPayload(firebaseUser), {
-            merge: true,
+          // Atomar nur anlegen, wenn wirklich noch nicht vorhanden – so kann eine
+          // parallele Server-Anlage (register-admin: role=admin) nicht überschrieben werden.
+          const payload = await buildDefaultUserDocumentPayload(firebaseUser);
+          await runTransaction(getDb(), async (tx) => {
+            const fresh = await tx.get(userDocRef);
+            if (!fresh.exists()) {
+              tx.set(userDocRef, payload);
+            }
           });
           attemptedDefaultDocCreation = true;
           const newDocSnapshot = await getDoc(userDocRef);
@@ -167,7 +194,7 @@ export async function getOrCreateAuthUser(firebaseUser: FirebaseUser): Promise<U
       const errorCode = getFirestoreErrorCode(error);
       if (errorCode === 'permission-denied' && !attemptedDefaultDocCreation) {
         try {
-          await setDoc(userDocRef, buildDefaultUserDocumentPayload(firebaseUser), {
+          await setDoc(userDocRef, await buildDefaultUserDocumentPayload(firebaseUser), {
             merge: true,
           });
           attemptedDefaultDocCreation = true;
