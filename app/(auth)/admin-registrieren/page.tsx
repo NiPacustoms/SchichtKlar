@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { logger } from '@/lib/logging';
-import { useRouter } from 'next/navigation';
 import { Box, Paper, Typography, TextField, Button, Alert, CircularProgress } from '@mui/material';
 import { auth } from '@/lib/firebase';
 import {
@@ -13,7 +12,6 @@ import {
 import { AuthService } from '@/lib/services/authService';
 
 export default function AdminRegisterPage() {
-  const router = useRouter();
   const [form, setForm] = useState({
     companyName: '',
     displayName: '',
@@ -104,7 +102,10 @@ export default function AdminRegisterPage() {
       const freshToken = await cred.user.getIdToken(true);
       await AuthService.setSessionCookieWithToken(freshToken);
 
-      router.replace('/admin/uebersicht');
+      // Vollständiger Reload statt Client-Navigation: so initialisiert der
+      // AuthContext frisch mit dem jetzt stabilen Admin-User-Dokument
+      // (Rolle=admin, eigene companyId) statt einem evtl. veralteten nurse-Stand.
+      window.location.assign('/admin/uebersicht');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Unbekannter Fehler');
     } finally {
