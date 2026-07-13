@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as nodeCrypto from 'node:crypto';
 import { adminDb } from '@/lib/server/firebaseAdmin';
-import { isAdmin } from '@/lib/utils/authz';
+import { requireAuthContext, HttpError } from '@/lib/server/requestContext';
 import { sendInvitationEmailServer } from '@/lib/server/email';
 import {
   createValidationErrorResponse,
-  createNotFoundErrorResponse,
-  createAuthErrorResponse,
   createErrorResponse,
 } from '@/lib/errors/apiErrorResponse';
 import { createAppError, ErrorCode } from '@/lib/errors/ErrorTypes';
@@ -30,10 +28,21 @@ function generateToken(length = 48): string {
 }
 
 // POST /api/invitations
-// Body: { adminUid: string, email: string }
-// Nutzt Firebase Admin (adminDb), da die Route serverseitig läuft.
+// Auth: Bearer-Token eines Admins. Body: { email: string }
+// Der einladende Admin und dessen companyId werden AUS DEM TOKEN abgeleitet –
+// niemals aus dem Request-Body (sonst Spoofing fremder Companies möglich).
 export async function POST(req: NextRequest) {
-  let body: { adminUid?: string; email?: string } | null = null;
+  let ctx;
+  try {
+    ctx = await requireAuthContext(req, { role: 'admin' });
+  } catch (e) {
+    if (e instanceof HttpError) return e.response;
+    throw e;
+  }
+  const adminUid = ctx.uid;
+  const companyId = ctx.companyId;
+
+  let body: { email?: string } | null = null;
   try {
     body = await req.json();
   } catch {
@@ -43,9 +52,9 @@ export async function POST(req: NextRequest) {
       ROUTE
     );
   }
-  const { adminUid, email } = body || {};
-  if (!adminUid || !email) {
-    return createValidationErrorResponse('adminUid und email erforderlich.', ErrorCode.VALIDATION_REQUIRED_FIELD, ROUTE);
+  const { email } = body || {};
+  if (!email) {
+    return createValidationErrorResponse('email erforderlich.', ErrorCode.VALIDATION_REQUIRED_FIELD, ROUTE);
   }
 
   try {
@@ -53,25 +62,6 @@ export async function POST(req: NextRequest) {
       return createErrorResponse(
         createAppError(new Error('Firebase Admin nicht konfiguriert.'), ErrorCode.INTERNAL_ERROR, { route: ROUTE })
       );
-    }
-
-    const adminSnap = await adminDb.collection('users').doc(adminUid).get();
-    if (!adminSnap.exists)
-      return createNotFoundErrorResponse('Admin nicht gefunden.', ROUTE);
-    const admin = adminSnap.data();
-    if (!isAdmin(admin))
-      return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
-
-    let companyId = admin?.companyId as string | undefined;
-    if (!companyId) {
-      const companyName = (admin?.companyName || admin?.displayName || 'Meine Firma') as string;
-      const companyRef = await adminDb.collection('companies').add({
-        name: companyName,
-        createdByUserId: adminUid,
-        createdAt: FieldValue.serverTimestamp(),
-      });
-      companyId = companyRef.id;
-      await adminDb.collection('users').doc(adminUid).update({ companyId });
     }
 
     const emailTrim = String(email).trim().toLowerCase();
@@ -145,25 +135,24 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET /api/invitations?adminUid=...
+// GET /api/invitations
+// Auth: Bearer-Token eines Admins. Liefert die Einladungen der EIGENEN Company.
 export async function GET(req: NextRequest) {
+  let ctx;
   try {
-    const { searchParams } = new URL(req.url);
-    const adminUid = searchParams.get('adminUid');
-    if (!adminUid) return createValidationErrorResponse('adminUid erforderlich.', ErrorCode.VALIDATION_REQUIRED_FIELD, ROUTE);
+    ctx = await requireAuthContext(req, { role: 'admin' });
+  } catch (e) {
+    if (e instanceof HttpError) return e.response;
+    throw e;
+  }
+  const companyId = ctx.companyId;
 
+  try {
     if (!adminDb) {
       return createErrorResponse(
         createAppError(new Error('Firebase Admin nicht konfiguriert.'), ErrorCode.INTERNAL_ERROR, { route: ROUTE })
       );
     }
-    const adminSnap = await adminDb.collection('users').doc(adminUid).get();
-    if (!adminSnap.exists)
-      return createNotFoundErrorResponse('Admin nicht gefunden.', ROUTE);
-    const admin = adminSnap.data();
-    if (!isAdmin(admin)) return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
-    const companyId = admin?.companyId as string | undefined;
-    if (!companyId) return NextResponse.json({ data: [], total: 0 }, { status: 200 });
 
     const snap = await adminDb.collection('invitations').where('companyId', '==', companyId).get();
     const data = snap.docs.map(d => {

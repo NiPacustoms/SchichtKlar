@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb, verifyIdToken } from '@/lib/server/firebaseAdmin';
-import { SINGLE_COMPANY_ID } from '@/lib/constants/company';
 import {
   createAuthErrorResponse,
   createErrorResponse,
@@ -40,15 +39,16 @@ export async function POST(req: NextRequest) {
 
     const userData = userDoc.data() as { role?: string; companyId?: string } | undefined;
     const role = (userData?.role as string | undefined) || 'nurse';
-    const companyId = (userData?.companyId as string | undefined) || SINGLE_COMPANY_ID;
+    // Multi-Tenant: companyId ausschließlich aus dem User-Dokument übernehmen –
+    // KEIN Fallback auf einen festen Mandanten. Fehlt sie, wird bewusst kein
+    // companyId-Claim gesetzt (Fail-Safe: kein Zugriff statt Fremd-Mandant).
+    const companyId = userData?.companyId as string | undefined;
 
-    if (!userData?.companyId) {
-      await userRef.set(
-        {
-          companyId: SINGLE_COMPANY_ID,
-          updatedAt: new Date(),
-        },
-        { merge: true }
+    if (!companyId) {
+      logger.warn(
+        'sync-claims: User ohne companyId – setze keinen companyId-Claim',
+        { route: ROUTE },
+        { uid: decoded.uid }
       );
     }
 
@@ -56,8 +56,9 @@ export async function POST(req: NextRequest) {
       ...(decoded.customClaims || {}),
       role,
     };
-
-    newClaims.companyId = companyId;
+    if (companyId) {
+      newClaims.companyId = companyId;
+    }
 
     await adminAuth.setCustomUserClaims(decoded.uid, newClaims);
 

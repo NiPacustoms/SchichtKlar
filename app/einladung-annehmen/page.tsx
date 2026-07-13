@@ -66,6 +66,18 @@ function AcceptInviteContent() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.message || 'Fehler bei der Einladung');
       }
+      const created = (await res.json().catch(() => ({}))) as { email?: string };
+
+      // Konto wurde serverseitig angelegt (inkl. Rolle + companyId als Claims).
+      // Jetzt clientseitig anmelden, damit der Token die frischen Claims trägt.
+      if (created.email) {
+        const { getAuthSafe } = await import('@/lib/firebase');
+        const { signInWithEmailAndPassword } = await import('firebase/auth');
+        const auth = getAuthSafe();
+        if (auth) {
+          await signInWithEmailAndPassword(auth, created.email, password);
+        }
+      }
       router.push('/employee/arbeitsplatz');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Unbekannter Fehler');

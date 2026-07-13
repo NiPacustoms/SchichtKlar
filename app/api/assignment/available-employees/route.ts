@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { Firestore } from 'firebase-admin/firestore';
-import { verifyIdToken, adminDb } from '@/lib/server/firebaseAdmin';
+import { adminDb } from '@/lib/server/firebaseAdmin';
+import { requireAuthContext, HttpError } from '@/lib/server/requestContext';
 import { parseShiftToUTC, checkOverlap } from '@/lib/utils/shiftTimeUtils';
 import {
   errorHandler,
   createErrorResponse,
-  createAuthErrorResponse,
   createValidationErrorResponse,
   createAppError,
   ErrorCode,
@@ -131,8 +131,16 @@ export async function OPTIONS() {
 export async function POST(req: NextRequest) {
   const route = '/api/assignment/available-employees';
   const authHeader = req.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return createAuthErrorResponse('UNAUTHENTICATED', route);
+
+  // Token verifizieren und companyId serverseitig ableiten (nur Admins dürfen
+  // Verfügbarkeiten/Matching auslösen). Die companyId aus dem Request-Body wird
+  // IGNORIERT und durch die echte des Aufrufers ersetzt (kein Fremd-Tenant).
+  let ctx;
+  try {
+    ctx = await requireAuthContext(req, { role: 'admin' });
+  } catch (e) {
+    if (e instanceof HttpError) return e.response;
+    throw e;
   }
 
   let body: unknown;
@@ -140,6 +148,10 @@ export async function POST(req: NextRequest) {
     body = await req.json();
   } catch {
     return createValidationErrorResponse('Invalid JSON body', undefined, route);
+  }
+  // companyId im Payload hart auf die des Aufrufers setzen.
+  if (body && typeof body === 'object') {
+    (body as Record<string, unknown>).companyId = ctx.companyId;
   }
 
   if (isCreatePayload(body)) {
@@ -155,7 +167,7 @@ export async function POST(req: NextRequest) {
     try {
       const res = await fetch(cfUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader ?? '' },
         body: JSON.stringify({ data: body }),
       });
       const raw = await res.text();
@@ -228,11 +240,6 @@ export async function POST(req: NextRequest) {
         })
       );
     }
-  }
-
-  const decoded = await verifyIdToken(authHeader);
-  if (!decoded) {
-    return createAuthErrorResponse('UNAUTHORIZED', route);
   }
 
   if (!isAvailablePayload(body)) {

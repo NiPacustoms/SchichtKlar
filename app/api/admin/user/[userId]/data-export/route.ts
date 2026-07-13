@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyIdToken, adminDb, getRoleFromToken } from '@/lib/server/firebaseAdmin';
+import { adminDb } from '@/lib/server/firebaseAdmin';
+import { requireAuthContext, HttpError } from '@/lib/server/requestContext';
 import {
   createAuthErrorResponse,
   createValidationErrorResponse,
@@ -18,21 +19,17 @@ const ROUTE = '/api/admin/user/[userId]/data-export';
  * Nur admin darf für andere User auslösen.
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
+  let ctx;
   try {
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      return createAuthErrorResponse('UNAUTHENTICATED', ROUTE);
-    }
+    ctx = await requireAuthContext(req, { role: 'admin' });
+  } catch (e) {
+    if (e instanceof HttpError) return e.response;
+    throw e;
+  }
 
-    const decoded = await verifyIdToken(authHeader);
-    if (!decoded || !adminDb) {
+  try {
+    if (!adminDb) {
       return createAuthErrorResponse('UNAUTHENTICATED', ROUTE);
-    }
-
-    const role = getRoleFromToken(decoded);
-    const isAdmin = role === 'admin';
-    if (!isAdmin) {
-      return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
     }
 
     const { userId } = await params;
@@ -40,10 +37,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ user
       return createValidationErrorResponse('userId fehlt.', ErrorCode.VALIDATION_REQUIRED_FIELD, ROUTE);
     }
 
-    const callerUid = decoded.uid;
+    const callerUid = ctx.uid;
+    const decoded = { uid: ctx.uid };
     const userDoc = await adminDb.collection('users').doc(userId).get();
     const userData = userDoc.exists ? userDoc.data() : null;
     const companyId = (userData as { companyId?: string } | undefined)?.companyId ?? '';
+
+    // Mandantenisolation: Nur Nutzer der eigenen Company exportierbar.
+    if (!userDoc.exists || companyId !== ctx.companyId) {
+      return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
+    }
 
     await adminDb.collection('auditLogs').add({
       actorUid: callerUid,

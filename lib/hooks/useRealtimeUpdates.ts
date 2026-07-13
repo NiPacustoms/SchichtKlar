@@ -45,8 +45,11 @@ export function useRealtimeUpdates() {
         try {
           // Hole alle Facilities der Company, um nach facilityIds zu filtern
           // Da Firestore 'in' Query max 10 Werte unterstützt, filtern wir client-seitig
+          // Mandantenisolation: companyId-Filter ist unter den strikten
+          // Firestore-Rules Pflicht (sonst permission-denied auf shifts).
           const shiftsQuery = query(
             collection(db, 'shifts'),
+            where('companyId', '==', user.companyId),
             where('date', '>=', new Date())
           );
           const unsubShifts = onSnapshot(shiftsQuery, (snapshot) => {

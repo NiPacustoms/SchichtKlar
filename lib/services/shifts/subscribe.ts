@@ -13,6 +13,9 @@ export function subscribeAll(
   if (!db) return () => void 0;
   try {
     let q = query(collection(db, COLLECTION_NAME), orderBy('date', 'desc'));
+    // Mandantenisolation: companyId-Filter ist unter den strikten Firestore-Rules
+    // Pflicht – ohne ihn lehnt Firestore die shifts-Query ab.
+    if (filters?.companyId) q = query(q, where('companyId', '==', filters.companyId));
     if (filters?.facilityId) q = query(q, where('facilityId', '==', filters.facilityId));
     if (filters?.status) q = query(q, where('status', '==', filters.status));
     if (filters?.type) q = query(q, where('type', '==', filters.type));
