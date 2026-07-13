@@ -10,6 +10,7 @@ import {
   updateProfile,
   sendEmailVerification,
 } from 'firebase/auth';
+import { AuthService } from '@/lib/services/authService';
 
 export default function AdminRegisterPage() {
   const router = useRouter();
@@ -93,9 +94,17 @@ export default function AdminRegisterPage() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data?.message || 'Fehler bei Admin-Registrierung');
+        throw new Error(data?.error?.userMessage || data?.error?.message || data?.message || 'Fehler bei Admin-Registrierung');
       }
-      router.push('/admin/uebersicht');
+
+      // Session-Cookie mit FRISCHEM Token neu setzen: register-admin hat gerade
+      // role=admin + companyId als Custom Claims gesetzt und das User-Dokument
+      // angelegt. Ohne Refresh trägt das Cookie noch die Rolle „nurse" und die
+      // Middleware würde /admin blockieren.
+      const freshToken = await cred.user.getIdToken(true);
+      await AuthService.setSessionCookieWithToken(freshToken);
+
+      router.replace('/admin/uebersicht');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Unbekannter Fehler');
     } finally {
