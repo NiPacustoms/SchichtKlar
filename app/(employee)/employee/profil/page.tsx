@@ -1045,7 +1045,7 @@ export default function ProfilePage() {
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
               Passwort ändern
             </Typography>
-            <IconButton onClick={() => setPasswordDialogOpen(false)} size="small">
+            <IconButton aria-label="Schließen" onClick={() => setPasswordDialogOpen(false)} size="small">
               <Close />
             </IconButton>
           </Box>
@@ -1062,6 +1062,7 @@ export default function ProfilePage() {
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
+                      aria-label={showCurrentPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
                       onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                       edge="end"
                     >
@@ -1081,7 +1082,7 @@ export default function ProfilePage() {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton onClick={() => setShowNewPassword(!showNewPassword)} edge="end">
+                    <IconButton aria-label={showNewPassword ? 'Passwort verbergen' : 'Passwort anzeigen'} onClick={() => setShowNewPassword(!showNewPassword)} edge="end">
                       {showNewPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
@@ -1108,6 +1109,7 @@ export default function ProfilePage() {
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
+                      aria-label={showConfirmPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       edge="end"
                     >

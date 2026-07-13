@@ -92,7 +92,7 @@ export function ConflictBanner({
           >
             {expanded ? 'Weniger' : 'Details'}
           </Button>
-          <IconButton size="small" onClick={handleDismiss}>
+          <IconButton size="small" aria-label="Schließen" onClick={handleDismiss}>
             <Close />
           </IconButton>
         </Box>

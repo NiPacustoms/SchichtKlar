@@ -656,7 +656,7 @@ export default function AdminSettingsPage() {
                   primary="System-Name"
                   secondary={settings.systemName}
                   action={
-                    <IconButton size="small">
+                    <IconButton size="small" aria-label="Bearbeiten">
                       <Edit />
                     </IconButton>
                   }
@@ -665,7 +665,7 @@ export default function AdminSettingsPage() {
                   primary="Standard-Zeitzone"
                   secondary={settings.timezone}
                   action={
-                    <IconButton size="small">
+                    <IconButton size="small" aria-label="Bearbeiten">
                       <Edit />
                     </IconButton>
                   }
@@ -674,7 +674,7 @@ export default function AdminSettingsPage() {
                   primary="Sprache"
                   secondary={settings.language}
                   action={
-                    <IconButton size="small">
+                    <IconButton size="small" aria-label="Bearbeiten">
                       <Edit />
                     </IconButton>
                   }
@@ -683,7 +683,7 @@ export default function AdminSettingsPage() {
                   primary="Währung"
                   secondary={settings.currency}
                   action={
-                    <IconButton size="small">
+                    <IconButton size="small" aria-label="Bearbeiten">
                       <Edit />
                     </IconButton>
                   }
@@ -698,7 +698,7 @@ export default function AdminSettingsPage() {
                   primary="Passwort-Policy"
                   secondary="Mindestens 8 Zeichen, Groß-/Kleinbuchstaben, Zahlen"
                   action={
-                    <IconButton size="small">
+                    <IconButton size="small" aria-label="Bearbeiten">
                       <Edit />
                     </IconButton>
                   }
@@ -707,7 +707,7 @@ export default function AdminSettingsPage() {
                   primary="Session-Timeout"
                   secondary={`${settings.sessionTimeout} Minuten`}
                   action={
-                    <IconButton size="small">
+                    <IconButton size="small" aria-label="Bearbeiten">
                       <Edit />
                     </IconButton>
                   }
@@ -730,7 +730,7 @@ export default function AdminSettingsPage() {
                   primary="Login-Versuche"
                   secondary={`Maximal ${settings.maxLoginAttempts} Versuche`}
                   action={
-                    <IconButton size="small">
+                    <IconButton size="small" aria-label="Bearbeiten">
                       <Edit />
                     </IconButton>
                   }
@@ -834,6 +834,7 @@ export default function AdminSettingsPage() {
                               setSelectedItem(role);
                               setRoleDialogOpen(true);
                             }}
+                            aria-label="Rolle bearbeiten"
                           >
                             <Edit />
                           </IconButton>
@@ -842,6 +843,7 @@ export default function AdminSettingsPage() {
                             onClick={() => handleDeleteRole(role.id)}
                             color="error"
                             disabled={isDeleting}
+                            aria-label="Rolle löschen"
                           >
                             <Delete />
                           </IconButton>
@@ -936,6 +938,7 @@ export default function AdminSettingsPage() {
                               setSelectedItem(docType);
                               setDocumentTypeDialogOpen(true);
                             }}
+                            aria-label="Dokumenttyp bearbeiten"
                           >
                             <Edit />
                           </IconButton>
@@ -944,6 +947,7 @@ export default function AdminSettingsPage() {
                             onClick={() => handleDeleteDocumentType(docType.id)}
                             color="error"
                             disabled={isDeleting}
+                            aria-label="Dokumenttyp löschen"
                           >
                             <Delete />
                           </IconButton>

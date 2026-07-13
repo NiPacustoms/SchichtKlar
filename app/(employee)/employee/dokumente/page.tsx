@@ -1,7 +1,15 @@
 'use client';
+import dynamic from 'next/dynamic';
 import { DocumentCard } from '@/components/documents/DocumentCard';
-import { DocumentUpload } from '@/components/documents/DocumentUpload';
-import { DocumentGenerator } from '@/components/documents/DocumentGenerator';
+// Schwere On-Demand-Dialoge (u. a. jsPDF/pdf-lib) erst bei Bedarf laden
+const DocumentUpload = dynamic(
+  () => import('@/components/documents/DocumentUpload').then((m) => m.DocumentUpload),
+  { ssr: false }
+);
+const DocumentGenerator = dynamic(
+  () => import('@/components/documents/DocumentGenerator').then((m) => m.DocumentGenerator),
+  { ssr: false }
+);
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { PageContainer } from '@/components/layout/PageContainer';
@@ -385,27 +393,31 @@ export default function DocumentsPage() {
         </Box>
       )}
 
-      {/* Upload Dialog */}
-      <DocumentUpload
-        open={showUpload}
-        onClose={() => {
-          setShowUpload(false);
-          setEditingDocument(null);
-        }}
-        onSubmit={handleUpload}
-        isLoading={uploadDocument.isPending}
-        uploadProgress={0} // This would need to be tracked
-      />
+      {/* Upload Dialog – erst bei Bedarf laden */}
+      {showUpload && (
+        <DocumentUpload
+          open={showUpload}
+          onClose={() => {
+            setShowUpload(false);
+            setEditingDocument(null);
+          }}
+          onSubmit={handleUpload}
+          isLoading={uploadDocument.isPending}
+          uploadProgress={0} // This would need to be tracked
+        />
+      )}
 
-      {/* Document Generator Dialog */}
-      <DocumentGenerator
-        open={showGenerator}
-        onClose={() => setShowGenerator(false)}
-        onDocumentGenerated={(url, fileName) => {
-          toast.success(`Dokument "${fileName}" erfolgreich erstellt!`);
-          // Optional: Dokument zur Liste hinzufügen oder Seite neu laden
-        }}
-      />
+      {/* Document Generator Dialog – erst bei Bedarf laden */}
+      {showGenerator && (
+        <DocumentGenerator
+          open={showGenerator}
+          onClose={() => setShowGenerator(false)}
+          onDocumentGenerated={(url, fileName) => {
+            toast.success(`Dokument "${fileName}" erfolgreich erstellt!`);
+            // Optional: Dokument zur Liste hinzufügen oder Seite neu laden
+          }}
+        />
+      )}
     </PageContainer>
   );
 }

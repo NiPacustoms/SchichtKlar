@@ -705,6 +705,7 @@ export function ProfileForm({
                           !isEditing && watch('bankAccount.iban') ? (
                             <InputAdornment position="end">
                               <IconButton
+                                aria-label={showIban ? 'IBAN verbergen' : 'IBAN anzeigen'}
                                 onClick={() => setShowIban(v => !v)}
                                 edge="end"
                                 size="small"

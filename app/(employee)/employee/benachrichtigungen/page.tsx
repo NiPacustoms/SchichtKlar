@@ -457,6 +457,7 @@ export default function EmployeeNotificationsPage() {
               </Select>
             </FormControl>
             <IconButton
+              aria-label="Filter zurücksetzen"
               onClick={() => {
                 setSearchTerm('');
                 setFilterType('all');
@@ -581,6 +582,7 @@ export default function EmployeeNotificationsPage() {
                       <Box sx={{ display: 'flex', gap: 1 }}>
                         <IconButton
                           size="small"
+                          aria-label={notification.read ? 'Als ungelesen markieren' : 'Als gelesen markieren'}
                           onClick={e => {
                             e.stopPropagation();
                             if (notification.read) {
@@ -594,6 +596,7 @@ export default function EmployeeNotificationsPage() {
                         </IconButton>
                         <IconButton
                           size="small"
+                          aria-label="Benachrichtigung löschen"
                           onClick={e => {
                             e.stopPropagation();
                             handleDeleteNotification(notification.id);
@@ -716,6 +719,7 @@ export default function EmployeeNotificationsPage() {
                         <Box sx={{ display: 'flex', gap: 1 }}>
                           <IconButton
                             size="small"
+                            aria-label="Als gelesen markieren"
                             onClick={e => {
                               e.stopPropagation();
                               handleMarkAsRead(notification.id);
@@ -725,6 +729,7 @@ export default function EmployeeNotificationsPage() {
                           </IconButton>
                           <IconButton
                             size="small"
+                            aria-label="Benachrichtigung löschen"
                             onClick={e => {
                               e.stopPropagation();
                               handleDeleteNotification(notification.id);
@@ -838,6 +843,7 @@ export default function EmployeeNotificationsPage() {
                         <Box sx={{ display: 'flex', gap: 1 }}>
                           <IconButton
                             size="small"
+                            aria-label="Als ungelesen markieren"
                             onClick={e => {
                               e.stopPropagation();
                               handleMarkAsUnread(notification.id);
@@ -847,6 +853,7 @@ export default function EmployeeNotificationsPage() {
                           </IconButton>
                           <IconButton
                             size="small"
+                            aria-label="Benachrichtigung löschen"
                             onClick={e => {
                               e.stopPropagation();
                               handleDeleteNotification(notification.id);

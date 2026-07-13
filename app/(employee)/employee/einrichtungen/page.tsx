@@ -380,12 +380,13 @@ export default function EmployeeFacilitiesPage() {
                     <Box>
                       <IconButton
                         size="small"
+                        aria-label="Zu Favoriten hinzufügen"
                         onClick={() => handleAddToFavorites(facility.id)}
                         disabled={isAddingToFavorites}
                       >
                         {facility.isFavorite ? <Favorite color="error" /> : <FavoriteBorder />}
                       </IconButton>
-                      <IconButton size="small" onClick={() => handleGetDirections(facility.id)}>
+                      <IconButton size="small" aria-label="Anfahrt anzeigen" onClick={() => handleGetDirections(facility.id)}>
                         <Directions />
                       </IconButton>
                     </Box>
@@ -436,12 +437,13 @@ export default function EmployeeFacilitiesPage() {
                       <Box>
                         <IconButton
                           size="small"
+                          aria-label="Aus Favoriten entfernen"
                           onClick={() => handleRemoveFromFavorites(facility.id)}
                           disabled={isRemovingFromFavorites}
                         >
                           <Favorite color="error" />
                         </IconButton>
-                        <IconButton size="small" onClick={() => handleGetDirections(facility.id)}>
+                        <IconButton size="small" aria-label="Anfahrt anzeigen" onClick={() => handleGetDirections(facility.id)}>
                           <Directions />
                         </IconButton>
                       </Box>
@@ -478,7 +480,7 @@ export default function EmployeeFacilitiesPage() {
                         secondary={facility.address}
                         secondaryTypographyProps={{ color: 'text.secondary' }}
                       />
-                      <IconButton size="small">
+                      <IconButton size="small" aria-label="Adresse anzeigen">
                         <LocationOn />
                       </IconButton>
                     </ListItem>
@@ -488,7 +490,7 @@ export default function EmployeeFacilitiesPage() {
                         secondary={facility.phone}
                         secondaryTypographyProps={{ color: 'text.secondary' }}
                       />
-                      <IconButton size="small">
+                      <IconButton size="small" aria-label="Anrufen">
                         <Phone />
                       </IconButton>
                     </ListItem>
@@ -498,7 +500,7 @@ export default function EmployeeFacilitiesPage() {
                         secondary={facility.email}
                         secondaryTypographyProps={{ color: 'text.secondary' }}
                       />
-                      <IconButton size="small">
+                      <IconButton size="small" aria-label="E-Mail senden">
                         <Email />
                       </IconButton>
                     </ListItem>
@@ -508,7 +510,7 @@ export default function EmployeeFacilitiesPage() {
                         secondary={facility.contactPerson}
                         secondaryTypographyProps={{ color: 'text.secondary' }}
                       />
-                      <IconButton size="small">
+                      <IconButton size="small" aria-label="Ansprechpartner anzeigen">
                         <People />
                       </IconButton>
                     </ListItem>

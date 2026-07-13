@@ -73,6 +73,7 @@ export const DebouncedSearch = memo<DebouncedSearchProps>(
             <InputAdornment position="end">
               <IconButton
                 onClick={handleClear}
+                aria-label="Suche löschen"
                 size="small"
                 edge="end"
                 sx={{
