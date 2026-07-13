@@ -433,7 +433,7 @@ export default function AssignmentsPage() {
               InputProps={{
                 startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
                 endAdornment: searchTerm && (
-                  <IconButton size="small" onClick={() => setSearchTerm('')}>
+                  <IconButton size="small" onClick={() => setSearchTerm('')} aria-label="Suche löschen">
                     <Clear />
                   </IconButton>
                 ),

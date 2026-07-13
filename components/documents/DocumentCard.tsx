@@ -125,6 +125,7 @@ export function DocumentCard({
             <IconButton
               size="small"
               onClick={handleMenuClick}
+              aria-label={`Weitere Optionen für ${document.name}`}
               sx={{
                 ml: 1,
                 border: '1.5px solid',

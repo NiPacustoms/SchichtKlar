@@ -234,6 +234,7 @@ export function FacilityHoursDashboard({ facilityId }: FacilityHoursDashboardPro
                 onClick={handleExportCSV}
                 disabled={isLoading || summaries.length === 0}
                 color="primary"
+                aria-label="Als CSV exportieren"
                 sx={{ border: '1px solid', borderColor: 'divider', borderRadius: `${radius.md}px` }}
               >
                 <Download />

@@ -166,7 +166,7 @@ export function ShiftManagementCard({
                 size="small"
               />
 
-              <IconButton size="small" onClick={handleMenuOpen}>
+              <IconButton size="small" onClick={handleMenuOpen} aria-label="Weitere Optionen">
                 <MoreVert />
               </IconButton>
             </Box>

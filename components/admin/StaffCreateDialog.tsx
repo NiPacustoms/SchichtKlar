@@ -248,6 +248,7 @@ export function StaffCreateDialog({ open, onClose, onSave }: StaffCreateDialogPr
           <IconButton
             onClick={handleClose}
             size="small"
+            aria-label="Schließen"
             sx={{
               '&:hover': {
                 backgroundColor: 'rgba(0, 0, 0, 0.04)',
