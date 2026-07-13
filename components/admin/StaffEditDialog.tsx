@@ -380,6 +380,7 @@ export function StaffEditDialog({ open, onClose, onSave, staff }: StaffEditDialo
           <IconButton
             onClick={handleClose}
             size="small"
+            aria-label="Schließen"
             sx={{
               '&:hover': {
                 backgroundColor: 'rgba(0, 0, 0, 0.04)',

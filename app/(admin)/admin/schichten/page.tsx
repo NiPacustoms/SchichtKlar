@@ -362,6 +362,7 @@ function AdminShiftsPageContent() {
               </Button>
               <IconButton
                 onClick={() => refetch()}
+                aria-label="Aktualisieren"
                 sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
               >
                 <Refresh />

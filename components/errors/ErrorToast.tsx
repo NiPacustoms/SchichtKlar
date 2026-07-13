@@ -107,6 +107,7 @@ export function ErrorToast({ message, onClose, onAction }: ErrorToastProps) {
             <IconButton
               size="small"
               onClick={handleClose}
+              aria-label="Schließen"
               sx={{ color: 'inherit', minWidth: 44, minHeight: 44 }}
             >
               <Close />

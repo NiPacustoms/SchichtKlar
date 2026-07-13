@@ -186,7 +186,7 @@ export default function AdminBerichtePage() {
             >
               {isExporting ? <CircularProgress size={16} /> : 'Excel'}
             </Button>
-            <IconButton onClick={() => refetch()}>
+            <IconButton onClick={() => refetch()} aria-label="Aktualisieren">
               <Refresh />
             </IconButton>
           </Box>

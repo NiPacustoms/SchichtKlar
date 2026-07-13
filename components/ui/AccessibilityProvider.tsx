@@ -147,6 +147,7 @@ export const AccessibilityProvider = memo<AccessibilityFeaturesProps>(
             <IconButton
               size="small"
               onClick={() => announceToScreenReader('Ansage umgeschaltet')}
+              aria-label="Ansage aktivieren/deaktivieren"
               sx={{
                 bgcolor: 'background.paper',
                 boxShadow: 2,

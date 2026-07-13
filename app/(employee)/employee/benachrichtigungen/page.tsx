@@ -33,8 +33,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemAvatar,
-  ListItemIcon,
   ListItemSecondaryAction,
   Badge,
   Switch,
@@ -74,7 +72,6 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { colors, semanticColors } from '@/lib/design-tokens';
 
 interface TabPanelProps {
   children?: React.ReactNode;

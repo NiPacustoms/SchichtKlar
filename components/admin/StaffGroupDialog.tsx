@@ -179,7 +179,7 @@ export function StaffGroupDialog({ open, onClose, group, staff }: StaffGroupDial
                 : 'Erstelle eine neue Mitarbeitergruppe'}
             </Typography>
           </Box>
-          <IconButton onClick={handleClose} sx={{ ml: 'auto' }} disabled={isSubmitting}>
+          <IconButton onClick={handleClose} aria-label="Schließen" sx={{ ml: 'auto' }} disabled={isSubmitting}>
             <Close />
           </IconButton>
         </Box>
