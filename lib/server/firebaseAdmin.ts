@@ -1,6 +1,5 @@
 import { Buffer } from 'node:buffer';
 import * as admin from 'firebase-admin';
-import { SINGLE_COMPANY_ID } from '@/lib/constants/company';
 
 type ServiceAccountJSON = {
   project_id?: string;
@@ -102,10 +101,16 @@ export function getRoleFromToken(token: admin.auth.DecodedIdToken | null): 'admi
 }
 
 /**
- * Helper-Funktion zum Extrahieren der CompanyId aus einem Firebase Auth Token
+ * Helper-Funktion zum Extrahieren der CompanyId aus einem Firebase Auth Token.
+ * Liest den echten `companyId`-Custom-Claim (Multi-Tenant). Gibt null zurück,
+ * wenn der Claim fehlt – Aufrufer müssen diesen Fall behandeln (kein stilles
+ * Zurückfallen auf einen einzelnen Mandanten mehr).
  */
-export function getCompanyIdFromToken(_: admin.auth.DecodedIdToken | null): string | null {
-  return SINGLE_COMPANY_ID;
+export function getCompanyIdFromToken(token: admin.auth.DecodedIdToken | null): string | null {
+  if (!token) return null;
+  const raw =
+    (token as FirebaseAuthToken).companyId ?? (token as FirebaseAuthToken).customClaims?.companyId;
+  return typeof raw === 'string' && raw.length > 0 ? raw : null;
 }
 
 export async function verifyIdToken(authorizationHeader?: string) {

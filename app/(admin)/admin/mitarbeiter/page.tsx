@@ -422,10 +422,15 @@ export default function StaffManagementPage() {
     const email = window.prompt('E-Mail des Mitarbeiters eingeben:');
     if (!email) return;
     try {
+      const idToken = await firebaseUser?.getIdToken();
+      if (!idToken) throw new Error('Nicht angemeldet');
       const res = await fetch('/api/invitations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminUid: firebaseUser?.uid, email }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ email }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invitationService } from '@/lib/services/invitations';
-import { auth, db } from '@/lib/firebase';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { adminAuth, adminDb } from '@/lib/server/firebaseAdmin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { checkRateLimit, addRateLimitHeaders } from '@/lib/middleware/rateLimit';
 import { validateRequest, acceptInviteSchema } from '@/lib/validations';
 import {
@@ -18,68 +16,91 @@ export const runtime = 'nodejs';
 const ROUTE = '/api/auth/accept-invite';
 
 /**
- * Betriebsmodell: Eingeladene Mitarbeiter erhalten Rolle nurse.
- * Admin registriert Firma (register-admin → admin), lädt ein; Annahme hier → nurse. Siehe docs/ROLLEN-UND-EINLADUNGEN.md.
+ * Betriebsmodell: Eingeladene Mitarbeiter erhalten Rolle nurse und die
+ * companyId der einladenden Firma. Beides wird hier serverseitig per Admin-SDK
+ * gesetzt – inklusive Custom Claims (role, companyId) direkt bei Annahme, damit
+ * der Mitarbeiter sofort mandantenrichtig eingeordnet ist (kein Warten auf
+ * sync-claims). Siehe docs/ROLLEN-UND-EINLADUNGEN.md.
  */
 // POST /api/auth/accept-invite
-// Body: { token: string, password: string, displayName?: string, firstName?, lastName? }
+// Body: { token: string, password: string, firstName?, lastName? }
 export async function POST(req: NextRequest) {
   try {
-    // Rate Limiting prüfen (IP-basiert für Auth-Routen)
     const rateLimitResponse = checkRateLimit(req);
     if (rateLimitResponse) {
       return rateLimitResponse;
     }
 
-    // Request-Body validieren
     const validation = await validateRequest(req, acceptInviteSchema);
     if (!validation.success) {
       return validation.response;
     }
-    const body = validation.data;
-    const { token, password, firstName, lastName } = body;
+    const { token, password, firstName, lastName } = validation.data;
     const displayName = firstName && lastName ? `${firstName} ${lastName}` : undefined;
 
-    const invite = await invitationService.getByToken(token);
-    if (!invite) return createNotFoundErrorResponse('Einladung nicht gefunden.', ROUTE);
-    if (invite.acceptedAt)
-      return createValidationErrorResponse('Einladung bereits verwendet.', ErrorCode.VALIDATION_DUPLICATE_VALUE, ROUTE);
-    const now = Date.now();
-    const exp = invite.expiresAt?.getTime?.() || 0;
-    if (exp && now > exp)
-      return createErrorResponse(createAppError(new Error('Einladung abgelaufen.'), ErrorCode.INVITATION_EXPIRED, { route: ROUTE }));
-
-    // 1) Firebase Auth Benutzer anlegen (mit E-Mail aus Einladung)
-    if (!auth) throw new Error('Auth not initialized');
-    const cred = await createUserWithEmailAndPassword(auth!, invite.email, password);
-    const user = cred.user;
-    if (displayName) {
-      await updateProfile(user, { displayName });
+    if (!adminAuth || !adminDb) {
+      return createErrorResponse(
+        createAppError(new Error('Firebase Admin nicht konfiguriert.'), ErrorCode.INTERNAL_ERROR, {
+          route: ROUTE,
+        })
+      );
     }
 
-    // E-Mail-Verifizierung senden
-    try {
-      const { sendEmailVerification } = await import('firebase/auth');
-      const actionCodeSettings = {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/anmelden`,
-        handleCodeInApp: false,
-      };
-      await sendEmailVerification(user, actionCodeSettings);
-    } catch (emailError) {
-      // E-Mail-Verifizierung ist nicht kritisch, nur loggen
-      logger.warn('Failed to send email verification', {}, { error: emailError });
+    // 0) Einladung per Admin-SDK laden und validieren
+    const inviteSnap = await adminDb
+      .collection('invitations')
+      .where('token', '==', token)
+      .limit(1)
+      .get();
+    if (inviteSnap.empty) return createNotFoundErrorResponse('Einladung nicht gefunden.', ROUTE);
+    const inviteDoc = inviteSnap.docs[0];
+    const invite = inviteDoc.data() as {
+      email: string;
+      companyId: string;
+      acceptedAt?: unknown;
+      expiresAt?: { toDate?: () => Date } | string | number | null;
+    };
+    if (invite.acceptedAt) {
+      return createValidationErrorResponse(
+        'Einladung bereits verwendet.',
+        ErrorCode.VALIDATION_DUPLICATE_VALUE,
+        ROUTE
+      );
+    }
+    const expDate =
+      (invite.expiresAt as { toDate?: () => Date })?.toDate?.() ??
+      (invite.expiresAt ? new Date(invite.expiresAt as string | number) : null);
+    if (expDate && Date.now() > expDate.getTime()) {
+      return createErrorResponse(
+        createAppError(new Error('Einladung abgelaufen.'), ErrorCode.INVITATION_EXPIRED, {
+          route: ROUTE,
+        })
+      );
     }
 
-    // 2) Firestore User-Dokument anlegen (serverseitig Rolle & companyId)
-    if (!db) throw new Error('Firestore not initialized');
-    await setDoc(
-      doc(db, 'users', user.uid),
+    const email = String(invite.email).trim().toLowerCase();
+    const companyId = invite.companyId;
+
+    // 1) Firebase-Auth-Benutzer per Admin-SDK anlegen
+    const created = await adminAuth.createUser({
+      email,
+      password,
+      displayName: displayName || email.split('@')[0] || 'Mitarbeiter',
+      emailVerified: false,
+    });
+    const uid = created.uid;
+
+    // 2) Custom Claims (Rolle + Mandant) sofort setzen
+    await adminAuth.setCustomUserClaims(uid, { role: 'nurse', companyId });
+
+    // 3) Firestore-User-Dokument per Admin-SDK anlegen
+    await adminDb.collection('users').doc(uid).set(
       {
-        id: user.uid,
-        email: invite.email,
-        displayName: displayName || user.email?.split('@')[0] || 'Mitarbeiter',
+        id: uid,
+        email,
+        displayName: displayName || email.split('@')[0] || 'Mitarbeiter',
         role: 'nurse',
-        companyId: invite.companyId,
+        companyId,
         active: true,
         qualifications: [],
         documents: [],
@@ -96,27 +117,31 @@ export async function POST(req: NextRequest) {
           documentExpiry: true,
           systemAnnouncements: true,
         },
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }
     );
 
-    // 3) Einladung als akzeptiert markieren (einmalig nutzbar)
-    await invitationService.markAcceptedByToken(token);
+    // 4) Einladung als akzeptiert markieren (einmalig nutzbar)
+    await inviteDoc.ref.update({ acceptedAt: FieldValue.serverTimestamp() });
 
-    const response = NextResponse.json(
-      { userId: user.uid, companyId: invite.companyId },
-      { status: 201 }
-    );
+    // email an den Client zurückgeben, damit er sich direkt anmelden kann
+    const response = NextResponse.json({ userId: uid, companyId, email }, { status: 201 });
     return addRateLimitHeaders(response, req);
   } catch (e: unknown) {
-    logger.error(
-      'Error in accept-invite',
-      e instanceof Error ? e : undefined,
-      { route: ROUTE, timestamp: new Date() },
-      { component: 'POST /api/auth/accept-invite' }
-    );
-    return createErrorResponse(createAppError(e instanceof Error ? e : new Error('Internal error'), ErrorCode.INTERNAL_ERROR, { route: ROUTE }));
+    const err = e instanceof Error ? e : new Error(String(e));
+    const code = (e as { code?: string })?.code;
+    if (code === 'auth/email-already-exists') {
+      return createValidationErrorResponse(
+        'Für diese E-Mail existiert bereits ein Konto. Bitte melden Sie sich an.',
+        ErrorCode.VALIDATION_DUPLICATE_VALUE,
+        ROUTE
+      );
+    }
+    logger.error('Error in accept-invite', err, { route: ROUTE }, {
+      component: 'POST /api/auth/accept-invite',
+    });
+    return createErrorResponse(createAppError(err, ErrorCode.INTERNAL_ERROR, { route: ROUTE }));
   }
 }

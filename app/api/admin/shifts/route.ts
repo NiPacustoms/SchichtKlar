@@ -1,19 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { shiftService } from '@/lib/services/shifts';
-import { verifyIdToken, getRoleFromToken } from '@/lib/server/firebaseAdmin';
-import { adminDb } from '@/lib/server/firebaseAdmin';
+import { requireAuthContext, HttpError } from '@/lib/server/requestContext';
 import { checkRateLimit, addRateLimitHeaders } from '@/lib/middleware/rateLimit';
 import { validateRequest, shiftsQuerySchema, createShiftSchema } from '@/lib/validations';
 import { logger } from '@/lib/errors';
 export const runtime = 'nodejs';
-
-/** Antwort für authentifizierte, aber nicht-Admin-Nutzer auf /api/admin/*-Routen. */
-function forbiddenResponse() {
-  return NextResponse.json(
-    { success: false, error: 'Nur Administratoren dürfen diese Route aufrufen.', code: 'FORBIDDEN' },
-    { status: 403 }
-  );
-}
 
 /**
  * GET /api/admin/shifts
@@ -30,26 +21,15 @@ function forbiddenResponse() {
  * Example: /api/admin/shifts?status=open&facilityId=abc123
  */
 export async function GET(request: NextRequest) {
+  let ctx;
   try {
-    // Authenticate user
-    const authHeader = request.headers.get('authorization');
-    const decoded = await verifyIdToken(authHeader || undefined);
-
-    if (!decoded) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthenticated. Please provide a valid authorization token.',
-          code: 'UNAUTHENTICATED',
-        },
-        { status: 401 }
-      );
-    }
-
-    if (getRoleFromToken(decoded) !== 'admin') {
-      return forbiddenResponse();
-    }
-
+    ctx = await requireAuthContext(request, { role: 'admin' });
+  } catch (e) {
+    if (e instanceof HttpError) return e.response;
+    throw e;
+  }
+  const decoded = { uid: ctx.uid };
+  try {
     // Rate Limiting prüfen
     const rateLimitResponse = checkRateLimit(request, decoded.uid);
     if (rateLimitResponse) {
@@ -63,23 +43,9 @@ export async function GET(request: NextRequest) {
     }
     const queryParams = validation.data;
 
-    // Get user data to retrieve companyId
-    let companyId: string | undefined;
-    if (adminDb) {
-      try {
-        const userDoc = await adminDb.collection('users').doc(decoded.uid).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          companyId = userData?.companyId as string | undefined;
-        }
-      } catch (userError) {
-        logger.warn('Could not fetch user data for companyId', {}, { error: userError });
-        // Continue without companyId filter - this might be a permission issue
-        // Don't throw error, just log and continue
-      }
-    } else {
-      logger.warn('adminDb not available, continuing without companyId filter');
-    }
+    // Mandantenisolation: companyId ist garantiert gesetzt (sonst 400 in
+    // requireAuthContext). NIE ungefiltert weiterlaufen.
+    const companyId: string = ctx.companyId;
 
     // Build filters object aus validierten Query-Parametern
     const filters = {
@@ -188,26 +154,15 @@ export async function GET(request: NextRequest) {
  * }
  */
 export async function POST(request: NextRequest) {
+  let ctx;
   try {
-    // Authenticate user
-    const authHeader = request.headers.get('authorization');
-    const decoded = await verifyIdToken(authHeader || undefined);
-
-    if (!decoded) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthenticated. Please provide a valid authorization token.',
-          code: 'UNAUTHENTICATED',
-        },
-        { status: 401 }
-      );
-    }
-
-    if (getRoleFromToken(decoded) !== 'admin') {
-      return forbiddenResponse();
-    }
-
+    ctx = await requireAuthContext(request, { role: 'admin' });
+  } catch (e) {
+    if (e instanceof HttpError) return e.response;
+    throw e;
+  }
+  const decoded = { uid: ctx.uid };
+  try {
     // Rate Limiting prüfen
     const rateLimitResponse = checkRateLimit(request, decoded.uid);
     if (rateLimitResponse) {
@@ -243,6 +198,7 @@ export async function POST(request: NextRequest) {
 
     const shiftId = await shiftService.create({
       title: body.title || `${body.type || 'Schicht'} - ${startTimeStr}`,
+      companyId: ctx.companyId,
       facilityId: body.facilityId,
       date: dateStr,
       startTime: startTimeStr,

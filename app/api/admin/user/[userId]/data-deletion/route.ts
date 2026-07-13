@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyIdToken, adminDb, adminAuth, getRoleFromToken } from '@/lib/server/firebaseAdmin';
+import { adminDb, adminAuth } from '@/lib/server/firebaseAdmin';
+import { requireAuthContext, HttpError } from '@/lib/server/requestContext';
 import {
   createAuthErrorResponse,
   createValidationErrorResponse,
@@ -18,26 +19,33 @@ const ROUTE = '/api/admin/user/[userId]/data-deletion';
  * Nur admin darf für andere User auslösen.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
+  let ctx;
   try {
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      return createAuthErrorResponse('UNAUTHENTICATED', ROUTE);
-    }
+    ctx = await requireAuthContext(req, { role: 'admin' });
+  } catch (e) {
+    if (e instanceof HttpError) return e.response;
+    throw e;
+  }
+  const decoded = { uid: ctx.uid };
 
-    const decoded = await verifyIdToken(authHeader);
-    if (!decoded || !adminDb || !adminAuth) {
+  try {
+    if (!adminDb || !adminAuth) {
       return createAuthErrorResponse('UNAUTHENTICATED', ROUTE);
-    }
-
-    const role = getRoleFromToken(decoded);
-    const isAdmin = role === 'admin';
-    if (!isAdmin) {
-      return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
     }
 
     const { userId } = await params;
     if (!userId) {
       return createValidationErrorResponse('userId fehlt.', ErrorCode.VALIDATION_REQUIRED_FIELD, ROUTE);
+    }
+
+    // Mandantenisolation: Ziel-User muss zur Company des Admins gehören.
+    const targetSnap = await adminDb.collection('users').doc(userId).get();
+    if (!targetSnap.exists) {
+      return createValidationErrorResponse('Benutzer nicht gefunden.', ErrorCode.VALIDATION_REQUIRED_FIELD, ROUTE);
+    }
+    const targetCompanyId = (targetSnap.data() as { companyId?: string } | undefined)?.companyId;
+    if (targetCompanyId !== ctx.companyId) {
+      return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
     }
 
     const body = await req.json().catch(() => ({}));

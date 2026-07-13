@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, adminAuth, verifyIdToken, getRoleFromToken } from '@/lib/server/firebaseAdmin';
+import { adminDb, adminAuth } from '@/lib/server/firebaseAdmin';
+import { requireAuthContext, HttpError } from '@/lib/server/requestContext';
 import { logger } from '@/lib/logging';
 import { Timestamp } from 'firebase-admin/firestore';
 import {
@@ -21,23 +22,16 @@ const ROUTE = '/api/users/[userId]';
  * Nur Admins können diese Route aufrufen
  */
 export async function DELETE(req: NextRequest, context: { params: Promise<{ userId: string }> }) {
+  let ctx;
   try {
-    const authorization = req.headers.get('authorization');
-    if (!authorization) {
-      return createAuthErrorResponse('UNAUTHENTICATED', ROUTE);
-    }
+    ctx = await requireAuthContext(req, { role: 'admin' });
+  } catch (e) {
+    if (e instanceof HttpError) return e.response;
+    throw e;
+  }
+  const decoded = { uid: ctx.uid };
 
-    const decoded = await verifyIdToken(authorization);
-    if (!decoded) {
-      return createAuthErrorResponse('UNAUTHENTICATED', ROUTE);
-    }
-
-    // Prüfe, ob der Benutzer ein Admin ist
-    const role = getRoleFromToken(decoded);
-    if (role !== 'admin') {
-      return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
-    }
-
+  try {
     if (!adminDb || !adminAuth) {
       logger.warn('User delete API: adminDb or adminAuth not initialized');
       const appError = createAppError(
@@ -68,9 +62,10 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ user
     const userData = userDoc.data();
     const companyId = userData?.companyId as string | undefined;
 
-    // Prüfe, ob der Admin die Berechtigung hat, diesen User zu löschen (gleiche Company)
-    const adminCompanyId = (decoded as { companyId?: string })?.companyId;
-    if (adminCompanyId && companyId && adminCompanyId !== companyId) {
+    // Mandantenisolation (strikt): Admin darf nur Nutzer der EIGENEN Company
+    // löschen. ctx.companyId ist garantiert gesetzt (sonst 400 in requireAuthContext).
+    const adminCompanyId = ctx.companyId;
+    if (companyId !== adminCompanyId) {
       return createAuthErrorResponse('UNAUTHORIZED', ROUTE);
     }
 

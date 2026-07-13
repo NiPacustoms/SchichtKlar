@@ -22,34 +22,41 @@ service cloud.firestore {
       return isAuthenticated() && (hasRole('admin') || hasRoleFromUserDoc('admin'));
     }
 
-    // Helper-Funktion für Mandantenisolation
-    // Prüft, ob der User zur gleichen Company gehört wie das Dokument
-    // Ermittelt die CompanyId des Requestors entweder aus dem Token oder dem User-Dokument
+    // ── Mandantenisolation (echt, Multi-Tenant) ────────────────────────────
+    // CompanyId des Requestors: primär aus dem Custom-Claim (billig, kein
+    // Dokument-Read), Fallback auf das User-Dokument, solange der Claim (z. B.
+    // vor dem Backfill/Token-Refresh) noch nicht gesetzt ist. Der Fallback-get()
+    // wird dank Kurzschluss nur ausgewertet, wenn der Claim fehlt.
+    function requesterCompanyIdFromUserDoc() {
+      let doc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return (doc != null && doc.data != null) ? doc.data.companyId : null;
+    }
+
     function getRequesterCompanyId() {
-      return 'aufabruf';
+      return isAuthenticated()
+        ? (request.auth.token.companyId != null
+            ? request.auth.token.companyId
+            : requesterCompanyIdFromUserDoc())
+        : null;
     }
 
-    function getRequesterCompanyIdFromDoc() {
-      return 'aufabruf';
-    }
-
+    // Für Aggregations-/List-Queries: der Requestor muss überhaupt einem
+    // Unternehmen zugeordnet sein. Die Dokument-Regeln filtern pro Dokument.
     function hasCompanyContext() {
-      return true;
+      return getRequesterCompanyId() != null;
     }
 
-    // ACHTUNG (Single-Tenant-Modell): Diese App wird pro Kunde als eigenes
-    // Firebase-Projekt betrieben (SINGLE_COMPANY_ID). Es gibt bewusst keine
-    // Mandantentrennung auf Rules-Ebene. Vor einem Multi-Tenant-Betrieb MUSS
-    // diese Funktion echt implementiert werden (Vergleich mit
-    // request.auth.token.companyId) und alle List-Queries brauchen einen
-    // where('companyId','==',...)-Filter. Siehe tests/rules/.
+    // Prüft, ob das Dokument zur gleichen Company gehört wie der Requestor.
+    // Legacy-Dokumente ohne companyId (null) werden zur Migration toleriert.
     function belongsToSameCompany(resourceCompanyId) {
-      return true;
+      return resourceCompanyId == null || resourceCompanyId == getRequesterCompanyId();
     }
 
-    // Prüft, ob das zu erstellende Dokument zur gleichen Company gehört wie der User
+    // Prüft, ob ein zu schreibendes Dokument der eigenen Company zugeordnet wird.
+    // Ein fehlender (null) Wert wird toleriert (serverseitig/Legacy), ein
+    // GESETZTER Wert muss der eigenen Company entsprechen (kein Fremd-Tenant).
     function creatingForSameCompany(requestCompanyId) {
-      return true;
+      return requestCompanyId == null || requestCompanyId == getRequesterCompanyId();
     }
 
     // Users: Jede Mitarbeiter-Rolle ist von anderen getrennt – nur eigene Daten lesbar.
@@ -110,9 +117,9 @@ service cloud.firestore {
       allow list: if hasCompanyContext();
     }
 
-    // Shifts: Lesen für authentifizierte Nutzer; Schreiben nur Admin mit Mandantenisolation
+    // Shifts: Lesen nur innerhalb der eigenen Company; Schreiben nur Admin mit Mandantenisolation
     match /shifts/{shiftId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId);
       allow create: if isAdmin() && (
         request.resource.data.companyId == null ||
         creatingForSameCompany(request.resource.data.companyId)
@@ -187,11 +194,11 @@ service cloud.firestore {
     }
     
 
-    // Admin Announcements: Ankündigungen
+    // Admin Announcements: Ankündigungen (mandantengebunden)
     match /adminAnnouncements/{announcementId} {
-      allow read: if isAuthenticated();
-      allow create: if isAdmin();
-      allow update, delete: if isAdmin();
+      allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId);
+      allow create: if isAdmin() && creatingForSameCompany(request.resource.data.companyId);
+      allow update, delete: if isAdmin() && belongsToSameCompany(resource.data.companyId);
     }
 
     // Activities: Aktivitäts-Log mit Mandantenisolation
@@ -250,13 +257,15 @@ service cloud.firestore {
     }
     
 
-    // Wochenstunden-Limit: Anträge auf Erhöhung (Pflegekraft → Admin)
+    // Wochenstunden-Limit: Anträge auf Erhöhung (Pflegekraft → Admin), mandantengebunden
     match /limitIncreaseRequests/{requestId} {
-      allow read: if isAuthenticated() && (
+      allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
         resource.data.mitarbeiterId == request.auth.uid || isAdmin()
       );
-      allow create: if isAuthenticated() && request.resource.data.mitarbeiterId == request.auth.uid;
-      allow update, delete: if isAdmin();
+      allow create: if isAuthenticated() &&
+        request.resource.data.mitarbeiterId == request.auth.uid &&
+        creatingForSameCompany(request.resource.data.companyId);
+      allow update, delete: if isAdmin() && belongsToSameCompany(resource.data.companyId);
     }
 
     // Times: Zeiterfassung (Arbeitszeiten, Pausen, Krankheit)

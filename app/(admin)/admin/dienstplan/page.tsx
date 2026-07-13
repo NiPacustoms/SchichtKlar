@@ -88,6 +88,7 @@ export default function AdminDienstplanPage() {
   useEffect(() => {
     const unsubscribe = shiftService.subscribeAll(
       {
+        companyId: user?.companyId || undefined,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
         status: statusFilter === 'ended' ? undefined : (statusFilter || undefined),
