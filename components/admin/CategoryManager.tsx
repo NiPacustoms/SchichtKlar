@@ -206,7 +206,7 @@ export function CategoryManager({ open, onClose, onSave }: CategoryManagerProps)
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
             Kategorien verwalten
           </Typography>
-          <IconButton onClick={handleClose} size="small">
+          <IconButton onClick={handleClose} size="small" aria-label="Schließen">
             <Close />
           </IconButton>
         </Box>
@@ -270,10 +270,10 @@ export function CategoryManager({ open, onClose, onSave }: CategoryManagerProps)
                           onKeyPress={handleKeyPress}
                           autoFocus
                         />
-                        <IconButton onClick={handleSaveEdit} color="primary">
+                        <IconButton onClick={handleSaveEdit} color="primary" aria-label="Speichern">
                           <Save />
                         </IconButton>
-                        <IconButton onClick={handleCancelEdit}>
+                        <IconButton onClick={handleCancelEdit} aria-label="Abbrechen">
                           <Cancel />
                         </IconButton>
                       </Box>
@@ -285,6 +285,7 @@ export function CategoryManager({ open, onClose, onSave }: CategoryManagerProps)
                             edge="end"
                             onClick={() => handleStartEdit('jobTitles', index)}
                             size="small"
+                            aria-label="Bearbeiten"
                           >
                             <Edit />
                           </IconButton>
@@ -293,6 +294,7 @@ export function CategoryManager({ open, onClose, onSave }: CategoryManagerProps)
                             onClick={() => handleDeleteItem('jobTitles', index)}
                             size="small"
                             color="error"
+                            aria-label="Löschen"
                           >
                             <Delete />
                           </IconButton>
@@ -356,10 +358,10 @@ export function CategoryManager({ open, onClose, onSave }: CategoryManagerProps)
                           onKeyPress={handleKeyPress}
                           autoFocus
                         />
-                        <IconButton onClick={handleSaveEdit} color="primary">
+                        <IconButton onClick={handleSaveEdit} color="primary" aria-label="Speichern">
                           <Save />
                         </IconButton>
-                        <IconButton onClick={handleCancelEdit}>
+                        <IconButton onClick={handleCancelEdit} aria-label="Abbrechen">
                           <Cancel />
                         </IconButton>
                       </Box>
@@ -378,6 +380,7 @@ export function CategoryManager({ open, onClose, onSave }: CategoryManagerProps)
                             edge="end"
                             onClick={() => handleStartEdit('roles', index)}
                             size="small"
+                            aria-label="Bearbeiten"
                           >
                             <Edit />
                           </IconButton>
@@ -386,6 +389,7 @@ export function CategoryManager({ open, onClose, onSave }: CategoryManagerProps)
                             onClick={() => handleDeleteItem('roles', index)}
                             size="small"
                             color="error"
+                            aria-label="Löschen"
                           >
                             <Delete />
                           </IconButton>
@@ -445,10 +449,10 @@ export function CategoryManager({ open, onClose, onSave }: CategoryManagerProps)
                           onKeyPress={handleKeyPress}
                           autoFocus
                         />
-                        <IconButton onClick={handleSaveEdit} color="primary">
+                        <IconButton onClick={handleSaveEdit} color="primary" aria-label="Speichern">
                           <Save />
                         </IconButton>
-                        <IconButton onClick={handleCancelEdit}>
+                        <IconButton onClick={handleCancelEdit} aria-label="Abbrechen">
                           <Cancel />
                         </IconButton>
                       </Box>
@@ -460,6 +464,7 @@ export function CategoryManager({ open, onClose, onSave }: CategoryManagerProps)
                             edge="end"
                             onClick={() => handleStartEdit('groups', index)}
                             size="small"
+                            aria-label="Bearbeiten"
                           >
                             <Edit />
                           </IconButton>
@@ -468,6 +473,7 @@ export function CategoryManager({ open, onClose, onSave }: CategoryManagerProps)
                             onClick={() => handleDeleteItem('groups', index)}
                             size="small"
                             color="error"
+                            aria-label="Löschen"
                           >
                             <Delete />
                           </IconButton>
@@ -529,10 +535,10 @@ export function CategoryManager({ open, onClose, onSave }: CategoryManagerProps)
                           onKeyPress={handleKeyPress}
                           autoFocus
                         />
-                        <IconButton onClick={handleSaveEdit} color="primary">
+                        <IconButton onClick={handleSaveEdit} color="primary" aria-label="Speichern">
                           <Save />
                         </IconButton>
-                        <IconButton onClick={handleCancelEdit}>
+                        <IconButton onClick={handleCancelEdit} aria-label="Abbrechen">
                           <Cancel />
                         </IconButton>
                       </Box>
@@ -544,6 +550,7 @@ export function CategoryManager({ open, onClose, onSave }: CategoryManagerProps)
                             edge="end"
                             onClick={() => handleStartEdit('qualifications', index)}
                             size="small"
+                            aria-label="Bearbeiten"
                           >
                             <Edit />
                           </IconButton>
@@ -552,6 +559,7 @@ export function CategoryManager({ open, onClose, onSave }: CategoryManagerProps)
                             onClick={() => handleDeleteItem('qualifications', index)}
                             size="small"
                             color="error"
+                            aria-label="Löschen"
                           >
                             <Delete />
                           </IconButton>

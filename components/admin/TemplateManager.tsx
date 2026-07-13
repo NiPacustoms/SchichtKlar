@@ -1022,12 +1022,12 @@ export function TemplateManager() {
                   <TableCell align="right">
                     <Stack direction="row" spacing={1} justifyContent="flex-end">
                       <Tooltip title="Vorschau">
-                        <IconButton onClick={() => setPreviewTemplate(template)} size="small">
+                        <IconButton onClick={() => setPreviewTemplate(template)} size="small" aria-label="Vorschau">
                           <Visibility fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Bearbeiten">
-                        <IconButton onClick={() => openEditDialog(template)} size="small">
+                        <IconButton onClick={() => openEditDialog(template)} size="small" aria-label="Bearbeiten">
                           <Edit fontSize="small" />
                         </IconButton>
                       </Tooltip>
@@ -1036,6 +1036,7 @@ export function TemplateManager() {
                           onClick={() => setDeleteTarget(template)}
                           size="small"
                           color="error"
+                          aria-label="Löschen"
                         >
                           <Delete fontSize="small" />
                         </IconButton>

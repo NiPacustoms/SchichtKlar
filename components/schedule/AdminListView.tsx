@@ -480,7 +480,7 @@ export function AdminListView({
                   <TableCell align="right">
                     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                       <Tooltip title="Bearbeiten">
-                        <IconButton size="small" onClick={() => onEdit(shift)} color="primary">
+                        <IconButton size="small" aria-label="Schicht bearbeiten" onClick={() => onEdit(shift)} color="primary">
                           <Edit />
                         </IconButton>
                       </Tooltip>
@@ -488,6 +488,7 @@ export function AdminListView({
                       <Tooltip title="Zuweisen">
                         <IconButton
                           size="small"
+                          aria-label="Mitarbeiter zuweisen"
                           onClick={() => onAssign(shift)}
                           color="success"
                           disabled={isFullyAssigned}
@@ -496,7 +497,7 @@ export function AdminListView({
                         </IconButton>
                       </Tooltip>
 
-                      <IconButton size="small" onClick={e => handleMenuOpen(e, shift)}>
+                      <IconButton size="small" aria-label="Weitere Optionen" onClick={e => handleMenuOpen(e, shift)}>
                         <MoreVert />
                       </IconButton>
                     </Box>

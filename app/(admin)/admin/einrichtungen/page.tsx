@@ -307,6 +307,7 @@ export default function AdminEinrichtungenPage() {
                             size="small"
                             onClick={() => handleEdit(facility)}
                             sx={{ mr: 1 }}
+                            aria-label={`${facility.name} bearbeiten`}
                           >
                             <Edit />
                           </IconButton>
@@ -316,6 +317,7 @@ export default function AdminEinrichtungenPage() {
                             size="small"
                             onClick={() => handleDelete(facility)}
                             color="error"
+                            aria-label={`${facility.name} löschen`}
                           >
                             <Delete />
                           </IconButton>

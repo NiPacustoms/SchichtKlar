@@ -864,6 +864,7 @@ export default function StaffManagementPage() {
                           setEditDialogOpen(true);
                         }}
                         color="primary"
+                        aria-label={`${member.displayName || member.email || 'Mitarbeiter'} bearbeiten`}
                       >
                         <Edit />
                       </IconButton>
@@ -872,6 +873,7 @@ export default function StaffManagementPage() {
                         onClick={() => handleToggleActive(member.id)}
                         color={member.active ? 'warning' : 'success'}
                         disabled={toggleActiveMutation.isPending}
+                        aria-label={member.active ? 'Deaktivieren' : 'Aktivieren'}
                       >
                         <Visibility />
                       </IconButton>
@@ -881,6 +883,7 @@ export default function StaffManagementPage() {
                       onClick={() => handleDeleteStaff(member.id)}
                       color="error"
                       disabled={deleteStaffMutation.isPending}
+                      aria-label={`${member.displayName || member.email || 'Mitarbeiter'} löschen`}
                     >
                       <Delete />
                     </IconButton>

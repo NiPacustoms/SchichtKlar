@@ -93,7 +93,7 @@ export function StaffGroupManager({ open, onClose, onSave }: StaffGroupManagerPr
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
             Gruppen verwalten
           </Typography>
-          <IconButton onClick={handleClose} size="small">
+          <IconButton onClick={handleClose} size="small" aria-label="Schließen">
             <Close />
           </IconButton>
         </Box>
@@ -172,7 +172,7 @@ export function StaffGroupManager({ open, onClose, onSave }: StaffGroupManagerPr
                     <>
                       <ListItemText primary={group} secondary={`Gruppe ${index + 1}`} />
                       <ListItemSecondaryAction>
-                        <IconButton edge="end" onClick={() => handleStartEdit(group)} size="small">
+                        <IconButton edge="end" onClick={() => handleStartEdit(group)} size="small" aria-label="Bearbeiten">
                           <Edit />
                         </IconButton>
                         <IconButton
@@ -180,6 +180,7 @@ export function StaffGroupManager({ open, onClose, onSave }: StaffGroupManagerPr
                           onClick={() => handleDeleteGroup(group)}
                           size="small"
                           color="error"
+                          aria-label="Löschen"
                         >
                           <Delete />
                         </IconButton>

@@ -453,6 +453,7 @@ export default function AdminCalendarView({
                           <IconButton
                             size="small"
                             edge="end"
+                            aria-label="Weitere Optionen"
                             onClick={event => {
                               event.stopPropagation();
                               handleOpenMenu(event, shift);
@@ -624,6 +625,7 @@ export default function AdminCalendarView({
             )}
             <IconButton
               size="small"
+              aria-label="Weitere Optionen"
               onClick={e => {
                 e.stopPropagation();
                 handleOpenMenu(e, shift);
