@@ -33,11 +33,11 @@ service cloud.firestore {
     }
 
     function getRequesterCompanyId() {
-      return isAuthenticated()
-        ? (request.auth.token.companyId != null
+      return !isAuthenticated()
+        ? null
+        : ('companyId' in request.auth.token
             ? request.auth.token.companyId
-            : requesterCompanyIdFromUserDoc())
-        : null;
+            : requesterCompanyIdFromUserDoc());
     }
 
     // Für Aggregations-/List-Queries: der Requestor muss überhaupt einem
