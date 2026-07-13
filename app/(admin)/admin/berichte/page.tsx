@@ -7,7 +7,6 @@ import { useAdminReports } from '@/lib/hooks/useAdminReports';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { facilityService } from '@/lib/services/facilities';
-import { useTheme } from '@/contexts/ThemeContext';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { toast } from '@/lib/utils/toast';
@@ -75,7 +74,6 @@ export default function AdminBerichtePage() {
     queryFn: () => facilityService.getAll(user?.companyId),
     enabled: !!user?.companyId,
   });
-  useTheme();
 
   const [filters, setFilters] = useState({
     startDate: undefined as Date | undefined,

@@ -2,8 +2,6 @@
 
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { useRole } from '@/contexts/RoleContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import { userService } from '@/lib/services';
 import { User } from '@/lib/types';
 import { toast } from '@/lib/utils/toast';
@@ -28,8 +26,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
 
 export default function StaffSimplePage() {
-  const { mode: _mode } = useTheme();
-  const { currentRole, setCurrentRole } = useRole();
+  // Lokale Anzeige-Rolle für den Filter-Umschalter (RoleProvider ist appweit nicht gemountet).
+  const [currentRole, setCurrentRole] = useState<'nurse' | 'admin'>('admin');
   const isDark = false; // Nur Light Mode verfügbar
 
   // State für Dialoge und Filter
