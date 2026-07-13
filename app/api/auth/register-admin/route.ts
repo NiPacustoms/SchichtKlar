@@ -1,17 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { companyService } from '@/lib/services/companies';
-import { db } from '@/lib/firebase';
-import {
-  collection,
-  doc,
-  getDocs,
-  limit,
-  query,
-  setDoc,
-  serverTimestamp,
-  where,
-} from 'firebase/firestore';
-import { adminAuth, adminDb, verifyIdToken, getRoleFromToken } from '@/lib/server/firebaseAdmin';
+import { FieldValue } from 'firebase-admin/firestore';
+import { adminAuth, adminDb, verifyIdToken } from '@/lib/server/firebaseAdmin';
 import { checkRateLimit, addRateLimitHeaders } from '@/lib/middleware/rateLimit';
 import { validateRequest, registerAdminSchema } from '@/lib/validations';
 import { createAuthErrorResponse, createErrorResponse } from '@/lib/errors/apiErrorResponse';
@@ -61,56 +50,53 @@ export async function POST(req: NextRequest) {
         ? `${firstName} ${lastName}`.trim()
         : firstName || lastName || email || 'Admin');
 
-    // RBAC: Nur Admins dürfen; Ausnahme: Bootstrap, wenn erlaubt und noch kein Admin existiert
-    const bootstrapEnabled = process.env.ENABLE_ADMIN_BOOTSTRAP === 'true';
-    let adminExists = true;
+    // Multi-Tenant-Self-Service: Jeder authentifizierte Nutzer darf genau EINE eigene
+    // Firma registrieren und wird deren Admin. Die frühere globale „adminExists"-/
+    // Bootstrap-Prüfung war single-tenant und blockierte jede weitere Firma – entfernt.
+    // Schutz: Wer bereits einer Firma zugeordnet ist, kann sich nicht erneut registrieren.
+    let existingCompanyId: string | undefined;
     try {
       if (adminDb) {
-        const snap = await adminDb.collection('users').where('role', '==', 'admin').limit(1).get();
-        adminExists = !snap.empty;
-      } else if (db) {
-        const snap = await getDocs(
-          query(collection(db, 'users'), where('role', '==', 'admin'), limit(1))
-        );
-        adminExists = !snap.empty;
+        const userDoc = await adminDb.collection('users').doc(uid).get();
+        if (userDoc.exists) {
+          existingCompanyId = (userDoc.data() as { companyId?: string } | undefined)?.companyId;
+        }
       }
     } catch {
-      // konservativ bleiben
-      adminExists = true;
+      // Im Zweifel (Leseproblem) neuen Nutzer zulassen – Firestore-Rules schützen zusätzlich.
+    }
+    if (existingCompanyId) {
+      return createErrorResponse(
+        createAppError(
+          new Error('Dieses Konto ist bereits einer Firma zugeordnet.'),
+          ErrorCode.FIREBASE_ALREADY_EXISTS,
+          { route: ROUTE }
+        )
+      );
     }
 
-    // Custom Claims prüfen (role kann in decoded.role oder decoded.customClaims.role sein)
-    const requesterRole = getRoleFromToken(decoded);
-    const isRequesterAdmin = requesterRole === 'admin';
-
-    // Bei der ersten Admin-Registrierung hat der Benutzer noch keine Rolle
-    // Bootstrap ermöglicht die erste Admin-Registrierung ohne bestehende Admin-Rolle
-    if (!isRequesterAdmin) {
-      if (!bootstrapEnabled || adminExists) {
-        const message = !bootstrapEnabled
-          ? 'Admin-Registrierung ist nicht aktiviert. Bitte kontaktieren Sie einen Administrator.'
-          : 'Admin role required';
-        return createErrorResponse(
-          createAppError(new Error(message), ErrorCode.AUTH_INSUFFICIENT_PERMISSIONS, { route: ROUTE })
-        );
-      }
+    // Serverseitig ausschließlich mit dem Admin-SDK schreiben (Client-SDK ist
+    // serverseitig nicht initialisierbar).
+    if (!adminDb) {
+      throw new Error('Admin Firestore ist nicht verfügbar.');
     }
 
-    // Token-UID wird bereits aus decoded verwendet
+    // 1) Company anlegen (eigene, isolierte companyId → Multi-Tenant)
+    const companyRef = await adminDb.collection('companies').add({
+      name: companyName,
+      createdByUserId: uid,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    const companyId = companyRef.id;
 
-    // 1) Company anlegen
-    const company = await companyService.create(companyName, uid);
-
-    // 2) User-Dokument setzen (serverseitig Rolle & companyId festlegen)
-    if (!db) throw new Error('Firestore not initialized');
-    await setDoc(
-      doc(db, 'users', uid),
+    // 2) User-Dokument setzen (Rolle & companyId serverseitig festlegen)
+    await adminDb.collection('users').doc(uid).set(
       {
         id: uid,
         email,
         displayName,
         role: 'admin',
-        companyId: company.id,
+        companyId,
         active: true,
         qualifications: [],
         documents: [],
@@ -121,8 +107,8 @@ export async function POST(req: NextRequest) {
           documentExpiry: true,
           systemAnnouncements: true,
         },
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }
     );
@@ -131,11 +117,11 @@ export async function POST(req: NextRequest) {
     if (adminAuth) {
       await adminAuth.setCustomUserClaims(uid, {
         role: 'admin',
-        companyId: company.id,
+        companyId,
       });
     }
 
-    const response = NextResponse.json({ companyId: company.id }, { status: 201 });
+    const response = NextResponse.json({ companyId }, { status: 201 });
     return addRateLimitHeaders(response, req);
   } catch (e: unknown) {
     logger.error('Error in register-admin', e instanceof Error ? e : undefined, {
