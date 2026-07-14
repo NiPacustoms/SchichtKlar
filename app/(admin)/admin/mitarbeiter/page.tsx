@@ -94,6 +94,11 @@ export default function StaffManagementPage() {
     firebaseSendFailed?: boolean;
   }>({ open: false, acceptLink: '', email: '', companyName: '' });
 
+  // Eingabe-Dialog für Einladung (ersetzt window.prompt)
+  const [inviteInput, setInviteInput] = useState<{ open: boolean; email: string; submitting: boolean }>(
+    { open: false, email: '', submitting: false }
+  );
+
   // Notification states
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -416,11 +421,12 @@ export default function StaffManagementPage() {
     }
   };
 
-  const inviteStaff = useCallback(async () => {
-    if (typeof window === 'undefined') return;
+  // Öffnet den Eingabe-Dialog für die Einladung.
+  const inviteStaff = useCallback(() => {
+    setInviteInput({ open: true, email: '', submitting: false });
+  }, []);
 
-    const email = window.prompt('E-Mail des Mitarbeiters eingeben:');
-    if (!email) return;
+  const submitInvite = useCallback(async (email: string) => {
     try {
       const idToken = await firebaseUser?.getIdToken();
       if (!idToken) throw new Error('Nicht angemeldet');
@@ -475,8 +481,10 @@ export default function StaffManagementPage() {
         firebaseSendFailed,
       });
       showSnackbar('Einladung erstellt', 'success');
+      setInviteInput({ open: false, email: '', submitting: false });
     } catch (e: unknown) {
       showSnackbar(e instanceof Error ? e.message : 'Unbekannter Fehler', 'error');
+      setInviteInput(prev => ({ ...prev, submitting: false }));
     }
   }, [firebaseUser, showSnackbar]);
 
@@ -985,6 +993,59 @@ export default function StaffManagementPage() {
           showSnackbar('Kategorien erfolgreich aktualisiert', 'success');
         }}
       />
+
+      {/* Dialog: E-Mail für Einladung eingeben (ersetzt window.prompt) */}
+      <Dialog
+        open={inviteInput.open}
+        onClose={() => !inviteInput.submitting && setInviteInput(prev => ({ ...prev, open: false }))}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Mitarbeiter einladen</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Die Person erhält eine E-Mail mit einem Link, um ihr Konto anzulegen und Ihrer Firma
+            beizutreten.
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            type="email"
+            label="E-Mail-Adresse"
+            placeholder="name@beispiel.de"
+            value={inviteInput.email}
+            onChange={e => setInviteInput(prev => ({ ...prev, email: e.target.value }))}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteInput.email.trim())) {
+                setInviteInput(prev => ({ ...prev, submitting: true }));
+                void submitInvite(inviteInput.email.trim());
+              }
+            }}
+            disabled={inviteInput.submitting}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setInviteInput(prev => ({ ...prev, open: false }))}
+            disabled={inviteInput.submitting}
+          >
+            Abbrechen
+          </Button>
+          <Button
+            variant="contained"
+            disabled={
+              inviteInput.submitting ||
+              !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteInput.email.trim())
+            }
+            onClick={() => {
+              setInviteInput(prev => ({ ...prev, submitting: true }));
+              void submitInvite(inviteInput.email.trim());
+            }}
+          >
+            {inviteInput.submitting ? 'Wird gesendet…' : 'Einladung senden'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Dialog: Einladungslink anzeigen (für manuelles Weiterleiten, falls E-Mail nicht ankommt) */}
       <Dialog
