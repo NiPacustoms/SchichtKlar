@@ -522,6 +522,12 @@ export default function HomePage() {
             <Button key="datenschutz" component={Link} href="/recht/datenschutz" color="inherit" size="small">
               Datenschutz
             </Button>
+            <Button key="agb" component={Link} href="/recht/agb" color="inherit" size="small">
+              AGB
+            </Button>
+            <Button key="avv" component={Link} href="/recht/avv" color="inherit" size="small">
+              AVV
+            </Button>
           </Stack>
         </Box>
       </Container>
