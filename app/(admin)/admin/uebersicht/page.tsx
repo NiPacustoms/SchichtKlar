@@ -10,6 +10,7 @@ import { AlertsPanel } from '@/components/admin/AlertsPanel';
 import { StatisticsTabs } from '@/components/admin/StatisticsTabs';
 import { RecentActivities } from '@/components/admin/RecentActivities';
 import { UpcomingShiftsCards } from '@/components/admin/UpcomingShiftsCards';
+import { OnboardingChecklist } from '@/components/admin/OnboardingChecklist';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { DashboardSkeleton } from '@/components/admin/DashboardSkeleton';
@@ -87,6 +88,9 @@ export default function AdminDashboardPage() {
           />
         }
       />
+
+      {/* Onboarding „Erste Schritte" – blendet sich nach Abschluss selbst aus */}
+      <OnboardingChecklist key="onboarding" />
 
       {/* Quick Actions */}
       <Box key="quick-actions" sx={{ mb: 4 }}>
