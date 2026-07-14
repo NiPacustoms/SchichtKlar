@@ -480,6 +480,79 @@ service cloud.firestore {
       allow write: if isAuthenticated(); // Jeder authentifizierte User kann schreiben (für Caching)
     }
 
+    // ── Mitarbeiter-eigene Collections (owner-scoped über userId) ──────────
+    // Vorher ohne Rules → default-deny → Features (Einrichtungen, Benachrichtigungen,
+    // Push) liefen ins Leere. Jetzt: eigene Daten für den Nutzer, plus Admin der
+    // gleichen Company (soweit companyId vorhanden).
+    match /employeeFacilities/{id} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        (isAdmin() && belongsToSameCompany(resource.data.companyId))
+      );
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
+        creatingForSameCompany(request.resource.data.companyId);
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    match /facilityFavorites/{id} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    match /employeeNotifications/{id} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      // Erstellen: Admin (Benachrichtigung an Mitarbeiter) ODER der Nutzer selbst.
+      allow create: if isAuthenticated() && (
+        isAdmin() || request.resource.data.userId == request.auth.uid
+      );
+      allow update, delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+    }
+    match /employeeNotificationSettings/{id} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    match /notificationSettings/{id} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    // FCM-Push-Tokens: Dokument-ID == userId
+    match /fcmTokens/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ── Personalgruppen (Admin-Feature, mandantengebunden) ────────────────
+    match /staffGroups/{id} {
+      allow read: if isAuthenticated() && (
+        (isAdmin() && belongsToSameCompany(resource.data.companyId)) ||
+        (resource.data.members is list && request.auth.uid in resource.data.members)
+      );
+      allow create: if isAdmin() && creatingForSameCompany(request.resource.data.companyId);
+      allow update, delete: if isAdmin() && belongsToSameCompany(resource.data.companyId);
+    }
+
+    // ── Messaging (teilnehmerbasiert) ─────────────────────────────────────
+    match /channels/{id} {
+      allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
+      allow update: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      allow delete: if isAdmin() && belongsToSameCompany(resource.data.companyId);
+    }
+    match /messages/{id} {
+      // Lesen: nur wenn der Nutzer Teilnehmer des zugehörigen Channels ist.
+      allow read: if isAuthenticated() &&
+        request.auth.uid in
+          get(/databases/$(database)/documents/channels/$(resource.data.channelId)).data.participants;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
+        request.auth.uid in
+          get(/databases/$(database)/documents/channels/$(request.resource.data.channelId)).data.participants;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
     // Default: deny
     match /{document=**} {
       allow read, write: if false;

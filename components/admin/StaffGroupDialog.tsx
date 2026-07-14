@@ -6,6 +6,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { staffGroupService } from '@/lib/services/staffGroups';
 import { User } from '@/lib/types';
 import { StaffGroupData } from '@/lib/types/staffGroup';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/utils/toast';
 import { Add, Close, Edit, Group } from '@mui/icons-material';
 import {
@@ -69,9 +70,11 @@ export function StaffGroupDialog({ open, onClose, group, staff }: StaffGroupDial
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const createGroupMutation = useMutation({
-    mutationFn: (groupData: StaffGroupData) => staffGroupService.create(groupData),
+    mutationFn: (groupData: StaffGroupData & { companyId?: string }) =>
+      staffGroupService.create(groupData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staffGroups'] });
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -144,7 +147,8 @@ export function StaffGroupDialog({ open, onClose, group, staff }: StaffGroupDial
           data: formData,
         });
       } else {
-        await createGroupMutation.mutateAsync(formData);
+        // companyId für Mandantenisolation der Gruppe persistieren
+        await createGroupMutation.mutateAsync({ ...formData, companyId: user?.companyId });
       }
     } catch (error) {
       logger.error('Error saving group:', error);
