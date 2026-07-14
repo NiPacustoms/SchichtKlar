@@ -5,7 +5,8 @@
  */
 
 import { getDb } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, limit } from 'firebase/firestore';
+import { getCompanyIdFromAuth } from '@/lib/utils/companyId';
 import { logger } from '@/lib/logging';
 
 /** Collection für Limit-Erhöhungsanträge (Admin sieht sie im Dashboard) */
@@ -38,8 +39,15 @@ export async function requestLimitIncrease(
     throw new Error('Gewünschtes Limit muss zwischen 20 und 80 Stunden liegen.');
   }
 
+  // companyId persistieren, damit der Antrag unter den strikten Rules les-/filterbar ist.
+  const companyId = await getCompanyIdFromAuth();
+  if (!companyId) {
+    throw new Error('Kein Unternehmen zugeordnet.');
+  }
+
   const ref = await addDoc(collection(db, LIMIT_REQUESTS_COLLECTION), {
     mitarbeiterId,
+    companyId,
     requestedLimit,
     reason: reason ?? null,
     status: 'pending',
@@ -57,11 +65,14 @@ export async function requestLimitIncrease(
 export async function hasPendingLimitRequest(mitarbeiterId: string): Promise<boolean> {
   const db = getDb();
   if (!db) return false;
+  const companyId = await getCompanyIdFromAuth();
+  if (!companyId) return false;
+  // Reine Existenzprüfung – kein orderBy nötig (spart einen zusammengesetzten Index).
   const q = query(
     collection(db, LIMIT_REQUESTS_COLLECTION),
+    where('companyId', '==', companyId),
     where('mitarbeiterId', '==', mitarbeiterId),
     where('status', '==', 'pending'),
-    orderBy('createdAt', 'desc'),
     limit(1)
   );
   const snap = await getDocs(q);

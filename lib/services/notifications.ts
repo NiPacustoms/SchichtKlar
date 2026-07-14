@@ -272,9 +272,13 @@ export const notificationService = {
   async markAllAsRead(userId?: string): Promise<void> {
     try {
       const notificationUserId = userId || 'current-user-id'; // Use provided userId or fallback
-      
+      // Mandantenisolation: companyId-Filter ist unter den strikten Rules Pflicht.
+      const companyId = await getCompanyIdFromAuth();
+      if (!companyId) return;
+
       const q = query(
         collection(getDb(), COLLECTION_NAME),
+        where('companyId', '==', companyId),
         where('userId', '==', notificationUserId),
         where('read', '==', false)
       );
@@ -314,9 +318,13 @@ export const notificationService = {
     }
     try {
       const notificationUserId = userId || 'current-user-id'; // Use provided userId or fallback
-      
+      // Mandantenisolation: companyId-Filter ist unter den strikten Rules Pflicht.
+      const companyId = await getCompanyIdFromAuth();
+      if (!companyId) return;
+
       const q = query(
         collection(getDb(), COLLECTION_NAME),
+        where('companyId', '==', companyId),
         where('userId', '==', notificationUserId)
       );
 
