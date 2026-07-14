@@ -31,7 +31,16 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, 'timesheets/tsA'), { userId: 'nurseA', companyId: 'firmaA', totalHours: 8 });
   await setDoc(doc(db, 'timesheets/tsB'), { userId: 'nurseB', companyId: 'firmaB', totalHours: 8 });
   await setDoc(doc(db, 'documents/docB'), { userId: 'nurseB', companyId: 'firmaB', name: 'Zeugnis' });
+  await setDoc(doc(db, 'documents/docA'), { userId: 'nurseA', companyId: 'firmaA', name: 'Zeugnis A' });
   await setDoc(doc(db, 'adminAnnouncements/annB'), { companyId: 'firmaB', text: 'Hallo B' });
+  await setDoc(doc(db, 'assignments/asgA'), { userId: 'nurseA', companyId: 'firmaA', status: 'assigned' });
+  await setDoc(doc(db, 'assignments/asgB'), { userId: 'nurseB', companyId: 'firmaB', status: 'assigned' });
+  await setDoc(doc(db, 'reports/repA'), { userId: 'nurseA', companyId: 'firmaA' });
+  await setDoc(doc(db, 'notifications/ntA'), { userId: 'nurseA', companyId: 'firmaA', read: false });
+  await setDoc(doc(db, 'notifications/ntB'), { userId: 'nurseB', companyId: 'firmaB', read: false });
+  await setDoc(doc(db, 'alerts/alA'), { userId: 'nurseA', companyId: 'firmaA' });
+  await setDoc(doc(db, 'activities/actA'), { companyId: 'firmaA', type: 'login' });
+  await setDoc(doc(db, 'limitIncreaseRequests/lrA'), { mitarbeiterId: 'nurseA', companyId: 'firmaA', status: 'pending' });
 });
 
 // Kontexte mit echten Claims (role + companyId), wie sie register-admin/accept-invite setzen
@@ -92,6 +101,35 @@ await check('AdminB liest FREMDE (A) Shifts', 'DENY',
   () => getDocs(query(collection(adminB, 'shifts'), where('companyId', '==', 'firmaA'))));
 await check('AdminB liest eigene (B) Shifts', 'ALLOW',
   () => getDocs(query(collection(adminB, 'shifts'), where('companyId', '==', 'firmaB'))));
+
+console.log('--- Reale App-Query-Formen der Kern-Collections (owner + companyId) ---');
+// Diese Formen MÜSSEN erlaubt sein, sonst bricht der Live-Flow unter den strikten Rules.
+await check('NurseA: eigene Assignments (companyId+userId)', 'ALLOW',
+  () => getDocs(query(collection(nurseA, 'assignments'),
+    where('companyId', '==', 'firmaA'), where('userId', '==', 'nurseA'))));
+await check('NurseA: FREMDE Assignments (companyId==firmaB)', 'DENY',
+  () => getDocs(query(collection(nurseA, 'assignments'), where('companyId', '==', 'firmaB'))));
+await check('AdminA: alle Assignments der Firma (companyId)', 'ALLOW',
+  () => getDocs(query(collection(adminA, 'assignments'), where('companyId', '==', 'firmaA'))));
+await check('NurseA: eigene Dokumente (companyId+userId)', 'ALLOW',
+  () => getDocs(query(collection(nurseA, 'documents'),
+    where('companyId', '==', 'firmaA'), where('userId', '==', 'nurseA'))));
+await check('NurseA: eigene Reports (companyId+userId)', 'ALLOW',
+  () => getDocs(query(collection(nurseA, 'reports'),
+    where('companyId', '==', 'firmaA'), where('userId', '==', 'nurseA'))));
+await check('NurseA: eigene Notifications (companyId+userId)', 'ALLOW',
+  () => getDocs(query(collection(nurseA, 'notifications'),
+    where('companyId', '==', 'firmaA'), where('userId', '==', 'nurseA'))));
+await check('NurseA: Notifications OHNE companyId (bricht unter Rules)', 'DENY',
+  () => getDocs(query(collection(nurseA, 'notifications'), where('userId', '==', 'nurseA'))));
+await check('NurseA: eigene Alerts (companyId+userId)', 'ALLOW',
+  () => getDocs(query(collection(nurseA, 'alerts'),
+    where('companyId', '==', 'firmaA'), where('userId', '==', 'nurseA'))));
+await check('AdminA: Activities der Firma (companyId)', 'ALLOW',
+  () => getDocs(query(collection(adminA, 'activities'), where('companyId', '==', 'firmaA'))));
+await check('NurseA: eigene limitIncreaseRequests (companyId+mitarbeiterId)', 'ALLOW',
+  () => getDocs(query(collection(nurseA, 'limitIncreaseRequests'),
+    where('companyId', '==', 'firmaA'), where('mitarbeiterId', '==', 'nurseA'))));
 
 console.log('--- Migrationssicherheit: User OHNE companyId-Claim (nur User-Doc) ---');
 // Simuliert eine bestehende Session vor dem Claim-Refresh: kein companyId im

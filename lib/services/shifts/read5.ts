@@ -1,5 +1,6 @@
 import { getDb } from '@/lib/firebase';
 import { getDoc, getDocs, doc, collection, query, where } from 'firebase/firestore';
+import { getCompanyIdFromAuth } from '@/lib/utils/companyId';
 import { COLLECTION_NAME } from './types';
 
 export async function getAvailableSlots(shiftId: string): Promise<number> {
@@ -12,8 +13,12 @@ export async function getAvailableSlots(shiftId: string): Promise<number> {
 }
 
 export async function getAssignedUsers(shiftId: string): Promise<string[]> {
+  // Mandantenisolation: companyId-Filter ist unter den strikten Rules Pflicht.
+  const companyId = await getCompanyIdFromAuth();
+  if (!companyId) return [];
   const q = query(
     collection(getDb(), 'assignments'),
+    where('companyId', '==', companyId),
     where('shiftId', '==', shiftId),
     where('status', 'in', ['assigned', 'accepted'])
   );
