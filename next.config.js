@@ -1,20 +1,26 @@
 const path = require('path');
 
+const IS_DEV = process.env.NODE_ENV !== 'production';
+// Nur in Dev/Emulator-Betrieb: lokale Emulator-Hosts (http) für connect-src erlauben.
+const EMULATOR_CONNECT = IS_DEV
+  ? ' http://127.0.0.1:8080 http://127.0.0.1:9099 http://127.0.0.1:9199 http://localhost:8080 http://localhost:9099 ws://127.0.0.1:* ws://localhost:*'
+  : '';
+
 /** @type {import('next').NextConfig} */
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline'${process.env.NODE_ENV !== 'production' ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com;
+  script-src 'self' 'unsafe-inline'${IS_DEV ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   img-src 'self' data: blob: https://firebasestorage.googleapis.com https://lh3.googleusercontent.com;
   font-src 'self' https://fonts.gstatic.com;
-  connect-src 'self' https://firestore.googleapis.com https://firebase.googleapis.com https://firebasestorage.googleapis.com https://firebasedynamiclinks.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://fcmregistrations.googleapis.com https://fcm.googleapis.com https://*.cloudfunctions.net https://www.google-analytics.com wss:;
+  connect-src 'self' https://firestore.googleapis.com https://firebase.googleapis.com https://firebasestorage.googleapis.com https://firebasedynamiclinks.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://fcmregistrations.googleapis.com https://fcm.googleapis.com https://*.cloudfunctions.net https://www.google-analytics.com wss:${EMULATOR_CONNECT};
   media-src 'self' https://firebasestorage.googleapis.com;
   frame-ancestors 'none';
   base-uri 'self';
   form-action 'self';
   worker-src 'self';
-  object-src 'none';
-  upgrade-insecure-requests;
+  object-src 'none';${IS_DEV ? '' : `
+  upgrade-insecure-requests;`}
 `.replace(/\s{2,}/g, ' ').trim();
 
 const securityHeaders = [
