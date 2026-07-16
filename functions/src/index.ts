@@ -49,6 +49,14 @@ export { deleteAllAssignments } from './deleteAllAssignments';
 export { assignShift } from './assignShift';
 export { createWithMatching } from './assignment/createWithMatching';
 export { declineAssignment } from './declineAssignment';
+// Vom Client (cloudFunctions.ts) unter diesen Namen aufgerufen – waren bislang
+// gar nicht exportiert und damit nicht deployt (Aufruf lief in Prod ins Leere):
+export { declineWithSignature as declineAssignmentWithSignature } from './assignment/declineWithSignature';
+export { notifyFacility as notifyFacilityForAssignment } from './assignment/notifyFacility';
+// Manuelles Auslösen der geplanten Berichte (Button in /admin/berichte/geplante-berichte).
+// HINWEIS: der automatische Cron `scheduledReportsJob` bleibt bewusst NICHT exportiert
+// (versendet Berichte selbstständig) – erst nach ausdrücklicher Freigabe aktivieren.
+export { runScheduledReportsNow } from './scheduledReports';
 export { findCandidates } from './findCandidates';
 export { requestShift } from './requestShift';
 export { unassignShift } from './unassignShift';
