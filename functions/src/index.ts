@@ -57,6 +57,11 @@ export { notifyFacility as notifyFacilityForAssignment } from './assignment/noti
 // HINWEIS: der automatische Cron `scheduledReportsJob` bleibt bewusst NICHT exportiert
 // (versendet Berichte selbstständig) – erst nach ausdrücklicher Freigabe aktivieren.
 export { runScheduledReportsNow } from './scheduledReports';
+// Weitere vom Client genutzte, bislang nicht exportierte Callables:
+export { getAvailableEmployeeIdsForSlot } from './assignment/getAvailableEmployeeIdsForSlot';
+export { requestExportToken } from './exports/requestExportToken';
+export { validateExportToken } from './exports/validateExportToken';
+export { sendAssignmentSignatureEmailCF } from './email';
 export { findCandidates } from './findCandidates';
 export { requestShift } from './requestShift';
 export { unassignShift } from './unassignShift';
