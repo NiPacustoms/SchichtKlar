@@ -44,6 +44,14 @@ export const createWithMatching = functions.https.onCall(async (data: CreateWith
     );
   }
 
+  // Mandantenisolation: Die übergebene companyId muss der des aufrufenden Admins
+  // entsprechen (kein Anlegen in fremden Mandanten bei Direktaufruf der Function).
+  const callerToken = context.auth.token as { companyId?: string; claims?: { companyId?: string } };
+  const callerCompanyId = callerToken.companyId || callerToken.claims?.companyId;
+  if (callerCompanyId && companyId !== callerCompanyId) {
+    throw new functions.https.HttpsError('permission-denied', 'companyId mismatch');
+  }
+
   try {
     const date = new Date(startDate);
     const { startUTC, endUTC } = parseShiftToUTC(date, startTime, endTime, 'Europe/Berlin');

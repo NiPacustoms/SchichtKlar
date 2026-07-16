@@ -102,6 +102,19 @@ export const assignShift = functions.https.onCall(async (data, context) => {
       }
 
       const shift = shiftDoc.data()!;
+
+      // Mandantenisolation: Der aufrufende Admin darf nur Schichten der EIGENEN
+      // Company zuweisen. Ohne diese Prüfung könnte ein Admin mit fremder shiftId
+      // ein Assignment in einem anderen Mandanten anlegen.
+      const callerToken = context.auth!.token as { companyId?: string; claims?: { companyId?: string } };
+      const callerCompanyId = callerToken.companyId || callerToken.claims?.companyId;
+      if (shift.companyId && callerCompanyId && shift.companyId !== callerCompanyId) {
+        throw new functions.https.HttpsError(
+          'permission-denied',
+          'Shift belongs to a different company'
+        );
+      }
+
       const capacity = shift.capacity || 1;
       const assignedCount = shift.assignedCount || 0;
 

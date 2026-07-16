@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator, type Auth } from 'firebase/auth';
 import { initializeFirestore, connectFirestoreEmulator, type Firestore } from 'firebase/firestore';
-import { getFunctions, type Functions } from 'firebase/functions';
+import { getFunctions, connectFunctionsEmulator, type Functions } from 'firebase/functions';
 import { getStorage as getFirebaseStorage, connectStorageEmulator, type FirebaseStorage } from 'firebase/storage';
 import { logger } from '@/lib/utils/logger';
 // Messaging wird komplett dynamisch importiert, da es nur im Browser verfügbar ist
@@ -129,6 +129,10 @@ if (typeof window !== 'undefined') {
       connectFirestoreEmulator(db, host, firestorePort);
       connectAuthEmulator(auth, `http://${host}:${authPort}`, { disableWarnings: true });
       connectStorageEmulator(storage, host, storagePort);
+      if (functions) {
+        const functionsPort = Number(process.env.NEXT_PUBLIC_FUNCTIONS_EMULATOR_PORT || 5001);
+        connectFunctionsEmulator(functions, host, functionsPort);
+      }
       logger.info('🔌 Firebase Emulator verbunden');
     }
   } catch (e) {
