@@ -47,6 +47,7 @@ export { deleteAllAssignments } from './deleteAllAssignments';
 
 // Schichtverwaltung Cloud Functions
 export { assignShift } from './assignShift';
+export { createWithMatching } from './assignment/createWithMatching';
 export { declineAssignment } from './declineAssignment';
 export { findCandidates } from './findCandidates';
 export { requestShift } from './requestShift';
