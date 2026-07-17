@@ -2,6 +2,7 @@
 
 import { Box } from '@mui/material';
 import { GlobalHeader } from './GlobalHeader';
+import { PageTransition } from './PageTransition';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -29,7 +30,7 @@ export function AppLayout({ children, hideHeader = false }: AppLayoutProps) {
           width: '100%',
         }}
       >
-        {children}
+        <PageTransition>{children}</PageTransition>
       </Box>
     </Box>
   );
