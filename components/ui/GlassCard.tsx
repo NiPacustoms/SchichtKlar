@@ -15,7 +15,7 @@ interface GlassCardProps extends CardProps {
   tone?: 'inset' | 'hero';
 }
 
-const transitionBase = `border-color ${duration.base}ms ${easing}, box-shadow ${duration.base}ms ${easing}`;
+const transitionBase = `border-color ${duration.base}ms ${easing}, box-shadow ${duration.base}ms ${easing}, transform ${duration.base}ms ${easing}`;
 
 /**
  * Flache Standard-Karte („Clean & Flat").
@@ -79,7 +79,11 @@ export function GlassCard({
             '&:hover': {
               borderColor: borderHover,
               boxShadow: shadowLift,
+              transform: 'translateY(-2px)',
             },
+          },
+          '@media (prefers-reduced-motion: reduce)': {
+            '&:hover': { transform: 'none' },
           },
         }),
         ...sx,

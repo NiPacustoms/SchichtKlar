@@ -160,6 +160,8 @@ export const shadows = {
   large: '0 8px 24px rgba(28,25,23,0.12)',
   /** Primär-CTA (Teal) – dezenter farbiger Auftrieb */
   ctaPrimary: '0 10px 22px -8px rgba(15,118,110,0.45)',
+  /** Primär-CTA im Hover – etwas höher angehoben (translateY-Lift) */
+  ctaPrimaryHover: '0 14px 28px -8px rgba(15,118,110,0.5)',
   /** Sheet/Modal – stärker */
   sheet: '0 12px 40px -8px rgba(28,25,23,0.28)',
   // Dark mode (stärkere Schatten auf dunklem Grund)

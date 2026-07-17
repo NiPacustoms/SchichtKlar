@@ -153,7 +153,14 @@ function createAppTheme(mode: PaletteMode) {
                 fontSize: '15px',
                 fontWeight: 600,
                 textTransform: 'none',
-                transition: transitionColors,
+                transition: `${transitionColors}, transform ${duration.fast}ms ${easing}, box-shadow ${duration.fast}ms ${easing}`,
+                // Taktiles Feedback: leichtes Eindrücken beim Klick (premium-Gefühl)
+                '&:active': { transform: 'scale(0.97)' },
+                '@media (prefers-reduced-motion: reduce)': {
+                  transition: transitionColors,
+                  '&:active': { transform: 'none' },
+                  '&:hover': { transform: 'none' },
+                },
                 '&:focus-visible': {
                   outline: `2px solid ${brand}`,
                   outlineOffset: 2,
@@ -165,8 +172,13 @@ function createAppTheme(mode: PaletteMode) {
                 backgroundColor: brand,
                 color: isDark ? '#0b2b28' : '#ffffff',
                 boxShadow: isDark ? 'none' : shadows.ctaPrimary,
-                '&:hover': { backgroundColor: brandHover, boxShadow: isDark ? 'none' : shadows.ctaPrimary },
-                '&:active': { backgroundColor: isDark ? colors.brand : '#0c4f4a' },
+                // Sanfter Auftrieb im Hover (translateY-Lift + stärkerer Schatten)
+                '&:hover': {
+                  backgroundColor: brandHover,
+                  boxShadow: isDark ? 'none' : shadows.ctaPrimaryHover,
+                  transform: 'translateY(-1px)',
+                },
+                '&:active': { backgroundColor: isDark ? colors.brand : '#0c4f4a', transform: 'translateY(0) scale(0.98)' },
                 '&:disabled': {
                   backgroundColor: alpha(brand, 0.28),
                   color: isDark ? alpha('#0b2b28', 0.6) : alpha('#ffffff', 0.7),
