@@ -414,7 +414,7 @@ function TemplateEditorDialog({
       </DialogTitle>
       <DialogContent dividers sx={{ height: '80vh' }}>
         <Grid container spacing={3} sx={{ height: '100%' }}>
-          <Grid size={{ xs: 12, md: 7 }} sx={{ overflowY: 'auto', pr: { md: 2 } }}>
+          <Grid size={{ xs: 12, md: 7 }} sx={{ overflowY: 'auto', pr: { md: 2 }, pt: 1 }}>
             <Stack spacing={3}>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <TextField
