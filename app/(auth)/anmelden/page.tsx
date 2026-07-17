@@ -9,6 +9,8 @@ import {
   Alert,
   Container,
   Stack,
+  Fade,
+  Link as MuiLink,
 } from '@mui/material';
 import { AppLogo } from '@/components/ui/AppLogo';
 import React, { useEffect, useRef, useState } from 'react';
@@ -177,6 +179,7 @@ export default function LoginPage() {
               )}
             </Box>
           ) : (
+            <Fade in timeout={500}>
             <Stack
               alignItems="center"
               sx={{ mt: { xs: 16, md: 24 }, width: '100%', maxWidth: 460 }}
@@ -256,17 +259,14 @@ export default function LoginPage() {
                   />
 
                   <Box sx={{ textAlign: 'right', mb: 3 }}>
-                    <NextLink
+                    <MuiLink
+                      component={NextLink}
                       href="/passwort-vergessen"
-                      style={{
-                        color: 'primary.main',
-                        textDecoration: 'none',
-                        fontSize: '0.875rem',
-                      }}
-                      className="hover:underline"
+                      underline="hover"
+                      sx={{ fontSize: '0.875rem', color: 'primary.main', fontWeight: 500 }}
                     >
                       Passwort vergessen?
-                    </NextLink>
+                    </MuiLink>
                   </Box>
 
                   <Button
@@ -274,19 +274,13 @@ export default function LoginPage() {
                     fullWidth
                     variant="contained"
                     disabled={isSubmitting}
-                    sx={{ py: 1.5, mb: 2 }}
+                    sx={{ py: 1.5, mb: 1 }}
                     aria-label="Anmelden"
                     aria-busy={isSubmitting}
                     data-testid="login-button"
                   >
                     {isSubmitting ? 'Anmelden...' : 'Anmelden'}
                   </Button>
-
-                  <Box sx={{ textAlign: 'center', mt: 1 }}>
-                    <NextLink href="/passwort-vergessen" style={{ fontSize: '0.875rem', color: 'inherit' }}>
-                      Passwort vergessen?
-                    </NextLink>
-                  </Box>
                 </Box>
 
                 {oidcEnabled && (
@@ -302,6 +296,7 @@ export default function LoginPage() {
                 )}
               </Paper>
             </Stack>
+            </Fade>
           )}
         </Box>
       </Container>
