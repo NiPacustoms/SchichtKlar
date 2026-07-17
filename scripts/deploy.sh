@@ -15,14 +15,23 @@ fi
 
 echo "✅ .env.local gefunden"
 
-# Lade Environment-Variablen aus .env.local
+# Lade Environment-Variablen für den PRODUKTIONS-Build.
+# WICHTIG: NIEMALS aus .env.local (Emulator/Dev) exportieren – Next.js überschreibt
+# bereits gesetzte process.env-Werte NICHT mit .env.production.local, sodass eine
+# exportierte Emulator-Config (USE_EMULATOR=true, demo-api-key) den Prod-Build
+# vergiftet (App verbindet sich dann zu 127.0.0.1 → Login unmöglich).
+ENV_SOURCE=".env.production.local"
+if [ ! -f "$ENV_SOURCE" ]; then
+  echo "❌ $ENV_SOURCE fehlt. Produktions-Deploy abgebrochen (kein Fallback auf .env.local!)."
+  exit 1
+fi
 # Entferne Kommentare und leere Zeilen, exportiere nur NEXT_PUBLIC_* Variablen
 # Unterstützt Werte mit Leerzeichen durch korrektes Parsing
 while IFS= read -r line || [ -n "$line" ]; do
   # Überspringe Kommentare und leere Zeilen
   [[ "$line" =~ ^[[:space:]]*# ]] && continue
   [[ -z "${line// }" ]] && continue
-  
+
   # Nur NEXT_PUBLIC_* Variablen exportieren
   if [[ "$line" =~ ^NEXT_PUBLIC_ ]]; then
     # Parse KEY=VALUE (unterstützt Werte mit Leerzeichen in Anführungszeichen)
@@ -35,7 +44,14 @@ while IFS= read -r line || [ -n "$line" ]; do
       export "$key=$value"
     fi
   fi
-done < <(grep -v '^#' .env.local | grep '^NEXT_PUBLIC_')
+done < <(grep -v '^#' "$ENV_SOURCE" | grep '^NEXT_PUBLIC_')
+
+# Sicherheits-Guard: NIE mit Emulator-/Demo-Config nach Produktion deployen.
+if [ "${NEXT_PUBLIC_USE_EMULATOR:-false}" = "true" ] || [[ "${NEXT_PUBLIC_FIREBASE_API_KEY:-}" == demo-* ]]; then
+  echo "❌ Emulator-/Demo-Config erkannt (USE_EMULATOR=$NEXT_PUBLIC_USE_EMULATOR, API_KEY=$NEXT_PUBLIC_FIREBASE_API_KEY)."
+  echo "   Produktions-Deploy abgebrochen, um eine kaputte Live-App zu verhindern."
+  exit 1
+fi
 
 # Prüfe ob alle erforderlichen Variablen gesetzt sind
 REQUIRED_VARS=(
