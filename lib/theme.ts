@@ -400,6 +400,33 @@ function createAppTheme(mode: PaletteMode) {
               },
             },
           },
+          // Labels klar lesbar (statt blassem Sekundärgrau) + eindeutiger Fokus.
+          MuiInputLabel: {
+            styleOverrides: {
+              root: {
+                color: alpha(surf.text.primary, 0.72),
+                fontWeight: 500,
+                '&.Mui-focused': { color: brand },
+                '&.Mui-error': { color: undefined },
+              },
+            },
+          },
+          // Platzhalter voll deckend und in mittlerem Grau (statt 0.42-Opacity),
+          // damit sie lesbar bleiben, sich aber klar vom eingegebenen Text abheben.
+          MuiOutlinedInput: {
+            styleOverrides: {
+              input: {
+                '&::placeholder': { color: surf.text.secondary, opacity: 1 },
+              },
+            },
+          },
+          MuiInputBase: {
+            styleOverrides: {
+              input: {
+                '&::placeholder': { color: surf.text.secondary, opacity: 1 },
+              },
+            },
+          },
           MuiFormHelperText: {
             styleOverrides: {
               root: { marginLeft: 0, fontSize: '13px', marginTop: 6 },
