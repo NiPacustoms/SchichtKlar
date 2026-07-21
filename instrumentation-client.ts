@@ -1,5 +1,6 @@
-// Sentry-Konfiguration für Next.js
-// Automatische Error-Tracking und Performance-Monitoring
+// Sentry-Konfiguration für Next.js (Client)
+// Wird von Next.js automatisch beim App-Start im Browser geladen
+// (instrumentation-client.ts, Next >= 15.3).
 
 import * as Sentry from '@sentry/nextjs';
 
@@ -44,3 +45,6 @@ Sentry.init({
     /moz-extension:/,
   ],
 });
+
+// Navigations-Spans für das Performance-Monitoring (Sentry v10)
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
