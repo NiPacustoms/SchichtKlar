@@ -35,10 +35,7 @@ interface ShiftDoc {
   startDate: string | Date;
   status?: string;
 }
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { brandedTableOptions, drawFooters, drawLetterhead } from '@/lib/services/pdf/brandedPdf';
-import ExcelJS from 'exceljs';
 
 export interface ReportFilters {
   startDate?: Date;
@@ -333,6 +330,8 @@ class ReportService {
 
   // PDF-Export für Zeitkonten-Report
   async exportTimeAccountReportPDF(data: TimeAccountReport[], filename: string = 'zeitkonten-report.pdf'): Promise<void> {
+    const { default: jsPDF } = await import('jspdf');
+    const { default: autoTable } = await import('jspdf-autotable');
     const doc = new jsPDF();
     const startY = await drawLetterhead(doc, { title: 'Zeitkonten-Übersicht' });
 
@@ -360,6 +359,7 @@ class ReportService {
 
   // Excel-Export für Zuschläge-Report
   async exportSurchargeReportExcel(data: SurchargeReport[], filename: string = 'zuschlaenge-report.xlsx'): Promise<void> {
+    const { default: ExcelJS } = await import('exceljs');
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Zuschläge-Report');
     
@@ -401,6 +401,8 @@ class ReportService {
 
   // PDF-Export für Mitarbeiter-Statistik
   async exportEmployeeStatisticsPDF(data: EmployeeStatistics[], filename: string = 'mitarbeiter-statistik.pdf'): Promise<void> {
+    const { default: jsPDF } = await import('jspdf');
+    const { default: autoTable } = await import('jspdf-autotable');
     const doc = new jsPDF();
     const startY = await drawLetterhead(doc, { title: 'Mitarbeiter-Statistik' });
 
@@ -427,6 +429,7 @@ class ReportService {
 
   // Excel-Export für Schicht-Auslastung
   async exportShiftUtilizationExcel(data: ShiftUtilizationReport[], filename: string = 'schicht-auslastung.xlsx'): Promise<void> {
+    const { default: ExcelJS } = await import('exceljs');
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Schicht-Auslastung');
     
@@ -474,6 +477,8 @@ class ReportService {
     _utilizationData: ShiftUtilizationReport[],
     filename: string = 'alle-berichte.pdf'
   ): Promise<void> {
+    const { default: jsPDF } = await import('jspdf');
+    const { default: autoTable } = await import('jspdf-autotable');
     const doc = new jsPDF();
 
     // Zeitkonten-Report

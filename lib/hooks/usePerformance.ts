@@ -1,6 +1,47 @@
 import { useMemo, useCallback, useRef, useEffect, useState } from 'react';
-import { debounce, throttle } from 'lodash';
 import { logger } from '@/lib/logging';
+
+type CancelableFn<Args extends unknown[]> = ((...args: Args) => void) & { cancel: () => void };
+
+function debounce<Args extends unknown[]>(fn: (...args: Args) => unknown, delay: number): CancelableFn<Args> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const debounced = (...args: Args) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      fn(...args);
+    }, delay);
+  };
+  debounced.cancel = () => {
+    if (timer) clearTimeout(timer);
+    timer = null;
+  };
+  return debounced;
+}
+
+function throttle<Args extends unknown[]>(fn: (...args: Args) => unknown, delay: number): CancelableFn<Args> {
+  let lastCall = 0;
+  let trailing: ReturnType<typeof setTimeout> | null = null;
+  const throttled = (...args: Args) => {
+    const now = Date.now();
+    const remaining = delay - (now - lastCall);
+    if (remaining <= 0) {
+      lastCall = now;
+      fn(...args);
+    } else if (!trailing) {
+      trailing = setTimeout(() => {
+        trailing = null;
+        lastCall = Date.now();
+        fn(...args);
+      }, remaining);
+    }
+  };
+  throttled.cancel = () => {
+    if (trailing) clearTimeout(trailing);
+    trailing = null;
+  };
+  return throttled;
+}
 
 // Debounced callback hook
 export const useDebouncedCallback = <Args extends unknown[], R>(

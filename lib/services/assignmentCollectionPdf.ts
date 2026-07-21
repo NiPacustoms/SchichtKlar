@@ -2,7 +2,6 @@
  * Sammel-PDF: Mehrere Einsatzmitteilungen mit zugeordneter Zeiterfassung
  * zu einem PDF zusammenführen (Drucken / Abspeichern).
  */
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { assignmentService } from './assignments';
 import { shiftService } from './shifts';
 import { timesheetService } from './timesheets';
@@ -39,6 +38,7 @@ export async function buildAssignmentCollectionPdf(
     throw new Error('Keine Einsätze mit Einsatzmitteilung ausgewählt.');
   }
 
+  const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
   const mergedPdf = await PDFDocument.create();
   const font = await mergedPdf.embedFont(StandardFonts.Helvetica);
   const fontBold = await mergedPdf.embedFont(StandardFonts.HelveticaBold);
