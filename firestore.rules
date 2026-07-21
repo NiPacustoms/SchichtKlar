@@ -550,7 +550,17 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
         request.auth.uid in
           get(/databases/$(database)/documents/channels/$(request.resource.data.channelId)).data.participants;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Update: Absender darf alles; andere Channel-Teilnehmer dürfen NUR readBy
+      // (+ updatedAt) ändern – nötig für Lesebestätigungen (WhatsApp-Häkchen).
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        (
+          request.auth.uid in
+            get(/databases/$(database)/documents/channels/$(resource.data.channelId)).data.participants &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy', 'updatedAt'])
+        )
+      );
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Default: deny

@@ -26,9 +26,12 @@ export interface Channel {
   id: string;
   companyId?: string;
   name: string;
-  type: 'station' | 'shift' | 'general';
+  type: 'station' | 'shift' | 'general' | 'direct';
   scopeId: string;
   participants: string[];
+  /** Denormalisierte Vorschau der letzten Nachricht für die Chat-Liste */
+  lastMessage?: string;
+  lastMessageUserId?: string;
   createdAt: Date;
   updatedAt: Date;
 }

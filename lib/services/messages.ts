@@ -166,6 +166,18 @@ export const messageService = {
         updatedAt: serverTimestamp(),
       });
 
+      // Letzte Nachricht am Channel denormalisieren (für Chat-Listen-Vorschau)
+      const preview = content?.trim()
+        ? content.trim().slice(0, 120)
+        : messageAttachments.length > 0
+          ? `📎 ${messageAttachments[0].name}`
+          : '';
+      await updateDoc(doc(getDb(), CHANNELS_COLLECTION, channelId), {
+        lastMessage: preview,
+        lastMessageUserId: userId,
+        updatedAt: serverTimestamp(),
+      });
+
       return docRef.id;
     } catch (error) {
       throw error;
@@ -286,6 +298,8 @@ export const messageService = {
           type: data.type,
           scopeId: data.scopeId,
           participants: data.participants || [],
+          lastMessage: data.lastMessage || '',
+          lastMessageUserId: data.lastMessageUserId || '',
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
         });
@@ -295,6 +309,68 @@ export const messageService = {
     } catch (error) {
       throw error;
     }
+  },
+
+  // Listen to a user's channels in real-time (newest activity first)
+  listenToChannels(userId: string, callback: (channels: Channel[]) => void): Unsubscribe {
+    if (!db) {
+      throw new Error('Database not initialized');
+    }
+    const q = query(
+      collection(getDb(), CHANNELS_COLLECTION),
+      where('participants', 'array-contains', userId),
+      orderBy('updatedAt', 'desc')
+    );
+
+    return onSnapshot(q, snapshot => {
+      const channels: Channel[] = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        channels.push({
+          id: doc.id,
+          companyId: data.companyId || '',
+          name: data.name,
+          type: data.type,
+          scopeId: data.scopeId,
+          participants: data.participants || [],
+          lastMessage: data.lastMessage || '',
+          lastMessageUserId: data.lastMessageUserId || '',
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+        });
+      });
+      callback(channels);
+    });
+  },
+
+  // Find an existing 1:1 channel with exactly these two participants, or create one
+  async findOrCreateDirectChannel(
+    userId: string,
+    otherUserId: string,
+    companyId?: string
+  ): Promise<string> {
+    if (!db) {
+      throw new Error('Database not initialized');
+    }
+    const q = query(
+      collection(getDb(), CHANNELS_COLLECTION),
+      where('participants', 'array-contains', userId),
+      where('type', '==', 'direct')
+    );
+    const snapshot = await getDocs(q);
+    const existing = snapshot.docs.find(d => {
+      const participants: string[] = d.data().participants || [];
+      return participants.length === 2 && participants.includes(otherUserId);
+    });
+    if (existing) return existing.id;
+
+    return this.createChannel({
+      companyId: companyId || '',
+      name: '',
+      type: 'direct',
+      scopeId: 'direct',
+      participants: [userId, otherUserId],
+    });
   },
 
   async createChannel(data: Omit<Channel, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
