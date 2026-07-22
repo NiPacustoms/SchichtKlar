@@ -9,6 +9,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTimesheet } from '@/lib/hooks/useTimesheet';
 import { TimesheetForm as TimesheetFormType, Timesheet } from '@/lib/types';
 import { toast } from '@/lib/utils/toast';
+import { recordTimeEvent, buildCorrections } from '@/lib/services/timeEvents';
+import { TimeEventTrail } from '@/components/time/TimeEventTrail';
 import {
   Alert,
   Box,
@@ -174,10 +176,20 @@ export default function TimePage() {
       };
 
       if (editingTimesheet && timesheet) {
+        // Korrektur als revisionssicheres Ereignis protokollieren (Diff alt → neu)
+        const corrections = buildCorrections(timesheet, timesheetData);
         await updateTimesheet.mutateAsync({
           id: timesheet.id,
           data: timesheetData,
         });
+        if (corrections.length > 0 && user?.id) {
+          void recordTimeEvent(timesheet.id, {
+            type: 'correction',
+            by: user.id,
+            note: 'Manuelle Korrektur über das Formular',
+            corrections,
+          });
+        }
         toast.success('Zeiterfassung aktualisiert!');
         setEditingTimesheet(null);
         // Prüfe ob Signatur-Dialog geöffnet werden soll
@@ -186,6 +198,22 @@ export default function TimePage() {
         }
       } else {
         const timesheetId = await createTimesheet.mutateAsync(timesheetData);
+        // Einstempel-Ereignis(se) protokollieren
+        if (timesheetId && user?.id) {
+          void recordTimeEvent(timesheetId, {
+            type: 'clockIn',
+            by: user.id,
+            at: timesheetData.startTime,
+          });
+          if (timesheetData.endTime && timesheetData.endTime !== timesheetData.startTime) {
+            void recordTimeEvent(timesheetId, {
+              type: 'clockOut',
+              by: user.id,
+              at: timesheetData.endTime,
+              note: 'Manuell erfasst',
+            });
+          }
+        }
         toast.success('Zeiterfassung erstellt!');
         setEditingTimesheet(null);
 
@@ -328,6 +356,7 @@ export default function TimePage() {
       } catch {
         // localStorage nicht verfügbar – Pause gilt nur für diese Sitzung
       }
+      if (user?.id) void recordTimeEvent(timesheet.id, { type: 'pauseStart', by: user.id });
       toast.info('Pause gestartet. Zum Beenden erneut tippen.');
       return;
     }
@@ -340,6 +369,13 @@ export default function TimePage() {
         if (pauseStorageKey) window.localStorage.removeItem(pauseStorageKey);
       } catch {
         // ignorieren
+      }
+      if (user?.id) {
+        void recordTimeEvent(timesheet.id, {
+          type: 'pauseEnd',
+          by: user.id,
+          note: `${minutes} Min`,
+        });
       }
       toast.success(`Pause beendet – ${minutes} Min erfasst (gesamt ${newBreakMinutes} Min).`);
     } catch (e) {
@@ -362,6 +398,9 @@ export default function TimePage() {
         if (pauseStorageKey) window.localStorage.removeItem(pauseStorageKey);
       } catch {
         // ignorieren
+      }
+      if (user?.id && timesheet) {
+        void recordTimeEvent(timesheet.id, { type: 'clockOut', by: user.id, at: endTime });
       }
       setEndShiftDialog({ open: false });
       toast.success('Schicht beendet.');
@@ -614,6 +653,7 @@ export default function TimePage() {
                     Schicht beenden
                   </Button>
                 </Stack>
+                <TimeEventTrail timesheetId={timesheet.id} />
               </>
             ) : (
               <Typography variant="body1" color="text.secondary">
