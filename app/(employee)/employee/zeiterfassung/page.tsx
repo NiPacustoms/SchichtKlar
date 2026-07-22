@@ -294,10 +294,13 @@ export default function TimePage() {
   if (!hasAcceptedAssignment && !timesheet) {
     return (
       <PageContainer maxWidth="standard">
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 4, display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
           <Typography variant="h2" component="h1" sx={{ color: 'text.primary', mb: 1 }}>
             Arbeitszeit erfassen
           </Typography>
+          <Button variant="outlined" size="small" onClick={() => router.push('/employee/zeiten')}>
+            Mein Zeitkonto
+          </Button>
         </Box>
 
         <EmptyState
@@ -331,7 +334,12 @@ export default function TimePage() {
             Erfasse deine Arbeitszeiten manuell
           </Typography>
         </Box>
-        <SyncStatusIndicator />
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <Button variant="outlined" size="small" onClick={() => router.push('/employee/zeiten')}>
+            Mein Zeitkonto
+          </Button>
+          <SyncStatusIndicator />
+        </Stack>
       </Box>
 
       {/* Einsatz-Informationen */}
