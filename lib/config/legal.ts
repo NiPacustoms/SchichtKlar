@@ -96,6 +96,18 @@ export const DEFAULT_LEGAL_INFO: LegalInfo = {
  * 
  * Wirft einen Fehler, wenn in Production erforderliche ENV-Variablen fehlen
  */
+/**
+ * Rechtstext-Ziele: Die Web-App wird in eine bestehende Seite eingebunden,
+ * die Impressum/Datenschutz/AGB bereits führt. Über diese ENV-Variablen
+ * zeigen die Links der App dorthin; ohne Konfiguration greifen die
+ * internen Platzhalter-Seiten.
+ */
+export const LEGAL_URLS = {
+  impressum: process.env.NEXT_PUBLIC_IMPRESSUM_URL || '/recht/impressum',
+  datenschutz: process.env.NEXT_PUBLIC_DATENSCHUTZ_URL || '/recht/datenschutz',
+  agb: process.env.NEXT_PUBLIC_AGB_URL || '/recht/agb',
+} as const;
+
 export function validateLegalConfig(): void {
   // In Development/Test sind Platzhalter-Werte erlaubt
   // Prüfe auch auf Next.js Development-Modus
@@ -123,19 +135,21 @@ export function validateLegalConfig(): void {
   const companyStreet = process.env.NEXT_PUBLIC_COMPANY_STREET;
   const companyEmail = process.env.NEXT_PUBLIC_COMPANY_EMAIL;
 
+  // Kein Produktions-Blocker mehr: Die App wird in eine bestehende Seite
+  // eingebunden, die Impressum/AGB/Datenschutz bereits führt (Entscheidung
+  // 21.07.2026). Die Firmendaten werden nur noch für Dokument-Briefköpfe
+  // genutzt; fehlende Werte fallen auf Platzhalter zurück.
   if (companyName === 'Musterfirma GmbH' || companyStreet === 'Musterstraße 123' || companyEmail === 'info@example.com') {
-    throw new Error(
-      'PRODUCTION BLOCKER: Legal configuration contains mock data. ' +
-      'Please set the following ENV variables with real company data: ' +
-      'NEXT_PUBLIC_COMPANY_NAME, NEXT_PUBLIC_COMPANY_STREET, NEXT_PUBLIC_COMPANY_CITY, ' +
-      'NEXT_PUBLIC_COMPANY_ZIP, NEXT_PUBLIC_COMPANY_EMAIL'
+    console.warn(
+      '[legal] Firmendaten enthalten Platzhalter – Dokument-Briefköpfe zeigen Musterdaten. ' +
+      'Optional NEXT_PUBLIC_COMPANY_* setzen.'
     );
   }
 
   if (missing.length > 0) {
-    throw new Error(
-      `PRODUCTION BLOCKER: Missing required legal ENV variables: ${missing.join(', ')}. ` +
-      'The app cannot run in production without proper legal information.'
+    console.warn(
+      `[legal] Firmendaten-ENV nicht gesetzt (${missing.join(', ')}) – ` +
+      'Dokument-Briefköpfe nutzen Platzhalter. Rechtstexte liefert die einbettende Hauptseite.'
     );
   }
 }

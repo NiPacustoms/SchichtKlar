@@ -8,7 +8,7 @@ Ehrliche Auflistung aller bekannten Einschränkungen, offenen Entscheidungen und
 
 | # | Thema | Details |
 |---|---|---|
-| A1 | **Impressums-/Legal-Daten setzen** | `NEXT_PUBLIC_COMPANY_*` mit echten Daten belegen. Der Produktions-Guard `validateLegalConfig()` blockiert den Build sonst bewusst. |
+| A1 | ~~Impressums-/Legal-Daten setzen~~ **ENTSCHIEDEN: Rechtstexte liefert die Hauptseite** | Eigentümer-Entscheidung (21.07.2026): Die App wird in eine bestehende Seite eingebunden, die Impressum/AGB/Datenschutz bereits führt. Der Build-Blocker `validateLegalConfig()` ist zu einer Warnung entschärft. Optional: `NEXT_PUBLIC_IMPRESSUM_URL` / `NEXT_PUBLIC_DATENSCHUTZ_URL` / `NEXT_PUBLIC_AGB_URL` auf die Hauptseite zeigen lassen (sonst interne Platzhalter-Seiten) und `NEXT_PUBLIC_COMPANY_*` für Dokument-Briefköpfe setzen. |
 | A2 | **Finale Markenassets** | `public/logo.svg`, `public/logo-default.png`, `public/icons/*` durch finale Schichtklar-Grafiken ersetzen (gleiche Dateinamen → keine Code-Änderung). |
 | A3 | **Produktions-Domain & CORS** | Domain + Support-E-Mail festlegen; `scripts/storage-cors.json` (Platzhalter `your-production-domain.example`) auf echte Origin setzen und via `npm run storage:cors` anwenden. |
 | A4 | **AVV mit Google Cloud** | Auftragsverarbeitungsvertrag abschließen; Region `europe-west1` ist bereits gesetzt. |
