@@ -536,6 +536,12 @@ service cloud.firestore {
     }
 
     // ── Messaging (teilnehmerbasiert) ─────────────────────────────────────
+    // E-Mail-Outbox: rein serverseitig (Cloud Functions via Admin SDK) –
+    // Clients haben keinerlei Zugriff.
+    match /emailOutbox/{id} {
+      allow read, write: if false;
+    }
+
     match /channels/{id} {
       allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
       allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
