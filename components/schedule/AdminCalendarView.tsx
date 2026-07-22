@@ -338,10 +338,6 @@ export default function AdminCalendarView({
                         title?: string;
                         facility?: { name?: string };
                         assignedTo?: string[];
-                        surchargeNight?: boolean;
-                        surchargeWeekend?: boolean;
-                        surchargeHoliday?: boolean;
-                        surchargeOnCall?: boolean;
                         color?: string;
                         shiftGroupId?: string;
                       };

@@ -716,7 +716,6 @@ class DocumentGenerationService {
   private getReportTypeLabel(reportType: string): string {
     const map: Record<string, string> = {
       timesheet: 'Zeitkonten',
-      allowances: 'Zuschläge',
       shifts: 'Schichten',
       summary: 'Zusammenfassung / Mitarbeiter-Statistik',
     };

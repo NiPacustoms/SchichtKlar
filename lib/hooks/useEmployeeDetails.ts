@@ -81,7 +81,6 @@ export const useEmployeeDetails = (employeeId: string) => {
         totalHours: 0,
         totalShifts: 0,
         averageHoursPerShift: 0,
-        totalSurcharge: 0,
         nightHours: 0,
         weekendHours: 0,
         holidayHours: 0,
@@ -94,7 +93,6 @@ export const useEmployeeDetails = (employeeId: string) => {
     const totalHours = timesheets.reduce((sum, ts) => sum + (ts.totalHours || 0), 0);
     const totalShifts = assignmentsArray.filter((a: Assignment) => a.status === 'accepted' || a.status === 'completed').length;
     const averageHoursPerShift = totalShifts > 0 ? totalHours / totalShifts : 0;
-    const totalSurcharge = timesheets.reduce((sum, ts) => sum + (ts.surchargeAmount || 0), 0);
     const nightHours = timesheets.reduce((sum, ts) => sum + (ts.nightHours || 0), 0);
     const weekendHours = timesheets.reduce((sum, ts) => sum + (ts.weekendHours || 0), 0);
     const holidayHours = timesheets.reduce((sum, ts) => sum + (ts.holidayHours || 0), 0);
@@ -117,7 +115,6 @@ export const useEmployeeDetails = (employeeId: string) => {
       totalHours,
       totalShifts,
       averageHoursPerShift,
-      totalSurcharge,
       nightHours,
       weekendHours,
       holidayHours,

@@ -26,20 +26,14 @@ vi.mock('@/lib/services/times', () => ({
 }));
 
 const generateTimeAccountReport = vi.fn();
-const generateSurchargeReport = vi.fn();
 const exportTimeAccountReportPDF = vi.fn();
 const exportTimeAccountReportExcel = vi.fn();
-const exportSurchargeReportPDF = vi.fn();
-const exportSurchargeReportExcel = vi.fn();
 
 vi.mock('@/lib/services/reports', () => ({
   reportService: {
     generateTimeAccountReport: (...args: unknown[]) => generateTimeAccountReport(...args),
-    generateSurchargeReport: (...args: unknown[]) => generateSurchargeReport(...args),
     exportTimeAccountReportPDF: (...args: unknown[]) => exportTimeAccountReportPDF(...args),
     exportTimeAccountReportExcel: (...args: unknown[]) => exportTimeAccountReportExcel(...args),
-    exportSurchargeReportPDF: (...args: unknown[]) => exportSurchargeReportPDF(...args),
-    exportSurchargeReportExcel: (...args: unknown[]) => exportSurchargeReportExcel(...args),
   },
 }));
 
@@ -78,11 +72,8 @@ describe('useEmployeeReports', () => {
     getByUserIdTimesheets.mockReset();
     getByUserIdTimes.mockReset();
     generateTimeAccountReport.mockReset();
-    generateSurchargeReport.mockReset();
     exportTimeAccountReportPDF.mockReset();
     exportTimeAccountReportExcel.mockReset();
-    exportSurchargeReportPDF.mockReset();
-    exportSurchargeReportExcel.mockReset();
     toastSuccess.mockReset();
     toastError.mockReset();
     toastInfo.mockReset();
@@ -124,44 +115,6 @@ describe('useEmployeeReports', () => {
     expect(report.regularHours).toBeCloseTo(12);
     expect(report.workingDays).toBe(2);
     expect(report.arbzgCompliance.isCompliant).toBe(true);
-  });
-
-  it('berechnet Zuschlags-Report aus surchargeAmount und Stundenverteilung', async () => {
-    getByUserIdTimesheets.mockResolvedValue([
-      {
-        id: 'ts-1',
-        userId: mockUser.id,
-        totalHours: 8,
-        surchargeAmount: 40,
-        nightHours: 2,
-        weekendHours: 1,
-        holidayHours: 0,
-        overtimeHours: 1,
-        date: new Date('2025-01-01'),
-      },
-    ]);
-
-    getByUserIdTimes.mockResolvedValue([]);
-
-    const { result } = renderHook(() => useEmployeeReports(), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
-    });
-
-    const surcharges = result.current.surchargesReport;
-
-    expect(surcharges.totalSurcharge).toBeCloseTo(40);
-    // Summe der aufgeteilten Zuschläge sollte ungefähr dem Gesamtbetrag entsprechen
-    const sumByType =
-      surcharges.nightSurcharge +
-      surcharges.weekendSurcharge +
-      surcharges.holidaySurcharge +
-      surcharges.overtimeSurcharge;
-    expect(sumByType).toBeGreaterThan(0);
-    expect(sumByType).toBeCloseTo(40, 5);
   });
 
   it('exportiert Arbeitszeit-Report als PDF über reportService', async () => {

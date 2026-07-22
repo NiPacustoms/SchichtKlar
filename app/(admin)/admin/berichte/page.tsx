@@ -90,7 +90,6 @@ export default function AdminBerichtePage() {
     employeeStatistics,
     isLoading,
     error,
-    formatCurrency,
     formatHours,
     getTrendIcon,
     getTrendText,
@@ -637,7 +636,6 @@ export default function AdminBerichtePage() {
                           <TableCell>Mitarbeiter</TableCell>
                           <TableCell>Einrichtung</TableCell>
                           <TableCell>Stunden</TableCell>
-                          <TableCell>Zuschläge</TableCell>
                           <TableCell>Status</TableCell>
                         </TableRow>
                       </TableHead>
@@ -647,7 +645,6 @@ export default function AdminBerichtePage() {
                             <TableCell>{employee.userName}</TableCell>
                             <TableCell>Einrichtung A</TableCell>
                             <TableCell>{formatHours(employee.totalHours)}</TableCell>
-                            <TableCell>{formatCurrency(0)}</TableCell>
                             <TableCell>
                               <Chip label="Aktiv" color="success" size="small" />
                             </TableCell>

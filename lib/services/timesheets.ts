@@ -77,7 +77,6 @@ type FirestoreTimesheetData = {
   endTime: string;
   breakMinutes?: number;
   totalHours?: number;
-  surchargeAmount?: number;
   nightHours?: number;
   weekendHours?: number;
   holidayHours?: number;
@@ -1096,7 +1095,6 @@ export const timesheetService = {
       endTime: data.endTime,
       breakMinutes: data.breakMinutes || 0,
       totalHours: data.totalHours || 0,
-      surchargeAmount: data.surchargeAmount,
       nightHours: data.nightHours || 0,
       weekendHours: data.weekendHours || 0,
       holidayHours: data.holidayHours || 0,

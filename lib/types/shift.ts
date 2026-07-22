@@ -20,10 +20,6 @@ export interface Shift {
   tz: string;
   notes?: string;
   createdBy: string;
-  surchargeNight?: boolean;
-  surchargeWeekend?: boolean;
-  surchargeHoliday?: boolean;
-  surchargeOnCall?: boolean;
   companyId?: string;
   color?: string;
 }

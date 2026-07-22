@@ -115,7 +115,7 @@ export async function PATCH(
     const body = (await req.json().catch(() => ({}))) as ScheduledReportConfigUpdate;
     const updates: Record<string, unknown> = {};
 
-    const allowedTypes = ['timesheet', 'allowances', 'shifts', 'summary'];
+    const allowedTypes = ['timesheet', 'shifts', 'summary'];
     const allowedPeriods = ['current-month', 'last-month', 'current-quarter', 'current-year'];
     const allowedFormats = ['pdf', 'excel', 'csv'];
     const allowedSchedules = ['daily', 'monthly'];
