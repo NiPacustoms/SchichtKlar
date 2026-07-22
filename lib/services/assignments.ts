@@ -1200,48 +1200,22 @@ return assignments;
         return;
       }
 
-      // Import services dynamically
-      const { shiftService } = await import('./shifts');
-      const { timesheetService } = await import('./timesheets');
-      
       // Check if all signatures collected inline
       const areAllSignaturesCollected = (schedule: typeof assignment.signatureSchedule) => {
         if (!schedule?.requiredDates?.length) return true;
         return schedule.collectedDates?.length === schedule.requiredDates.length;
       };
 
-      const shift = await shiftService.getById(assignment.shiftId);
-      if (!shift) {
-        return;
-      }
-
-      // Check if all relieving signatures are collected
-      const shiftDateValue = typeof shift.date === 'string' ? new Date(shift.date) : (shift.date as Date);
-      const assignmentStart = shiftDateValue;
-      const assignmentEnd = shiftDateValue; // For now, single day assignments
-      
       const allRelievingSignaturesCollected = areAllSignaturesCollected(assignment.signatureSchedule);
 
       if (!allRelievingSignaturesCollected) {
         return; // Not all signatures collected yet
       }
 
-      // Check if facility signatures exist for all timesheets
-      const timesheets = await timesheetService.getByUserAndDateRange(
-        assignment.userId,
-        assignmentStart,
-        assignmentEnd
-      );
-
-      // For now, we require at least one facility signature
-      // In a more complex scenario, we might require facility signatures for all days
-      const hasFacilitySignatures = timesheets.some(ts => ts.facilitySignatureUrl);
-
-      if (!hasFacilitySignatures && timesheets.length > 0) {
-        return; // Facility signatures not yet collected
-      }
-
-      // All signatures collected - generate PDF and send emails
+      // Mitarbeiter-Signaturen sind vollständig → Nachweis sofort versenden.
+      // Die Einrichtungssignatur ist KEINE Voraussetzung (Entscheidung 22.07.2026):
+      // fehlt sie, wird der Nachweis mit Vermerk „Einrichtungssignatur ausstehend"
+      // an Mitarbeiter, Einrichtung und die Zentrale verschickt.
       await this.generateSignaturePDFAndSendEmails(assignmentId);
     } catch (error) {
       logger.error('Error checking and generating PDF', error instanceof Error ? error : new Error(String(error)));
@@ -1409,6 +1383,29 @@ return assignments;
               logger.error('Error sending email to facility', err instanceof Error ? err : new Error(String(err)));
             })
         );
+      }
+
+      // Email an die Zentrale (info@) – fester Empfänger für jeden Stundennachweis
+      try {
+        const { getLegalInfo } = await import('@/lib/config/legal');
+        const centralEmail = getLegalInfo().contact.email;
+        if (centralEmail) {
+          emailPromises.push(
+            sendAssignmentSignatureEmail({
+              to: centralEmail,
+              employeeName,
+              assignmentId: assignment.id,
+              pdfUrl: pdfResult.url,
+              facilityName,
+              shiftDate,
+              recipientType: 'admin',
+            }).catch(err => {
+              logger.error('Error sending email to central office', err instanceof Error ? err : new Error(String(err)));
+            })
+          );
+        }
+      } catch (err) {
+        logger.error('Error resolving central office email', err instanceof Error ? err : new Error(String(err)));
       }
 
       // Wait for all emails and documents to be saved (parallel execution)

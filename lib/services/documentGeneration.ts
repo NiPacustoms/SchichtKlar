@@ -1065,6 +1065,28 @@ class DocumentGenerationService {
 
       for (const timesheetId of options.timesheetIds) {
         const timesheet = await timesheetService.getById(timesheetId);
+        // Ohne Einrichtungssignatur: Vermerk „ausstehend" statt stiller Auslassung
+        // (Nachweis wird bewusst schon nach der Mitarbeiter-Signatur versendet).
+        if (timesheet && !timesheet.facilitySignatureUrl) {
+          if (y > 250) {
+            doc.addPage();
+            y = 20;
+          }
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(11);
+          const tsDatePending = timesheet.date instanceof Date ? timesheet.date : new Date(timesheet.date);
+          doc.text(`Datum: ${formatDateDE(tsDatePending)}`, margin, y);
+          y += 6;
+          doc.text(`Zeiten: ${timesheet.startTime} - ${timesheet.endTime}`, margin, y);
+          y += 6;
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(180, 120, 0);
+          doc.text('Einrichtungssignatur: ausstehend', margin, y);
+          doc.setTextColor(0, 0, 0);
+          doc.setFont('helvetica', 'normal');
+          y += 14;
+          continue;
+        }
         if (timesheet && timesheet.facilitySignatureUrl) {
           // Prüfe ob neue Seite benötigt wird
           if (y > 250) {

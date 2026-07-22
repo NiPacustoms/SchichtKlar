@@ -172,7 +172,11 @@ export default function AssignmentFormPage() {
     const employeeName = user.displayName || user.email || 'Unbekannt';
     const facilityName = facility?.name || shift.facilityId || 'Unbekannt';
     const facilityAddress = facility?.address || '';
-    const shiftTimes = `${shift.startTime} - ${shift.endTime}`;
+    // Overnight-Schichten: Enddatum (Folgetag) mit ausweisen
+    const shiftEndDate = (shift as { endDate?: string | Date }).endDate;
+    const shiftTimes = shiftEndDate
+      ? `${shift.startTime} - ${shift.endTime} (bis ${new Date(shiftEndDate).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })})`
+      : `${shift.startTime} - ${shift.endTime}`;
     const currentDate = new Date();
     const shiftDate =
       typeof shift.date === 'string' ? new Date(shift.date) : (shift.date as Date);
