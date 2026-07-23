@@ -156,10 +156,21 @@ export const retryFailedEmails = functions.pubsub
       .where('attempts', '<', MAX_ATTEMPTS)
       .limit(50)
       .get();
-    for (const doc of failed.docs) {
+    // Hängengebliebene 'queued'-Mails (Function-Timeout/Crash VOR dem
+    // Statuswechsel) nach 1h ebenfalls erneut versuchen.
+    const staleCutoff = admin.firestore.Timestamp.fromMillis(Date.now() - 60 * 60 * 1000);
+    const staleQueued = await db
+      .collection(OUTBOX)
+      .where('status', '==', 'queued')
+      .where('createdAt', '<', staleCutoff)
+      .limit(50)
+      .get();
+    for (const doc of [...failed.docs, ...staleQueued.docs]) {
       await attemptSend(doc.ref);
     }
-    functions.logger.info(`emailOutbox: Retry-Lauf über ${failed.size} fehlgeschlagene Mails`);
+    functions.logger.info(
+      `emailOutbox: Retry-Lauf über ${failed.size} fehlgeschlagene + ${staleQueued.size} hängende Mails`
+    );
   });
 
 /* ── Hilfsdaten laden ───────────────────────────────────────────────────── */
@@ -220,6 +231,7 @@ export const onAssignmentStatusEmail = functions.firestore
     if (after.status !== 'accepted' && after.status !== 'declined') return;
 
     const assignmentId = context.params.assignmentId as string;
+    const revision = change.after.updateTime?.toMillis() ?? 0;
     const ctx = await loadAssignmentContext(after);
     const accepted = after.status === 'accepted';
 
@@ -232,7 +244,7 @@ export const onAssignmentStatusEmail = functions.firestore
 
     // Bestätigung an Mitarbeiter/in (respektiert E-Mail-Einstellungen)
     if (ctx.employeeEmail && ctx.employeeWantsEmail) {
-      await queueEmail(`${assignmentId}_${after.status}_employee`, {
+      await queueEmail(`${assignmentId}_${after.status}_${revision}_employee`, {
         to: ctx.employeeEmail,
         subject: accepted
           ? `Einsatz bestätigt – ${ctx.shiftDate}${ctx.facilityName ? ` · ${ctx.facilityName}` : ''}`
@@ -250,7 +262,7 @@ export const onAssignmentStatusEmail = functions.firestore
     }
 
     // Kopie an die Zentrale
-    await queueEmail(`${assignmentId}_${after.status}_central`, {
+    await queueEmail(`${assignmentId}_${after.status}_${revision}_central`, {
       to: CENTRAL_EMAIL,
       subject: accepted
         ? `Einsatz angenommen: ${ctx.employeeName} – ${ctx.shiftDate}`
@@ -274,6 +286,7 @@ export const onTimesheetSubmittedEmail = functions.firestore
     if (before.status === after.status || after.status !== 'submitted') return;
 
     const timesheetId = context.params.timesheetId as string;
+    const revision = change.after.updateTime?.toMillis() ?? 0;
     const userSnap = after.userId ? await db.collection('users').doc(after.userId).get() : null;
     const user = userSnap?.exists ? userSnap.data() : null;
     if (!user?.email || user?.notificationSettings?.emailNotifications === false) return;
@@ -283,7 +296,7 @@ export const onTimesheetSubmittedEmail = functions.firestore
         ? after.totalHours.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
         : '–';
 
-    await queueEmail(`${timesheetId}_submitted_employee`, {
+    await queueEmail(`${timesheetId}_submitted_${revision}_employee`, {
       to: user.email,
       subject: `Zeiterfassung eingereicht – ${formatDateDE(after.date)}`,
       html: renderBrandedEmail({

@@ -155,8 +155,15 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
     mutationFn: async (data: ShiftCreateFormData) => {
       if (!user?.id) throw new Error('User not authenticated');
 
+      // Overnight (Ende vor Start): Enddatum = Folgetag mitschreiben
+      const overnightEndDate =
+        data.endTime < data.startTime && data.date
+          ? addDays(data.date instanceof Date ? data.date : new Date(data.date), 1)
+          : undefined;
+
       return await shiftService.createWithCapacity({
         ...data,
+        ...(overnightEndDate ? { endDate: overnightEndDate } : {}),
         createdBy: user.id,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
@@ -320,15 +327,17 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
           const createdShiftIds: string[] = [];
 
           for (const day of days) {
-            const dayIso = typeof day === 'string' ? day : day.toISOString().split('T')[0];
+            // Als Date (lokale Mitternacht) speichern – identisch zum
+            // Einzelschicht-Pfad. Der frühere toISOString()-String rutschte in
+            // Europe/Berlin auf den Vortag UND war für Date-Range-Queries
+            // unsichtbar (String matcht keinen Timestamp).
+            const dayDate = typeof day === 'string' ? new Date(day) : day;
             // Overnight: Ende liegt vor dem Start → Enddatum ist der Folgetag
             const overnightEndDate =
-              data.endTime < data.startTime
-                ? addDays(typeof day === 'string' ? new Date(day) : day, 1).toISOString().split('T')[0]
-                : undefined;
+              data.endTime < data.startTime ? addDays(dayDate, 1) : undefined;
             const shiftId = await shiftService.createWithCapacity({
               facilityId: data.facilityId,
-              date: dayIso,
+              date: dayDate,
               ...(overnightEndDate ? { endDate: overnightEndDate } : {}),
               startTime: data.startTime,
               endTime: data.endTime,

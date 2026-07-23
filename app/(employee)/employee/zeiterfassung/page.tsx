@@ -115,6 +115,9 @@ export default function TimePage() {
   });
 
   const [editingTimesheet, setEditingTimesheet] = useState<TimesheetFormType | null>(null);
+  // Welcher Eintrag bearbeitet wird (sonst überschriebe „Bearbeiten" eines
+  // alten Eintrags stillschweigend das heutige Timesheet)
+  const [editingSource, setEditingSource] = useState<Timesheet | null>(null);
   // Laufende Pause der Schnell-Erfassung (überlebt Reload via localStorage)
   const [pauseStartedAt, setPauseStartedAt] = useState<Date | null>(null);
   // Checkout-Dialog: gesetzliche Mindestpause (§4 ArbZG) beim Beenden vorschlagen
@@ -123,6 +126,7 @@ export default function TimePage() {
     endTime?: string;
     suggestedBreak?: number;
     workedMinutes?: number;
+    currentBreaks?: number;
   }>({ open: false });
   const [openDailySignature, setOpenDailySignature] = useState<{
     open: boolean;
@@ -175,15 +179,17 @@ export default function TimePage() {
         startTime: startTimeForStorage,
       };
 
-      if (editingTimesheet && timesheet) {
-        // Korrektur als revisionssicheres Ereignis protokollieren (Diff alt → neu)
-        const corrections = buildCorrections(timesheet, timesheetData);
+      const editTarget = editingSource ?? timesheet;
+      if (editingTimesheet && editTarget) {
+        // Korrektur als revisionssicheres Ereignis protokollieren (Diff alt → neu).
+        // Wichtig: gegen den BEARBEITETEN Eintrag, nicht pauschal den heutigen.
+        const corrections = buildCorrections(editTarget, timesheetData);
         await updateTimesheet.mutateAsync({
-          id: timesheet.id,
+          id: editTarget.id,
           data: timesheetData,
         });
         if (corrections.length > 0 && user?.id) {
-          void recordTimeEvent(timesheet.id, {
+          void recordTimeEvent(editTarget.id, {
             type: 'correction',
             by: user.id,
             note: 'Manuelle Korrektur über das Formular',
@@ -192,9 +198,10 @@ export default function TimePage() {
         }
         toast.success('Zeiterfassung aktualisiert!');
         setEditingTimesheet(null);
+        setEditingSource(null);
         // Prüfe ob Signatur-Dialog geöffnet werden soll
         if (timesheetData.endTime) {
-          setOpenDailySignature({ open: true, tsId: timesheet.id, date: data.date });
+          setOpenDailySignature({ open: true, tsId: editTarget.id, date: data.date });
         }
       } else {
         const timesheetId = await createTimesheet.mutateAsync(timesheetData);
@@ -216,6 +223,7 @@ export default function TimePage() {
         }
         toast.success('Zeiterfassung erstellt!');
         setEditingTimesheet(null);
+        setEditingSource(null);
 
         // Prüfe ob Signatur-Dialoge geöffnet werden sollen
         if (timesheetData.endTime && timesheetId && user?.id) {
@@ -299,6 +307,7 @@ export default function TimePage() {
   };
 
   const handleEditTimesheet = (timesheet: Timesheet) => {
+    setEditingSource(timesheet);
     setEditingTimesheet({
       date: timesheet.date,
       startTime: timesheet.startTime,
@@ -414,8 +423,17 @@ export default function TimePage() {
     const now = new Date();
     const endTime = now.toTimeString().slice(0, 5);
 
-    // Laufende Pause automatisch mit abschließen
-    const totalBreaks = (timesheet.breakMinutes ?? 0) + runningPauseMinutes();
+    // Laufende Pause automatisch mit abschließen (inkl. pauseEnd-Event,
+    // damit der Verlauf konsistent bleibt)
+    const runningPause = runningPauseMinutes();
+    if (runningPause > 0 && user?.id) {
+      void recordTimeEvent(timesheet.id, {
+        type: 'pauseEnd',
+        by: user.id,
+        note: `${runningPause} Min (automatisch beim Schichtende)`,
+      });
+    }
+    const totalBreaks = (timesheet.breakMinutes ?? 0) + runningPause;
 
     // Brutto-Anwesenheit (Overnight: Ende vor Start → +24h)
     let grossMinutes = timeToMinutes(endTime) - timeToMinutes(timesheet.startTime);
@@ -424,7 +442,7 @@ export default function TimePage() {
 
     const required = statutoryBreakFor(workedMinutes);
     if (totalBreaks < required) {
-      setEndShiftDialog({ open: true, endTime, suggestedBreak: required, workedMinutes });
+      setEndShiftDialog({ open: true, endTime, suggestedBreak: required, workedMinutes, currentBreaks: totalBreaks });
       return;
     }
     await finishShift(endTime, totalBreaks);
@@ -737,7 +755,7 @@ export default function TimePage() {
             {String((endShiftDialog.workedMinutes ?? 0) % 60).padStart(2, '0')} Stunden Arbeitszeit
             schreibt das Arbeitszeitgesetz (§4 ArbZG) mindestens{' '}
             <strong>{endShiftDialog.suggestedBreak} Minuten Pause</strong> vor — erfasst sind
-            bisher {timesheet?.breakMinutes ?? 0} Minuten.
+            bisher {endShiftDialog.currentBreaks ?? timesheet?.breakMinutes ?? 0} Minuten.
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Soll die gesetzliche Mindestpause übernommen werden? Ohne ausreichende Pause kann die

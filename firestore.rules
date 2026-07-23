@@ -250,14 +250,24 @@ service cloud.firestore {
       
       // Update: Nur wenn NICHT approved/submitted (GoBD-Konformität) und gleiche Company
       allow update: if isAuthenticated() && (
-        resource.data.companyId == null || 
-        (belongsToSameCompany(resource.data.companyId) && 
+        resource.data.companyId == null ||
+        (belongsToSameCompany(resource.data.companyId) &&
          creatingForSameCompany(request.resource.data.companyId))
       ) && (
         resource.data.userId == request.auth.uid || isAdmin()
       ) && (
-        resource.data.status != 'approved' && 
-        resource.data.status != 'submitted'
+        (
+          resource.data.status != 'approved' &&
+          resource.data.status != 'submitted'
+        ) ||
+        // Admin-Freigabe: submitted darf durch Admins zu approved/rejected
+        // überführt werden (sonst wäre der Workflow draft→submitted→approved
+        // clientseitig nie abschließbar).
+        (
+          isAdmin() &&
+          resource.data.status == 'submitted' &&
+          (request.resource.data.status == 'approved' || request.resource.data.status == 'rejected')
+        )
       );
       
       // Delete: Nur wenn NICHT approved/submitted (GoBD-Konformität) und gleiche Company

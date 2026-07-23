@@ -67,6 +67,9 @@ export async function recordTimeEvent(
   }
 ): Promise<void> {
   if (!db) return;
+  // Offline-Queue-IDs ('offline_…') sind keine echten Firestore-Dokumente –
+  // Events darunter würden beim Sync an den Rules scheitern und verloren gehen.
+  if (!timesheetId || timesheetId.startsWith('offline_')) return;
   try {
     await addDoc(collection(getDb(), 'timesheets', timesheetId, 'events'), {
       type: input.type,

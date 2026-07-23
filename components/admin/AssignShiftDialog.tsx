@@ -255,17 +255,23 @@ export function AssignShiftDialog({ open, onClose, shift }: AssignShiftDialogPro
     assignUserMutation.mutate(userObj);
   };
 
-  // Matching-Vorschläge der Cloud Function (Qualifikation, Konflikte, Score)
-  const { data: candidateSuggestions = [] } = useQuery({
+  // Matching-Vorschläge der Cloud Function (Qualifikation, Konflikte, Score).
+  // Bereits dieser Schicht zugewiesene Mitarbeiter werden ausgeblendet
+  // (sonst wäre eine Doppel-Zuweisung per Chip-Klick möglich).
+  const { data: candidateSuggestionsRaw = [] } = useQuery({
     queryKey: ['assignCandidates', shift.id],
     queryFn: async () => {
-      const result = await cloudFunctions.findAvailableCandidates(shift.id, { limit: 5 });
+      const result = await cloudFunctions.findAvailableCandidates(shift.id, { limit: 8 });
       return result.candidates || [];
     },
     enabled: open,
     staleTime: 60_000,
     retry: false,
   });
+  const candidateSuggestions = useMemo(() => {
+    const assignedIds = new Set(assignedUsers.map(a => a.user.id));
+    return candidateSuggestionsRaw.filter(c => !assignedIds.has(c.userId)).slice(0, 5);
+  }, [candidateSuggestionsRaw, assignedUsers]);
 
   /** Vorschlag zuweisen – Kandidat kann außerhalb der aktuellen Suchliste liegen. */
   const handleAssignCandidate = async (userId: string) => {

@@ -82,6 +82,7 @@ export default function AssignmentFormPage() {
     formState: { errors, isSubmitting },
     reset,
     setValue,
+    getValues,
   } = useForm<AssignmentFormValues>({
     resolver: zodResolver(assignmentFormSchema),
     defaultValues: {
@@ -301,6 +302,9 @@ export default function AssignmentFormPage() {
             formStatus: 'acknowledged',
             formPlace: facility?.name || shift.facilityId || '',
             formTimes: `${shift.startTime} - ${shift.endTime}`,
+            // Anmerkungen des Mitarbeiters mitspeichern (gingen früher verloren,
+            // weil der Auto-Submit nach der Unterschrift sie nicht übernahm)
+            formNotes: getValues('notes')?.trim() || undefined,
             formSignatureName: user.displayName || undefined,
             formSignedAt: new Date(),
             status: assignment.status === 'assigned' ? 'accepted' : assignment.status,
