@@ -10,25 +10,8 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { PermissionsProvider } from '@/contexts/PermissionsContext';
 import { QueryProvider } from '@/lib/providers/QueryProvider';
 import { GlobalErrorBoundary } from '@/components/errors/GlobalErrorBoundary';
-import { validateLegalConfig } from '@/lib/config/legal';
-import { logger } from '@/lib/logging';
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
-
-// Production safety check: Validiere Legal-Config beim Import
-// Nur in Production validieren, nicht in Development
-if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
-  try {
-    validateLegalConfig();
-  } catch (error) {
-    // In Production sollte dies einen Fehler werfen, aber wir loggen es auch
-    logger.error(
-      'Legal config validation failed',
-      error instanceof Error ? error : new Error(String(error))
-    );
-    throw error;
-  }
-}
 import './globals.css';
 
 const inter = Inter({

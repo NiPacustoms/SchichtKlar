@@ -58,7 +58,6 @@ export const useTimesheetHistory = (filters: TimesheetHistoryFilters = {}) => {
         nightHours: 0,
         weekendHours: 0,
         holidayHours: 0,
-        totalSurcharge: 0,
         averageHoursPerWeek: 0,
         workingDays: 0,
         trend: 'stable' as 'up' | 'down' | 'stable',
@@ -71,7 +70,6 @@ export const useTimesheetHistory = (filters: TimesheetHistoryFilters = {}) => {
     const nightHours = timesheets.reduce((sum, ts) => sum + (ts.nightHours || 0), 0);
     const weekendHours = timesheets.reduce((sum, ts) => sum + (ts.weekendHours || 0), 0);
     const holidayHours = timesheets.reduce((sum, ts) => sum + (ts.holidayHours || 0), 0);
-    const totalSurcharge = timesheets.reduce((sum, ts) => sum + (ts.surchargeAmount || 0), 0);
 
     // Eindeutige Arbeitstage
     const uniqueDays = new Set(timesheets.map(ts => new Date(ts.startDate).toDateString())).size;
@@ -113,7 +111,6 @@ export const useTimesheetHistory = (filters: TimesheetHistoryFilters = {}) => {
       nightHours,
       weekendHours,
       holidayHours,
-      totalSurcharge,
       averageHoursPerWeek,
       workingDays,
       trend,

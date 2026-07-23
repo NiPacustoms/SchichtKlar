@@ -82,6 +82,7 @@ export default function AssignmentFormPage() {
     formState: { errors, isSubmitting },
     reset,
     setValue,
+    getValues,
   } = useForm<AssignmentFormValues>({
     resolver: zodResolver(assignmentFormSchema),
     defaultValues: {
@@ -172,7 +173,11 @@ export default function AssignmentFormPage() {
     const employeeName = user.displayName || user.email || 'Unbekannt';
     const facilityName = facility?.name || shift.facilityId || 'Unbekannt';
     const facilityAddress = facility?.address || '';
-    const shiftTimes = `${shift.startTime} - ${shift.endTime}`;
+    // Overnight-Schichten: Enddatum (Folgetag) mit ausweisen
+    const shiftEndDate = (shift as { endDate?: string | Date }).endDate;
+    const shiftTimes = shiftEndDate
+      ? `${shift.startTime} - ${shift.endTime} (bis ${new Date(shiftEndDate).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })})`
+      : `${shift.startTime} - ${shift.endTime}`;
     const currentDate = new Date();
     const shiftDate =
       typeof shift.date === 'string' ? new Date(shift.date) : (shift.date as Date);
@@ -297,6 +302,9 @@ export default function AssignmentFormPage() {
             formStatus: 'acknowledged',
             formPlace: facility?.name || shift.facilityId || '',
             formTimes: `${shift.startTime} - ${shift.endTime}`,
+            // Anmerkungen des Mitarbeiters mitspeichern (gingen früher verloren,
+            // weil der Auto-Submit nach der Unterschrift sie nicht übernahm)
+            formNotes: getValues('notes')?.trim() || undefined,
             formSignatureName: user.displayName || undefined,
             formSignedAt: new Date(),
             status: assignment.status === 'assigned' ? 'accepted' : assignment.status,

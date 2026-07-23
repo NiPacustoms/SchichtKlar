@@ -218,6 +218,22 @@ service cloud.firestore {
     // GoBD-konform: approved/submitted Timesheets sind unveränderlich
     // Mit Mandantenisolation
     match /timesheets/{timesheetId} {
+      // Stempel-Ereignisse: append-only Audit-Trail zur Zeiterfassung.
+      // Anlegen nur durch den Besitzer des Timesheets (oder Admin),
+      // Ändern/Löschen ist für ALLE verboten – Unveränderlichkeit per Rules.
+      match /events/{eventId} {
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/timesheets/$(timesheetId)).data.userId == request.auth.uid ||
+          isAdmin()
+        );
+        allow create: if isAuthenticated() &&
+          request.resource.data.by == request.auth.uid && (
+            get(/databases/$(database)/documents/timesheets/$(timesheetId)).data.userId == request.auth.uid ||
+            isAdmin()
+          );
+        allow update, delete: if false;
+      }
+
       allow read: if isAuthenticated() && (
         // Eigene Timesheets: userId muss übereinstimmen
         resource.data.userId == request.auth.uid ||
@@ -234,14 +250,24 @@ service cloud.firestore {
       
       // Update: Nur wenn NICHT approved/submitted (GoBD-Konformität) und gleiche Company
       allow update: if isAuthenticated() && (
-        resource.data.companyId == null || 
-        (belongsToSameCompany(resource.data.companyId) && 
+        resource.data.companyId == null ||
+        (belongsToSameCompany(resource.data.companyId) &&
          creatingForSameCompany(request.resource.data.companyId))
       ) && (
         resource.data.userId == request.auth.uid || isAdmin()
       ) && (
-        resource.data.status != 'approved' && 
-        resource.data.status != 'submitted'
+        (
+          resource.data.status != 'approved' &&
+          resource.data.status != 'submitted'
+        ) ||
+        // Admin-Freigabe: submitted darf durch Admins zu approved/rejected
+        // überführt werden (sonst wäre der Workflow draft→submitted→approved
+        // clientseitig nie abschließbar).
+        (
+          isAdmin() &&
+          resource.data.status == 'submitted' &&
+          (request.resource.data.status == 'approved' || request.resource.data.status == 'rejected')
+        )
       );
       
       // Delete: Nur wenn NICHT approved/submitted (GoBD-Konformität) und gleiche Company
@@ -536,22 +562,12 @@ service cloud.firestore {
     }
 
     // ── Messaging (teilnehmerbasiert) ─────────────────────────────────────
-    match /channels/{id} {
-      allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
-      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
-      allow update: if isAuthenticated() && request.auth.uid in resource.data.participants;
-      allow delete: if isAdmin() && belongsToSameCompany(resource.data.companyId);
+    // E-Mail-Outbox: rein serverseitig (Cloud Functions via Admin SDK) –
+    // Clients haben keinerlei Zugriff.
+    match /emailOutbox/{id} {
+      allow read, write: if false;
     }
-    match /messages/{id} {
-      // Lesen: nur wenn der Nutzer Teilnehmer des zugehörigen Channels ist.
-      allow read: if isAuthenticated() &&
-        request.auth.uid in
-          get(/databases/$(database)/documents/channels/$(resource.data.channelId)).data.participants;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
-        request.auth.uid in
-          get(/databases/$(database)/documents/channels/$(request.resource.data.channelId)).data.participants;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
-    }
+
 
     // Default: deny
     match /{document=**} {

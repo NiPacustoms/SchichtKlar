@@ -205,39 +205,6 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
     };
   }, [timesheets]);
 
-  // Zuschlags-Report: Gesamtbetrag + anteilige Aufteilung nach Stundenart
-  const surchargesReport = useMemo(() => {
-    const list = timesheets ?? [];
-    let totalSurcharge = 0;
-    let nightSurcharge = 0;
-    let weekendSurcharge = 0;
-    let holidaySurcharge = 0;
-    let overtimeSurcharge = 0;
-    for (const raw of list) {
-      const ts = raw as {
-        surchargeAmount?: number;
-        nightHours?: number;
-        weekendHours?: number;
-        holidayHours?: number;
-        overtimeHours?: number;
-      };
-      const amount = ts.surchargeAmount || 0;
-      totalSurcharge += amount;
-      const night = ts.nightHours || 0;
-      const weekend = ts.weekendHours || 0;
-      const holiday = ts.holidayHours || 0;
-      const overtime = ts.overtimeHours || 0;
-      const hoursSum = night + weekend + holiday + overtime;
-      if (amount > 0 && hoursSum > 0) {
-        nightSurcharge += (amount * night) / hoursSum;
-        weekendSurcharge += (amount * weekend) / hoursSum;
-        holidaySurcharge += (amount * holiday) / hoursSum;
-        overtimeSurcharge += (amount * overtime) / hoursSum;
-      }
-    }
-    return { totalSurcharge, nightSurcharge, weekendSurcharge, holidaySurcharge, overtimeSurcharge };
-  }, [timesheets]);
-
   // Berichtszeitraum aus den vorhandenen Timesheets ableiten (Fallback: laufendes Jahr)
   const reportDateRange = useMemo(() => {
     const list = timesheets ?? [];
@@ -317,7 +284,6 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
     timeEntries,
     user,
     workTimeReport,
-    surchargesReport,
     // Loading states
     isLoading,
     loadingTimesheets,

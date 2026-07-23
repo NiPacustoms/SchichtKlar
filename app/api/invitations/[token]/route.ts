@@ -5,14 +5,20 @@ import { doc, getDoc } from 'firebase/firestore';
 import { maskEmail } from '@/lib/utils/authz';
 import { createValidationErrorResponse, createNotFoundErrorResponse, createErrorResponse } from '@/lib/errors/apiErrorResponse';
 import { createAppError, ErrorCode } from '@/lib/errors/ErrorTypes';
+import { checkRateLimit } from '@/lib/middleware/rateLimit';
 
 export const runtime = 'nodejs';
 
 const ROUTE = '/api/invitations/[token]';
 
 // GET /api/invitations/[token]
-export async function GET(_req: NextRequest, context: { params: Promise<{ token?: string }> }) {
+// Öffentlich per Token erreichbar → IP-Rate-Limit gegen Token-Enumeration.
+export async function GET(req: NextRequest, context: { params: Promise<{ token?: string }> }) {
   try {
+    const rateLimitResponse = checkRateLimit(req);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
     const params = await context.params;
     const { token } = params || {};
     if (!token) return createValidationErrorResponse('token erforderlich.', ErrorCode.VALIDATION_REQUIRED_FIELD, ROUTE);

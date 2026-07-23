@@ -68,7 +68,6 @@ export type FirestoreTimesheetData = {
   endTime: string;
   breakMinutes?: number;
   totalHours?: number;
-  surchargeAmount?: number;
   nightHours?: number;
   weekendHours?: number;
   holidayHours?: number;

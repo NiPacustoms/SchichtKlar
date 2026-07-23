@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const allowedTypes = ['timesheet', 'allowances', 'shifts', 'summary'];
+    const allowedTypes = ['timesheet', 'shifts', 'summary'];
     const allowedPeriods = ['current-month', 'last-month', 'current-quarter', 'current-year'];
     const allowedFormats = ['pdf', 'excel', 'csv'];
     const allowedSchedules = ['daily', 'monthly'];

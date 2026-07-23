@@ -15,7 +15,6 @@ export function mapDocToTimesheet(doc: DocLike): Timesheet {
     endTime: data.endTime,
     breakMinutes: data.breakMinutes || 0,
     totalHours: data.totalHours || 0,
-    surchargeAmount: data.surchargeAmount,
     nightHours: data.nightHours || 0,
     weekendHours: data.weekendHours || 0,
     holidayHours: data.holidayHours || 0,

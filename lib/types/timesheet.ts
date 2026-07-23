@@ -31,7 +31,6 @@ export interface Timesheet {
   totalHours: number;
   startDate: Date;
   endDate: Date;
-  surchargeAmount?: number;
   nightHours?: number;
   weekendHours?: number;
   holidayHours?: number;

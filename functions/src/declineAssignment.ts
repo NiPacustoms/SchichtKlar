@@ -78,6 +78,11 @@ export const declineAssignment = functions.https.onCall(async (data, context) =>
 
       const shift = shiftDoc.data()!;
 
+      // Alle Reads VOR den Writes (Firestore-Transaktionsregel): User für die
+      // Notification-Collection jetzt lesen, nicht nach den Updates.
+      const declinedUserRef = db.collection('users').doc(assignment.userId);
+      const declinedUserDoc = await transaction.get(declinedUserRef);
+
       // 5. Ablehnung verarbeiten
       let newStatus: string;
       let requiresSignature = false;
@@ -119,10 +124,14 @@ export const declineAssignment = functions.https.onCall(async (data, context) =>
 
       transaction.update(assignmentRef, updateData);
 
-      // 7. Shift-Kapazität aktualisieren (nur wenn Assignment tatsächlich declined)
-      if (updateData.status === 'declined') {
+      // 7. Shift-Kapazität aktualisieren (nur wenn Assignment tatsächlich declined
+      // UND es überhaupt Kapazität belegt hatte – 'requested'-Anfragen belegen keine).
+      const hadCountedCapacity = ['assigned', 'accepted', 'pending'].includes(assignment.status);
+      if (updateData.status === 'declined' && hadCountedCapacity) {
+        const capacity = shift.capacity || 1;
         const newAssignedCount = Math.max(0, (shift.assignedCount || 0) - 1);
-        const newShiftStatus = newAssignedCount === 0 ? 'open' : shift.status;
+        const newShiftStatus =
+          shift.status === 'cancelled' ? 'cancelled' : newAssignedCount >= capacity ? 'filled' : 'open';
 
         transaction.update(shiftRef, {
           assignedCount: newAssignedCount,
@@ -148,9 +157,7 @@ export const declineAssignment = functions.https.onCall(async (data, context) =>
         });
       } else if (declineType === 'nurse-initiated' && adminSignature) {
         // User-Benachrichtigung über bestätigte Ablehnung (in richtige Collection basierend auf User-Rolle)
-        const userRef = db.collection('users').doc(assignment.userId);
-        const userDoc = await transaction.get(userRef);
-        const userRole = userDoc.exists ? (userDoc.data()?.role || 'nurse') : 'nurse';
+        const userRole = declinedUserDoc.exists ? (declinedUserDoc.data()?.role || 'nurse') : 'nurse';
         const notificationCollection = userRole === 'nurse' ? 'employeeNotifications' : 'notifications';
         
         const userNotificationRef = db.collection(notificationCollection).doc();

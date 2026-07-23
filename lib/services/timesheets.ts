@@ -1,4 +1,4 @@
-import { db, getDb, auth } from '@/lib/firebase';
+import { db, getDb, auth, functions } from '@/lib/firebase';
 import { ValidationError, ErrorCode, createAppError } from '@/lib/errors';
 import { offlineQueueService } from './offlineQueue';
 import { getCompanyIdFromAuth } from '@/lib/utils/companyId';
@@ -77,7 +77,6 @@ type FirestoreTimesheetData = {
   endTime: string;
   breakMinutes?: number;
   totalHours?: number;
-  surchargeAmount?: number;
   nightHours?: number;
   weekendHours?: number;
   holidayHours?: number;
@@ -143,18 +142,35 @@ type TimesheetInterval = {
 };
 
 function getTimesheetInterval(timesheet: Timesheet): TimesheetInterval | null {
-  const start = ensureValidDate(timesheet.startDate) ?? ensureValidDate(timesheet.date);
+  let start = ensureValidDate(timesheet.startDate) ?? ensureValidDate(timesheet.date);
   if (!start) {
     return null;
   }
 
+  // Uhrzeiten anwenden: ohne startTime/endTime landeten früher alle
+  // Timesheets eines Tages auf [Mitternacht, Mitternacht+totalHours] und
+  // kollidierten fälschlich (z. B. geteilter Dienst 06–10 und 14–18).
+  const applyTime = (base: Date, hhmm?: string): Date | null => {
+    if (!hhmm || !/^\d{1,2}:\d{2}$/.test(hhmm)) return null;
+    const [h, m] = hhmm.split(':').map(Number);
+    const d = new Date(base);
+    d.setHours(h, m, 0, 0);
+    return d;
+  };
+
+  const startWithTime = applyTime(start, timesheet.startTime);
+  if (startWithTime) start = startWithTime;
+
   let end = ensureValidDate(timesheet.endDate);
   if (!end || end <= start) {
-    const totalHours = Number.isFinite(timesheet.totalHours) ? timesheet.totalHours : 0;
-    if (totalHours > 0) {
-      end = new Date(start.getTime() + totalHours * 60 * 60 * 1000);
+    const endWithTime = applyTime(start, timesheet.endTime);
+    if (endWithTime) {
+      end = endWithTime;
+      // Overnight: Ende vor Start → Folgetag
+      if (end <= start) end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
     } else {
-      end = new Date(start.getTime());
+      const totalHours = Number.isFinite(timesheet.totalHours) ? timesheet.totalHours : 0;
+      end = new Date(start.getTime() + Math.max(totalHours, 0) * 60 * 60 * 1000);
     }
   }
 
@@ -392,7 +408,7 @@ export const timesheetService = {
 
       // Handle overnight shifts
       let totalMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
-      if (totalMinutes < 0) {
+      if (totalMinutes <= 0) {
         totalMinutes += 24 * 60; // Add 24 hours for overnight
       }
 
@@ -499,7 +515,7 @@ export const timesheetService = {
         const end = new Date(`2000-01-01T${endTime}`);
 
         let totalMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
-        if (totalMinutes < 0) {
+        if (totalMinutes <= 0) {
           totalMinutes += 24 * 60;
         }
 
@@ -515,16 +531,24 @@ export const timesheetService = {
 
   // Submit timesheet
   async submit(id: string): Promise<void> {
-    try {
-      const timesheetRef = doc(getDb(), COLLECTION_NAME, id);
-      await updateDoc(timesheetRef, {
-        status: 'submitted',
-        submittedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-    } catch (error) {
-      throw error;
+    // Einreichen läuft IMMER über die Cloud Function submitTimesheet:
+    // serverseitige ArbZG-Validierung, Stunden-Berechnung und
+    // Nacht-/Wochenend-/Feiertags-Breakdown. Das frühere direkte
+    // updateDoc umging all das.
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      throw new Error(
+        'Einreichen erfordert eine Internetverbindung (serverseitige ArbZG-Prüfung). Die Erfassung bleibt gespeichert – bitte später erneut einreichen.'
+      );
     }
+    if (!functions) {
+      throw new Error('Firebase Functions ist nicht initialisiert.');
+    }
+    const { httpsCallable } = await import('firebase/functions');
+    const call = httpsCallable<{ timesheetId: string }, { success: boolean; totalHours: number }>(
+      functions,
+      'submitTimesheet'
+    );
+    await call({ timesheetId: id });
   },
 
   // Approve timesheet (admin only)
@@ -1096,7 +1120,6 @@ export const timesheetService = {
       endTime: data.endTime,
       breakMinutes: data.breakMinutes || 0,
       totalHours: data.totalHours || 0,
-      surchargeAmount: data.surchargeAmount,
       nightHours: data.nightHours || 0,
       weekendHours: data.weekendHours || 0,
       holidayHours: data.holidayHours || 0,

@@ -309,11 +309,12 @@ export const shiftAssignmentHelpers = {
   /**
    * Löscht alle Assignments aus der Datenbank
    * WARNUNG: Diese Funktion löscht ALLE Assignments!
+   * Der Aufrufer muss das Bestätigungs-Token explizit übergeben.
    * @returns Ergebnis mit Anzahl gelöschter Assignments
    */
-  async deleteAllAssignments(): Promise<{ success: boolean; deletedCount: number; message: string }> {
+  async deleteAllAssignments(confirm: 'DELETE-ALL-ASSIGNMENTS'): Promise<{ success: boolean; deletedCount: number; message: string }> {
     try {
-      const result = await getDeleteAllAssignmentsCF()({});
+      const result = await getDeleteAllAssignmentsCF()({ confirm });
       return result.data as { success: boolean; deletedCount: number; message: string };
     } catch (error: unknown) {
       if ((error as { code?: string }).code === 'functions/permission-denied') {

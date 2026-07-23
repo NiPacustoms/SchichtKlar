@@ -118,3 +118,11 @@ export { cleanupApiMonitoring, manualCleanupApiMonitoring } from './apiMonitorin
 export { checkApiLimitAlert, manualCheckApiLimitAlert } from './apiMonitoring/checkApiLimitAlert';
 
 // scheduledFormReminders + runFormReminders → deployed from codebase "scheduled" (functions-scheduled/)
+
+// E-Mail-Outbox: Bestätigungsmails (ereignisgesteuert, idempotent, mit Retry)
+export {
+  processEmailOutbox,
+  retryFailedEmails,
+  onAssignmentStatusEmail,
+  onTimesheetSubmittedEmail,
+} from './emailOutbox';
