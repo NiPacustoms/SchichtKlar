@@ -10,10 +10,12 @@ import { facilityService } from '@/lib/services/facilities';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { toast } from '@/lib/utils/toast';
+import Link from 'next/link';
 import {
   Assessment,
   Download,
   Refresh,
+  Schedule,
   Work,
   BarChart,
 } from '@mui/icons-material';
@@ -164,6 +166,15 @@ export default function AdminBerichtePage() {
             Berichte
           </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              component={Link}
+              href="/admin/berichte/geplante-berichte"
+              variant="outlined"
+              startIcon={<Schedule />}
+              size="small"
+            >
+              Geplante Berichte
+            </Button>
             <Button
               variant="outlined"
               startIcon={<Download />}

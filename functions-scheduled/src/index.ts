@@ -1,7 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
 import { sendFormReminderEmails } from './formReminders';
-import { runAggregateKPIs, runDailyKPIAggregation } from './kpiAggregations';
 import { runFirestoreBackup } from './firestoreBackup';
 
 admin.initializeApp();
@@ -22,20 +21,6 @@ export const runFormReminders = functions.https.onRequest(async (_req, res) => {
     res.status(500).json({ ok: false, error: e instanceof Error ? e.message : 'unknown' });
   }
 });
-
-export const aggregateKPIs = functions.pubsub
-  .schedule('0 * * * *')
-  .timeZone('Europe/Berlin')
-  .onRun(async () => {
-    await runAggregateKPIs();
-  });
-
-export const dailyKPIAggregation = functions.pubsub
-  .schedule('0 1 * * *')
-  .timeZone('Europe/Berlin')
-  .onRun(async () => {
-    await runDailyKPIAggregation();
-  });
 
 export const scheduledFirestoreBackup = functions.pubsub
   .schedule('0 3 * * *')

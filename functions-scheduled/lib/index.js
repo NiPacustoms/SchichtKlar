@@ -33,11 +33,10 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.scheduledFirestoreBackup = exports.dailyKPIAggregation = exports.aggregateKPIs = exports.runFormReminders = exports.scheduledFormReminders = void 0;
+exports.scheduledFirestoreBackup = exports.runFormReminders = exports.scheduledFormReminders = void 0;
 const admin = __importStar(require("firebase-admin"));
 const functions = __importStar(require("firebase-functions/v1"));
 const formReminders_1 = require("./formReminders");
-const kpiAggregations_1 = require("./kpiAggregations");
 const firestoreBackup_1 = require("./firestoreBackup");
 admin.initializeApp();
 exports.scheduledFormReminders = functions.pubsub
@@ -55,18 +54,6 @@ exports.runFormReminders = functions.https.onRequest(async (_req, res) => {
         console.error(e);
         res.status(500).json({ ok: false, error: e instanceof Error ? e.message : 'unknown' });
     }
-});
-exports.aggregateKPIs = functions.pubsub
-    .schedule('0 * * * *')
-    .timeZone('Europe/Berlin')
-    .onRun(async () => {
-    await (0, kpiAggregations_1.runAggregateKPIs)();
-});
-exports.dailyKPIAggregation = functions.pubsub
-    .schedule('0 1 * * *')
-    .timeZone('Europe/Berlin')
-    .onRun(async () => {
-    await (0, kpiAggregations_1.runDailyKPIAggregation)();
 });
 exports.scheduledFirestoreBackup = functions.pubsub
     .schedule('0 3 * * *')
