@@ -33,7 +33,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
   Alert,
   IconButton,
   FormControl,
@@ -634,20 +633,18 @@ export default function AdminBerichtePage() {
                       <TableHead>
                         <TableRow>
                           <TableCell>Mitarbeiter</TableCell>
-                          <TableCell>Einrichtung</TableCell>
-                          <TableCell>Stunden</TableCell>
-                          <TableCell>Status</TableCell>
+                          <TableCell align="right">Gesamtstunden</TableCell>
+                          <TableCell align="right">Regulär</TableCell>
+                          <TableCell align="right">Überstunden</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
                         {timeAccountReport?.employees.slice(0, 20).map(employee => (
                           <TableRow key={employee.userId}>
                             <TableCell>{employee.userName}</TableCell>
-                            <TableCell>Einrichtung A</TableCell>
-                            <TableCell>{formatHours(employee.totalHours)}</TableCell>
-                            <TableCell>
-                              <Chip label="Aktiv" color="success" size="small" />
-                            </TableCell>
+                            <TableCell align="right">{formatHours(employee.totalHours)}</TableCell>
+                            <TableCell align="right">{formatHours(employee.regularHours)}</TableCell>
+                            <TableCell align="right">{formatHours(employee.overtimeHours)}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

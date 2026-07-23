@@ -573,7 +573,27 @@ export const reportService = {
         overtimeHours: timesheet.overtimeHours || 0,
       }));
 
-      const userName = filters.userId ? (await userService.getById(filters.userId))?.displayName ?? '' : '';
+      // Pro Mitarbeiter aggregieren (echte Daten, auch ohne userId-Filter)
+      const perUser = new Map<string, { totalHours: number; regularHours: number; overtimeHours: number }>();
+      for (const ts of timesheets) {
+        const entry = perUser.get(ts.userId) || { totalHours: 0, regularHours: 0, overtimeHours: 0 };
+        entry.totalHours += ts.totalHours || 0;
+        entry.regularHours += ts.regularHours || 0;
+        entry.overtimeHours += ts.overtimeHours || 0;
+        perUser.set(ts.userId, entry);
+      }
+      const employees = await Promise.all(
+        Array.from(perUser.entries()).map(async ([userId, sums]) => {
+          let userName = '';
+          try {
+            userName = (await userService.getById(userId))?.displayName ?? '';
+          } catch {
+            // Name nicht auflösbar → leer lassen
+          }
+          return { userId, userName: userName || 'Unbekannt', ...sums };
+        })
+      );
+      employees.sort((a, b) => b.totalHours - a.totalHours);
 
       return [{
         totalHours,
@@ -585,17 +605,9 @@ export const reportService = {
         averageHoursPerDay: totalHours / daysDiff,
         averageHoursPerWeek: totalHours / (daysDiff / 7),
         workingDays: daysDiff,
-        trend: 'up' as const,
+        trend: 'flat' as const,
         hoursByDay,
-        employees: filters.userId ? [
-          {
-            userId: filters.userId,
-            userName,
-            totalHours,
-            regularHours,
-            overtimeHours,
-          }
-        ] : []
+        employees,
       }];
     } catch (error) {
       logger.error('Error generating time account report', error instanceof Error ? error : new Error(String(error)));

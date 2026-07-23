@@ -126,3 +126,6 @@ export {
   onAssignmentStatusEmail,
   onTimesheetSubmittedEmail,
 } from './emailOutbox';
+
+// Chat: Push-Benachrichtigung bei neuer Nachricht
+export { onNewChatMessage } from './chat/onNewChatMessage';
