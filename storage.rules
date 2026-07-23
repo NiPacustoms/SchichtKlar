@@ -32,22 +32,6 @@ service firebase.storage {
         (request.auth.uid == userId || request.auth.token.role == 'admin');
     }
 
-    // Chat-Anhänge: /messages/{channelId}/{fileName}
-    // Zugriff nur für Teilnehmer des Channels (Cross-Service-Lookup nach Firestore).
-    match /messages/{channelId}/{fileName} {
-      allow read: if request.auth != null &&
-        request.auth.uid in
-          firestore.get(/databases/(default)/documents/channels/$(channelId)).data.participants;
-      allow write: if request.auth != null &&
-        request.auth.uid in
-          firestore.get(/databases/(default)/documents/channels/$(channelId)).data.participants &&
-        request.resource.size < 10 * 1024 * 1024 &&
-        request.resource.contentType.matches('image/.*|application/pdf|application/vnd.*|text/plain');
-      allow delete: if request.auth != null &&
-        (request.auth.token.role == 'admin' ||
-          request.auth.uid in
-            firestore.get(/databases/(default)/documents/channels/$(channelId)).data.participants);
-    }
 
   }
 }

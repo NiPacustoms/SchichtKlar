@@ -558,32 +558,6 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    match /channels/{id} {
-      allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
-      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
-      allow update: if isAuthenticated() && request.auth.uid in resource.data.participants;
-      allow delete: if isAdmin() && belongsToSameCompany(resource.data.companyId);
-    }
-    match /messages/{id} {
-      // Lesen: nur wenn der Nutzer Teilnehmer des zugehörigen Channels ist.
-      allow read: if isAuthenticated() &&
-        request.auth.uid in
-          get(/databases/$(database)/documents/channels/$(resource.data.channelId)).data.participants;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
-        request.auth.uid in
-          get(/databases/$(database)/documents/channels/$(request.resource.data.channelId)).data.participants;
-      // Update: Absender darf alles; andere Channel-Teilnehmer dürfen NUR readBy
-      // (+ updatedAt) ändern – nötig für Lesebestätigungen (WhatsApp-Häkchen).
-      allow update: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
-        (
-          request.auth.uid in
-            get(/databases/$(database)/documents/channels/$(resource.data.channelId)).data.participants &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy', 'updatedAt'])
-        )
-      );
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
-    }
 
     // Default: deny
     match /{document=**} {

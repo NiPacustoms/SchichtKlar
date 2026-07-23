@@ -8,7 +8,6 @@ import {
   Assignment as AssignmentIcon,
   Business,
   CalendarMonth,
-  ChatBubbleOutline,
   Dashboard,
   Description,
   FactCheck,
@@ -70,7 +69,6 @@ const nurseMoreItems: NavItem[] = [
   { href: ROUTES.EMPLOYEE.ASSIGNMENTS, icon: <AssignmentIcon />, label: 'Meine Einsätze' },
   { href: ROUTES.EMPLOYEE.ZEITEN, icon: <Schedule />, label: 'Zeiten & Zeitkonto' },
   { href: ROUTES.EMPLOYEE.BERICHTE, icon: <Assessment />, label: 'Meine Berichte' },
-  { href: ROUTES.EMPLOYEE.NACHRICHTEN, icon: <ChatBubbleOutline />, label: 'Nachrichten' },
   {
     href: ROUTES.EMPLOYEE.DOKUMENTE,
     icon: <Description />,
@@ -93,7 +91,6 @@ const adminMoreItems: NavItem[] = [
     label: 'Einsätze',
     feature: 'canAccessAssignments',
   },
-  { href: ROUTES.ADMIN.NACHRICHTEN, icon: <ChatBubbleOutline />, label: 'Nachrichten' },
   { href: ROUTES.ADMIN.STUNDEN, icon: <Schedule />, label: 'Stundenübersicht' },
   {
     href: ROUTES.ADMIN.BERICHTE,
