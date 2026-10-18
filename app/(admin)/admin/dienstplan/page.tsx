@@ -22,7 +22,6 @@ import {
   Paper,
   Tab,
   Tabs,
-  Typography,
   Alert,
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -38,6 +37,7 @@ import { facilityService } from '@/lib/services/facilities';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import { getShiftDisplayStatus } from '@/lib/utils/shiftStatus';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function AdminDienstplanPage() {
   const { user } = useAuth();
@@ -242,11 +242,11 @@ export default function AdminDienstplanPage() {
 
   return (
     <PageContainer maxWidth="wide">
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 600 }}>
-          Admin-Dienstplan
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+      <PageHeader
+        title="Dienstplan"
+        subtitle="Schichten nach Zeitraum, Status und Einrichtung – als Liste oder Kalender"
+        actions={
+          <>
           <IconButton onClick={() => refetch()} aria-label="Aktualisieren">
             <Refresh />
           </IconButton>
@@ -275,9 +275,9 @@ export default function AdminDienstplanPage() {
           >
             Neue Schicht
           </Button>
-          {/* Zeitraum-Button entfernt, da Zeitraum nun im Erstell-Dialog verfügbar ist */}
-        </Box>
-      </Box>
+          </>
+        }
+      />
 
       <Paper className="glass" sx={{ mb: 3 }}>
         <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>

@@ -72,41 +72,30 @@ function createAppTheme(mode: PaletteMode) {
           divider: surf.border.main,
           grey,
         },
-        shape: { borderRadius: 14 },
+        shape: { borderRadius: 10 },
         spacing,
         typography: {
-          fontFamily: [
-            '-apple-system',
-            'BlinkMacSystemFont',
-            '"SF Pro Display"',
-            '"SF Pro Text"',
-            '"Segoe UI"',
-            'system-ui',
-            'Inter',
-            'Roboto',
-            '"Helvetica Neue"',
-            'Arial',
-            'sans-serif',
-          ].join(','),
-          // iOS-orientierte Skala: Large Titles groß & eng, Body ruhig
-          h1: { fontSize: 34, fontWeight: 700, lineHeight: 1.08, letterSpacing: '-0.022em' },
-          h2: { fontSize: 28, fontWeight: 700, lineHeight: 1.12, letterSpacing: '-0.02em' },
-          h3: { fontSize: 22, fontWeight: 700, lineHeight: 28 / 22, letterSpacing: '-0.018em' },
-          h4: { fontSize: 19, fontWeight: 600, lineHeight: 1.35, letterSpacing: '-0.012em' },
-          h5: { fontSize: 17, fontWeight: 600, lineHeight: 1.4, letterSpacing: '-0.006em' },
-          h6: { fontSize: 15.5, fontWeight: 600, lineHeight: 1.45 },
-          body1: { fontSize: 15.5, lineHeight: 24 / 15.5, fontWeight: 400 },
-          body2: { fontSize: 14, lineHeight: 21 / 14, fontWeight: 400 },
-          button: { textTransform: 'none', fontWeight: 600, letterSpacing: '0.005em' },
-          caption: { fontSize: 12.5, lineHeight: 17 / 12.5, fontWeight: 400, letterSpacing: '0.01em' },
-          subtitle1: { fontSize: 15.5, lineHeight: 24 / 15.5, fontWeight: 550 },
-          subtitle2: { fontSize: 14, lineHeight: 20 / 14, fontWeight: 550 },
+          fontFamily: ['var(--font-geist)', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'].join(','),
+          // Arbeitsoberfläche: kompakte, klare Skala (Body 14) statt iOS-Large-Titles
+          h1: { fontSize: 28, fontWeight: 650, lineHeight: 1.15, letterSpacing: '-0.025em' },
+          h2: { fontSize: 24, fontWeight: 650, lineHeight: 1.2, letterSpacing: '-0.022em' },
+          h3: { fontSize: 20, fontWeight: 650, lineHeight: 1.25, letterSpacing: '-0.018em' },
+          h4: { fontSize: 17, fontWeight: 600, lineHeight: 1.35, letterSpacing: '-0.012em' },
+          h5: { fontSize: 15.5, fontWeight: 600, lineHeight: 1.4, letterSpacing: '-0.008em' },
+          h6: { fontSize: 14.5, fontWeight: 600, lineHeight: 1.45, letterSpacing: '-0.004em' },
+          body1: { fontSize: 14.5, lineHeight: 1.55, fontWeight: 400 },
+          body2: { fontSize: 13.5, lineHeight: 1.5, fontWeight: 400 },
+          button: { textTransform: 'none', fontWeight: 550, letterSpacing: '-0.003em' },
+          caption: { fontSize: 12, lineHeight: 1.45, fontWeight: 400 },
+          subtitle1: { fontSize: 14.5, lineHeight: 1.5, fontWeight: 550 },
+          subtitle2: { fontSize: 13.5, lineHeight: 1.45, fontWeight: 550 },
+          // Kein Versal-Label-Stil mehr: Bereichstitel in normaler Schreibweise
           overline: {
-            fontSize: 11.5,
-            lineHeight: 16 / 11.5,
+            fontSize: 12.5,
+            lineHeight: 1.4,
             fontWeight: 600,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
+            letterSpacing: 0,
+            textTransform: 'none',
           },
         },
         components: {
@@ -118,7 +107,8 @@ function createAppTheme(mode: PaletteMode) {
                 height: '100%',
                 backgroundColor: surf.background.default,
                 color: surf.text.primary,
-                fontFeatureSettings: '"cv11", "ss01"', // Inter: offenes g/a – freundlicher
+                fontFeatureSettings: '"ss01"',
+                textRendering: 'optimizeLegibility',
                 WebkitFontSmoothing: 'antialiased',
                 MozOsxFontSmoothing: 'grayscale',
               },
@@ -146,16 +136,17 @@ function createAppTheme(mode: PaletteMode) {
           MuiButton: {
             styleOverrides: {
               root: ({ theme }) => ({
-                minWidth: 104,
-                minHeight: 44,
-                borderRadius: 14,
-                padding: '10px 20px',
-                fontSize: '15px',
-                fontWeight: 600,
+                minWidth: 0,
+                minHeight: 36,
+                borderRadius: radius.md,
+                padding: '7px 14px',
+                fontSize: '14px',
+                fontWeight: 550,
+                whiteSpace: 'nowrap',
                 textTransform: 'none',
                 transition: `${transitionColors}, transform ${duration.fast}ms ${easing}, box-shadow ${duration.fast}ms ${easing}`,
-                // Taktiles Feedback: leichtes Eindrücken beim Klick (premium-Gefühl)
-                '&:active': { transform: 'scale(0.97)' },
+                '& .MuiButton-startIcon': { marginRight: 6, '& > *:nth-of-type(1)': { fontSize: 18 } },
+                '& .MuiButton-endIcon': { marginLeft: 6, '& > *:nth-of-type(1)': { fontSize: 18 } },
                 '@media (prefers-reduced-motion: reduce)': {
                   transition: transitionColors,
                   '&:active': { transform: 'none' },
@@ -165,40 +156,40 @@ function createAppTheme(mode: PaletteMode) {
                   outline: `2px solid ${brand}`,
                   outlineOffset: 2,
                 },
-                [theme.breakpoints.down('sm')]: { minWidth: 'auto', width: '100%' },
+                [theme.breakpoints.down('sm')]: { minHeight: 40 },
               }),
               // Primär: satte Teal-Fläche mit dezentem farbigem Auftrieb (iOS-CTA)
               containedPrimary: {
                 backgroundColor: brand,
                 color: isDark ? '#0b2b28' : '#ffffff',
                 boxShadow: isDark ? 'none' : shadows.ctaPrimary,
-                // Sanfter Auftrieb im Hover (translateY-Lift + stärkerer Schatten)
                 '&:hover': {
                   backgroundColor: brandHover,
                   boxShadow: isDark ? 'none' : shadows.ctaPrimaryHover,
-                  transform: 'translateY(-1px)',
                 },
-                '&:active': { backgroundColor: isDark ? colors.brand : '#0c4f4a', transform: 'translateY(0) scale(0.98)' },
+                '&:active': { backgroundColor: isDark ? colors.brand : '#0c4f4a' },
                 '&:disabled': {
                   backgroundColor: alpha(brand, 0.28),
                   color: isDark ? alpha('#0b2b28', 0.6) : alpha('#ffffff', 0.7),
                   boxShadow: 'none',
                 },
               },
+              // Sekundär: neutraler Rahmen-Button (wie in Linear/Attio) – Farbe bleibt der Hauptaktion vorbehalten
               outlinedPrimary: {
                 borderWidth: 1,
-                borderColor: alpha(brand, 0.4),
-                color: brand,
-                backgroundColor: 'transparent',
+                borderColor: surf.border.main,
+                color: surf.text.primary,
+                backgroundColor: surf.surface.main,
+                boxShadow: isDark ? 'none' : '0 1px 1px rgba(16,37,35,0.04)',
                 '&:hover': {
                   borderWidth: 1,
-                  borderColor: brand,
-                  backgroundColor: alpha(brand, 0.04),
+                  borderColor: surf.border.hover,
+                  backgroundColor: surf.surface.hover,
                 },
-                '&:active': { backgroundColor: alpha(brand, 0.1) },
+                '&:active': { backgroundColor: alpha(brand, 0.06) },
               },
               textPrimary: {
-                color: brand,
+                color: isDark ? brand : colors.brandDark,
                 '&:hover': { backgroundColor: alpha(brand, 0.06) },
                 '&:active': { backgroundColor: alpha(brand, 0.12) },
               },
@@ -207,17 +198,18 @@ function createAppTheme(mode: PaletteMode) {
                 boxShadow: 'none',
                 '&:hover': { backgroundColor: colors.accentDark, boxShadow: 'none' },
               },
-              sizeSmall: { minHeight: 32, padding: '4px 12px', fontSize: '13.5px', minWidth: 72 },
-              sizeLarge: { minHeight: 48, padding: '12px 24px', fontSize: '15.5px' },
+              sizeSmall: { minHeight: 30, padding: '4px 10px', fontSize: '13px' },
+              sizeLarge: { minHeight: 44, padding: '10px 20px', fontSize: '15px' },
             },
             defaultProps: { disableElevation: true, variant: 'contained' },
           },
           MuiIconButton: {
             styleOverrides: {
               root: {
-                borderRadius: radius.sm,
+                borderRadius: radius.md,
+                color: surf.text.secondary,
                 transition: transitionColors,
-                '&:hover': { backgroundColor: alpha(brand, 0.06) },
+                '&:hover': { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(16,37,35,0.05)', color: surf.text.primary },
                 '&:focus-visible': { outline: `2px solid ${brand}`, outlineOffset: 2 },
               },
             },
@@ -227,11 +219,15 @@ function createAppTheme(mode: PaletteMode) {
               root: {
                 textTransform: 'none',
                 fontWeight: 550,
+                fontSize: 13.5,
+                color: surf.text.secondary,
                 borderColor: surf.border.main,
+                padding: '6px 12px',
                 '&.Mui-selected': {
-                  backgroundColor: alpha(brand, 0.1),
-                  color: brand,
-                  '&:hover': { backgroundColor: alpha(brand, 0.16) },
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#ffffff',
+                  color: surf.text.primary,
+                  boxShadow: isDark ? 'none' : 'inset 0 0 0 1px ' + surf.border.hover,
+                  '&:hover': { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : '#ffffff' },
                 },
               },
             },
@@ -257,9 +253,8 @@ function createAppTheme(mode: PaletteMode) {
                 backgroundImage: 'none',
                 border: `1px solid ${surf.border.main}`,
                 borderRadius: radius.lg,
-                boxShadow: shadowSoft,
+                boxShadow: 'none',
                 transition: transitionColors,
-                '&:hover': { borderColor: surf.border.hover },
               },
             },
             defaultProps: { elevation: 0 },
@@ -268,9 +263,15 @@ function createAppTheme(mode: PaletteMode) {
             styleOverrides: {
               root: {
                 backgroundColor: surf.appBar,
+                backdropFilter: 'saturate(180%) blur(12px)',
                 backgroundImage: 'none',
                 color: surf.text.primary,
                 borderBottom: `1px solid ${surf.border.main}`,
+                // MuiPaper setzt Rahmen + Radius für Karten – die Kopfleiste ist keine Karte
+                borderTop: 'none',
+                borderLeft: 'none',
+                borderRight: 'none',
+                borderRadius: 0,
                 boxShadow: 'none',
               },
             },
@@ -378,8 +379,11 @@ function createAppTheme(mode: PaletteMode) {
               root: {
                 textTransform: 'none',
                 fontWeight: 550,
-                fontSize: '14.5px',
+                fontSize: '14px',
                 minHeight: 44,
+                paddingLeft: 12,
+                paddingRight: 12,
+                minWidth: 0,
                 color: surf.text.secondary,
                 transition: transitionColors,
                 '&:hover': { color: surf.text.primary },
@@ -390,20 +394,22 @@ function createAppTheme(mode: PaletteMode) {
 
           // ——— Formulare ———
           MuiTextField: {
-            defaultProps: { size: 'medium', variant: 'outlined' },
+            // Dichte Arbeitsoberfläche: 40 px hohe Felder (passend zu 36-px-Buttons)
+            defaultProps: { size: 'small', variant: 'outlined' },
             styleOverrides: {
               root: {
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 14,
+                  borderRadius: radius.md,
                   backgroundColor: surf.input.bg,
                   transition: transitionColors,
                   '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: alpha(brand, 0.45),
+                    borderColor: surf.border.hover,
                   },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                     borderColor: brand,
-                    borderWidth: 2,
+                    borderWidth: 1,
                   },
+                  '&.Mui-focused': { boxShadow: `0 0 0 3px ${alpha(brand, 0.14)}` },
                   '& .MuiOutlinedInput-notchedOutline': {
                     borderColor: surf.border.main,
                     borderWidth: 1,
@@ -412,6 +418,8 @@ function createAppTheme(mode: PaletteMode) {
               },
             },
           },
+          MuiFormControl: { defaultProps: { size: 'small' } },
+          MuiAutocomplete: { defaultProps: { size: 'small' } },
           // Labels klar lesbar (statt blassem Sekundärgrau) + eindeutiger Fokus.
           MuiInputLabel: {
             styleOverrides: {
@@ -499,9 +507,10 @@ function createAppTheme(mode: PaletteMode) {
           MuiTableRow: {
             styleOverrides: {
               root: {
-                height: 52,
+                height: 48,
                 transition: `background-color ${duration.fast}ms ${easing}`,
-                '&:hover': { backgroundColor: alpha(brand, 0.03) },
+                '&:last-of-type td': { borderBottom: 'none' },
+                '&.MuiTableRow-hover:hover': { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#f9fbfb' },
                 '&.Mui-selected': {
                   backgroundColor: alpha(brand, 0.07),
                   '&:hover': { backgroundColor: alpha(brand, 0.1) },
@@ -512,19 +521,20 @@ function createAppTheme(mode: PaletteMode) {
           MuiTableCell: {
             styleOverrides: {
               root: {
-                paddingTop: 12,
-                paddingBottom: 12,
+                paddingTop: 10,
+                paddingBottom: 10,
                 paddingLeft: 16,
                 paddingRight: 16,
-                borderBottom: `1px solid ${surf.border.main}`,
+                borderBottom: `1px solid ${isDark ? surf.border.main : light.border.hairline}`,
                 fontVariantNumeric: 'tabular-nums', // Zahlenspalten fluchten
               },
               head: {
-                fontWeight: 600,
-                fontSize: '12px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
+                fontWeight: 550,
+                fontSize: '12.5px',
+                textTransform: 'none',
+                letterSpacing: 0,
                 color: surf.text.secondary,
+                whiteSpace: 'nowrap',
                 borderBottom: `1px solid ${surf.border.main}`,
                 backgroundColor: surf.tableHeaderBg,
               },
@@ -534,10 +544,12 @@ function createAppTheme(mode: PaletteMode) {
           MuiChip: {
             styleOverrides: {
               root: {
-                borderRadius: 999, // Pill – ruhiger als eckige Chips im flachen Layout
+                // Status-Badges: kompakt, leicht gerundet, getönt – Lesbarkeit vor Signalfarbe
+                borderRadius: radius.sm,
                 fontWeight: 550,
-                fontSize: '12.5px',
-                height: 26,
+                fontSize: '12px',
+                height: 22,
+                '& .MuiChip-label': { paddingLeft: 8, paddingRight: 8 },
                 transition: transitionColors,
                 '&:focus-visible': { outline: `2px solid ${brand}`, outlineOffset: 2 },
               },
@@ -557,6 +569,9 @@ function createAppTheme(mode: PaletteMode) {
                 color: brand,
                 '&:hover': { backgroundColor: alpha(brand, 0.06) },
               },
+              outlined: {
+                borderColor: surf.border.main,
+              },
               outlinedSecondary: {
                 borderColor: alpha(colors.accent, 0.5),
                 color: colors.accentDark,
@@ -566,6 +581,24 @@ function createAppTheme(mode: PaletteMode) {
                 },
               },
             },
+            // Getönte Status-Badges (MUI 7: Farb-Overrides über variants)
+            variants: (['success', 'warning', 'error', 'info'] as const).flatMap(c => [
+              {
+                props: { variant: 'filled' as const, color: c },
+                style: {
+                  backgroundColor: alpha(semanticColors[c].main, isDark ? 0.22 : 0.12),
+                  color: isDark ? semanticColors[c].light : semanticColors[c].dark,
+                },
+              },
+              {
+                props: { variant: 'outlined' as const, color: c },
+                style: {
+                  borderColor: alpha(semanticColors[c].main, 0.35),
+                  backgroundColor: alpha(semanticColors[c].main, isDark ? 0.1 : 0.05),
+                  color: isDark ? semanticColors[c].light : semanticColors[c].dark,
+                },
+              },
+            ]),
           },
           MuiAlert: {
             styleOverrides: {

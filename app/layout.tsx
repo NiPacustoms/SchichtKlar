@@ -13,7 +13,7 @@ import { GlobalErrorBoundary } from '@/components/errors/GlobalErrorBoundary';
 import { validateLegalConfig } from '@/lib/config/legal';
 import { logger } from '@/lib/logging';
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Geist } from 'next/font/google';
 
 // Production safety check: Validiere Legal-Config beim Import
 // Nur in Production validieren, nicht in Development
@@ -31,10 +31,12 @@ if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
 }
 import './globals.css';
 
-const inter = Inter({
+// Geist: präzise, neutrale UI-Schrift mit echten Tabellenziffern – auf allen
+// Systemen gleich (vorher: SF auf Mac, Segoe auf Windows, Inter als Rest)
+const geist = Geist({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-inter',
+  variable: '--font-geist',
   preload: true,
 });
 
@@ -307,7 +309,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body
-        className={`${inter.className} ${inter.variable}`}
+        className={`${geist.className} ${geist.variable}`}
         data-e2e-test={process.env.NEXT_PUBLIC_E2E_TEST === 'true' ? 'true' : 'false'}
         data-firebase-config={FIREBASE_CONFIG_JSON}
         suppressHydrationWarning

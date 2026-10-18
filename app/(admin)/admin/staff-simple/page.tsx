@@ -186,7 +186,7 @@ export default function StaffSimplePage() {
                 },
               }}
             >
-              <MenuItem value="nurse">Krankenschwester</MenuItem>
+              <MenuItem value="nurse">Mitarbeiter/in</MenuItem>
               <MenuItem value="admin">Administrator</MenuItem>
             </Select>
           </FormControl>

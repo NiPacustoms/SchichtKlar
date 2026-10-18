@@ -99,7 +99,7 @@ export function LiveShiftTimer({ startTime, endTime }: LiveShiftTimerProps) {
                 },
               }}
             />
-            <Typography sx={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary' }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'text.secondary' }}>
               Läuft
             </Typography>
           </Box>

@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import {
   alpha,
   Avatar,
   Box,
+  Button,
   Chip,
   List,
   ListItem,
@@ -109,6 +111,7 @@ function AlertRow({
 
 export function AlertsPanel({ alerts, onAlertClick }: AlertsPanelProps) {
   const theme = useTheme();
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const isDark = theme.palette.mode === 'dark';
   const criticalAlerts = alerts.filter(a => a.severity === 'error');
   const warningAlerts = alerts.filter(a => a.severity === 'warning');
@@ -149,17 +152,17 @@ export function AlertsPanel({ alerts, onAlertClick }: AlertsPanelProps) {
 
   return (
     <GlassCard hover={false}>
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: { xs: 2, sm: 2.5 } }}>
         <Box
           sx={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            mb: 2,
+            mb: 1.5,
           }}
         >
-          <Typography variant="h5" component="h2">
-            Warnungen &amp; ToDos
+          <Typography component="h2" sx={{ fontSize: 17, fontWeight: 650 }}>
+            Handlungsbedarf
           </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
             {criticalAlerts.length > 0 && (
@@ -176,17 +179,26 @@ export function AlertsPanel({ alerts, onAlertClick }: AlertsPanelProps) {
           .map(section => (
             <Box key={section.key} sx={{ '& + &': { mt: 2 } }}>
               <Typography
-                variant="overline"
                 component="h3"
-                sx={{ color: 'text.secondary', display: 'block', px: 1.5, mb: 0.5 }}
+                sx={{ color: 'text.secondary', fontSize: 13, fontWeight: 600, display: 'block', px: 1.5, mb: 0.5 }}
               >
                 {section.label} ({section.items.length})
               </Typography>
               <List disablePadding>
-                {section.items.slice(0, section.max).map(alert => (
+                {(expanded[section.key] ? section.items : section.items.slice(0, section.max)).map(alert => (
                   <AlertRow key={alert.id} alert={alert} onAlertClick={onAlertClick} />
                 ))}
               </List>
+              {section.items.length > section.max && (
+                <Button
+                  size="small"
+                  variant="text"
+                  onClick={() => setExpanded(e => ({ ...e, [section.key]: !e[section.key] }))}
+                  sx={{ ml: 0.5, mt: 0.5 }}
+                >
+                  {expanded[section.key] ? 'Weniger anzeigen' : `Alle ${section.items.length} anzeigen`}
+                </Button>
+              )}
             </Box>
           ))}
       </Box>

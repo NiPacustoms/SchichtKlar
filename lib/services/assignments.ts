@@ -327,13 +327,23 @@ export const assignmentService = {
           shiftId: data.shiftId,
           companyId: data.companyId,
           status: data.status,
-          assignedAt: data.assignedAt.toDate(),
+          assignedAt: data.assignedAt?.toDate?.() ?? data.createdAt?.toDate?.() ?? new Date(),
           acceptedAt: data.acceptedAt?.toDate(),
           declinedAt: data.declinedAt?.toDate(),
           completedAt: data.completedAt?.toDate(),
           notes: data.notes,
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
+          // Für Listen: Einsatzort/-zeit, Ablehnungsgrund, Einsatzmitteilung
+          facilityId: data.facilityId ?? undefined,
+          startDate: data.startDate?.toDate?.() ?? undefined,
+          startTime: data.startTime ?? undefined,
+          endTime: data.endTime ?? undefined,
+          declineReason: data.declineReason ?? undefined,
+          pdfUrl: data.pdfUrl ?? undefined,
+          relievingSignatures: data.relievingSignatures ?? undefined,
+          candidateUserIds: data.candidateUserIds ?? undefined,
+          qualification: data.qualification ?? undefined,
         });
       });
 

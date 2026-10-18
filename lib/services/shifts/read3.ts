@@ -2,7 +2,7 @@ import { getDb } from '@/lib/firebase';
 import { getCompanyIdFromAuth } from '@/lib/utils/companyId';
 import { logger } from '@/lib/logging';
 import { facilityService } from '../facilities';
-import { collection, getDocs, orderBy, query, QueryConstraint, where } from 'firebase/firestore';
+import { collection, getDocs, query, QueryConstraint, where } from 'firebase/firestore';
 import type { Shift, ShiftFilters } from './types';
 import { COLLECTION_NAME } from './types';
 import { mapDocToShift } from './mapDoc';
@@ -34,31 +34,20 @@ export async function getAll(filters?: ShiftFilters): Promise<Shift[]> {
       logger.warn('No facilities found for companyId. Cannot fetch shifts without facility filter.');
       return [];
     }
-    const constraints: QueryConstraint[] = [];
+    // Mandantenisolation: Die Rules erlauben List-Queries nur mit companyId-Filter.
+    // Status/Typ werden clientseitig gefiltert – so reichen die vorhandenen Indizes
+    // (companyId+date bzw. facilityId+companyId+date) für jede Filterkombination.
+    const constraints: QueryConstraint[] = [where('companyId', '==', companyId)];
     if (filters?.facilityId) {
       if (!facilityIds.includes(filters.facilityId)) return [];
       constraints.push(where('facilityId', '==', filters.facilityId));
-    } else if (facilityIds.length <= 10) {
-      constraints.push(where('facilityId', 'in', facilityIds));
     }
-    if (filters?.status) constraints.push(where('status', '==', filters.status));
-    if (filters?.type) constraints.push(where('type', '==', filters.type));
     if (filters?.dateFrom) constraints.push(where('date', '>=', filters.dateFrom));
     if (filters?.dateTo) constraints.push(where('date', '<=', filters.dateTo));
-    let snapshot;
-    try {
-      snapshot = await getDocs(query(collection(db, COLLECTION_NAME), ...constraints, orderBy('date', 'desc')));
-    } catch (orderByError: unknown) {
-      const err = orderByError as { code?: string; message?: string };
-      if (err?.code === 'failed-precondition' || (err?.message?.includes && err.message.includes('requires an index'))) {
-        logger.warn('Firestore index missing for shifts query. Fetching without orderBy and sorting manually.');
-        snapshot = await getDocs(query(collection(db, COLLECTION_NAME), ...constraints));
-      } else {
-        throw orderByError;
-      }
-    }
+    const snapshot = await getDocs(query(collection(db, COLLECTION_NAME), ...constraints));
     const shifts = snapshot.docs
-      .filter(d => !(facilityIds && facilityIds.length > 10) || facilityIds.includes(d.data().facilityId))
+      .filter(d => !filters?.status || d.data().status === filters.status)
+      .filter(d => !filters?.type || d.data().type === filters.type)
       .map(d => mapDocToShift(d.id, d.data() as Record<string, unknown>));
     shifts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return shifts;

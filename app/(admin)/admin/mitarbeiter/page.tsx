@@ -13,22 +13,18 @@ import { StaffCreateDialog } from '@/components/admin/StaffCreateDialog';
 import { StaffEditDialog } from '@/components/admin/StaffEditDialog';
 import { CategoryManager } from '@/components/admin/CategoryManager';
 import { StaffFilters } from '@/components/admin/StaffFilters';
-import { StaffStatsCard } from '@/components/admin/StaffStatsCard';
-import { StaffStatusCard } from '@/components/admin/StaffStatusCard';
-import { StaffGroupCard } from '@/components/admin/StaffGroupCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { escapeHtml } from '@/lib/utils/sanitize';
-import { People, Add, Group, Edit, Delete, Visibility, ContentCopy, MailOutline, PhoneOutlined, BusinessOutlined } from '@mui/icons-material';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { StatStrip } from '@/components/ui/StatStrip';
+import { StaffTable } from '@/components/admin/StaffTable';
+import { Add, Group, ContentCopy } from '@mui/icons-material';
 import {
   Box,
   Typography,
-  Paper,
   Button,
   IconButton,
-  Chip,
-  Avatar,
   Card,
   CardContent,
   CardActions,
@@ -52,7 +48,7 @@ import Pagination from '@mui/material/Pagination';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { auth } from '@/lib/firebase';
 import { sendSignInLinkToEmail } from 'firebase/auth';
-import { roleLabelMap, type StaffUpdateInput } from '@/lib/validations/staff';
+import type { StaffUpdateInput } from '@/lib/validations/staff';
 import ConfirmDestructiveDialog from '@/components/ui/ConfirmDestructiveDialog';
 
 // Use User type from services instead of custom interface
@@ -524,21 +520,6 @@ export default function StaffManagementPage() {
     }
   };
 
-  // Rollen sind kein Status – neutrale/Brand-Farben statt Semantik (rot = Fehler)
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'primary';
-      case 'nurse':
-        return 'default';
-      default:
-        return 'default';
-    }
-  };
-
-  const getRoleLabel = (role: string) =>
-    roleLabelMap[(role as keyof typeof roleLabelMap) || 'nurse'] || 'Krankenschwester';
-
   if (authLoading || staffLoading) {
     return <LoadingSpinner message="Mitarbeiterverwaltung wird geladen..." />;
   }
@@ -561,104 +542,38 @@ export default function StaffManagementPage() {
   return (
     <>
       <PageContainer maxWidth="wide">
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h2" component="h1" sx={{ color: 'text.primary', mb: 1 }}>
-            Mitarbeiterverwaltung
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            Verwalten Sie alle Mitarbeiter und deren Informationen
-          </Typography>
-        </Box>
-
-        {/* Stats Cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid key="stats-total" size={{ xs: 12, sm: 6, md: 3 }}>
-            <StaffStatsCard
-              title="Gesamt Mitarbeiter"
-              value={allStaff.length}
-              icon={<People />}
-              color="primary"
-            />
-          </Grid>
-          <Grid key="stats-active" size={{ xs: 12, sm: 6, md: 3 }}>
-            <StaffStatusCard
-              title="Aktive Mitarbeiter"
-              value={allStaff.filter(s => s.active).length}
-              total={allStaff.length}
-              icon={<People />}
-              color="success"
-            />
-          </Grid>
-          <Grid key="stats-nurse" size={{ xs: 12, sm: 6, md: 3 }}>
-            <StaffGroupCard
-              title="Pflegekräfte"
-              value={allStaff.filter(s => s.role === 'nurse').length}
-              icon={<People />}
-              color="info"
-            />
-          </Grid>
-          <Grid key="stats-admin" size={{ xs: 12, sm: 6, md: 3 }}>
-            <StaffGroupCard
-              title="Administratoren"
-              value={allStaff.filter(s => s.role === 'admin').length}
-              icon={<People />}
-              color="primary"
-            />
-          </Grid>
-        </Grid>
-
-        {/* Actions Bar */}
-        <Paper className="glass" sx={{ p: 3, mb: 3 }}>
-          <Stack
-            direction={{ xs: 'column', lg: 'row' }}
-            spacing={2}
-            alignItems={{ xs: 'flex-start', lg: 'center' }}
-            justifyContent="space-between"
-            sx={{ mb: 2 }}
-          >
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Mitarbeiter ({filteredStaff.length})
-            </Typography>
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={1.5}
-              sx={{ width: { xs: '100%', lg: 'auto' } }}
-            >
-              <Button
-                variant="contained"
-                startIcon={<Add />}
-                onClick={() => setCreateDialogOpen(true)}
-                sx={{ width: { xs: '100%', sm: 'auto' } }}
-              >
+        <PageHeader
+          title="Mitarbeiter"
+          subtitle="Stammdaten, Qualifikationen und Zugänge Ihres Personals"
+          actions={
+            <>
+              <Button variant="text" onClick={exportCsv}>
+                Als CSV exportieren
+              </Button>
+              <Button variant="outlined" startIcon={<Group />} onClick={() => setCategoryManagerOpen(true)}>
+                Kategorien
+              </Button>
+              <Button variant="outlined" onClick={inviteStaff}>
+                Einladen
+              </Button>
+              <Button variant="contained" startIcon={<Add />} onClick={() => setCreateDialogOpen(true)}>
                 Neuer Mitarbeiter
               </Button>
-              <Button
-                variant="outlined"
-                onClick={inviteStaff}
-                sx={{ width: { xs: '100%', sm: 'auto' } }}
-              >
-                Mitarbeiter einladen
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<Group />}
-                onClick={() => setCategoryManagerOpen(true)}
-                sx={{ width: { xs: '100%', sm: 'auto' } }}
-              >
-                Kategorien verwalten
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={exportCsv}
-                sx={{ width: { xs: '100%', sm: 'auto' } }}
-              >
-                Export CSV
-              </Button>
-              {/* Export Excel entfernt */}
-            </Stack>
-          </Stack>
+            </>
+          }
+        />
 
+        <StatStrip
+          items={[
+            { label: 'Personen gesamt', value: allStaff.length },
+            { label: 'Aktiv', value: allStaff.filter(s => s.active).length },
+            { label: 'Pflege- und Fachkräfte', value: allStaff.filter(s => s.role === 'nurse').length },
+            { label: 'Administratoren', value: allStaff.filter(s => s.role === 'admin').length },
+          ]}
+        />
+
+        {/* Auswahl + Filter */}
+        <Box sx={{ mb: 2 }}>
           {selectedIds.length > 0 && (
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
@@ -715,7 +630,7 @@ export default function StaffManagementPage() {
               ) as string[]
             }
           />
-        </Paper>
+        </Box>
 
         {/* Staff List */}
         {staffLoading ? (
@@ -745,163 +660,26 @@ export default function StaffManagementPage() {
             ))}
           </Grid>
         ) : (
-          <Grid container spacing={3}>
-            {paginatedStaff.map(member => (
-              <Grid key={member.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-                <Card
-                  className="glass"
-                  sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-                >
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
-                        {(member.displayName || member.email || '?').charAt(0).toUpperCase()}
-                      </Avatar>
-                      <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                          {escapeHtml(member.displayName || member.email || 'Unbekannter Benutzer')}
-                        </Typography>
-                        <Chip
-                          label={getRoleLabel(member.role)}
-                          color={getRoleColor(member.role)}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </Box>
-                      <input
-                        aria-label="Mitarbeiter auswählen"
-                        type="checkbox"
-                        checked={selectedIds.includes(member.id)}
-                        onChange={() => toggleSelected(member.id)}
-                      />
-                    </Box>
-
-                    <Box sx={{ mb: 2 }}>
-                      {member.jobTitle && (
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                          {escapeHtml(member.jobTitle)}
-                        </Typography>
-                      )}
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <MailOutline sx={{ fontSize: 16, color: 'text.disabled' }} />
-                        {escapeHtml(member.email)}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}
-                        className="tabular-nums"
-                      >
-                        <PhoneOutlined sx={{ fontSize: 16, color: 'text.disabled' }} />
-                        {member.phone}
-                      </Typography>
-                      {(member as User & { group?: string }).group && (
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <BusinessOutlined sx={{ fontSize: 16, color: 'text.disabled' }} />
-                          {(member as User & { group?: string }).group}
-                        </Typography>
-                      )}
-                    </Box>
-
-                    {member.qualifications.length > 0 && (
-                      <Box sx={{ mb: 2 }}>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ display: 'block', mb: 1 }}
-                        >
-                          Qualifikationen:
-                        </Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                          {member.qualifications.slice(0, 2).map((qual, index) => (
-                            <Chip
-                              key={index}
-                              label={qual}
-                              size="small"
-                              variant="outlined"
-                              color="info"
-                            />
-                          ))}
-                          {member.qualifications.length > 2 && (
-                            <Chip
-                              key={`${member.id}-more-qual`}
-                              label={`+${member.qualifications.length - 2}`}
-                              size="small"
-                              variant="outlined"
-                              color="default"
-                            />
-                          )}
-                        </Box>
-                      </Box>
-                    )}
-
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip
-                        label={member.active ? 'Aktiv' : 'Inaktiv'}
-                        color={member.active ? 'success' : 'default'}
-                        size="small"
-                        variant={member.active ? 'filled' : 'outlined'}
-                      />
-                      {(member as User & { lastActive?: Date }).lastActive && (
-                        <Typography variant="caption" color="text.secondary">
-                          Zuletzt aktiv:{' '}
-                          {new Date(
-                            (member as User & { lastActive?: Date }).lastActive!
-                          ).toLocaleDateString('de-DE', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                          })}
-                        </Typography>
-                      )}
-                    </Box>
-                  </CardContent>
-
-                  <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
-                    <Box>
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          setSelectedStaff(member);
-                          setEditDialogOpen(true);
-                        }}
-                        color="primary"
-                        aria-label={`${member.displayName || member.email || 'Mitarbeiter'} bearbeiten`}
-                      >
-                        <Edit />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleToggleActive(member.id)}
-                        color={member.active ? 'warning' : 'success'}
-                        disabled={toggleActiveMutation.isPending}
-                        aria-label={member.active ? 'Deaktivieren' : 'Aktivieren'}
-                      >
-                        <Visibility />
-                      </IconButton>
-                    </Box>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDeleteStaff(member.id)}
-                      color="error"
-                      disabled={deleteStaffMutation.isPending}
-                      aria-label={`${member.displayName || member.email || 'Mitarbeiter'} löschen`}
-                    >
-                      <Delete />
-                    </IconButton>
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+          paginatedStaff.length > 0 && (
+            <StaffTable
+              members={paginatedStaff}
+              selectedIds={selectedIds}
+              actions={{
+                onEdit: member => {
+                  setSelectedStaff(member);
+                  setEditDialogOpen(true);
+                },
+                onToggleActive: handleToggleActive,
+                onDelete: handleDeleteStaff,
+                onToggleSelected: toggleSelected,
+                onToggleAll: (ids, select) =>
+                  setSelectedIds(prev =>
+                    select ? Array.from(new Set([...prev, ...ids])) : prev.filter(x => !ids.includes(x))
+                  ),
+                busy: toggleActiveMutation.isPending || deleteStaffMutation.isPending,
+              }}
+            />
+          )
         )}
 
         {/* Pagination Controls */}

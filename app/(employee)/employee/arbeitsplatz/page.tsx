@@ -144,17 +144,15 @@ function DashboardPageContent() {
       <Box sx={{ mb: 3 }}>
         <Typography
           sx={{
-            fontSize: 12,
-            fontWeight: 700,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
+            fontSize: 13.5,
+            fontWeight: 500,
             color: 'text.secondary',
             mb: 0.5,
           }}
         >
           {todayLabel}
         </Typography>
-        <Typography sx={{ fontSize: { xs: 28, sm: 32 }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.08 }}>
+        <Typography sx={{ fontSize: { xs: 26, lg: 28 }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.08 }}>
           {isNurse ? 'Willkommen zurück' : 'Übersicht'}
         </Typography>
       </Box>
@@ -187,7 +185,7 @@ function DashboardPageContent() {
                   <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
                     <Stack spacing={2}>
                       <Stack direction="row" alignItems="center" justifyContent="space-between">
-                        <Typography sx={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.85 }}>
+                        <Typography sx={{ fontSize: 13.5, fontWeight: 600, opacity: 0.85 }}>
                           Aktueller Einsatz
                         </Typography>
                         {todayAssignment?.status && (
@@ -208,7 +206,8 @@ function DashboardPageContent() {
                       {todayAssignment && todayShift ? (
                         <Stack spacing={1.5}>
                           <Typography sx={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
-                            {todayShift.title || 'Schicht'} · {todayShift.startTime}
+                            {(todayShift as { type?: string }).type || 'Dienst'}
+                            {todayFacility?.name ? ` · ${todayFacility.name}` : ''}
                           </Typography>
                           <Stack direction="row" alignItems="center" spacing={1}>
                             <AccessTime fontSize="small" sx={{ opacity: 0.85 }} />
@@ -265,6 +264,8 @@ function DashboardPageContent() {
                               variant="outlined"
                               sx={{
                                 borderColor: 'rgba(255,255,255,0.6)',
+                                backgroundColor: 'transparent',
+                                boxShadow: 'none',
                                 color: '#ffffff',
                                 '&:hover': { borderColor: '#ffffff', backgroundColor: 'rgba(255,255,255,0.12)' },
                               }}

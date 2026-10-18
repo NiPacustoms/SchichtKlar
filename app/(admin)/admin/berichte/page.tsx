@@ -161,7 +161,7 @@ export default function AdminBerichtePage() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
           <Typography
             component="h1"
-            sx={{ fontSize: { xs: 28, sm: 32 }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.08 }}
+            sx={{ fontSize: { xs: 26, lg: 28 }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.08 }}
           >
             Berichte
           </Typography>

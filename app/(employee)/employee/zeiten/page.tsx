@@ -408,7 +408,7 @@ export default function EmployeeTimesPage() {
       <Box sx={{ mb: 4 }}>
         <Typography
           component="h1"
-          sx={{ fontSize: { xs: 28, sm: 32 }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.08, color: 'text.primary', mb: 0.5 }}
+          sx={{ fontSize: { xs: 26, lg: 28 }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.08, color: 'text.primary', mb: 0.5 }}
         >
           Zeiten &amp; Zeitkonto
         </Typography>

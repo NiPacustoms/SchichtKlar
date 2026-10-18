@@ -105,24 +105,24 @@ export default function LoginPage() {
           aria-hidden="true"
         />
       )}
-      {/* zentriertes, großes Logo wie auf der Landing */}
+      {/* Logo im Fluss über der Anmeldekarte */}
       <Box
         sx={{
-          position: 'absolute',
-          top: { xs: 8, md: 12 },
-          left: '50%',
-          transform: 'translateX(-50%)',
+          display: 'flex',
+          justifyContent: 'center',
+          pt: { xs: 6, md: 10 },
           pointerEvents: 'none',
           userSelect: 'none',
+          position: 'relative',
           zIndex: 1,
         }}
       >
         <AppLogo
           branding={branding}
           showLogo={branding?.showLogo !== false}
-          width={320}
-          height={320}
-          sx={{ width: { xs: 240, md: 320 }, height: { xs: 240, md: 320 } }}
+          width={200}
+          height={50}
+          sx={{ width: 200, height: 50 }}
           showSkeleton={false}
           fallbackBgColor="transparent"
           priority
@@ -138,8 +138,8 @@ export default function LoginPage() {
             gap: 6,
             alignItems: 'center',
             justifyItems: 'center',
-            pt: { xs: 10, md: 16 },
-            pb: 0,
+            pt: 0,
+            pb: 8,
           }}
         >
           {(loading || user || justSubmitted) ? (
@@ -182,17 +182,14 @@ export default function LoginPage() {
             <Fade in timeout={500}>
             <Stack
               alignItems="center"
-              sx={{ mt: { xs: 16, md: 24 }, width: '100%', maxWidth: 460 }}
+              sx={{ mt: { xs: 3, md: 4 }, width: '100%', maxWidth: 400 }}
             >
-              <Paper className="glass" sx={{ p: 4, width: '100%', textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 600, mb: 2 }}>
+              <Paper className="glass" sx={{ p: { xs: 3, sm: 4 }, width: '100%', textAlign: 'left' }}>
+                <Typography component="h1" sx={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.015em', mb: 0.5 }}>
                   Anmelden
                 </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                  Melden Sie sich in Ihrem Schichtklar-Konto an
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Ihre Rolle (Administrator oder Mitarbeiter) wird anhand Ihres Kontos erkannt. Sie werden nach der Anmeldung automatisch in den passenden Bereich weitergeleitet.
+                <Typography sx={{ fontSize: 14.5, color: 'text.secondary', mb: 3 }}>
+                  Disposition und Mitarbeitende nutzen denselben Zugang – Sie landen automatisch im richtigen Bereich.
                 </Typography>
 
                 {process.env.NODE_ENV === 'development' && (
