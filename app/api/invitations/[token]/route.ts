@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/middleware/rateLimit';
 import { invitationService } from '@/lib/services/invitations';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -11,8 +12,10 @@ export const runtime = 'nodejs';
 const ROUTE = '/api/invitations/[token]';
 
 // GET /api/invitations/[token]
-export async function GET(_req: NextRequest, context: { params: Promise<{ token?: string }> }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ token?: string }> }) {
   try {
+    const limited = checkRateLimit(req);
+    if (limited) return limited;
     const params = await context.params;
     const { token } = params || {};
     if (!token) return createValidationErrorResponse('token erforderlich.', ErrorCode.VALIDATION_REQUIRED_FIELD, ROUTE);

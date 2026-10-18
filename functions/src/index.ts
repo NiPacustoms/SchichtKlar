@@ -43,7 +43,6 @@ export { notifyShiftCreated, notifyShiftUpdated } from './shiftNotifications';
 // KPI Aggregations → codebase "scheduled"
 
 // Admin Functions
-export { deleteAllAssignments } from './deleteAllAssignments';
 
 // Schichtverwaltung Cloud Functions
 export { assignShift } from './assignShift';

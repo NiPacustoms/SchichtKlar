@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
+import { getCaller } from '../utils/tenant';
 import { sendTemplatedEmail, renderFacilityAssignmentTakenEmail } from '../email';
 
 const db = admin.firestore();
@@ -30,6 +31,14 @@ export const notifyFacility = functions.https.onCall(async (data: NotifyFacility
   }
 
   const assignment = assignmentSnap.data()!;
+
+  // Nur die zugewiesene Person selbst oder ein Admin derselben Firma darf benachrichtigen
+  const caller = await getCaller(context.auth);
+  const isOwner = caller.uid === assignment.userId;
+  const isCompanyAdmin = caller.isAdmin && assignment.companyId === caller.companyId;
+  if (!isOwner && !isCompanyAdmin) {
+    throw new functions.https.HttpsError('permission-denied', 'Not authorized for this assignment');
+  }
   const facilityId = assignment.facilityId as string | undefined;
   if (!facilityId) {
     throw new functions.https.HttpsError('failed-precondition', 'Assignment has no facilityId');

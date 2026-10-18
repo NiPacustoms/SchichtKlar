@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
+import { requireAdmin } from '../utils/tenant';
 import { logger } from '../utils/logger';
 import { parseShiftToUTC, checkOverlap } from '../utils/timeUtils';
 import { sendUserPushNotification } from '../pushNotifications';
@@ -46,9 +47,8 @@ export const createWithMatching = functions.https.onCall(async (data: CreateWith
 
   // Mandantenisolation: Die übergebene companyId muss der des aufrufenden Admins
   // entsprechen (kein Anlegen in fremden Mandanten bei Direktaufruf der Function).
-  const callerToken = context.auth.token as { companyId?: string; claims?: { companyId?: string } };
-  const callerCompanyId = callerToken.companyId || callerToken.claims?.companyId;
-  if (callerCompanyId && companyId !== callerCompanyId) {
+  const caller = await requireAdmin(context.auth);
+  if (companyId !== caller.companyId) {
     throw new functions.https.HttpsError('permission-denied', 'companyId mismatch');
   }
 
@@ -58,7 +58,10 @@ export const createWithMatching = functions.https.onCall(async (data: CreateWith
 
     // Facility laden (für Namen)
     const facilitySnap = await db.collection('facilities').doc(facilityId).get();
-    const facilityName = facilitySnap.exists ? (facilitySnap.data()?.name as string) || 'Einrichtung' : 'Einrichtung';
+    if (!facilitySnap.exists || facilitySnap.get('companyId') !== companyId) {
+      throw new functions.https.HttpsError('permission-denied', 'Einrichtung gehört nicht zu Ihrer Firma');
+    }
+    const facilityName = (facilitySnap.data()?.name as string) || 'Einrichtung';
 
     // Assignment anlegen (published, ohne userId)
     const assignmentRef = db.collection('assignments').doc();

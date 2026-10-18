@@ -33,7 +33,8 @@ type RateLimitConfigType = keyof typeof RATE_LIMIT_CONFIGS;
  * Bestimmt den Rate-Limit-Typ basierend auf dem API-Pfad
  */
 function getRateLimitType(pathname: string): RateLimitConfigType {
-  if (pathname.startsWith('/api/auth/')) {
+  // Einladungen: Token-Lookup ist ratbar → strenges Auth-Limit
+  if (pathname.startsWith('/api/auth/') || pathname.startsWith('/api/invitations')) {
     return 'auth';
   }
   if (pathname.startsWith('/api/admin/')) {

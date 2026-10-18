@@ -54,7 +54,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "generate:domain": "node scripts/generate-domain.js",
-    "test:rules": "firebase emulators:exec --only firestore --project schichtklar-rules-test \"node tests/rules/firestore-tenant-isolation.test.mjs && node tests/rules/firestore-employee-messaging.test.mjs && node tests/rules/firestore-escalation.test.mjs\""
+    "test:rules": "FIREBASE_CLI_EXPERIMENTS=webframeworks firebase emulators:exec --only firestore --project schichtklar-rules-test \"node tests/rules/firestore-tenant-isolation.test.mjs && node tests/rules/firestore-employee-messaging.test.mjs && node tests/rules/firestore-escalation.test.mjs\""
   },
   "dependencies": {
     "@babel/runtime": "^7.28.6",
@@ -74,12 +74,12 @@
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "exceljs": "^4.4.0",
-    "firebase-admin": "^12.7.0",
+    "firebase-admin": "^13.10.0",
     "isomorphic-dompurify": "^2.11.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.2",
     "lodash": "^4.17.21",
-    "next": "15.5.12",
+    "next": "15.5.28",
     "pdf-lib": "^1.17.1",
     "react": "^18.3.1",
     "react-dnd": "^16.0.1",
@@ -90,7 +90,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@firebase/rules-unit-testing": "^5.0.1",
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@playwright/test": "^1.51.0",
     "@storybook/addon-essentials": "^8.4.0",
     "@storybook/nextjs": "^8.4.0",
@@ -122,10 +122,9 @@
     "autoprefixer": "^10.4.22",
     "dotenv": "^17.2.3",
     "eslint": "^9.39.2",
-    "eslint-config-next": "^15.5.12",
+    "eslint-config-next": "^15.5.28",
     "eslint-config-prettier": "^9.1.0",
     "firebase": "^12.6.0",
-    "firebase-tools": "^15.22.4",
     "pdfjs-dist": "^4.10.38",
     "prettier": "^3.8.1",
     "source-map-js": "^1.2.1",
