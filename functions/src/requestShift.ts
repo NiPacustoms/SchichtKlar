@@ -1,5 +1,7 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
+import { assertSameCompany, getCaller } from './utils/tenant';
+import { dayRuleConflictError, findDayRuleConflicts, toDayKey } from './utils/dayRule';
 
 const db = admin.firestore();
 
@@ -18,9 +20,11 @@ export const requestShift = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('invalid-argument', 'shiftId is required');
   }
 
+  const caller = await getCaller(context.auth);
+
   try {
     return await db.runTransaction(async transaction => {
-      const userId = context.auth!.uid;
+      const userId = caller.uid;
 
       // 1. Shift-Daten laden
       const shiftRef = db.collection('shifts').doc(shiftId);
@@ -32,9 +36,19 @@ export const requestShift = functions.https.onCall(async (data, context) => {
 
       const shift = shiftDoc.data()!;
 
+      // Mandantenisolation: nur Schichten der eigenen Firma
+      assertSameCompany(caller, shift.companyId);
+
       // 2. Prüfen ob Shift noch offen ist
       if (shift.status !== 'open') {
         throw new functions.https.HttpsError('failed-precondition', 'Shift is no longer available');
+      }
+
+      // 2b. Tagesregel: an diesem Tag schon eingeplant? (Mitarbeitende können nicht übersteuern)
+      const dayKey = toDayKey(shift.date);
+      if (dayKey) {
+        const sameDay = await findDayRuleConflicts(db, { userId, companyId: caller.companyId, dayKey }, transaction);
+        if (sameDay.length > 0) throw dayRuleConflictError(dayKey, sameDay, false);
       }
 
       // 3. Prüfen ob User bereits eine Anfrage für diese Schicht hat

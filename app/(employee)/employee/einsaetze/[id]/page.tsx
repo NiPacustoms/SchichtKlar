@@ -8,7 +8,6 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useDomainAssignment } from '@/lib/hooks/useDomainAssignments';
-import { assignmentService } from '@/lib/services/assignments';
 import { facilityService } from '@/lib/services/facilities';
 import { cloudFunctions } from '@/lib/services/cloudFunctions';
 import { toast } from '@/lib/utils/toast';
@@ -49,11 +48,8 @@ export default function AssignmentDetailPage() {
   const acceptMutation = useMutation({
     mutationFn: async () => {
       if (!user?.id || !assignment?.id) throw new Error('Nicht autorisiert');
-      await assignmentService.update(assignment.id, {
-        userId: user.id,
-        status: 'accepted',
-        acceptedAt: new Date(),
-      });
+      // Serverseitig: Transaktion gegen Doppelvergabe + Regel „1 Einsatz pro Tag"
+      await cloudFunctions.acceptPublishedAssignment(assignment.id);
       try {
         await cloudFunctions.notifyFacilityForAssignment({
           assignmentId: assignment.id,

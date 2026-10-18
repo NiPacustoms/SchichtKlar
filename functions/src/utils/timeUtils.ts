@@ -1,5 +1,5 @@
 import { addDays } from 'date-fns';
-import { format, toZonedTime, fromZonedTime } from 'date-fns-tz';
+import { format, formatInTimeZone, toZonedTime, fromZonedTime } from 'date-fns-tz';
 
 /**
  * Konvertiert eine Schicht-Zeit in UTC Timestamps
@@ -15,9 +15,12 @@ export function parseShiftToUTC(
   end: string,
   tz: string = 'Europe/Berlin'
 ): { startUTC: Date; endUTC: Date; isOvernight: boolean } {
-  // Datum + Startzeit kombinieren
-  const startDateTime = `${format(date, 'yyyy-MM-dd')}T${start}:00`;
-  const endDateTime = `${format(date, 'yyyy-MM-dd')}T${end}:00`;
+  // Kalendertag in der Zeitzone der Schicht bestimmen – NICHT in der Server-Zeitzone.
+  // Der Client speichert lokale Mitternacht (Berlin) = Vortag 22/23 Uhr UTC; ein
+  // UTC-Server hätte den Einsatz sonst einen Tag zu früh berechnet.
+  const day = formatInTimeZone(date, tz, 'yyyy-MM-dd');
+  const startDateTime = `${day}T${start}:00`;
+  const endDateTime = `${day}T${end}:00`;
 
   // Prüfen ob overnight (end < start)
   const isOvernight = end < start;
@@ -28,7 +31,8 @@ export function parseShiftToUTC(
 
   // Bei overnight: Endzeit + 1 Tag
   if (isOvernight) {
-    endUTC = fromZonedTime(`${format(addDays(date, 1), 'yyyy-MM-dd')}T${end}:00`, tz);
+    const nextDay = format(addDays(new Date(`${day}T12:00:00Z`), 1), 'yyyy-MM-dd', { timeZone: 'UTC' });
+    endUTC = fromZonedTime(`${nextDay}T${end}:00`, tz);
   }
 
   return { startUTC, endUTC, isOvernight };

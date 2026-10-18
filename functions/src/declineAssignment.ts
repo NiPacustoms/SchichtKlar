@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
+import { getCaller } from './utils/tenant';
 
 const db = admin.firestore();
 
@@ -28,6 +29,8 @@ export const declineAssignment = functions.https.onCall(async (data, context) =>
     );
   }
 
+  const caller = await getCaller(context.auth);
+
   try {
     return await db.runTransaction(async transaction => {
       // 1. Assignment laden
@@ -41,9 +44,9 @@ export const declineAssignment = functions.https.onCall(async (data, context) =>
       const assignment = assignmentDoc.data()!;
 
       // 2. Berechtigung prüfen
-      const userClaims = context.auth!.token as { role?: string };
-      const isAdmin = userClaims.role === 'admin';
-      const isOwner = context.auth!.uid === assignment.userId;
+      // Admin nur innerhalb der eigenen Firma
+      const isAdmin = caller.isAdmin && assignment.companyId === caller.companyId;
+      const isOwner = caller.uid === assignment.userId;
 
       if (declineType === 'nurse-initiated' && !isOwner) {
         throw new functions.https.HttpsError(

@@ -155,14 +155,22 @@ service cloud.firestore {
 
     // Assignments: Lesen Besitzer/Admin; Schreiben Admin mit Mandantenisolation
     match /assignments/{assignmentId} {
+      // Lesen: eigene Einsätze, Admins der Firma und – bei per Matching
+      // ausgeschriebenen Einsätzen – die angefragten Kandidat:innen.
+      // Annehmen läuft serverseitig (Callable acceptPublishedAssignment).
       allow read: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
-        resource.data.userId == request.auth.uid || isAdmin()
+        resource.data.userId == request.auth.uid || isAdmin() ||
+        (resource.data.status == 'published' &&
+         request.auth.uid in resource.data.get('candidateUserIds', []))
       );
       allow create: if isAdmin() && creatingForSameCompany(request.resource.data.companyId);
+      // Mitarbeitende: nur eigene Einsätze; Person, Firma und Tagesregel-Felder
+      // (Admin-Übersteuerung / Verstoß-Markierung) bleiben Admin bzw. Server vorbehalten.
       allow update: if isAuthenticated() && belongsToSameCompany(resource.data.companyId) && (
         isAdmin() ||
         (resource.data.userId == request.auth.uid &&
-         request.resource.data.companyId == resource.data.companyId)
+         !request.resource.data.diff(resource.data).affectedKeys()
+           .hasAny(['userId', 'companyId', 'dayRuleOverride', 'dayRuleViolation']))
       );
       allow delete: if isAdmin() && belongsToSameCompany(resource.data.companyId);
     }

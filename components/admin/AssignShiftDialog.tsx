@@ -38,6 +38,12 @@ import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Add, Close, Person, Search, Warning } from '@mui/icons-material';
 import { logger, PerformanceMonitor, UserActionTracker } from '@/lib/logging';
+import {
+  assignWithDayRulePrompt,
+  DayRuleOverrideCancelledError,
+  shouldRetryAssignment,
+  useDayRuleOverridePrompt,
+} from '@/components/admin/DayRuleOverrideDialog';
 
 const ASSIGN_USER_TYPE = 'ASSIGN_USER';
 
@@ -166,14 +172,17 @@ export function AssignShiftDialog({ open, onClose, shift }: AssignShiftDialogPro
     staleTime: 60 * 1000,
   });
 
+  const { requestReason: requestDayRuleReason, dialog: dayRuleDialog } = useDayRuleOverridePrompt();
+
   // Assign user mutation via Cloud Function
   const assignUserMutation = useMutation({
     mutationFn: async (user: User) => {
-      // Admins können Konflikte überschreiben
-      const result = await cloudFunctions.assignShiftToUser(shift.id, user.id, false, true);
+      // Zeit-/Qualifikationskonflikte übersteuert der Admin direkt; die Regel
+      // „1 Einsatz pro Tag" nur mit Begründung (Dialog).
+      const result = await assignWithDayRulePrompt(shift.id, user, requestDayRuleReason);
       return { result, user };
     },
-    retry: 2,
+    retry: shouldRetryAssignment,
     retryDelay: attempt => Math.min(1000 * Math.pow(2, attempt), 5000),
     onSuccess: ({ result, user }) => {
       if (process.env.NODE_ENV === 'development') {
@@ -203,6 +212,7 @@ export function AssignShiftDialog({ open, onClose, shift }: AssignShiftDialogPro
       }
     },
     onError: (error: unknown) => {
+      if (error instanceof DayRuleOverrideCancelledError) return;
       if (process.env.NODE_ENV === 'development') {
         PerformanceMonitor.endTimer('shift.assign', { result: 'error' });
       }
@@ -582,6 +592,7 @@ export function AssignShiftDialog({ open, onClose, shift }: AssignShiftDialogPro
           Schließen
         </Button>
       </DialogActions>
+      {dayRuleDialog}
     </Dialog>
   );
 }

@@ -1,6 +1,14 @@
 import { db, getDb } from '@/lib/firebase';
 import { errorHandler, logger } from '@/lib/errors';
 import { getCompanyIdFromAuth } from '@/lib/utils/companyId';
+import {
+  DAY_RULE_ACTIVE_STATUSES,
+  DayRuleConflictError,
+  findSameDayConflicts,
+  isDayRuleActiveStatus,
+  toDayKey,
+  type DayRuleEntry,
+} from '@/lib/domain/dayRule';
 
 // Assignment Interface
 export interface Assignment {
@@ -105,6 +113,44 @@ import {
 } from 'firebase/firestore';
 
 const COLLECTION_NAME = 'assignments';
+
+/** Einsatztag aus eigenem startDate oder verknüpfter Schicht (Europe/Berlin). */
+async function resolveDayKeyClient(a: Record<string, unknown>): Promise<string | null> {
+  const own = toDayKey(a.startDate);
+  if (own) return own;
+  if (typeof a.shiftId !== 'string' || !a.shiftId) return null;
+  const shiftSnap = await getDoc(doc(getDb(), 'shifts', a.shiftId));
+  return shiftSnap.exists() ? toDayKey(shiftSnap.data().date) : null;
+}
+
+/**
+ * Vorabprüfung der Regel „1 Einsatz pro Tag" im Client – für sofortiges
+ * Feedback. Verbindlich prüfen die Cloud Functions bzw. der Trigger enforceDayRule.
+ */
+async function assertDayRuleClient(
+  userId: string,
+  assignment: Record<string, unknown>,
+  excludeId?: string
+): Promise<void> {
+  const dayKey = await resolveDayKeyClient(assignment);
+  if (!dayKey) return;
+  const companyId = (assignment.companyId as string | undefined) || (await getCompanyIdFromAuth());
+  if (!companyId) return;
+  const snap = await getDocs(
+    query(
+      collection(getDb(), COLLECTION_NAME),
+      where('companyId', '==', companyId),
+      where('userId', '==', userId),
+      where('status', 'in', [...DAY_RULE_ACTIVE_STATUSES])
+    )
+  );
+  const entries: DayRuleEntry[] = [];
+  for (const d of snap.docs) {
+    entries.push({ id: d.id, status: String(d.data().status), dayKey: await resolveDayKeyClient(d.data()) });
+  }
+  const conflicts = findSameDayConflicts({ dayKey, excludeId }, entries);
+  if (conflicts.length > 0) throw new DayRuleConflictError(dayKey, conflicts);
+}
 
 export const assignmentService = {
   // Get assignment by ID
@@ -353,9 +399,15 @@ export const assignmentService = {
     const assignmentRef = doc(getDb(), COLLECTION_NAME, id);
     const snap = await getDoc(assignmentRef);
     if (!snap.exists()) throw new Error('Einsatz nicht gefunden');
-    const status = snap.data().status as string;
+    const data = snap.data();
+    const status = data.status as string;
     if (!['pending', 'assigned', 'requested'].includes(status)) {
       throw new Error(`Einsatz kann im Status „${status}" nicht angenommen werden`);
+    }
+    // Regel „1 Einsatz pro Tag": nur prüfen, wenn der Einsatz erst jetzt aktiv wird
+    // (ein bereits 'assigned' Einsatz wurde bei der Zuweisung geprüft/übersteuert).
+    if (!isDayRuleActiveStatus(status) && data.userId && !data.dayRuleOverride) {
+      await assertDayRuleClient(String(data.userId), data, id);
     }
     await updateDoc(assignmentRef, {
       status: 'accepted',
@@ -885,6 +937,7 @@ return assignments;
         return result;
       }
       const newShiftData = shiftDoc.data() as Record<string, unknown>;
+      const newDayKey = toDayKey(newShiftData.date);
       const newShiftForCheck = {
         date: (newShiftData.date as { toDate?: () => Date })?.toDate?.()?.toISOString().split('T')[0] ?? String(newShiftData.date ?? ''),
         startTime: String(newShiftData.startTime ?? ''),
@@ -892,32 +945,38 @@ return assignments;
       };
 
       const CHUNK = 10;
-      const assignmentDocs: { userId: string; shiftId: string; assignmentId: string }[] = [];
+      const assignmentDocs: { userId: string; shiftId: string; assignmentId: string; ownDayKey: string | null }[] = [];
       for (let i = 0; i < userIds.length; i += CHUNK) {
         const chunk = userIds.slice(i, i + CHUNK);
         const q = query(
           collection(getDb(), COLLECTION_NAME),
           where('companyId', '==', companyId),
           where('userId', 'in', chunk),
-          where('status', 'in', ['assigned', 'accepted'])
+          where('status', 'in', [...DAY_RULE_ACTIVE_STATUSES])
         );
         const snap = await getDocs(q);
         snap.docs.forEach(d => {
           const a = d.data();
-          if (a.shiftId !== shiftId) {
-            assignmentDocs.push({ userId: a.userId as string, shiftId: a.shiftId as string, assignmentId: d.id });
+          if (a.shiftId !== shiftId || !a.shiftId) {
+            assignmentDocs.push({
+              userId: a.userId as string,
+              shiftId: a.shiftId as string,
+              assignmentId: d.id,
+              ownDayKey: toDayKey(a.startDate),
+            });
           }
         });
       }
 
-      const uniqueShiftIds = [...new Set(assignmentDocs.map(a => a.shiftId))];
-      const shiftDataById: Record<string, { date: string; startTime: string; endTime: string }> = {};
+      const uniqueShiftIds = [...new Set(assignmentDocs.map(a => a.shiftId).filter(Boolean))];
+      const shiftDataById: Record<string, { date: string; startTime: string; endTime: string; dayKey: string | null }> = {};
       for (const sid of uniqueShiftIds) {
         const d = await getDoc(doc(getDb(), 'shifts', sid));
         if (d.exists()) {
           const data = d.data() as Record<string, unknown>;
           const date = (data.date as { toDate?: () => Date })?.toDate?.()?.toISOString().split('T')[0] ?? String(data.date ?? '');
           shiftDataById[sid] = {
+            dayKey: toDayKey(data.date),
             date,
             startTime: String(data.startTime ?? ''),
             endTime: String(data.endTime ?? ''),
@@ -926,8 +985,14 @@ return assignments;
       }
 
       userIds.forEach(uid => (result[uid] = { hasConflict: false }));
-      for (const { userId, shiftId: existingShiftId } of assignmentDocs) {
-        const existing = shiftDataById[existingShiftId];
+      for (const { userId, shiftId: existingShiftId, ownDayKey } of assignmentDocs) {
+        const existing = existingShiftId ? shiftDataById[existingShiftId] : undefined;
+        // Regel „1 Einsatz pro Tag" (Berliner Kalendertag) – Admin kann mit Begründung übersteuern
+        const existingDay = ownDayKey ?? existing?.dayKey ?? null;
+        if (newDayKey && existingDay === newDayKey) {
+          result[userId] = { hasConflict: true, conflictDetails: 'Hat an diesem Tag bereits einen Einsatz' };
+          continue;
+        }
         if (!existing) continue;
         if (this.checkTimeOverlap(newShiftForCheck, existing)) {
           result[userId] = { hasConflict: true, conflictDetails: 'Zeitkonflikt mit bestehender Schicht' };

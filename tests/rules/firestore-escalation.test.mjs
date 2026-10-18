@@ -14,11 +14,14 @@ await env.withSecurityRulesDisabled(async (ctx) => {
 
 const nurseA = env.authenticatedContext('nurseA', { role: 'nurse', companyId: 'firmaA' }).firestore();
 
+let failures = 0;
 const fall = async (name, fn, erwartet) => {
   try {
     await fn();
+    if (erwartet !== 'ERLAUBT') failures++;
     console.log(`${erwartet === 'ERLAUBT' ? 'OK  ' : 'LECK'} | ${name}: ERLAUBT – erwartet: ${erwartet}`);
   } catch {
+    if (erwartet !== 'VERWEIGERT') failures++;
     console.log(`${erwartet === 'VERWEIGERT' ? 'OK  ' : 'FEHL'} | ${name}: VERWEIGERT – erwartet: ${erwartet}`);
   }
 };
@@ -35,3 +38,4 @@ await fall('Nurse ändert eigene companyId',
 
 await env.cleanup();
 console.log('--- Ende ---');
+if (failures > 0) process.exit(1);

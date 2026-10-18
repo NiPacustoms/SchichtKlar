@@ -1,5 +1,7 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
+import { assertSameCompany, requireAdmin } from './utils/tenant';
+import { dayRuleConflictError, findDayRuleConflicts, isValidOverrideReason, toDayKey } from './utils/dayRule';
 
 const db = admin.firestore();
 
@@ -64,7 +66,7 @@ export const assignShift = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }
 
-  const { shiftId, userId, isRequest = false, adminOverride = false } = data;
+  const { shiftId, userId, isRequest = false, adminOverride = false, dayRuleOverrideReason } = data || {};
 
   // Log für Debugging
   functions.logger.info('assignShift called', {
@@ -82,14 +84,8 @@ export const assignShift = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('invalid-argument', 'shiftId and userId are required');
   }
 
-  // Rollenprüfung
-  const userClaims = context.auth.token as { role?: string };
-  if (userClaims.role !== 'admin') {
-    throw new functions.https.HttpsError(
-      'permission-denied',
-      'Only admins can assign shifts'
-    );
-  }
+  // Rollen- und Mandantenprüfung (fail-closed)
+  const caller = await requireAdmin(context.auth);
 
   try {
     return await db.runTransaction(async transaction => {
@@ -103,17 +99,8 @@ export const assignShift = functions.https.onCall(async (data, context) => {
 
       const shift = shiftDoc.data()!;
 
-      // Mandantenisolation: Der aufrufende Admin darf nur Schichten der EIGENEN
-      // Company zuweisen. Ohne diese Prüfung könnte ein Admin mit fremder shiftId
-      // ein Assignment in einem anderen Mandanten anlegen.
-      const callerToken = context.auth!.token as { companyId?: string; claims?: { companyId?: string } };
-      const callerCompanyId = callerToken.companyId || callerToken.claims?.companyId;
-      if (shift.companyId && callerCompanyId && shift.companyId !== callerCompanyId) {
-        throw new functions.https.HttpsError(
-          'permission-denied',
-          'Shift belongs to a different company'
-        );
-      }
+      // Mandantenisolation: nur Schichten der eigenen Firma
+      assertSameCompany(caller, shift.companyId);
 
       const capacity = shift.capacity || 1;
       const assignedCount = shift.assignedCount || 0;
@@ -132,6 +119,7 @@ export const assignShift = functions.https.onCall(async (data, context) => {
       }
 
       const user = userDoc.data()!;
+      assertSameCompany(caller, user.companyId);
 
       // 4. Qualifikationsprüfung
       const requiredSkills = shift.requiredSkills || [];
@@ -242,6 +230,29 @@ export const assignShift = functions.https.onCall(async (data, context) => {
         });
       }
 
+      // 5b. Tagesregel: 1 Einsatz pro Kalendertag (Europe/Berlin).
+      // Bewusst NICHT durch adminOverride abgedeckt – Übersteuern nur mit Begründung.
+      const dayKey = toDayKey(shift.date);
+      let dayRuleOverride: { reason: string; by: string; at: Date; conflictingAssignmentIds: string[] } | null = null;
+      if (dayKey) {
+        const sameDay = await findDayRuleConflicts(
+          db,
+          { userId, companyId: caller.companyId, dayKey },
+          transaction
+        );
+        if (sameDay.length > 0) {
+          if (!isValidOverrideReason(dayRuleOverrideReason)) {
+            throw dayRuleConflictError(dayKey, sameDay, true);
+          }
+          dayRuleOverride = {
+            reason: dayRuleOverrideReason.trim(),
+            by: caller.uid,
+            at: new Date(),
+            conflictingAssignmentIds: sameDay,
+          };
+        }
+      }
+
       // 6. Assignment erstellen
       // WICHTIG: companyId aus Shift holen, damit Frontend-Queries funktionieren
       // Fallback-Kette: Shift -> User -> Admin-Token (claims.companyId)
@@ -273,6 +284,7 @@ export const assignShift = functions.https.onCall(async (data, context) => {
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         ...(isRequest && { requiresSignature: false }),
+        ...(dayRuleOverride && { dayRuleOverride }),
       };
 
       transaction.set(assignmentRef, assignmentData);
@@ -328,6 +340,7 @@ export const assignShift = functions.https.onCall(async (data, context) => {
           userId: { old: null, new: userId },
           shiftId: { old: null, new: shiftId },
           ...(adminOverride && { adminOverride: { old: null, new: true } }),
+          ...(dayRuleOverride && { dayRuleOverride: { old: null, new: dayRuleOverride } }),
           ...(missingQualifications.length > 0 &&
             adminOverride && {
               missingQualifications: { old: null, new: missingQualifications },

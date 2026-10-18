@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { cloudFunctions, facilityService, shiftService, userService } from '@/lib/services';
+import { facilityService, shiftService, userService } from '@/lib/services';
 import { sendAssignmentFormEmail } from '@/lib/services/email';
 import { toast } from '@/lib/utils/toast';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,6 +37,12 @@ import { z } from 'zod';
 import { logger, PerformanceMonitor, UserActionTracker } from '@/lib/logging';
 import { SHIFT_COLOR_PRESETS, DEFAULT_SHIFT_COLOR } from '@/lib/constants/colorPresets';
 import { ColorPresetSwatches } from '@/components/ui/ColorPresetSwatches';
+import {
+  assignWithDayRulePrompt,
+  DayRuleOverrideCancelledError,
+  shouldRetryAssignment,
+  useDayRuleOverridePrompt,
+} from '@/components/admin/DayRuleOverrideDialog';
 
 // Validation Schema
 const shiftCreateSchema = z
@@ -174,14 +180,17 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
     },
   });
 
+  const { requestReason: requestDayRuleReason, dialog: dayRuleDialog } = useDayRuleOverridePrompt();
+
   // Mitarbeiter zuweisen
   const assignUserMutation = useMutation({
     mutationFn: async ({ shiftId, user }: { shiftId: string; user: User }) => {
-      // Admins können Konflikte überschreiben
-      const result = await cloudFunctions.assignShiftToUser(shiftId, user.id, false, true);
+      // Zeit-/Qualifikationskonflikte übersteuert der Admin direkt; die Regel
+      // „1 Einsatz pro Tag" nur mit Begründung (Dialog).
+      const result = await assignWithDayRulePrompt(shiftId, user, requestDayRuleReason);
       return { result, user };
     },
-    retry: 2,
+    retry: shouldRetryAssignment,
     retryDelay: attempt => Math.min(1000 * Math.pow(2, attempt), 5000),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
@@ -189,6 +198,7 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
       queryClient.invalidateQueries({ queryKey: ['assignedUsers'] });
     },
     onError: (error: unknown) => {
+      if (error instanceof DayRuleOverrideCancelledError) return;
       const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
       toast.error('Fehler beim Zuweisen des Mitarbeiters: ' + message);
     },
@@ -727,7 +737,8 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
             </Button>
           </DialogActions>
         </form>
-      </Dialog>
+        {dayRuleDialog}
+    </Dialog>
     </LocalizationProvider>
   );
 }

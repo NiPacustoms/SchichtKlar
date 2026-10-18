@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
 import { getAvailableEmployeeIds } from './availability';
+import { requireAdmin } from '../utils/tenant';
 import { logger } from '../utils/logger';
 
 const db = admin.firestore();
@@ -23,13 +24,7 @@ export const getAvailableEmployeeIdsForSlot = functions.https.onCall(
       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
     }
 
-    const userClaims = context.auth.token as { role?: string };
-    if (userClaims.role !== 'admin') {
-      throw new functions.https.HttpsError(
-        'permission-denied',
-        'Only admins can query available employees'
-      );
-    }
+    const caller = await requireAdmin(context.auth);
 
     const { companyId, startDate, startTime, endTime, qualification } = data || {};
     if (!companyId || !startDate || !startTime || !endTime) {
@@ -37,6 +32,10 @@ export const getAvailableEmployeeIdsForSlot = functions.https.onCall(
         'invalid-argument',
         'companyId, startDate, startTime, endTime are required'
       );
+    }
+
+    if (companyId !== caller.companyId) {
+      throw new functions.https.HttpsError('permission-denied', 'companyId mismatch');
     }
 
     try {

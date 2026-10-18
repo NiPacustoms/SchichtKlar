@@ -3,6 +3,7 @@ import { logger } from '@/lib/logging';
 import { functions } from '@/lib/firebase';
 import { AssignmentCandidate, AssignmentResult, DeclineAssignmentData } from '@/lib/types';
 import { httpsCallable } from 'firebase/functions';
+import { DayRuleConflictError, getDayRuleConflict } from '@/lib/domain/dayRule';
 
 /**
  * Client-Wrapper für Cloud Functions der Schichtverwaltung
@@ -23,7 +24,15 @@ const getUnassignShiftCF = () => httpsCallable(getFunctionsOrThrow(), 'unassignS
 const getDeclineAssignmentCF = () => httpsCallable(getFunctionsOrThrow(), 'declineAssignment');
 const getRequestShiftCF = () => httpsCallable(getFunctionsOrThrow(), 'requestShift');
 const getFindCandidatesCF = () => httpsCallable(getFunctionsOrThrow(), 'findCandidates');
-const getDeleteAllAssignmentsCF = () => httpsCallable(getFunctionsOrThrow(), 'deleteAllAssignments');
+const getAcceptPublishedCF = () => httpsCallable(getFunctionsOrThrow(), 'acceptPublishedAssignment');
+
+/** Tagesregel-Konflikte aus Callables als typisierten Fehler weiterreichen (UI fragt dann nach Begründung). */
+function rethrowDayRuleConflict(error: unknown): void {
+  const conflict = getDayRuleConflict(error);
+  if (conflict) {
+    throw new DayRuleConflictError(conflict.dayKey ?? '', conflict.conflictingAssignmentIds);
+  }
+}
 
 export const cloudFunctions = {
   /**
@@ -31,19 +40,24 @@ export const cloudFunctions = {
    * @param shiftId Schicht-ID
    * @param userId User-ID
    * @param isRequest Als Anfrage senden (true) oder direkt zuweisen (false)
-   * @param adminOverride Admin-Override für Qualifikations-/Konfliktprüfung
+   * @param adminOverride Admin-Override für Qualifikations-/Zeitkonfliktprüfung
+   * @param dayRuleOverrideReason Begründung, um die Regel „1 Einsatz pro Tag" zu übersteuern
+   *   (adminOverride deckt diese Regel bewusst NICHT ab)
    * @returns AssignmentResult
+   * @throws DayRuleConflictError wenn die Person an dem Tag schon eingeplant ist
    */
   async assignShiftToUser(
     shiftId: string,
     userId: string,
     isRequest: boolean = false,
-    adminOverride: boolean = false
+    adminOverride: boolean = false,
+    dayRuleOverrideReason?: string
   ): Promise<AssignmentResult> {
     try {
-      const result = await getAssignShiftCF()({ shiftId, userId, isRequest, adminOverride });
+      const result = await getAssignShiftCF()({ shiftId, userId, isRequest, adminOverride, dayRuleOverrideReason });
       return result.data as AssignmentResult;
     } catch (error: unknown) {
+      rethrowDayRuleConflict(error);
 
       // Benutzerfreundliche Fehlermeldungen
       if ((error as { code?: string; message?: string }).code === 'functions/failed-precondition') {
@@ -243,9 +257,23 @@ export const cloudFunctions = {
     payload: Record<string, unknown> & { facilityId: string; companyId: string; startDate: string; startTime: string; endTime: string },
     idToken: string
   ): Promise<{ assignmentId?: string }> {
-    const fn = httpsCallable(getFunctionsOrThrow(), 'createAssignmentWithMatching');
+    const fn = httpsCallable(getFunctionsOrThrow(), 'createWithMatching');
     const result = await fn({ ...payload, idToken });
     return result.data as { assignmentId?: string };
+  },
+
+  /**
+   * Ausgeschriebenen Einsatz (Matching) als Kandidat:in annehmen.
+   * Läuft serverseitig als Transaktion (keine Doppelvergabe, Tagesregel geprüft).
+   * @throws DayRuleConflictError wenn bereits ein Einsatz an dem Tag besteht
+   */
+  async acceptPublishedAssignment(assignmentId: string): Promise<void> {
+    try {
+      await getAcceptPublishedCF()({ assignmentId });
+    } catch (error: unknown) {
+      rethrowDayRuleConflict(error);
+      throw new Error((error as { message?: string }).message || 'Einsatz konnte nicht angenommen werden');
+    }
   },
 };
 
@@ -304,22 +332,5 @@ export const shiftAssignmentHelpers = {
     if (score >= 80) return 'text-green-600';
     if (score >= 60) return 'text-yellow-600';
     return 'text-red-600';
-  },
-
-  /**
-   * Löscht alle Assignments aus der Datenbank
-   * WARNUNG: Diese Funktion löscht ALLE Assignments!
-   * @returns Ergebnis mit Anzahl gelöschter Assignments
-   */
-  async deleteAllAssignments(): Promise<{ success: boolean; deletedCount: number; message: string }> {
-    try {
-      const result = await getDeleteAllAssignmentsCF()({});
-      return result.data as { success: boolean; deletedCount: number; message: string };
-    } catch (error: unknown) {
-      if ((error as { code?: string }).code === 'functions/permission-denied') {
-        throw new Error('Keine Berechtigung: Nur Admins können alle Assignments löschen');
-      }
-      throw new Error((error as { message?: string }).message || 'Fehler beim Löschen der Assignments');
-    }
   },
 };

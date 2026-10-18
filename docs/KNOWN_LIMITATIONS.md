@@ -30,7 +30,7 @@ Ehrliche Auflistung aller bekannten Einschränkungen, offenen Entscheidungen und
 
 | # | Thema | Details |
 |---|---|---|
-| C1 | **Regel „1 Einsatz pro Kalendertag"** | Aktuell als **Zeit-Überlappung** implementiert (`createWithMatching.ts`), nicht als „ein Einsatz pro Kalendertag". Zwei nicht-überlappende Einsätze am selben Tag wären möglich. Wenn die harte Kalendertag-Regel gilt, muss der Konflikt-Check umgestellt werden (schließt Split-Shifts aus → Freigabe nötig). Siehe `QA_REPORT.md`. |
+| C1 | ~~Regel „1 Einsatz pro Kalendertag"~~ **ERLEDIGT (18.10.2026)** | Entscheidung: **1 Einsatz pro Berliner Kalendertag, Admin darf mit Begründung übersteuern.** Kernlogik `lib/domain/dayRule.ts` (Server-Spiegel `functions/src/utils/dayRule.ts`). Durchgesetzt in `assignShift` (Begründungspflicht, `adminOverride` deckt die Regel bewusst nicht ab), `requestShift`, `acceptPublishedAssignment` (neu), Matching/Kandidatensuche und Client-Annahme. Sicherheitsnetz: Trigger `enforceDayRule` markiert Verstöße aus Direktschreibpfaden (`dayRuleViolation`) und benachrichtigt die Admins der Firma – kein stilles Zurückdrehen. Admin-UI: Begründungsdialog (`DayRuleOverrideDialog`). Getestet: `npm run test:functions` (Emulator, 20 Fälle), Rules-Tests, Unit-Tests. |
 | C2 | ~~Regel „Signaturblock max. 7 Tage"~~ **ERLEDIGT (11.07.2026)** | `calculateSignatureSchedule` garantiert die 7-Tage-Blöcke jetzt konstruktiv (Sonntage + Einsatzende, Termin nie nach Einsatzende); zusätzlich prüfbar via `validateSignatureScheduleMaxBlock()`. Dabei behobene Bugs: UTC-Off-by-one der Datums-Keys (Signaturtermine an Sonntagen verfehlten den Abgleich), Signaturtermin lag bei kurzen Einsätzen ohne Sonntag NACH dem Einsatzende (dadurch öffnete sich der Einrichtungs-Signatur-Dialog praktisch nie), Duplikat wenn Einsatzende = Sonntag. 10 neue Unit-Tests. |
 
 ## D. Architektur-Hinweise (kein Mangel, dokumentiert)
@@ -60,8 +60,23 @@ Mehrere Callables prüften nur „ist Admin", nicht „Admin **derselben Firma**
 | `unassignShift` | Admin konnte fremde Zuweisungen lösen | nur eigene Firma (bzw. eigene Zuweisung) |
 | `notifyFacility` | jeder Nutzer konnte Mails an beliebige Einrichtungen auslösen | nur zugewiesene Person oder Admin derselben Firma |
 | `createWithMatching` | Firmen-Check fail-open, Einrichtung ungeprüft | fail-closed, Einrichtung muss zur Firma gehören |
+| `assignShift` | Firmen-Check fail-open, Person ungeprüft | Schicht **und** Person müssen zur Firma gehören |
+| `requestShift` | Schichten fremder Firmen anfragbar | nur eigene Firma |
+| `declineAssignment` | Admin konnte fremde Einsätze absagen | nur eigene Firma |
+| `getAvailableEmployeeIdsForSlot` | Mitarbeiterlisten fremder Firmen abfragbar | nur eigene Firma |
+| `runScheduledReportsNow` | löste Berichtsläufe **aller** Firmen aus | nur eigene Firma |
 
 ⚠️ Wirksam erst nach `firebase deploy --only functions`.
+
+## H. Weitere Funde (18.10.2026)
+
+| # | Thema | Status |
+|---|---|---|
+| H1 | **Server-Datumsfehler**: `parseShiftToUTC` bestimmte den Tag in der Server-Zeitzone (UTC). Als Berliner Mitternacht gespeicherte Schichtdaten wurden einen Tag zu früh berechnet → Überschneidungsprüfungen serverseitig falsch. | behoben (Tag in Europe/Berlin, abwärtskompatibel) |
+| H2 | **Annahme ausgeschriebener Einsätze** (Matching) scheiterte an den Rules; zudem keine Sperre gegen Doppelannahme. | behoben: Callable `acceptPublishedAssignment` (Transaktion), Leserecht für Kandidat:innen |
+| H3 | Mitarbeitende konnten eigene Einsätze per `userId` auf andere Personen umschreiben. | behoben (Rules + Test) |
+| H4 | Escalation-Rules-Test endete auch bei Lecks erfolgreich; `@firebase/rules-unit-testing` fehlte als Dependency. | behoben |
+| H5 | ⚖️ **Callable Functions laufen in `us-central1`** (keine Region gesetzt; Client nutzt Default). Personenbezogene Daten werden damit in den USA verarbeitet – passt nicht zur DSGVO-/EU-Positionierung. Umzug nach `europe-west1` braucht koordiniertes Deploy (Functions + Client-Region + Server-Action-URL in `app/(admin)/admin/einsaetze/new/actions.ts`). | **offen – Entscheidung Eigentümer** |
 
 ## E. Optionale Ausbaustufen (Marktrecherche)
 

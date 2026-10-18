@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
 import { assertSameCompany, requireAdmin } from './utils/tenant';
+import { berlinDayKey, DAY_RULE_ACTIVE_STATUSES, formatDayKeyDE } from './utils/dayRule';
 
 const db = admin.firestore();
 
@@ -81,8 +82,9 @@ export const findCandidates = functions.https.onCall(async (data, context) => {
       // 6. Verfügbarkeitsprüfung
       const assignmentsQuery = db
         .collection('assignments')
+        .where('companyId', '==', caller.companyId)
         .where('userId', '==', userDoc.id)
-        .where('status', 'in', ['assigned', 'accepted']);
+        .where('status', 'in', [...DAY_RULE_ACTIVE_STATUSES]);
 
       const assignmentsSnapshot = await assignmentsQuery.get();
       let hasConflict = false;
@@ -101,6 +103,13 @@ export const findCandidates = functions.https.onCall(async (data, context) => {
             existingShift.endTime,
             existingShift.tz || 'Europe/Berlin'
           );
+
+          // Regel „1 Einsatz pro Tag" (Berliner Kalendertag)
+          if (berlinDayKey(existingStartUTC) === berlinDayKey(startUTC)) {
+            hasConflict = true;
+            conflictDetails = `Hat am ${formatDayKeyDE(berlinDayKey(startUTC))} bereits einen Einsatz`;
+            break;
+          }
 
           if (
             checkOverlap(
