@@ -192,13 +192,13 @@ export function FacilityHoursDashboard({ facilityId }: FacilityHoursDashboardPro
           <Typography
             component="h1"
             sx={{
-              fontSize: { xs: 28, sm: 32 },
+              fontSize: { xs: 26, lg: 28 },
               fontWeight: 700,
               letterSpacing: '-0.02em',
               lineHeight: 1.08,
             }}
           >
-            Stundenübersicht Einrichtungen
+            Stunden je Einrichtung
           </Typography>
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
             <FormControl size="small" sx={{ minWidth: 150 }}>

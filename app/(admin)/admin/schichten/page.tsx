@@ -10,6 +10,8 @@ import { AdminListView } from '@/components/schedule/AdminListView';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { StatStrip } from '@/components/ui/StatStrip';
 import { useShifts } from '@/lib/hooks/useShifts';
 import type { Shift as ShiftEntity } from '@/lib/services/shifts';
 import type { Shift as DomainShift } from '@/lib/types';
@@ -26,13 +28,10 @@ import {
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   FormControl,
   IconButton,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
   TextField,
   ToggleButton,
@@ -40,6 +39,7 @@ import {
   Typography,
   Alert,
   Stack,
+  Tooltip,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useState, useMemo, useEffect, Suspense, useCallback } from 'react';
@@ -265,190 +265,125 @@ function AdminShiftsPageContent() {
   return (
     <>
       <PageContainer maxWidth="wide">
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h2" component="h1" sx={{ color: 'text.primary', mb: 1 }}>
-            Schichtverwaltung
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            Verwalten Sie alle Schichten und deren Zuweisungen
-          </Typography>
-        </Box>
-
-        {/* Statistics */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-            <Card className="glass" sx={{ height: '100%' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" className="tabular-nums" sx={{ color: 'text.primary' }}>
-                  {stats.total}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Gesamt Schichten
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-            <Card className="glass" sx={{ height: '100%' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" className="tabular-nums" sx={{ color: 'text.primary' }}>
-                  {stats.open}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Offene Schichten
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-            <Card className="glass" sx={{ height: '100%' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" className="tabular-nums" sx={{ color: 'text.primary' }}>
-                  {stats.filled}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Besetzte Schichten
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-            <Card className="glass" sx={{ height: '100%' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" className="tabular-nums" sx={{ color: 'text.primary' }}>
-                  {stats.assignedCount}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Zugewiesene Mitarbeiter
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-            <Card className="glass" sx={{ height: '100%' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" className="tabular-nums" sx={{ color: 'text.secondary' }}>
-                  {stats.ended}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Beendet
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Actions and Filters */}
-        <Paper className="glass" sx={{ p: 3, mb: 3 }}>
-          <Stack
-            direction={{ xs: 'column', lg: 'row' }}
-            spacing={2}
-            alignItems={{ xs: 'flex-start', lg: 'center' }}
-            justifyContent="space-between"
-            sx={{ mb: 2 }}
-          >
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Schichten {domainShifts.length}
-            </Typography>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems="center">
-              <Button
-                variant="contained"
-                startIcon={<Add />}
-                onClick={handleCreateShift}
-                sx={{ width: { xs: '100%', sm: 'auto' } }}
-              >
+        <PageHeader
+          title="Schichten"
+          subtitle="Alle Schichten Ihrer Einrichtungen – planen, besetzen, nachverfolgen"
+          actions={
+            <>
+              <Tooltip title="Aktualisieren">
+                <IconButton onClick={() => refetch()} aria-label="Aktualisieren">
+                  <Refresh />
+                </IconButton>
+              </Tooltip>
+              <Button variant="contained" startIcon={<Add />} onClick={handleCreateShift}>
                 Neue Schicht
               </Button>
-              <IconButton
-                onClick={() => refetch()}
-                aria-label="Aktualisieren"
-                sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
-              >
-                <Refresh />
-              </IconButton>
-            </Stack>
-          </Stack>
+            </>
+          }
+        />
 
-          {/* Filters */}
-          <Grid container spacing={3} alignItems="center">
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="Schichten suchen..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
-                }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Status"
-                  onChange={e => setStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="all">Alle</MenuItem>
-                  <MenuItem value="open">Offen</MenuItem>
-                  <MenuItem value="filled">Besetzt</MenuItem>
-                  <MenuItem value="ended">Beendet</MenuItem>
-                  <MenuItem value="cancelled">Abgesagt</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Schichttyp</InputLabel>
-                <Select
-                  value={typeFilter}
-                  label="Schichttyp"
-                  onChange={e => setTypeFilter(e.target.value)}
-                >
-                  <MenuItem value="all">Alle</MenuItem>
-                  <MenuItem value="Frühdienst">Frühdienst</MenuItem>
-                  <MenuItem value="Spätdienst">Spätdienst</MenuItem>
-                  <MenuItem value="Nachtdienst">Nachtdienst</MenuItem>
-                  <MenuItem value="On-call">On-call</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <Button
-                variant="outlined"
-                startIcon={<FilterList />}
-                onClick={clearFilters}
-                fullWidth
-                size="small"
-              >
-                Filter zurücksetzen
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
+        <StatStrip
+          items={[
+            {
+              label: 'Schichten gesamt',
+              value: stats.total,
+              onClick: () => setStatusFilter('all'),
+              selected: statusFilter === 'all',
+            },
+            {
+              label: 'Offen',
+              value: stats.open,
+              tone: stats.open > 0 ? 'attention' : 'default',
+              onClick: () => setStatusFilter('open'),
+              selected: statusFilter === 'open',
+            },
+            {
+              label: 'Besetzt',
+              value: stats.filled,
+              onClick: () => setStatusFilter('filled'),
+              selected: statusFilter === 'filled',
+            },
+            { label: 'Zugewiesene Personen', value: stats.assignedCount },
+            {
+              label: 'Beendet',
+              value: stats.ended,
+              tone: 'muted',
+              onClick: () => setStatusFilter('ended'),
+              selected: statusFilter === 'ended',
+            },
+          ]}
+        />
 
-        {/* View Mode Toggle */}
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+        {/* Werkzeugleiste: Suche, Filter, Ansicht */}
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={1.5}
+          alignItems={{ xs: 'stretch', md: 'center' }}
+          sx={{ mb: 2.5 }}
+        >
+          <TextField
+            size="small"
+            placeholder="Schichten suchen"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            sx={{ width: { xs: '100%', md: 260 } }}
+            InputProps={{
+              startAdornment: <Search sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />,
+            }}
+            inputProps={{ 'aria-label': 'Schichten suchen' }}
+          />
+          <FormControl size="small" sx={{ minWidth: 160 }}>
+            <InputLabel>Status</InputLabel>
+            <Select value={statusFilter} label="Status" onChange={e => setStatusFilter(e.target.value)}>
+              <MenuItem value="all">Alle</MenuItem>
+              <MenuItem value="open">Offen</MenuItem>
+              <MenuItem value="filled">Besetzt</MenuItem>
+              <MenuItem value="ended">Beendet</MenuItem>
+              <MenuItem value="cancelled">Abgesagt</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: 160 }}>
+            <InputLabel>Dienstart</InputLabel>
+            <Select value={typeFilter} label="Dienstart" onChange={e => setTypeFilter(e.target.value)}>
+              <MenuItem value="all">Alle</MenuItem>
+              <MenuItem value="Frühdienst">Frühdienst</MenuItem>
+              <MenuItem value="Spätdienst">Spätdienst</MenuItem>
+              <MenuItem value="Nachtdienst">Nachtdienst</MenuItem>
+              <MenuItem value="On-call">Bereitschaft</MenuItem>
+            </Select>
+          </FormControl>
+          {(statusFilter !== 'all' || typeFilter !== 'all' || searchTerm) && (
+            <Button
+              variant="text"
+              startIcon={<FilterList />}
+              onClick={clearFilters}
+              sx={{ alignSelf: { xs: 'flex-start', md: 'center' } }}
+            >
+              Filter zurücksetzen
+            </Button>
+          )}
+          <Box sx={{ flex: 1 }} />
           <ToggleButtonGroup
+            size="small"
             value={viewMode}
             exclusive
             onChange={(_, newMode) => newMode && setViewMode(newMode)}
-            aria-label="view mode"
+            aria-label="Ansicht"
           >
-            <ToggleButton value="calendar" aria-label="calendar">
-              <CalendarMonth />
+            <ToggleButton value="calendar" aria-label="Kalender">
+              <CalendarMonth fontSize="small" sx={{ mr: 0.75 }} />
+              Kalender
             </ToggleButton>
-            <ToggleButton value="list" aria-label="list">
-              <List />
+            <ToggleButton value="list" aria-label="Liste">
+              <List fontSize="small" sx={{ mr: 0.75 }} />
+              Liste
             </ToggleButton>
-            <ToggleButton value="grid" aria-label="grid">
-              <ViewModule />
+            <ToggleButton value="grid" aria-label="Karten">
+              <ViewModule fontSize="small" sx={{ mr: 0.75 }} />
+              Karten
             </ToggleButton>
           </ToggleButtonGroup>
-        </Box>
+        </Stack>
 
         {/* Content based on view mode */}
         {viewMode === 'calendar' && (

@@ -168,7 +168,7 @@ export default function ProfilePage() {
         <Box sx={{ mb: 4 }}>
           <Typography
             sx={{
-              fontSize: { xs: 28, sm: 32 },
+              fontSize: { xs: 26, lg: 28 },
               fontWeight: 700,
               letterSpacing: '-0.02em',
               lineHeight: 1.08,

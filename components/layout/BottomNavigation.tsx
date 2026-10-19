@@ -21,6 +21,7 @@ import {
 import { Box, Paper } from '@mui/material';
 import { usePathname, useRouter } from 'next/navigation';
 import { bottomNavHeightPx } from '@/lib/design-tokens';
+import { SIDEBAR_BREAKPOINT } from './AppSidebar';
 
 interface NavigationTab {
   href: string;
@@ -70,6 +71,8 @@ export function BottomNav() {
       aria-label={isAdmin ? 'Admin-Navigation' : 'Mitarbeiter-Navigation'}
       elevation={0}
       sx={{
+        // Admins haben am Desktop die Seitenleiste
+        display: isAdmin ? { [SIDEBAR_BREAKPOINT]: 'none' } : undefined,
         position: 'fixed',
         bottom: 0,
         left: 0,

@@ -423,7 +423,7 @@ export default function AdminSettingsPage() {
           <Typography
             component="h1"
             sx={{
-              fontSize: { xs: 28, sm: 32 },
+              fontSize: { xs: 26, lg: 28 },
               fontWeight: 700,
               letterSpacing: '-0.02em',
               lineHeight: 1.08,
@@ -431,7 +431,7 @@ export default function AdminSettingsPage() {
               mb: 1,
             }}
           >
-            System-Einstellungen
+            Einstellungen
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             Verwalten Sie Systemkonfiguration, Rollen und Dokumenttypen
@@ -1500,7 +1500,7 @@ export default function AdminSettingsPage() {
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {PERMISSION_GROUPS.map(group => (
                     <Card key={group} variant="outlined" sx={{ p: 2 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
                         {group}
                       </Typography>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>

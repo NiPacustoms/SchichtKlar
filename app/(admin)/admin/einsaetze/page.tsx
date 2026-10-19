@@ -6,18 +6,18 @@ import { AssignShiftDialog } from '@/components/admin/AssignShiftDialog';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { StatStrip } from '@/components/ui/StatStrip';
+import { AssignmentTable, type AssignmentRow } from '@/components/admin/AssignmentTable';
+import { ASSIGNMENT_GROUPS, assignmentStatusMeta, type AssignmentGroup } from '@/lib/domain/assignmentStatus';
+import { facilityService } from '@/lib/services/facilities';
+import { userService } from '@/lib/services/users';
+import { useQuery } from '@tanstack/react-query';
 import { shiftService } from '@/lib/services/shifts';
 import type { Shift as ShiftEntity } from '@/lib/services/shifts';
 import type { Shift as DomainShift } from '@/lib/types';
 import {
   Assignment as AssignmentIcon,
-  Cancel,
-  CheckCircle,
-  Edit,
-  Person,
-  PersonAdd,
-  Schedule,
-  FilterList,
   Refresh,
   Search,
   Clear,
@@ -26,22 +26,11 @@ import {
 import {
   Box,
   Button,
-  Card,
-  CardContent,
-  Chip,
-  FormControl,
-  Grid,
-  MenuItem,
-  Select,
   Typography,
   TextField,
-  InputLabel,
   IconButton,
   Alert,
-  Paper,
-  Tabs,
-  Tab,
-  Badge,
+  Tooltip,
 } from '@mui/material';
 import { useState, useMemo } from 'react';
 import { cloudFunctions } from '@/lib/services/cloudFunctions';
@@ -86,60 +75,108 @@ export default function AssignmentsPage() {
   const { user } = useAuth();
 
   // State für Filter
-  const [statusFilter, setStatusFilter] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState(0);
   const [signatureOpenFor, setSignatureOpenFor] = useState<string | null>(null);
   const [generatingPDF, setGeneratingPDF] = useState<string | null>(null);
   const [exportingCollection, setExportingCollection] = useState(false);
   const [reassignShift, setReassignShift] = useState<DomainShift | null>(null);
   const [loadingReassignId, setLoadingReassignId] = useState<string | null>(null);
 
-  // Filter-Objekt für useAssignments
-  const filters = useMemo(
-    () => ({
-      status: statusFilter as
-        | 'assigned'
-        | 'accepted'
-        | 'requested'
-        | 'declined'
-        | 'completed'
-        | 'pending-signature'
-        | undefined,
-      priority: priorityFilter as 'high' | 'medium' | 'low' | undefined,
-      search: searchTerm || undefined,
-    }),
-    [statusFilter, priorityFilter, searchTerm]
-  );
+  // Filtern/Suchen geschieht clientseitig – ein stabiler Query-Key verhindert
+  // Neuladen bei jedem Tastendruck in der Suche.
+  const filters = useMemo(() => ({}), []);
 
   const {
     assignments,
-    pendingAssignments,
-    acceptedAssignments,
-    declinedAssignments,
-    completedAssignments,
     isLoading,
     error,
     acceptAssignment,
     declineAssignment,
     updateAssignment: _updateAssignment,
     deleteAssignment,
-    getStatusColor,
-    getStatusLabel,
     getPriorityColor: _getPriorityColor,
     getPriorityLabel: _getPriorityLabel,
     formatDate: _formatDate,
     formatTime: _formatTime,
     formatDateTime: _formatDateTime,
-    getStats,
-    isAccepting,
-    isDeclining,
-    isDeleting,
     refetch,
   } = useAssignments(filters);
 
-  const stats = getStats();
+
+  // Nachschlagetabellen: Namen statt interner IDs, Dienstzeit aus der Schicht
+  const companyId = user?.companyId;
+  const { data: facilities = [] } = useQuery({
+    queryKey: ['einsaetze-facilities', companyId],
+    queryFn: () => facilityService.getAll(companyId),
+    enabled: !!companyId,
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: staff = [] } = useQuery({
+    queryKey: ['einsaetze-staff', companyId],
+    queryFn: async () => {
+      const res = await userService.getAll(1, 500, { companyId });
+      return Array.isArray(res) ? res : res.data;
+    },
+    enabled: !!companyId,
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: shiftList = [] } = useQuery({
+    queryKey: ['einsaetze-shifts', companyId],
+    queryFn: () => shiftService.getAll({ companyId }),
+    enabled: !!companyId,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const [activeGroup, setActiveGroup] = useState<AssignmentGroup | 'all'>('all');
+
+  const rows = useMemo((): AssignmentRow[] => {
+    const facilityById = new Map(facilities.map(f => [f.id, f]));
+    const personById = new Map(staff.map(u => [u.id, u.displayName || u.email]));
+    const shiftById = new Map(shiftList.map(s => [s.id, s]));
+    return assignments.map(a => {
+      const ext = a as typeof a & {
+        facilityId?: string;
+        startDate?: Date;
+        startTime?: string;
+        endTime?: string;
+        relievingSignatures?: unknown[];
+      };
+      const shift = a.shiftId ? shiftById.get(a.shiftId) : undefined;
+      const facilityId = ext.facilityId || shift?.facilityId;
+      const facility = facilityId ? facilityById.get(facilityId) : undefined;
+      const rawDate = ext.startDate ?? (shift?.date ? new Date(shift.date as unknown as string) : null);
+      const date = rawDate && !Number.isNaN(new Date(rawDate).getTime()) ? new Date(rawDate) : null;
+      const start = ext.startTime || shift?.startTime;
+      const end = ext.endTime || shift?.endTime;
+      return {
+        id: a.id,
+        status: a.status,
+        date,
+        timeRange: start && end ? `${start} – ${end}` : null,
+        facilityName: facility?.name ?? 'Einrichtung unbekannt',
+        facilityColor: facility?.colorCode,
+        personName: a.userId ? (personById.get(a.userId) ?? 'Unbekannte Person') : null,
+        declineReason: a.declineReason,
+        pdfUrl: (a as { pdfUrl?: string }).pdfUrl,
+        canGeneratePdf: Array.isArray(ext.relievingSignatures) && ext.relievingSignatures.length > 0,
+        shiftId: a.shiftId || undefined,
+      };
+    });
+  }, [assignments, facilities, staff, shiftList]);
+
+  const groupCounts = useMemo(() => {
+    const counts: Record<AssignmentGroup, number> = { open: 0, planned: 0, signature: 0, done: 0, declined: 0 };
+    for (const r of rows) counts[assignmentStatusMeta(r.status).group]++;
+    return counts;
+  }, [rows]);
+
+  const visibleRows = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    return rows
+      .filter(r => activeGroup === 'all' || assignmentStatusMeta(r.status).group === activeGroup)
+      .filter(r => !q || r.facilityName.toLowerCase().includes(q) || (r.personName ?? '').toLowerCase().includes(q))
+      .sort((x, y) => (y.date?.getTime() ?? 0) - (x.date?.getTime() ?? 0));
+  }, [rows, activeGroup, searchTerm]);
 
   /** Einsätze mit Einsatzmitteilung (pdfUrl) für Sammel-PDF */
   const assignmentsWithPdf = useMemo((): AssignmentForCollection[] => {
@@ -170,23 +207,6 @@ export default function AssignmentsPage() {
       );
     } finally {
       setExportingCollection(false);
-    }
-  };
-
-  const getTabContent = () => {
-    switch (activeTab) {
-      case 0:
-        return assignments;
-      case 1:
-        return pendingAssignments;
-      case 2:
-        return acceptedAssignments;
-      case 3:
-        return declinedAssignments;
-      case 4:
-        return completedAssignments;
-      default:
-        return [];
     }
   };
 
@@ -296,12 +316,6 @@ export default function AssignmentsPage() {
     }
   };
 
-  const clearFilters = () => {
-    setStatusFilter('');
-    setPriorityFilter('');
-    setSearchTerm('');
-  };
-
   if (isLoading) {
     return <LoadingSpinner variant="skeleton" message="Einsätze werden geladen..." />;
   }
@@ -318,419 +332,99 @@ export default function AssignmentsPage() {
     );
   }
 
-  const currentAssignments = getTabContent();
-
   return (
-    <PageContainer maxWidth="standard">
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-        <Box>
-          <Typography
-            variant="h4"
-            sx={{
-              color: 'text.primary',
-              fontWeight: 700,
-              mb: 1,
-            }}
-          >
-            Einsatzverwaltung
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-            Verwalte und überwache alle Einsätze und Schichtzuweisungen
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Button
-            variant="outlined"
-            size="medium"
-            startIcon={<PictureAsPdf />}
-            onClick={handleExportCollectionPdf}
-            disabled={exportingCollection || assignmentsWithPdf.length === 0}
-          >
-            {exportingCollection
-              ? 'Wird erstellt…'
-              : `Sammel-PDF (${assignmentsWithPdf.length})`}
-          </Button>
-          <IconButton onClick={() => refetch()} sx={{ color: 'text.primary' }} aria-label="Aktualisieren">
-            <Refresh />
-          </IconButton>
-        </Box>
-      </Box>
-
-      {/* Statistiken */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-          <Card className="glass">
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="primary" sx={{ fontWeight: 600 }}>
-                {stats.total}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Gesamt
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-          <Card className="glass">
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="warning.main" sx={{ fontWeight: 600 }}>
-                {stats.pending}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Ausstehend
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-          <Card className="glass">
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main" sx={{ fontWeight: 600 }}>
-                {stats.accepted}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Angenommen
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-          <Card className="glass">
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="error.main" sx={{ fontWeight: 600 }}>
-                {stats.declined}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Abgelehnt
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-          <Card className="glass">
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="info.main" sx={{ fontWeight: 600 }}>
-                {stats.completed}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Abgeschlossen
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Filter */}
-      <Paper className="glass" sx={{ p: 3, mb: 3 }}>
-        <Grid container spacing={3} alignItems="center">
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Einsatz suchen..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
-                endAdornment: searchTerm && (
-                  <IconButton size="small" onClick={() => setSearchTerm('')} aria-label="Suche löschen">
-                    <Clear />
-                  </IconButton>
-                ),
-              }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={statusFilter}
-                label="Status"
-                onChange={e => setStatusFilter(e.target.value)}
-              >
-                <MenuItem value="">Alle</MenuItem>
-                <MenuItem value="pending">Ausstehend</MenuItem>
-                <MenuItem value="accepted">Angenommen</MenuItem>
-                <MenuItem value="declined">Abgelehnt</MenuItem>
-                <MenuItem value="completed">Abgeschlossen</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Priorität</InputLabel>
-              <Select
-                value={priorityFilter}
-                label="Priorität"
-                onChange={e => setPriorityFilter(e.target.value)}
-              >
-                <MenuItem value="">Alle</MenuItem>
-                <MenuItem value="urgent">Dringend</MenuItem>
-                <MenuItem value="high">Hoch</MenuItem>
-                <MenuItem value="medium">Mittel</MenuItem>
-                <MenuItem value="low">Niedrig</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+    <PageContainer maxWidth="wide">
+      <PageHeader
+        title="Einsätze"
+        subtitle="Wer arbeitet wann wo – Zusagen, Unterschriften und Einsatzmitteilungen"
+        actions={
+          <>
+            <Tooltip title="Aktualisieren">
+              <IconButton onClick={() => refetch()} aria-label="Aktualisieren">
+                <Refresh />
+              </IconButton>
+            </Tooltip>
             <Button
               variant="outlined"
-              startIcon={<FilterList />}
-              onClick={clearFilters}
-              fullWidth
-              size="small"
+              startIcon={<PictureAsPdf />}
+              onClick={handleExportCollectionPdf}
+              disabled={exportingCollection || assignmentsWithPdf.length === 0}
             >
-              Filter zurücksetzen
+              {exportingCollection ? 'Wird erstellt…' : `Sammel-PDF (${assignmentsWithPdf.length})`}
             </Button>
-          </Grid>
-        </Grid>
-      </Paper>
+          </>
+        }
+      />
 
-      {/* Tabs */}
-      <Paper className="glass" sx={{ mb: 3 }}>
-        <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
-          <Tab
-            label={`Alle (${assignments.length})`}
-            icon={<AssignmentIcon />}
-            iconPosition="start"
-          />
-          <Tab
-            label={`Ausstehend (${stats.pending})`}
-            icon={
-              <Badge badgeContent={stats.pending} color="warning">
-                <AssignmentIcon />
-              </Badge>
-            }
-            iconPosition="start"
-          />
-          <Tab
-            label={`Angenommen (${stats.accepted})`}
-            icon={
-              <Badge badgeContent={stats.accepted} color="success">
-                <AssignmentIcon />
-              </Badge>
-            }
-            iconPosition="start"
-          />
-          <Tab
-            label={`Abgelehnt (${stats.declined})`}
-            icon={
-              <Badge badgeContent={stats.declined} color="error">
-                <AssignmentIcon />
-              </Badge>
-            }
-            iconPosition="start"
-          />
-          <Tab
-            label={`Abgeschlossen (${stats.completed})`}
-            icon={
-              <Badge badgeContent={stats.completed} color="info">
-                <AssignmentIcon />
-              </Badge>
-            }
-            iconPosition="start"
-          />
-        </Tabs>
-      </Paper>
+      <StatStrip
+        aria-label="Einsätze nach Status"
+        items={[
+          { label: 'Alle', value: rows.length, onClick: () => setActiveGroup('all'), selected: activeGroup === 'all' },
+          ...ASSIGNMENT_GROUPS.map(g => ({
+            label: g.label,
+            value: groupCounts[g.key],
+            tone: (g.key === 'signature' || g.key === 'open') && groupCounts[g.key] > 0 ? ('attention' as const) : ('default' as const),
+            onClick: () => setActiveGroup(g.key),
+            selected: activeGroup === g.key,
+          })),
+        ]}
+      />
 
-      {/* Assignments List */}
-      {currentAssignments.length === 0 ? (
-        <Paper className="glass" sx={{ p: 4, textAlign: 'center' }}>
-          <AssignmentIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-          <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-            Keine Einsätze gefunden
+      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mb: 2 }}>
+        <TextField
+          size="small"
+          placeholder="Einrichtung oder Person suchen"
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          sx={{ width: { xs: '100%', md: 320 } }}
+          inputProps={{ 'aria-label': 'Einsätze durchsuchen' }}
+          InputProps={{
+            startAdornment: <Search sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />,
+            endAdornment: searchTerm && (
+              <IconButton size="small" onClick={() => setSearchTerm('')} aria-label="Suche löschen">
+                <Clear fontSize="small" />
+              </IconButton>
+            ),
+          }}
+        />
+        <Typography sx={{ ml: 'auto', fontSize: 13, color: 'text.secondary', display: { xs: 'none', md: 'block' } }}>
+          {visibleRows.length} {visibleRows.length === 1 ? 'Einsatz' : 'Einsätze'}
+        </Typography>
+      </Box>
+
+      {visibleRows.length === 0 ? (
+        <Box
+          sx={{
+            p: 5,
+            textAlign: 'center',
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: '12px',
+          }}
+        >
+          <AssignmentIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1.5 }} />
+          <Typography sx={{ fontWeight: 600, mb: 0.5 }}>Keine Einsätze in dieser Ansicht</Typography>
+          <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
+            {searchTerm || activeGroup !== 'all'
+              ? 'Suche oder Statusfilter anpassen.'
+              : 'Einsätze entstehen, sobald Sie einer Schicht jemanden zuweisen.'}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Versuche andere Filter oder erstelle einen neuen Einsatz.
-          </Typography>
-        </Paper>
+        </Box>
       ) : (
-        <Grid container spacing={3}>
-          {getTabContent().map(assignment => (
-            <Grid key={assignment.id} size={{ xs: 12, md: 6 }}>
-              <Card className="glass">
-                <CardContent>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      mb: 2,
-                    }}
-                  >
-                    <Box>
-                      <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                        {assignment.shiftId || 'Einsatz'}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                        {assignment.shiftId || 'Einrichtung nicht verfügbar'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      <Chip
-                        label={getStatusLabel(assignment.status)}
-                        color={
-                          getStatusColor(assignment.status) as
-                            | 'success'
-                            | 'error'
-                            | 'warning'
-                            | 'info'
-                        }
-                        size="small"
-                      />
-                      <Chip label="Normal" color="default" size="small" />
-                    </Box>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Schedule sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                      {_formatDate(assignment.assignedAt)} • {_formatTime(assignment.assignedAt)} -{' '}
-                      {_formatTime(assignment.assignedAt)}
-                    </Typography>
-                  </Box>
-
-                  {assignment.status === 'declined' && assignment.declinedAt && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Cancel sx={{ fontSize: 16, color: 'error.main', mr: 1 }} />
-                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                        Abgelehnt am {_formatDate(assignment.declinedAt)}
-                        {assignment.declineReason ? ` – ${assignment.declineReason}` : ''}
-                      </Typography>
-                    </Box>
-                  )}
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Person sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                      {assignment.userId || 'Nicht zugewiesen'}
-                    </Typography>
-                  </Box>
-
-                  {assignment.status === 'pending' && (
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button
-                        variant="contained"
-                        color="success"
-                        size="small"
-                        startIcon={<CheckCircle />}
-                        onClick={() => handleAccept(assignment.id)}
-                        disabled={isAccepting}
-                        sx={{ flex: 1 }}
-                      >
-                        {isAccepting ? 'Annehme...' : 'Annehmen'}
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        size="small"
-                        startIcon={<Cancel />}
-                        onClick={() => handleDecline(assignment.id)}
-                        disabled={isDeclining}
-                        sx={{ flex: 1 }}
-                      >
-                        {isDeclining ? 'Lehne ab...' : 'Ablehnen'}
-                      </Button>
-                    </Box>
-                  )}
-
-                  {assignment.status === 'accepted' && (
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button variant="outlined" size="small" startIcon={<Edit />} sx={{ flex: 1 }}>
-                        Bearbeiten
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        size="small"
-                        startIcon={<Cancel />}
-                        onClick={() => handleDelete(assignment.id)}
-                        disabled={isDeleting}
-                        sx={{ flex: 1 }}
-                      >
-                        {isDeleting ? 'Lösche...' : 'Stornieren'}
-                      </Button>
-                    </Box>
-                  )}
-
-                  {assignment.status === 'pending-signature' && (
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button
-                        variant="contained"
-                        color="warning"
-                        size="small"
-                        startIcon={<Edit />}
-                        onClick={() => handleSignDecline(assignment.id)}
-                        sx={{ flex: 1 }}
-                      >
-                        Ablehnung unterschreiben
-                      </Button>
-                    </Box>
-                  )}
-
-                  {/* Einsatzmitteilung (PDF) – sichtbar, sobald Mitarbeiter das Formular unterschrieben hat (Annahme/Ablehnung) */}
-                  {assignment.pdfUrl ? (
-                    <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                      <Button
-                        variant="outlined"
-                        color="success"
-                        size="small"
-                        startIcon={<PictureAsPdf />}
-                        onClick={() => window.open(assignment.pdfUrl, '_blank')}
-                        sx={{ flex: 1 }}
-                      >
-                        Einsatzmitteilung (PDF) öffnen
-                      </Button>
-                    </Box>
-                  ) : assignment.relievingSignatures && assignment.relievingSignatures.length > 0 ? (
-                    <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        size="small"
-                        startIcon={<PictureAsPdf />}
-                        onClick={() => handleGeneratePDF(assignment.id)}
-                        disabled={generatingPDF === assignment.id}
-                        sx={{ flex: 1 }}
-                      >
-                        {generatingPDF === assignment.id ? 'Generiere PDF...' : 'PDF generieren'}
-                      </Button>
-                    </Box>
-                  ) : null}
-
-                  {(assignment.status === 'declined' || assignment.status === 'completed') && (
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      {assignment.status === 'declined' && (
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          size="small"
-                          startIcon={<PersonAdd />}
-                          onClick={() => handleReassignClick(assignment)}
-                          disabled={loadingReassignId === assignment.id}
-                          sx={{ flex: 1 }}
-                        >
-                          {loadingReassignId === assignment.id ? 'Lade...' : 'Neu zuweisen'}
-                        </Button>
-                      )}
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        size="small"
-                        startIcon={<Cancel />}
-                        onClick={() => handleDelete(assignment.id)}
-                        disabled={isDeleting}
-                        sx={{ flex: 1 }}
-                      >
-                        {isDeleting ? 'Lösche...' : 'Löschen'}
-                      </Button>
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        <AssignmentTable
+          rows={visibleRows}
+          actions={{
+            onAccept: handleAccept,
+            onDecline: handleDecline,
+            onCancel: handleDelete,
+            onDelete: handleDelete,
+            onSignDecline: handleSignDecline,
+            onGeneratePdf: handleGeneratePDF,
+            onReassign: row => handleReassignClick({ id: row.id, shiftId: row.shiftId }),
+            busyId: generatingPDF ?? loadingReassignId,
+          }}
+        />
       )}
 
       <SignatureDialog

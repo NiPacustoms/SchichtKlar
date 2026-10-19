@@ -4,7 +4,7 @@ export const roleOptions = ['nurse', 'admin'] as const;
 export type RoleOption = (typeof roleOptions)[number];
 
 export const roleLabelMap: Record<RoleOption, string> = {
-  nurse: 'Krankenschwester',
+  nurse: 'Mitarbeiter/in',
   admin: 'Administrator',
 };
 

@@ -5,6 +5,7 @@ import { listAllAssignments } from '@/src/composition';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/utils/toast';
 import { cloudFunctions } from '@/lib/services/cloudFunctions';
+import { assignmentStatusColor, assignmentStatusLabel } from '@/lib/domain/assignmentStatus';
 
 interface AssignmentFilters {
   status?: string;
@@ -130,41 +131,9 @@ export const useAssignments = (filters?: AssignmentFilters) => {
     }
   };
 
-  // Status-Farben
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'warning';
-      case 'accepted':
-        return 'success';
-      case 'declined':
-        return 'error';
-      case 'completed':
-        return 'info';
-      case 'cancelled':
-        return 'default';
-      default:
-        return 'default';
-    }
-  };
-
-  // Status-Labels
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'Ausstehend';
-      case 'accepted':
-        return 'Angenommen';
-      case 'declined':
-        return 'Abgelehnt';
-      case 'completed':
-        return 'Abgeschlossen';
-      case 'cancelled':
-        return 'Storniert';
-      default:
-        return 'Unbekannt';
-    }
-  };
+  // Status-Farben/-Labels: zentrale Definition (alle realen Status, kein „Unbekannt“)
+  const getStatusColor = (status: string) => assignmentStatusColor(status);
+  const getStatusLabel = (status: string) => assignmentStatusLabel(status);
 
   // Priority-Farben
   const getPriorityColor = (priority: string) => {

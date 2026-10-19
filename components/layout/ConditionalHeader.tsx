@@ -38,6 +38,9 @@ export function ConditionalHeader() {
       currentPath.startsWith('/anmeldung/') ||
       currentPath.startsWith('/recht/') ||
       currentPath.startsWith('/admin') ||
+      // Gemeinsame App-Seiten (Gruppe (app)) bringen ihren Header über AppLayout mit
+      currentPath === '/profil' ||
+      currentPath === '/benachrichtigungen' ||
       currentPath.startsWith('/employee');
 
     return !isExcluded;

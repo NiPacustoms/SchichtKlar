@@ -140,17 +140,15 @@ export default function MyAssignmentsPage() {
       <Box sx={{ mb: 3 }}>
         <Typography
           sx={{
-            fontSize: 12,
-            fontWeight: 700,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
+            fontSize: 13.5,
+            fontWeight: 500,
             color: 'text.secondary',
             mb: 0.5,
           }}
         >
           § 11 AÜG
         </Typography>
-        <Typography sx={{ fontSize: { xs: 28, sm: 32 }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.08 }}>
+        <Typography sx={{ fontSize: { xs: 26, lg: 28 }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.08 }}>
           Meine Einsatzmitteilungen
         </Typography>
         <Typography variant="body1" sx={{ color: 'text.secondary', mt: 0.75 }}>

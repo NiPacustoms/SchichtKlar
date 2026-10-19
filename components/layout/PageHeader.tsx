@@ -2,7 +2,6 @@
 
 import { Box, Typography, Stack } from '@mui/material';
 import type { ReactNode } from 'react';
-import { Fragment } from 'react';
 
 export interface PageHeaderProps {
   title: string | ReactNode;
@@ -12,47 +11,40 @@ export interface PageHeaderProps {
 }
 
 /**
- * Standard-Page-Header-Komponente gemäß Design System 2026
+ * Einheitlicher Seitenkopf: Titel + Untertitel links als Block, Aktionen rechts.
  *
- * Verwendung:
+ * Eine Größe für alle Seiten – der Seitenkopf orientiert, er dekoriert nicht.
+ * Mobil rutschen die Aktionen unter den Titel und nehmen die volle Breite.
+ *
  * ```tsx
  * <PageHeader
- *   title="Seitentitel"
- *   subtitle="Optionaler Untertitel"
- *   actions={
- *     <Stack direction="row" spacing={1}>
- *       <Button variant="outlined">Sekundär</Button>
- *       <Button variant="contained">Primär</Button>
- *     </Stack>
- *   }
- * >
- *   {/* Optional: Filter/Tabs darunter *\/}
- * </PageHeader>
+ *   title="Schichten"
+ *   subtitle="Alle Schichten Ihrer Einrichtungen"
+ *   actions={<Button variant="contained">Neue Schicht</Button>}
+ * />
  * ```
  */
 export function PageHeader({ title, subtitle, actions, children }: PageHeaderProps) {
   return (
-    <Box sx={{ mb: 4 }}>
+    <Box component="header" sx={{ mb: { xs: 3, lg: 3.5 } }}>
       <Box
-        key="page-header-row"
         sx={{
           display: 'flex',
+          alignItems: { xs: 'flex-start', sm: 'center' },
           justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: subtitle ? 1 : 0,
-          flexWrap: { xs: 'wrap', sm: 'nowrap' },
-          gap: 2,
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 2, sm: 3 },
         }}
       >
-        <Fragment key="page-header-title">
+        <Box sx={{ minWidth: 0 }}>
           {typeof title === 'string' ? (
             <Typography
               component="h1"
               sx={{
-                fontSize: { xs: 28, sm: 32 },
+                fontSize: { xs: 26, lg: 28 },
                 fontWeight: 700,
                 letterSpacing: '-0.02em',
-                lineHeight: 1.08,
+                lineHeight: 1.15,
                 color: 'text.primary',
               }}
             >
@@ -61,40 +53,35 @@ export function PageHeader({ title, subtitle, actions, children }: PageHeaderPro
           ) : (
             title
           )}
-        </Fragment>
+          {subtitle &&
+            (typeof subtitle === 'string' ? (
+              <Typography sx={{ mt: 0.5, fontSize: 14.5, color: 'text.secondary', maxWidth: '68ch' }}>
+                {subtitle}
+              </Typography>
+            ) : (
+              <Box sx={{ mt: 0.5 }}>{subtitle}</Box>
+            ))}
+        </Box>
         {actions && (
           <Stack
-            key="page-header-actions"
             direction="row"
             spacing={1}
+            alignItems="center"
             sx={{
               flexShrink: 0,
               width: { xs: '100%', sm: 'auto' },
-              '& > *': {
-                width: { xs: '100%', sm: 'auto' },
-              },
+              flexWrap: 'wrap',
+              rowGap: 1,
+              justifyContent: { xs: 'flex-start', sm: 'flex-end' },
+              // Mobil: nur die Hauptaktion nimmt die volle Restbreite
+              '& > .MuiButton-contained': { flex: { xs: 1, sm: 'none' } },
             }}
           >
             {actions}
           </Stack>
         )}
       </Box>
-      {subtitle && (
-        <Box key="page-header-subtitle" component="span" sx={{ display: 'block' }}>
-          {typeof subtitle === 'string' ? (
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              {subtitle}
-            </Typography>
-          ) : (
-            subtitle
-          )}
-        </Box>
-      )}
-      {children && (
-        <Box key="page-header-children" sx={{ mt: 2 }}>
-          {children}
-        </Box>
-      )}
+      {children && <Box sx={{ mt: 2.5 }}>{children}</Box>}
     </Box>
   );
 }

@@ -447,7 +447,7 @@ export function AssignShiftDialog({ open, onClose, shift }: AssignShiftDialogPro
                   onChange={e => setRoleFilter(e.target.value)}
                 >
                   <MenuItem value="all">Alle</MenuItem>
-                  <MenuItem value="nurse">Krankenschwester</MenuItem>
+                  <MenuItem value="nurse">Mitarbeiter/in</MenuItem>
                   <MenuItem value="admin">Administrator</MenuItem>
                 </Select>
               </FormControl>
@@ -542,7 +542,7 @@ export function AssignShiftDialog({ open, onClose, shift }: AssignShiftDialogPro
                                 <Chip
                                   label={
                                     user.role === 'nurse'
-                                      ? 'Krankenschwester'
+                                      ? 'Mitarbeiter/in'
                                       : 'Administrator'
                                   }
                                   size="small"

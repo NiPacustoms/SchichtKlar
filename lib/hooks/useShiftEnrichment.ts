@@ -8,6 +8,8 @@ import type { Shift } from '@/lib/types';
 
 export interface ShiftEnrichment {
   facilityName: string;
+  /** Farbe der Einrichtung (Stammdaten) – für Kalender-Markierungen */
+  facilityColor?: string;
   /** Stationsname, falls die Schicht einer Station zugeordnet ist */
   stationName?: string;
   assigneeNames: string[];
@@ -47,53 +49,43 @@ export function useShiftEnrichment(
     queryFn: async (): Promise<Record<string, ShiftEnrichment>> => {
       if (shiftIds.length === 0) return {};
 
-      const facilityIds = [...new Set(shifts.map((s) => s.facilityId).filter(Boolean))];
-      const facilityMap = new Map<string, { name: string; stations: Array<{ id: string; name: string }> }>();
-      await Promise.all(
-        facilityIds.map(async (id) => {
-          const f = await facilityService.getById(id);
-          if (f) {
-            facilityMap.set(id, {
-              name: f.name,
-              stations: f.stations || [],
-            });
-          }
-        })
-      );
+      // Wenige Sammelabfragen statt je Schicht/Person einzeln (vorher: N+1 –
+      // bei 190 Schichten mehrere hundert Firestore-Reads pro Kalenderaufruf)
+      const [facilities, assignmentPage, staffRes] = await Promise.all([
+        facilityService.getAll(companyId || undefined),
+        assignmentService.getAll(1, 2000),
+        userService.getAll(1, 1000, companyId ? { companyId } : undefined),
+      ]);
+      const staff = Array.isArray(staffRes) ? staffRes : staffRes.data;
 
-      const assignmentsByShift = await Promise.all(
-        shiftIds.map((id) => assignmentService.getByShiftId(id))
+      const facilityMap = new Map(
+        facilities.map(f => [f.id, { name: f.name, color: f.colorCode, stations: f.stations || [] }])
       );
-      const userIds = new Set<string>();
+      const userMap = new Map(staff.map(u => [u.id, u.displayName || u.email]));
       const shiftToUserIds = new Map<string, string[]>();
-      shiftIds.forEach((shiftId, i) => {
-        const list = assignmentsByShift[i]
-          .filter((a) => a.status === 'accepted' || a.status === 'assigned')
-          .map((a) => a.userId);
-        list.forEach((uid) => userIds.add(uid));
-        shiftToUserIds.set(shiftId, list);
-      });
-
-      const userMap = new Map<string, string>();
-      await Promise.all(
-        [...userIds].map(async (uid) => {
-          const u = await userService.getById(uid);
-          userMap.set(uid, u?.displayName || u?.email || uid);
-        })
-      );
+      for (const a of assignmentPage.data) {
+        if (!a.shiftId || !a.userId) continue;
+        if (!['accepted', 'assigned', 'pending-signature', 'completed'].includes(a.status)) continue;
+        const list = shiftToUserIds.get(a.shiftId) ?? [];
+        list.push(a.userId);
+        shiftToUserIds.set(a.shiftId, list);
+      }
 
       const result: Record<string, ShiftEnrichment> = {};
-      shifts.forEach((shift) => {
+      shifts.forEach(shift => {
         const facilityData = facilityMap.get(shift.facilityId);
-        const facilityName = facilityData?.name ?? 'Unbekannte Einrichtung';
         const stationId = (shift as unknown as { stationId?: string }).stationId;
         const stationName =
           stationId && facilityData?.stations
-            ? facilityData.stations.find((st) => st.id === stationId)?.name
+            ? facilityData.stations.find(st => st.id === stationId)?.name
             : undefined;
         const uids = shiftToUserIds.get(shift.id) || [];
-        const assigneeNames = uids.map((uid) => userMap.get(uid) || uid);
-        result[shift.id] = { facilityName, stationName, assigneeNames };
+        result[shift.id] = {
+          facilityName: facilityData?.name ?? 'Unbekannte Einrichtung',
+          facilityColor: facilityData?.color,
+          stationName,
+          assigneeNames: uids.map(uid => userMap.get(uid) || 'Unbekannte Person'),
+        };
       });
       return result;
     },

@@ -30,13 +30,13 @@ export const breakpoints = {
 
 /** Eckenradien – Apple/iOS-HIG: großzügige, weiche Radien */
 export const radius = {
-  sm: 8,
-  md: 12, // Buttons/Felder
-  lg: 16, // Karten (iOS-Inset)
-  xl: 22, // große/Hero-Karten
-  hero: 24,
+  sm: 6,
+  md: 8, // Buttons/Felder
+  lg: 12, // Karten
+  xl: 16, // große Flächen
+  hero: 20,
   pill: 999, // Pillen/Badges/Segmented
-  dialog: 16,
+  dialog: 14,
 } as const;
 
 export const duration = {
@@ -91,38 +91,38 @@ export const grey = {
 // Light theme surfaces & text – iOS „grouped": ruhige Flächen + Haarlinien
 export const light = {
   background: {
-    default: '#fafaf9',
-    alt: '#f5f5f4',
-    /** iOS „grouped background" für App-Bereiche (hinter Inset-Karten) */
-    grouped: '#f2f2f7',
+    default: '#f6f7f7',
+    alt: '#f0f2f2',
+    /** App-Hintergrund hinter Flächen – kühles Neutral mit Hauch Petrol */
+    grouped: '#f6f7f7',
   },
   surface: {
     main: '#ffffff',
-    hover: '#fafaf9',
-    /** Feld-Grau (iOS Search/Segmented-Track) */
-    field: '#e9e9ed',
-    /** Teal-Tint-Fläche (aktive Zeile, Chips) */
-    tint: 'rgba(15,118,110,0.10)',
+    hover: '#f8fafa',
+    /** Feld-/Spurfläche (Suche, Segmented) */
+    field: '#f0f3f3',
+    /** Petrol-Tint-Fläche (aktive Zeile, Auswahl) */
+    tint: 'rgba(15,118,110,0.08)',
   },
   border: {
-    main: 'rgba(28,25,23,0.10)',
-    hover: 'rgba(28,25,23,0.20)',
-    /** iOS-Haarlinie (Listentrenner) */
-    hairline: '#ececee',
+    main: '#e3e8e8',
+    hover: '#cdd5d5',
+    /** Listentrenner */
+    hairline: '#edf0f0',
   },
   text: {
-    primary: '#1c1c1e', // iOS-Label
-    secondary: '#8e8e93', // iOS Secondary Label
-    tertiary: '#c7c7cc', // iOS Tertiary Label
-    disabled: 'rgba(28,25,23,0.42)',
+    primary: '#132523', // Petrol-Tinte statt Reinschwarz
+    secondary: '#5a6968', // 5,7:1 auf Weiß (AA)
+    tertiary: '#94a1a0',
+    disabled: '#9aa6a5',
   },
   input: {
     bg: '#ffffff',
     bgHover: '#ffffff',
     bgFocused: '#ffffff',
   },
-  appBar: '#fafaf9',
-  tableHeaderBg: '#f5f5f4',
+  appBar: 'rgba(255,255,255,0.86)',
+  tableHeaderBg: '#f8fafa',
 } as const;
 
 // Dark theme surfaces & text – warme, opake Dunkelflächen (Stone-basiert)
@@ -158,10 +158,9 @@ export const shadows = {
   soft: '0 1px 2px rgba(0,0,0,0.04)',
   medium: '0 2px 8px rgba(28,25,23,0.07)',
   large: '0 8px 24px rgba(28,25,23,0.12)',
-  /** Primär-CTA (Teal) – dezenter farbiger Auftrieb */
-  ctaPrimary: '0 10px 22px -8px rgba(15,118,110,0.45)',
-  /** Primär-CTA im Hover – etwas höher angehoben (translateY-Lift) */
-  ctaPrimaryHover: '0 14px 28px -8px rgba(15,118,110,0.5)',
+  /** Primär-CTA – flach mit feiner Kante, kein schwebender Glow */
+  ctaPrimary: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 1px 2px rgba(16,37,35,0.18)',
+  ctaPrimaryHover: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 4px rgba(16,37,35,0.2)',
   /** Sheet/Modal – stärker */
   sheet: '0 12px 40px -8px rgba(28,25,23,0.28)',
   // Dark mode (stärkere Schatten auf dunklem Grund)

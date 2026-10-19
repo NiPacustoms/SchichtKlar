@@ -9,9 +9,8 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   return (
     <AuthGuard>
       <RoleGuard allowedRoles={['nurse']}>
-        <AppLayout hideHeader={false}>
+        <AppLayout hideHeader={false} bottomNav={<BottomNav />}>
           {children}
-          <BottomNav />
         </AppLayout>
       </RoleGuard>
     </AuthGuard>

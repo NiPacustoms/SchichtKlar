@@ -3,6 +3,7 @@
 import { Box, type SxProps, type Theme } from '@mui/material';
 import type { ReactNode } from 'react';
 import { PAGE_MAX_WIDTH_MAP, type PageMaxWidthPreset } from '@/lib/constants/layout';
+import { useAppShell } from './AppShellContext';
 
 export interface PageContainerProps {
   children: ReactNode;
@@ -27,12 +28,13 @@ export function PageContainer({
   sx = {},
 }: PageContainerProps) {
   const width = PAGE_MAX_WIDTH_MAP[maxWidth];
+  const { inShell } = useAppShell();
   return (
     <Box
       sx={{
         maxWidth: width,
-        mx: 'auto',
-        ...PADDING_RESPONSIVE,
+        // In der App-Shell: Ränder kommen von AppLayout – keine doppelten Abstände
+        ...(inShell ? { mx: 0, px: 0, pt: { xs: 1, sm: 1.5 }, pb: 2 } : { mx: 'auto', ...PADDING_RESPONSIVE }),
         ...(withBottomNav && { pb: BOTTOM_NAV_PADDING }),
         ...sx,
       }}

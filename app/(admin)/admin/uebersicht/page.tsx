@@ -3,8 +3,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminDashboard } from '@/lib/hooks/useAdminDashboard';
 import { useRealtimeUpdates } from '@/lib/hooks/useRealtimeUpdates';
-import { AdminKPICard } from '@/components/admin/AdminKPICard';
-import { QuickActions } from '@/components/admin/QuickActions';
 import { ExportReportDialog } from '@/components/admin/ExportReportDialog';
 import { AlertsPanel } from '@/components/admin/AlertsPanel';
 import { StatisticsTabs } from '@/components/admin/StatisticsTabs';
@@ -16,20 +14,18 @@ import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { DashboardSkeleton } from '@/components/admin/DashboardSkeleton';
 import { GlassCard } from '@/components/ui/GlassCard';
 import {
-  People,
-  Assignment as AssignmentIcon,
-  TrendingUp,
-  Business,
-  AccessTime,
-  Block,
+  Add,
+  FileDownloadOutlined,
+  PersonAddAlt1Outlined,
 } from '@mui/icons-material';
-import { Box, Typography, Chip, Stack } from '@mui/material';
+import { Alert, Box, Button, Typography, Stack } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
+import { StatStrip } from '@/components/ui/StatStrip';
 
 export default function AdminDashboardPage() {
   const { loading: authLoading } = useAuth();
@@ -55,7 +51,6 @@ export default function AdminDashboardPage() {
     error,
     createShift,
     addStaff,
-    openSettings,
   } = useAdminDashboard();
 
   const [showAlerts] = useState(true);
@@ -78,123 +73,86 @@ export default function AdminDashboardPage() {
       <PageHeader
         key="page-header"
         title="Übersicht"
-        subtitle={`Überblick über alle Bereiche und Verwaltung${isConnected ? ' • Echtzeit-Updates aktiv' : ''}`}
+        subtitle={isConnected ? 'Was heute ansteht – Daten werden live aktualisiert' : 'Was heute ansteht – Verbindung getrennt, Daten evtl. nicht aktuell'}
         actions={
-          <Chip
-            label={isConnected ? 'Live' : 'Offline'}
-            color={isConnected ? 'success' : 'error'}
-            size="small"
-            variant="outlined"
-          />
+          <>
+            <Button variant="text" startIcon={<FileDownloadOutlined />} onClick={() => setExportDialogOpen(true)}>
+              Bericht exportieren
+            </Button>
+            <Button variant="outlined" startIcon={<PersonAddAlt1Outlined />} onClick={addStaff}>
+              Mitarbeiter hinzufügen
+            </Button>
+            <Button variant="contained" startIcon={<Add />} onClick={createShift}>
+              Dienst anlegen
+            </Button>
+          </>
         }
       />
+      <ExportReportDialog open={exportDialogOpen} onClose={() => setExportDialogOpen(false)} />
 
       {/* Onboarding „Erste Schritte" – blendet sich nach Abschluss selbst aus */}
       <OnboardingChecklist key="onboarding" />
 
-      {/* Quick Actions */}
-      <Box key="quick-actions" sx={{ mb: 4 }}>
-        <QuickActions
-          onCreateShift={createShift}
-          onAddStaff={addStaff}
-          onExportReport={() => setExportDialogOpen(true)}
-          onOpenSettings={openSettings}
-        />
-      <ExportReportDialog
-        open={exportDialogOpen}
-        onClose={() => setExportDialogOpen(false)}
+      <StatStrip
+        aria-label="Kennzahlen"
+        items={[
+          {
+            label: 'Aktive Mitarbeiter',
+            value: kpis.activeStaff,
+            hint: `von ${kpis.totalStaff} insgesamt`,
+            onClick: () => router.push('/admin/mitarbeiter'),
+          },
+          {
+            label: 'Offene Schichten',
+            value: kpis.openShifts,
+            hint: 'diese Woche',
+            tone: kpis.openShifts > 0 ? 'attention' : 'default',
+            onClick: () => router.push('/admin/schichten?status=open'),
+          },
+          { label: 'Auslastung', value: `${kpis.utilization} %`, hint: 'Durchschnitt', onClick: () => router.push('/admin/berichte') },
+          { label: 'Einrichtungen', value: kpis.facilities, hint: 'aktiv', onClick: () => router.push('/admin/einrichtungen') },
+          {
+            label: 'Wochenlimit',
+            value: kpis.weeklyLimitBlocked > 0 ? `${kpis.weeklyLimitBlocked} überschritten` : 'Im Rahmen',
+            hint:
+              kpis.weeklyLimitWarning > 0 ? `${kpis.weeklyLimitWarning} nahe am Limit` : 'ArbZG/MiLoG',
+            tone: kpis.weeklyLimitBlocked > 0 ? 'attention' : 'default',
+            onClick: () => router.push('/admin/mitarbeiter'),
+          },
+        ]}
       />
-      </Box>
 
       {/* Offene Zeiterfassungen */}
       {pendingWorkTimesheets.length > 0 && (
-        <Stack
-          key="pending-chips"
-          direction="row"
-          spacing={1}
-          sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}
+        <Alert
+          severity="warning"
+          sx={{ mb: 3 }}
+          action={
+            <Button component={Link} href="/admin/stunden" color="inherit" size="small">
+              Prüfen
+            </Button>
+          }
         >
-          <Chip
-            component={Link}
-            href="/admin/stunden"
-            icon={<AccessTime />}
-            label={`Offene Zeiterfassungen (${pendingWorkTimesheets.length})`}
-            color="warning"
-            variant="outlined"
-            clickable
-            sx={{ textDecoration: 'none' }}
-          />
-        </Stack>
+          {pendingWorkTimesheets.length === 1
+            ? '1 Zeiterfassung wartet auf Freigabe.'
+            : `${pendingWorkTimesheets.length} Zeiterfassungen warten auf Freigabe.`}
+        </Alert>
       )}
 
-      {/* Alerts */}
-      {showAlerts && alerts.length > 0 && (
-        <Box key="alerts-section" sx={{ mb: 4 }}>
-          <AlertsPanel alerts={alerts} />
-        </Box>
-      )}
-
-      {/* KPI Cards – alle auf einen Blick (Grid statt Karussell) */}
-      <Grid key="kpi-grid" container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 6, sm: 6, lg: 2.4 }}>
-          <AdminKPICard
-            title="Aktive Mitarbeiter"
-            value={kpis.activeStaff}
-            subtitle={`von ${kpis.totalStaff} insgesamt`}
-            icon={<People />}
-            color="info.main"
-            trend={kpis.staffGrowth}
-            onClick={() => router.push('/admin/mitarbeiter')}
-          />
+      <Grid key="main-grid" container spacing={3} sx={{ mb: 4 }}>
+        <Grid size={{ xs: 12, lg: 7 }}>
+          {showAlerts && <AlertsPanel alerts={alerts} />}
         </Grid>
-        <Grid size={{ xs: 6, sm: 6, lg: 2.4 }}>
-          <AdminKPICard
-            title="Offene Schichten"
-            value={kpis.openShifts}
-            subtitle="Diese Woche"
-            icon={<AssignmentIcon />}
-            color="warning.main"
-            trend={kpis.shiftTrend}
-            onClick={() => router.push('/admin/schichten?status=open')}
-            priority={kpis.openShifts > 0 ? 1 : 2}
-          />
-        </Grid>
-        <Grid size={{ xs: 6, sm: 6, lg: 2.4 }}>
-          <AdminKPICard
-            title="Auslastung"
-            value={`${kpis.utilization}%`}
-            subtitle="Durchschnitt"
-            icon={<TrendingUp />}
-            color="primary.main"
-            trend={kpis.utilizationTrend}
-            onClick={() => router.push('/admin/berichte')}
-          />
-        </Grid>
-        <Grid size={{ xs: 6, sm: 6, lg: 2.4 }}>
-          <AdminKPICard
-            title="Einrichtungen"
-            value={kpis.facilities}
-            subtitle="Aktive Standorte"
-            icon={<Business />}
-            color="primary.main"
-            trend={kpis.facilityTrend}
-            onClick={() => router.push('/admin/berichte')}
-          />
-        </Grid>
-        <Grid size={{ xs: 6, sm: 6, lg: 2.4 }}>
-          <AdminKPICard
-            title="Wochenlimit"
-            value={kpis.weeklyLimitBlocked > 0 ? `${kpis.weeklyLimitBlocked} überschritten` : 'OK'}
-            subtitle={
-              kpis.weeklyLimitBlocked > 0 || kpis.weeklyLimitWarning > 0
-                ? `${kpis.weeklyLimitBlocked} blockiert, ${kpis.weeklyLimitWarning} Warnung`
-                : 'ArbZG/MiLoG'
-            }
-            icon={<Block />}
-            color={kpis.weeklyLimitBlocked > 0 ? 'error.main' : kpis.weeklyLimitWarning > 0 ? 'warning.main' : 'success.main'}
-            priority={kpis.weeklyLimitBlocked > 0 ? 1 : kpis.weeklyLimitWarning > 0 ? 2 : 3}
-            onClick={() => router.push('/admin/mitarbeiter')}
-          />
+        <Grid size={{ xs: 12, lg: 5 }}>
+          <Stack spacing={3}>
+            <UpcomingShiftsCards shifts={allShifts} maxItems={5} />
+            <GlassCard sx={{ p: 2.5 }} hover={false}>
+              <Typography component="h2" sx={{ fontSize: 17, fontWeight: 650, mb: 1.5 }}>
+                Letzte Aktivitäten
+              </Typography>
+              <RecentActivities activities={recentActivities} />
+            </GlassCard>
+          </Stack>
         </Grid>
       </Grid>
 
@@ -213,20 +171,6 @@ export default function AdminDashboardPage() {
         )}
       </Box>
 
-      {/* Kommende Schichten + Aktivitäten */}
-      <Grid key="recent-grid" container spacing={3}>
-        <Grid key="upcoming-shifts" size={{ xs: 12, lg: 6 }}>
-          <UpcomingShiftsCards shifts={allShifts} maxItems={5} />
-        </Grid>
-        <Grid key="recent-activities" size={{ xs: 12, lg: 6 }}>
-          <GlassCard sx={{ p: 2 }}>
-            <Typography variant="overline" sx={{ display: 'block', mb: 1.5, color: 'text.secondary' }}>
-              Letzte Aktivitäten
-            </Typography>
-            <RecentActivities activities={recentActivities} />
-          </GlassCard>
-        </Grid>
-      </Grid>
     </PageContainer>
   );
 }

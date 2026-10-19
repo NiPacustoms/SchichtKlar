@@ -9,6 +9,10 @@ vi.mock('@/lib/firebase', () => ({
   serverTimestamp: vi.fn(() => ({ seconds: 1234567890, nanoseconds: 0 })),
 }));
 
+vi.mock('@/lib/utils/companyId', () => ({
+  getCompanyIdFromAuth: vi.fn(async () => 'company123'),
+}));
+
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn(() => ({})),
   doc: vi.fn(() => ({})),
@@ -132,6 +136,9 @@ describe('timesheetService', () => {
 
       expect(result).toHaveLength(2);
       expect(result.map(t => t.id)).toEqual(['1', '2']);
+      // Mandantenfilter, sonst lehnt die Firestore-Regel Admin-Abfragen ab
+      const { where } = await import('firebase/firestore');
+      expect(vi.mocked(where)).toHaveBeenCalledWith('companyId', '==', 'company123');
     });
   });
 });
