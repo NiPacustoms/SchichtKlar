@@ -43,11 +43,11 @@ export { notifyShiftCreated, notifyShiftUpdated } from './shiftNotifications';
 // KPI Aggregations → codebase "scheduled"
 
 // Admin Functions
-export { deleteAllAssignments } from './deleteAllAssignments';
 
 // Schichtverwaltung Cloud Functions
 export { assignShift } from './assignShift';
 export { createWithMatching } from './assignment/createWithMatching';
+export { acceptPublishedAssignment, enforceDayRule } from './assignment/dayRuleFunctions';
 export { declineAssignment } from './declineAssignment';
 // Vom Client (cloudFunctions.ts) unter diesen Namen aufgerufen – waren bislang
 // gar nicht exportiert und damit nicht deployt (Aufruf lief in Prod ins Leere):

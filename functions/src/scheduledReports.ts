@@ -3,6 +3,7 @@
  * Konfiguration in Firestore: scheduledReportConfigs
  */
 
+import { requireAdmin } from './utils/tenant';
 import { FieldValue, getFirestore, Timestamp } from 'firebase-admin/firestore';
 import * as functions from 'firebase-functions/v1';
 import { sendTemplatedEmail } from './email';
@@ -64,9 +65,11 @@ function getReportTitle(type: string, period: string): string {
   return `${typeLabels[type] || type} – ${periodLabels[period] || period}`;
 }
 
-async function runScheduledReports(): Promise<void> {
+/** @param onlyCompanyId bei manuellem Aufruf: nur Berichte dieser Firma */
+async function runScheduledReports(onlyCompanyId?: string): Promise<void> {
   const now = new Date();
-  const snapshot = await db.collection(SCHEDULED_REPORT_CONFIGS).get();
+  const baseQuery = db.collection(SCHEDULED_REPORT_CONFIGS);
+  const snapshot = await (onlyCompanyId ? baseQuery.where('companyId', '==', onlyCompanyId) : baseQuery).get();
 
   for (const docSnap of snapshot.docs) {
     const config = { id: docSnap.id, ...docSnap.data() } as ScheduledReportConfig;
@@ -126,12 +129,8 @@ export const runScheduledReportsNow = functions.https.onCall(async (_data, conte
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Nicht angemeldet');
   }
-  const callerUid = context.auth.uid;
-  const callerDoc = await db.collection('users').doc(callerUid).get();
-  const role = callerDoc.data()?.role;
-  if (role !== 'admin') {
-    throw new functions.https.HttpsError('permission-denied', 'Nur Admins dürfen den Job auslösen');
-  }
-  await runScheduledReports();
+  // Nur Admins, und nur für die eigene Firma
+  const caller = await requireAdmin(context.auth);
+  await runScheduledReports(caller.companyId);
   return { ok: true };
 });

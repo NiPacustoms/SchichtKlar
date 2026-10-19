@@ -1,37 +1,57 @@
 import type { Firestore } from 'firebase-admin/firestore';
 import { parseShiftToUTC, checkOverlap } from '../utils/timeUtils';
+import { berlinDayKey, DAY_RULE_ACTIVE_STATUSES, toDayKey } from '../utils/dayRule';
+
+/** Zeitfenster eines bestehenden Einsatzes – aus verknüpfter Schicht oder eigenem startDate. */
+async function getAssignmentWindow(
+  db: Firestore,
+  a: Record<string, unknown>
+): Promise<{ start: Date; end: Date; dayKey: string | null } | null> {
+  let date: Date | null = null;
+  let startTime = (a.startTime as string) || '';
+  let endTime = (a.endTime as string) || '';
+
+  const ownDate = (a.startDate as { toDate?: () => Date } | undefined)?.toDate?.();
+  if (ownDate) {
+    date = ownDate;
+  } else if (typeof a.shiftId === 'string' && a.shiftId) {
+    const shiftSnap = await db.collection('shifts').doc(a.shiftId).get();
+    if (!shiftSnap.exists) return null;
+    const shift = shiftSnap.data()!;
+    const shiftDate = shift.date?.toDate?.() ?? (typeof shift.date === 'string' ? new Date(shift.date) : null);
+    if (!shiftDate || Number.isNaN(shiftDate.getTime())) return null;
+    date = shiftDate;
+    startTime = startTime || shift.startTime;
+    endTime = endTime || shift.endTime;
+  }
+  if (!date) return null;
+
+  const { startUTC, endUTC } = parseShiftToUTC(date, startTime || '08:00', endTime || '16:00', 'Europe/Berlin');
+  return { start: startUTC, end: endUTC, dayKey: toDayKey(ownDate ?? date) };
+}
 
 /**
- * Prüft, ob ein Nutzer im angegebenen Zeitraum verfügbar ist (keine Überlappung
- * mit Assignments status assigned/accepted).
+ * Prüft, ob ein Nutzer im angegebenen Zeitraum verfügbar ist:
+ * - keine zeitliche Überschneidung mit aktiven Einsätzen und
+ * - kein anderer aktiver Einsatz am selben Berliner Kalendertag (Regel „1 Einsatz pro Tag").
  */
 export async function isUserAvailableForSlot(
   db: Firestore,
   userId: string,
   startUTC: Date,
-  endUTC: Date
+  endUTC: Date,
+  companyId?: string
 ): Promise<boolean> {
-  const myAssignments = await db
-    .collection('assignments')
-    .where('userId', '==', userId)
-    .where('status', 'in', ['assigned', 'accepted'])
-    .get();
+  let q = db.collection('assignments').where('userId', '==', userId);
+  if (companyId) q = q.where('companyId', '==', companyId);
+  const myAssignments = await q.where('status', 'in', [...DAY_RULE_ACTIVE_STATUSES]).get();
 
+  const targetDay = berlinDayKey(startUTC);
   for (const aDoc of myAssignments.docs) {
-    const a = aDoc.data();
-    const shiftId = a.shiftId;
-    if (!shiftId) continue;
-    const shiftSnap = await db.collection('shifts').doc(shiftId).get();
-    if (!shiftSnap.exists) continue;
-    const shift = shiftSnap.data()!;
-    const shiftDate = shift.date?.toDate?.() || new Date();
-    const { startUTC: sStart, endUTC: sEnd } = parseShiftToUTC(
-      shiftDate,
-      shift.startTime || '08:00',
-      shift.endTime || '16:00',
-      'Europe/Berlin'
-    );
-    if (checkOverlap({ start: startUTC, end: endUTC }, { start: sStart, end: sEnd })) {
+    const window = await getAssignmentWindow(db, aDoc.data());
+    if (!window) continue;
+    if (window.dayKey === targetDay) return false;
+    if (checkOverlap({ start: startUTC, end: endUTC }, { start: window.start, end: window.end })) {
       return false;
     }
   }
@@ -40,7 +60,7 @@ export async function isUserAvailableForSlot(
 
 /**
  * Gibt alle Mitarbeiter-IDs (role nurse) der Firma zurück, die im angegebenen
- * Zeitraum verfügbar sind (keine Überlappung mit bestehenden Einsätzen).
+ * Zeitraum verfügbar sind (keine Überlappung, kein anderer Einsatz am selben Tag).
  */
 export async function getAvailableEmployeeIds(
   db: Firestore,
@@ -53,21 +73,22 @@ export async function getAvailableEmployeeIds(
   const date = new Date(startDate);
   const { startUTC, endUTC } = parseShiftToUTC(date, startTime, endTime, 'Europe/Berlin');
 
-  const usersSnap = await db.collection('users').where('role', '==', 'nurse').get();
+  const usersSnap = await db
+    .collection('users')
+    .where('companyId', '==', companyId)
+    .where('role', '==', 'nurse')
+    .get();
   const available: string[] = [];
 
   for (const userDoc of usersSnap.docs) {
     const user = userDoc.data();
-    const userCompanyId = user.companyId as string | undefined;
-    if (userCompanyId && userCompanyId !== companyId) continue;
 
     if (qualification) {
       const qualifications = (user.qualifications as string[]) || [];
       if (!qualifications.includes(qualification)) continue;
     }
 
-    const availableForSlot = await isUserAvailableForSlot(db, userDoc.id, startUTC, endUTC);
-    if (availableForSlot) {
+    if (await isUserAvailableForSlot(db, userDoc.id, startUTC, endUTC, companyId)) {
       available.push(userDoc.id);
     }
   }

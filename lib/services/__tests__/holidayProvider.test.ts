@@ -5,7 +5,9 @@ describe('holidayProvider', () => {
   const year = 2025;
 
   function toIsoDates(dates: Date[]): string[] {
-    return dates.map(date => date.toISOString().slice(0, 10));
+    // Lokales Datum (Provider liefert lokale Mitternacht) – zeitzonenunabhängig
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return dates.map(d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
   }
 
   it('liefert bundesweite Feiertage', async () => {

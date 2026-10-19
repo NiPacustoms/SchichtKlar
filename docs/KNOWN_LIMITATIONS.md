@@ -1,6 +1,6 @@
 # Bekannte Einschränkungen & offene Punkte
 
-**Stand:** 10.07.2026 · Schichtklar
+**Stand:** 18.10.2026 · Schichtklar
 
 Ehrliche Auflistung aller bekannten Einschränkungen, offenen Entscheidungen und bewusst zurückgestellten Arbeiten. Priorisiert nach Dringlichkeit für einen Käufer.
 
@@ -20,24 +20,24 @@ Ehrliche Auflistung aller bekannten Einschränkungen, offenen Entscheidungen und
 | # | Thema | Details |
 |---|---|---|
 | B1 | ~~Legacy-Unit-Test-Suite sanieren~~ **ERLEDIGT** | Suite saniert (jsdom-Umgebung, `@testing-library/react`, Mock-/API-Drift behoben) und Produktlücke F1 (Mitarbeiter-Berichte) geschlossen: `npm run test:unit` grün (**65 passed, 0 skipped, 0 failed**). In CI aufgenommen (`quality.yml`). |
-| B2 | **`next` patchen** | Auf `>=15.5.13` heben (schließt Rewrite-Request-Smuggling-Advisory). Siehe `DEPENDENCY_AUDIT.md`. |
-| B3 | **`firebase-admin` aktualisieren** | Schließt transitive `@grpc/grpc-js`/`node-forge`-Advisories (serverseitig). |
+| B2 | ~~`next` patchen~~ **ERLEDIGT (18.10.2026)** | `next` 15.5.28 (gepinnt). Verbleibende `npm audit`-Befunde (8 high) liegen ausschließlich im Build-Tooling (Sentry-Bundler-Plugin, rollup, chokidar) bzw. `postcss` via Next – Fix nur über Major-Upgrades (`@sentry/nextjs` 11, Next 16); kein Laufzeitrisiko. 0 critical. |
+| B3 | ~~`firebase-admin` aktualisieren~~ **ERLEDIGT (18.10.2026)** | Root auf `firebase-admin` 13.10 (wie `functions/`); gRPC- und busboy-Advisories geschlossen. |
 | B4 | **Server-Routen-Gate aktivieren** | `proxy.ts` ist für Next 16 vorbereitet, unter Next 15 inaktiv. Datenzugriff ist bereits durch Firestore-Rules + API-Rollenprüfung geschützt; ein zusätzliches Middleware-Gate wäre Defense-in-Depth (Vorsicht: CSP-Header-Überschneidung mit `next.config.js`). |
-| B5 | **`deleteAllAssignments` absichern/entfernen** | Destruktive Wartungs-Cloud-Function (admin-only, korrekt autorisiert). Vor Kundenauslieferung entfernen oder hinter zusätzliches Bestätigungs-Flag stellen. |
-| B6 | **Rate-Limiting vereinheitlichen** | `ensure-admin-role` (ENV-gegatet) und `invitations` haben kein Rate-Limit; andere Auth-Routen schon. |
+| B5 | ~~`deleteAllAssignments`~~ **ENTFERNT (18.10.2026)** | War seit der Multi-Tenancy mandantenübergreifend (Admin jeder Firma hätte die Einsätze **aller** Firmen gelöscht). Kein Client nutzte sie. ⚠️ Nach Deploy die bereits deployte Function löschen: `firebase functions:delete deleteAllAssignments --region europe-west1`. |
+| B6 | ~~Rate-Limiting vereinheitlichen~~ **ERLEDIGT (18.10.2026)** | `ensure-admin-role` sowie `/api/invitations` (inkl. Token-Lookup) laufen über das strenge Auth-Limit. |
 
 ## C. Fachliche Entscheidungen (Eigentümer)
 
 | # | Thema | Details |
 |---|---|---|
-| C1 | **Regel „1 Einsatz pro Kalendertag"** | Aktuell als **Zeit-Überlappung** implementiert (`createWithMatching.ts`), nicht als „ein Einsatz pro Kalendertag". Zwei nicht-überlappende Einsätze am selben Tag wären möglich. Wenn die harte Kalendertag-Regel gilt, muss der Konflikt-Check umgestellt werden (schließt Split-Shifts aus → Freigabe nötig). Siehe `QA_REPORT.md`. |
+| C1 | ~~Regel „1 Einsatz pro Kalendertag"~~ **ERLEDIGT (18.10.2026)** | Entscheidung: **1 Einsatz pro Berliner Kalendertag, Admin darf mit Begründung übersteuern.** Kernlogik `lib/domain/dayRule.ts` (Server-Spiegel `functions/src/utils/dayRule.ts`). Durchgesetzt in `assignShift` (Begründungspflicht, `adminOverride` deckt die Regel bewusst nicht ab), `requestShift`, `acceptPublishedAssignment` (neu), Matching/Kandidatensuche und Client-Annahme. Sicherheitsnetz: Trigger `enforceDayRule` markiert Verstöße aus Direktschreibpfaden (`dayRuleViolation`) und benachrichtigt die Admins der Firma – kein stilles Zurückdrehen. Admin-UI: Begründungsdialog (`DayRuleOverrideDialog`). Getestet: `npm run test:functions` (Emulator, 20 Fälle), Rules-Tests, Unit-Tests. |
 | C2 | ~~Regel „Signaturblock max. 7 Tage"~~ **ERLEDIGT (11.07.2026)** | `calculateSignatureSchedule` garantiert die 7-Tage-Blöcke jetzt konstruktiv (Sonntage + Einsatzende, Termin nie nach Einsatzende); zusätzlich prüfbar via `validateSignatureScheduleMaxBlock()`. Dabei behobene Bugs: UTC-Off-by-one der Datums-Keys (Signaturtermine an Sonntagen verfehlten den Abgleich), Signaturtermin lag bei kurzen Einsätzen ohne Sonntag NACH dem Einsatzende (dadurch öffnete sich der Einrichtungs-Signatur-Dialog praktisch nie), Duplikat wenn Einsatzende = Sonntag. 10 neue Unit-Tests. |
 
 ## D. Architektur-Hinweise (kein Mangel, dokumentiert)
 
 | # | Thema | Details |
 |---|---|---|
-| D1 | **Single-Tenant-Modell** | 1 Kunde = 1 Firebase-Projekt (`SINGLE_COMPANY_ID`). Mandanten-Helper in `firestore.rules` sind bewusst Stubs (`return true`). Für Multi-Tenant müssten `belongsToSameCompany` echt implementiert und alle List-Queries mit `companyId`-Filter versehen werden. Durch `tests/rules/` als bewusste Entscheidung gepinnt. |
+| D1 | **Multi-Tenant (seit #29)** | Mandantentrennung über `companyId` in Rules, Client-Queries und Cloud Functions (`functions/src/utils/tenant.ts`, fail-closed). Die Rules tolerieren `companyId == null` noch für Legacy-Daten → **vor dem zweiten Kunden** einmal `/api/admin/backfill-company-ids?confirm=BACKFILL` ausführen und danach die null-Toleranz in `belongsToSameCompany` entfernen. |
 | D2 | **UI-System = MUI** | Trotz vorhandener Tailwind-Restkonfiguration ist MUI das führende Design-System (Radix ist nicht installiert). |
 | D3 | **Firebase-Projekt migriert** | Neues Projekt `schichtklar` angelegt, alle Deploy-Referenzen umgestellt (Frischstart). Erforderlicher GitHub-Schritt: Secret `FIREBASE_SERVICE_ACCOUNT_SCHICHTKLAR` mit Service-Account des neuen Projekts anlegen. Details: `INFRASTRUCTURE_RENAMING.md`. |
 
@@ -46,6 +46,37 @@ Ehrliche Auflistung aller bekannten Einschränkungen, offenen Entscheidungen und
 | # | Thema | Details |
 |---|---|---|
 | F1 | ~~`useEmployeeReports` Aggregation/Export~~ **ERLEDIGT** | Echte Aggregation implementiert: `workTimeReport` (Gesamt-/Regel-/Überstunden, Arbeitstage, Ø pro Tag/Woche, `hoursByDay`-Chartdaten, §3-ArbZG-10h-Check), `surchargesReport` (Gesamtzuschlag + anteilige Aufteilung nach Nacht/Wochenende/Feiertag/Überstunden) und `exportWorkTimeReport` (ruft `reportService`-PDF/Excel-Export). Die 3 zuvor übersprungenen Tests sind reaktiviert und grün. |
+
+## G. Mandanten-Härtung Cloud Functions (18.10.2026)
+
+Mehrere Callables prüften nur „ist Admin", nicht „Admin **derselben Firma**". Behoben über den gemeinsamen Helper `functions/src/utils/tenant.ts` (Firma aus Claims, Fallback `users/{uid}`, sonst Ablehnung):
+
+| Function | Vorher | Jetzt |
+|---|---|---|
+| `setUserRole` | Rollen in fremden Firmen setzbar; überschrieb Claims und **löschte `companyId`** | nur eigene Firma, Claims bleiben erhalten, kein Selbst-Entzug der Admin-Rolle |
+| `getUsersWithRoles` | listete Nutzer **aller** Firmen | nur eigene Firma |
+| `getUserRole` | Rolle beliebiger UIDs abfragbar | fremde Rollen nur für Admin derselben Firma |
+| `findCandidates` | Kandidaten aus allen Firmen, fremde Schichten | Schicht + Kandidaten nur eigene Firma |
+| `unassignShift` | Admin konnte fremde Zuweisungen lösen | nur eigene Firma (bzw. eigene Zuweisung) |
+| `notifyFacility` | jeder Nutzer konnte Mails an beliebige Einrichtungen auslösen | nur zugewiesene Person oder Admin derselben Firma |
+| `createWithMatching` | Firmen-Check fail-open, Einrichtung ungeprüft | fail-closed, Einrichtung muss zur Firma gehören |
+| `assignShift` | Firmen-Check fail-open, Person ungeprüft | Schicht **und** Person müssen zur Firma gehören |
+| `requestShift` | Schichten fremder Firmen anfragbar | nur eigene Firma |
+| `declineAssignment` | Admin konnte fremde Einsätze absagen | nur eigene Firma |
+| `getAvailableEmployeeIdsForSlot` | Mitarbeiterlisten fremder Firmen abfragbar | nur eigene Firma |
+| `runScheduledReportsNow` | löste Berichtsläufe **aller** Firmen aus | nur eigene Firma |
+
+⚠️ Wirksam erst nach `firebase deploy --only functions`.
+
+## H. Weitere Funde (18.10.2026)
+
+| # | Thema | Status |
+|---|---|---|
+| H1 | **Server-Datumsfehler**: `parseShiftToUTC` bestimmte den Tag in der Server-Zeitzone (UTC). Als Berliner Mitternacht gespeicherte Schichtdaten wurden einen Tag zu früh berechnet → Überschneidungsprüfungen serverseitig falsch. | behoben (Tag in Europe/Berlin, abwärtskompatibel) |
+| H2 | **Annahme ausgeschriebener Einsätze** (Matching) scheiterte an den Rules; zudem keine Sperre gegen Doppelannahme. | behoben: Callable `acceptPublishedAssignment` (Transaktion), Leserecht für Kandidat:innen |
+| H3 | Mitarbeitende konnten eigene Einsätze per `userId` auf andere Personen umschreiben. | behoben (Rules + Test) |
+| H4 | Escalation-Rules-Test endete auch bei Lecks erfolgreich; `@firebase/rules-unit-testing` fehlte als Dependency. | behoben |
+| H5 | ⚖️ **Callable Functions laufen in `us-central1`** (keine Region gesetzt; Client nutzt Default). Personenbezogene Daten werden damit in den USA verarbeitet – passt nicht zur DSGVO-/EU-Positionierung. Umzug nach `europe-west1` braucht koordiniertes Deploy (Functions + Client-Region + Server-Action-URL in `app/(admin)/admin/einsaetze/new/actions.ts`). | **offen – Entscheidung Eigentümer** |
 
 ## E. Optionale Ausbaustufen (Marktrecherche)
 

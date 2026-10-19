@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/middleware/rateLimit';
 import * as nodeCrypto from 'node:crypto';
 import { adminDb } from '@/lib/server/firebaseAdmin';
 import { requireAuthContext, HttpError } from '@/lib/server/requestContext';
@@ -34,6 +35,8 @@ function generateToken(length = 48): string {
 export async function POST(req: NextRequest) {
   let ctx;
   try {
+    const limited = checkRateLimit(req);
+    if (limited) return limited;
     ctx = await requireAuthContext(req, { role: 'admin' });
   } catch (e) {
     if (e instanceof HttpError) return e.response;
@@ -140,6 +143,8 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   let ctx;
   try {
+    const limited = checkRateLimit(req);
+    if (limited) return limited;
     ctx = await requireAuthContext(req, { role: 'admin' });
   } catch (e) {
     if (e instanceof HttpError) return e.response;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/middleware/rateLimit';
 import { adminAuth, adminDb, verifyIdToken } from '@/lib/server/firebaseAdmin';
 import {
   logger,
@@ -24,6 +25,8 @@ const DEFAULT_ADMIN_BOOTSTRAP_EMAIL = 'admin@schichtklar.test';
  */
 export async function POST(req: NextRequest) {
   try {
+    const limited = checkRateLimit(req);
+    if (limited) return limited;
     const route = '/api/auth/ensure-admin-role';
     if (!adminAuth || !adminDb) {
       return createErrorResponse(

@@ -1,9 +1,10 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
+import { requireAdmin } from '../utils/tenant';
 import { logger } from '../utils/logger';
-import { parseShiftToUTC, checkOverlap } from '../utils/timeUtils';
+import { parseShiftToUTC } from '../utils/timeUtils';
 import { sendUserPushNotification } from '../pushNotifications';
-import { getAvailableEmployeeIds } from './availability';
+import { getAvailableEmployeeIds, isUserAvailableForSlot } from './availability';
 
 const db = admin.firestore();
 
@@ -46,9 +47,8 @@ export const createWithMatching = functions.https.onCall(async (data: CreateWith
 
   // Mandantenisolation: Die übergebene companyId muss der des aufrufenden Admins
   // entsprechen (kein Anlegen in fremden Mandanten bei Direktaufruf der Function).
-  const callerToken = context.auth.token as { companyId?: string; claims?: { companyId?: string } };
-  const callerCompanyId = callerToken.companyId || callerToken.claims?.companyId;
-  if (callerCompanyId && companyId !== callerCompanyId) {
+  const caller = await requireAdmin(context.auth);
+  if (companyId !== caller.companyId) {
     throw new functions.https.HttpsError('permission-denied', 'companyId mismatch');
   }
 
@@ -58,7 +58,10 @@ export const createWithMatching = functions.https.onCall(async (data: CreateWith
 
     // Facility laden (für Namen)
     const facilitySnap = await db.collection('facilities').doc(facilityId).get();
-    const facilityName = facilitySnap.exists ? (facilitySnap.data()?.name as string) || 'Einrichtung' : 'Einrichtung';
+    if (!facilitySnap.exists || facilitySnap.get('companyId') !== companyId) {
+      throw new functions.https.HttpsError('permission-denied', 'Einrichtung gehört nicht zu Ihrer Firma');
+    }
+    const facilityName = (facilitySnap.data()?.name as string) || 'Einrichtung';
 
     // Assignment anlegen (published, ohne userId)
     const assignmentRef = db.collection('assignments').doc();
@@ -96,49 +99,25 @@ export const createWithMatching = functions.https.onCall(async (data: CreateWith
       candidateUserIds = selectedUserIds.filter((uid) => availableSet.has(uid));
     } else {
       // Auto-Matching: Nurses derselben Company, Qualifikation optional, keine Überlappung
-      const usersSnap = await db.collection('users').where('role', '==', 'nurse').get();
+      const usersSnap = await db
+        .collection('users')
+        .where('companyId', '==', companyId)
+        .where('role', '==', 'nurse')
+        .get();
       const candidates: Array<{ userId: string; score: number }> = [];
 
       for (const userDoc of usersSnap.docs) {
         const user = userDoc.data();
-        const userCompanyId = user.companyId as string | undefined;
-        if (userCompanyId && userCompanyId !== companyId) continue;
 
         if (qualification) {
           const qualifications = (user.qualifications as string[]) || [];
           if (!qualifications.includes(qualification)) continue;
         }
 
-        // Konflikt mit bestehenden Assignments prüfen
-        const myAssignments = await db
-          .collection('assignments')
-          .where('userId', '==', userDoc.id)
-          .where('status', 'in', ['assigned', 'accepted'])
-          .get();
+        // Überschneidung + Regel „1 Einsatz pro Tag" (zentral in availability.ts)
+        if (!(await isUserAvailableForSlot(db, userDoc.id, startUTC, endUTC, companyId))) continue;
 
-        let hasConflict = false;
-        for (const aDoc of myAssignments.docs) {
-          const a = aDoc.data();
-          const shiftId = a.shiftId;
-          if (!shiftId) continue;
-          const shiftSnap = await db.collection('shifts').doc(shiftId).get();
-          if (!shiftSnap.exists) continue;
-          const shift = shiftSnap.data()!;
-          const shiftDate = shift.date?.toDate?.() || new Date();
-          const { startUTC: sStart, endUTC: sEnd } = parseShiftToUTC(
-            shiftDate,
-            shift.startTime || '08:00',
-            shift.endTime || '16:00',
-            'Europe/Berlin'
-          );
-          if (checkOverlap({ start: startUTC, end: endUTC }, { start: sStart, end: sEnd })) {
-            hasConflict = true;
-            break;
-          }
-        }
-        if (hasConflict) continue;
-
-        const score = (user.qualifications as string[]).length * 2 + 10;
+        const score = ((user.qualifications as string[] | undefined)?.length ?? 0) * 2 + 10;
         candidates.push({ userId: userDoc.id, score });
       }
 

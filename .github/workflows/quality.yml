@@ -22,11 +22,44 @@ jobs:
       - name: Install dependencies (with dev)
         run: |
           NPM_CONFIG_OMIT= npm install --include=dev --no-audit --no-fund
-      - name: Lint (CI)
-        run: npx eslint . --quiet --rule '@typescript-eslint/no-explicit-any:off' --rule 'react/no-unescaped-entities:off' --rule 'no-empty:off' --rule 'react/jsx-key:off' --rule 'no-unreachable:off' --rule 'no-useless-escape:off'
-      - name: Typecheck (CI)
-        run: npm run typecheck:ci
+      - name: Lint (0 Warnungen)
+        run: npm run lint
+      - name: Typecheck (strikt)
+        run: npm run typecheck
       - name: Unit Tests
         run: npm run test:unit
       - name: Static Scan
         run: node scripts/static-scan.js
+      - name: Cloud Functions Typecheck
+        working-directory: functions
+        run: |
+          npm ci --no-audit --no-fund
+          npx tsc --noEmit -p .
+
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools@latest
+      - name: Firestore Security Rules Tests (Emulator)
+        env:
+          FIREBASE_CLI_EXPERIMENTS: webframeworks
+        run: npm run test:rules
+      - name: Install Functions dependencies
+        working-directory: functions
+        run: npm ci --no-audit --no-fund
+      - name: Cloud Functions Integrationstest (Emulator)
+        env:
+          FIREBASE_CLI_EXPERIMENTS: webframeworks
+        run: npm run test:functions

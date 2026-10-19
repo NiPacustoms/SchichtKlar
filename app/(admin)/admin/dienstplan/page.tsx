@@ -85,10 +85,13 @@ export default function AdminDienstplanPage() {
 
   // Realtime-Updates: invalidiere Query bei Änderungen
   const queryClient = useQueryClient();
+  const companyId = user?.companyId;
   useEffect(() => {
+    // Ohne companyId kein Abo: unscoped Queries würden von den Rules abgelehnt
+    if (!companyId) return;
     const unsubscribe = shiftService.subscribeAll(
       {
-        companyId: user?.companyId || undefined,
+        companyId,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
         status: statusFilter === 'ended' ? undefined : (statusFilter || undefined),
@@ -111,7 +114,7 @@ export default function AdminDienstplanPage() {
       }
     );
     return () => unsubscribe();
-  }, [queryClient, dateFrom, dateTo, statusFilter, facilityFilter]);
+  }, [queryClient, companyId, dateFrom, dateTo, statusFilter, facilityFilter]);
 
   // Load filters from localStorage
   useEffect(() => {
