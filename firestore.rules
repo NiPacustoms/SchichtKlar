@@ -225,45 +225,78 @@ service cloud.firestore {
     // Timesheets: Arbeitszeiterfassung
     // GoBD-konform: approved/submitted Timesheets sind unveränderlich
     // Mit Mandantenisolation
+    // ── Zeiterfassung ───────────────────────────────────────────────────────
+    // Ablauf: draft → submitted → approved | rejected; rejected → draft/submitted.
+    // Freigegeben ist unveränderlich (GoBD). Stunden, Person und Firma sind nach
+    // dem Einreichen fest. Freigeben dürfen nur die Disposition (Admin der Firma)
+    // oder die Einrichtung per Unterschrift vor Ort.
+    function tsProtectedUnchanged() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+        'userId', 'companyId', 'date', 'startTime', 'endTime', 'breakMinutes', 'totalHours',
+        'regularHours', 'overtimeHours', 'nightHours', 'weekendHours', 'holidayHours',
+        'assignmentId', 'shiftId'
+      ]);
+    }
+    function tsNoApprovalFields() {
+      return !request.resource.data.keys().hasAny(['approvedBy', 'approvedAt']);
+    }
+    function tsApprovalFieldsUntouched() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['approvedBy', 'approvedAt', 'rejectionReason']);
+    }
+    function tsHasFacilitySignature() {
+      return request.resource.data.get('facilitySignatureUrl', '') is string &&
+        request.resource.data.get('facilitySignatureUrl', '').size() > 0 &&
+        request.resource.data.get('facilitySignerName', '') is string &&
+        request.resource.data.get('facilitySignerName', '').size() > 0;
+    }
+    function tsIsOwner() {
+      return resource.data.userId == request.auth.uid;
+    }
+    function tsIsCompanyAdmin(cid) {
+      return isAdmin() && cid != null && cid == getRequesterCompanyId();
+    }
+
     match /timesheets/{timesheetId} {
       allow read: if isAuthenticated() && (
-        // Eigene Timesheets: userId muss übereinstimmen
         resource.data.userId == request.auth.uid ||
-        // Admin: Muss zur gleichen Company gehören (wenn companyId vorhanden)
-        (isAdmin() && (
-          resource.data.companyId == null ||
-          belongsToSameCompany(resource.data.companyId)
-        ))
+        tsIsCompanyAdmin(resource.data.get('companyId', null))
       );
-      allow create: if isAuthenticated() && (
-        request.resource.data.companyId == null || 
-        creatingForSameCompany(request.resource.data.companyId)
-      );
-      
-      // Update: Nur wenn NICHT approved/submitted (GoBD-Konformität) und gleiche Company
-      allow update: if isAuthenticated() && (
-        resource.data.companyId == null || 
-        (belongsToSameCompany(resource.data.companyId) && 
-         creatingForSameCompany(request.resource.data.companyId))
-      ) && (
-        resource.data.userId == request.auth.uid || isAdmin()
-      ) && (
-        resource.data.status != 'approved' && 
-        resource.data.status != 'submitted'
-      );
-      
-      // Delete: Nur wenn NICHT approved/submitted (GoBD-Konformität) und gleiche Company
-      allow delete: if isAuthenticated() && (
-        resource.data.companyId == null || 
-        belongsToSameCompany(resource.data.companyId)
-      ) && (
-        resource.data.userId == request.auth.uid || isAdmin()
-      ) && (
-        resource.data.status != 'approved' && 
-        resource.data.status != 'submitted'
-      );
+
+      // Neu nur als Entwurf oder eingereicht, immer mit eigener Firma, ohne Freigabefelder
+      allow create: if isAuthenticated() &&
+        request.resource.data.get('companyId', null) != null &&
+        request.resource.data.companyId == getRequesterCompanyId() &&
+        request.resource.data.get('status', 'draft') in ['draft', 'submitted'] &&
+        tsNoApprovalFields() &&
+        (request.resource.data.userId == request.auth.uid || isAdmin());
+
+      allow update: if isAuthenticated() &&
+        resource.data.get('status', 'draft') != 'approved' &&
+        request.resource.data.get('companyId', null) == resource.data.get('companyId', null) &&
+        (
+          // Pflegekraft: eigene Entwürfe/abgelehnte Zeiten korrigieren und einreichen
+          (tsIsOwner() &&
+            resource.data.get('status', 'draft') in ['draft', 'rejected'] &&
+            request.resource.data.get('status', 'draft') in ['draft', 'submitted'] &&
+            request.resource.data.userId == resource.data.userId &&
+            tsApprovalFieldsUntouched()) ||
+          // Einrichtung unterschreibt vor Ort auf dem Gerät der Pflegekraft → freigegeben
+          (tsIsOwner() &&
+            resource.data.get('status', 'draft') in ['draft', 'submitted'] &&
+            request.resource.data.status == 'approved' &&
+            tsHasFacilitySignature() &&
+            tsProtectedUnchanged() &&
+            tsApprovalFieldsUntouched()) ||
+          // Disposition der eigenen Firma: korrigieren, freigeben, ablehnen
+          (tsIsCompanyAdmin(resource.data.get('companyId', null)) &&
+            request.resource.data.get('status', 'draft') in ['draft', 'submitted', 'approved', 'rejected'])
+        );
+
+      // Löschen nur für Entwürfe und abgelehnte Zeiten (Freigegebenes bleibt 10 Jahre)
+      allow delete: if isAuthenticated() &&
+        resource.data.get('status', 'draft') in ['draft', 'rejected'] &&
+        (tsIsOwner() || tsIsCompanyAdmin(resource.data.get('companyId', null)));
     }
-    
 
     // Wochenstunden-Limit: Anträge auf Erhöhung (Pflegekraft → Admin), mandantengebunden
     match /limitIncreaseRequests/{requestId} {

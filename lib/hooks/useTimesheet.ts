@@ -4,6 +4,7 @@ import { TimesheetForm } from '@/lib/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { getRequiredBreakMinutes } from '@/lib/utils/time';
+import { calculateTimesheet } from '@/lib/domain/timesheetCalc';
 
 export const useTimesheet = (date?: Date) => {
   const { user } = useAuth();
@@ -20,7 +21,14 @@ export const useTimesheet = (date?: Date) => {
     queryKey: ['timesheet', userId, format(targetDate, 'yyyy-MM-dd')],
     queryFn: async () => {
       if (!userId) return null;
-      return await timesheetService.getByDate(userId, targetDate);
+      const found = await timesheetService.getByDate(userId, targetDate);
+      if (found || date) return found;
+      // Nach Mitternacht: noch laufenden Nachtdienst von gestern weiterführen
+      const yesterday = new Date(targetDate);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const prev = await timesheetService.getByDate(userId, yesterday);
+      const running = prev && prev.status === 'draft' && (!prev.endTime || prev.endTime === prev.startTime);
+      return running ? prev : null;
     },
     enabled: !!userId,
     staleTime: 2 * 60 * 1000, // 2 minutes
@@ -74,19 +82,11 @@ export const useTimesheet = (date?: Date) => {
   // Calculate total hours
   const calculateTotalHours = (startTime: string, endTime: string, breakMinutes: number) => {
     if (!startTime || !endTime) return 0;
-
-    const start = new Date(`2000-01-01T${startTime}`);
-    const end = new Date(`2000-01-01T${endTime}`);
-
-    let totalMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
-
-    // Handle overnight shifts
-    if (totalMinutes < 0) {
-      totalMinutes += 24 * 60; // Add 24 hours
+    try {
+      return calculateTimesheet(startTime, endTime, breakMinutes).totalHours;
+    } catch {
+      return 0;
     }
-
-    const totalHours = (totalMinutes - breakMinutes) / 60;
-    return Math.round(totalHours * 100) / 100; // Round to 2 decimal places
   };
 
   // Check if break warning is needed (>6h work, <30min break)

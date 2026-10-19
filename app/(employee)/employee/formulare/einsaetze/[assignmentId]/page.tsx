@@ -30,6 +30,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SignatureDialog } from '@/components/ui/SignatureDialog';
+import { berlinDayKey } from '@/lib/utils/dateKey';
 
 const assignmentFormSchema = z
   .object({
@@ -141,7 +142,7 @@ export default function AssignmentFormPage() {
         reset({
           mode: 'acknowledge',
           notes: '',
-          declineDate: new Date().toISOString().split('T')[0], // Heute als Standard
+          declineDate: berlinDayKey(new Date()), // Heute als Standard
         });
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Fehler beim Laden');

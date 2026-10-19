@@ -51,7 +51,8 @@ const ADMIN_PAGES: Command[] = [
   { id: 'p-schichten', group: 'Seiten', label: 'Schichten', icon: <CalendarMonthOutlined />, href: '/admin/schichten', keywords: 'dienste' },
   { id: 'p-einsaetze', group: 'Seiten', label: 'Einsätze', icon: <AssignmentOutlined />, href: '/admin/einsaetze' },
   { id: 'p-mitarbeiter', group: 'Seiten', label: 'Mitarbeiter', icon: <PersonOutline />, href: '/admin/mitarbeiter', keywords: 'personal' },
-  { id: 'p-stunden', group: 'Seiten', label: 'Stunden', icon: <AccessTimeOutlined />, href: '/admin/stunden', keywords: 'zeiterfassung' },
+  { id: 'p-zeitnachweise', group: 'Seiten', label: 'Zeitnachweise', icon: <AccessTimeOutlined />, href: '/admin/zeitnachweise', keywords: 'freigeben prüfen stundenzettel zeiterfassung ablehnen' },
+  { id: 'p-stunden', group: 'Seiten', label: 'Stunden', icon: <AccessTimeOutlined />, href: '/admin/stunden', keywords: 'zeiterfassung soll ist' },
   { id: 'p-einrichtungen', group: 'Seiten', label: 'Einrichtungen', icon: <BusinessOutlined />, href: '/admin/einrichtungen', keywords: 'kunden' },
   { id: 'p-einstellungen', group: 'Seiten', label: 'Einstellungen', icon: <SettingsOutlined />, href: '/admin/einstellungen' },
 ];

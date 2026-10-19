@@ -141,7 +141,8 @@ export function RelievingPersonnelSignatureDialog({
       const file = new File([blob], 'relieving-signature.png', { type: 'image/png' });
 
       // Upload signature
-      const dateStr = date.toISOString().split('T')[0];
+      // Kalendertag lokal – toISOString() läge bei Mitternacht auf dem Vortag
+      const dateStr = format(date, 'yyyy-MM-dd');
       const upload = await firebaseStorageService.uploadFile(
         file,
         `signatures/assignments/${assignmentId}/relieving/${dateStr}.png`,

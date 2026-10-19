@@ -1,3 +1,5 @@
+import { berlinDayKey } from '@/lib/utils/dateKey';
+
 export function formatCurrency(value: number, currency: string = 'EUR', locale = 'de-DE') {
   return new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 2 }).format(value || 0);
 }
@@ -11,7 +13,7 @@ export function formatPercent(value: number) {
 }
 export function formatDateISO(d: Date | string) {
   const date = typeof d === 'string' ? new Date(d) : d;
-  return date.toISOString().slice(0, 10);
+  return berlinDayKey(date);
 }
 export function trendColor(v: number) { return v > 0 ? 'success.main' : v < 0 ? 'error.main' : 'text.secondary'; }
 export function assert<T>(val: T | null | undefined, msg: string): T {

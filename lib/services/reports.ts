@@ -21,6 +21,7 @@ import { shiftService } from './shifts';
 import { logger } from '@/lib/logging';
 import { getCompanyIdFromAuth } from '@/lib/utils/companyId';
 import { createAppError, ErrorCode, ErrorUtils } from '@/lib/errors';
+import { berlinDayKey } from '@/lib/utils/dateKey';
 
 const COLLECTION_NAME = 'reports';
 const serviceErrorHandler = ErrorUtils.createServiceHandler('reportsService');
@@ -596,7 +597,7 @@ export const reportService = {
       const holidayHours = timesheets.reduce((sum, ts) => sum + (ts.holidayHours || 0), 0);
       
       const hoursByDay = timesheets.map(timesheet => ({
-        day: timesheet.date instanceof Date ? timesheet.date.toISOString().slice(0, 10) : new Date(timesheet.date).toISOString().slice(0, 10),
+        day: timesheet.date instanceof Date ? berlinDayKey(timesheet.date) : berlinDayKey(new Date(timesheet.date)),
         totalHours: timesheet.totalHours,
         regularHours: regularOf(timesheet),
         overtimeHours: timesheet.overtimeHours || 0,
@@ -650,7 +651,7 @@ export const reportService = {
         const overtimeSurcharge = (timesheet.overtimeHours || 0) * 1.25; // €1.25 per overtime hour
         
         return {
-          day: timesheet.date instanceof Date ? timesheet.date.toISOString().slice(0, 10) : new Date(timesheet.date).toISOString().slice(0, 10),
+          day: timesheet.date instanceof Date ? berlinDayKey(timesheet.date) : berlinDayKey(new Date(timesheet.date)),
           nightSurcharge,
           weekendSurcharge,
           holidaySurcharge,

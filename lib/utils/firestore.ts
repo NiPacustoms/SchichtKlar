@@ -1,3 +1,5 @@
+import { berlinDayKey } from '@/lib/utils/dateKey';
+
 /**
  * Konvertiert Firestore Timestamps sicher zu JavaScript Date Objekten
  * @param timestamp - Firestore Timestamp, Date oder beliebiger Wert
@@ -103,7 +105,7 @@ export function generateDocumentId(length: number = 20): string {
 export function toDateInputValue(date: unknown): string {
   if (!date) return '';
   const dateObj = toDate(date);
-  return dateObj.toISOString().split('T')[0];
+  return berlinDayKey(dateObj);
 }
 
 /**

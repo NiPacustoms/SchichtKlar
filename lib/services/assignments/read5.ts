@@ -34,7 +34,9 @@ export async function getMyPendingAssignments(userId: string): Promise<Assignmen
 }
 
 /** Aktive Einsätze der Person mit aufgelöstem Einsatztag (startDate oder Datum der Schicht). */
-async function loadActiveWithDay(userId: string): Promise<Array<{ assignment: Assignment; day: Date }>> {
+async function loadActiveWithDay(
+  userId: string
+): Promise<Array<{ assignment: Assignment; day: Date; startTime?: string; endTime?: string }>> {
   const db = getDb();
   if (!db) return [];
   const companyId = await getCompanyIdFromAuth();
@@ -56,23 +58,30 @@ async function loadActiveWithDay(userId: string): Promise<Array<{ assignment: As
     const d = new Date(v as string);
     return Number.isNaN(d.getTime()) ? null : d;
   };
-  const shiftDays = new Map<string, Date | null>();
+  const shiftDays = new Map<string, { day: Date | null; startTime?: string; endTime?: string }>();
   const raw = snap.docs.map(d => ({ d, data: d.data() as Record<string, unknown> }));
   await Promise.all(
-    [...new Set(raw.filter(r => !r.data.startDate && r.data.shiftId).map(r => r.data.shiftId as string))].map(async id => {
+    [...new Set(raw.filter(r => (!r.data.startDate || !r.data.endTime) && r.data.shiftId).map(r => r.data.shiftId as string))].map(async id => {
       try {
         const sd = await getDoc(doc(db, 'shifts', id));
-        shiftDays.set(id, sd.exists() ? toDate(sd.data().date) : null);
+        const x = sd.exists() ? sd.data() : null;
+        shiftDays.set(id, { day: x ? toDate(x.date) : null, startTime: x?.startTime, endTime: x?.endTime });
       } catch {
-        shiftDays.set(id, null);
+        shiftDays.set(id, { day: null });
       }
     })
   );
-  const out: Array<{ assignment: Assignment; day: Date }> = [];
+  const out: Array<{ assignment: Assignment; day: Date; startTime?: string; endTime?: string }> = [];
   for (const { d, data } of raw) {
-    const day = toDate(data.startDate) ?? (data.shiftId ? shiftDays.get(data.shiftId as string) ?? null : null);
+    const sh = data.shiftId ? shiftDays.get(data.shiftId as string) : undefined;
+    const day = toDate(data.startDate) ?? sh?.day ?? null;
     if (!day) continue;
-    out.push({ assignment: mapDocToAssignment({ id: d.id, data: () => data }), day });
+    out.push({
+      assignment: mapDocToAssignment({ id: d.id, data: () => data }),
+      day,
+      startTime: (data.startTime as string | undefined) ?? sh?.startTime,
+      endTime: (data.endTime as string | undefined) ?? sh?.endTime,
+    });
   }
   return out.sort((a, b) => a.day.getTime() - b.day.getTime() || String(a.assignment.startTime ?? '').localeCompare(String(b.assignment.startTime ?? '')));
 }
@@ -84,9 +93,27 @@ export async function getTodayAssignment(userId: string): Promise<Assignment | n
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const list = (await loadActiveWithDay(userId)).filter(x => x.day >= today && x.day < tomorrow);
-    const confirmed = list.find(x => x.assignment.status === 'accepted' || x.assignment.status === 'assigned');
-    return (confirmed ?? list[0])?.assignment ?? null;
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const all = await loadActiveWithDay(userId);
+    const confirmed = (x: { assignment: Assignment }) =>
+      x.assignment.status === 'accepted' || x.assignment.status === 'assigned';
+
+    // Nachtdienst von gestern, der noch läuft (oder vor höchstens 2 h endete),
+    // geht vor – sonst wäre er nach Mitternacht nicht mehr zu beenden
+    const now = Date.now();
+    const runningNight = all.find(x => {
+      if (!confirmed(x) || x.day < yesterday || x.day >= today || !x.startTime || !x.endTime) return false;
+      if (x.endTime >= x.startTime) return false; // kein Dienst über Mitternacht
+      const [eh, em] = x.endTime.split(':').map(Number);
+      const end = new Date(today);
+      end.setHours(eh || 0, em || 0, 0, 0);
+      return now <= end.getTime() + 2 * 60 * 60 * 1000;
+    });
+    if (runningNight) return runningNight.assignment;
+
+    const list = all.filter(x => x.day >= today && x.day < tomorrow);
+    return (list.find(confirmed) ?? list[0])?.assignment ?? null;
   } catch (error) {
     logger.error('Error fetching today assignment', error instanceof Error ? error : new Error(String(error)));
     return null;

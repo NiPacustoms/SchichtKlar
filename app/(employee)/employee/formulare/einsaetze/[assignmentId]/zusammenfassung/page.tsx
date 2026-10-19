@@ -19,6 +19,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from '@/lib/utils/toast';
 import { PageContainer } from '@/components/layout/PageContainer';
+import { berlinDayKey } from '@/lib/utils/dateKey';
 
 export default function AssignmentSummaryPage() {
   const { assignmentId } = useParams() as { assignmentId: string };
@@ -101,7 +102,7 @@ export default function AssignmentSummaryPage() {
       for (const item of block) {
         const a = await assignmentService.getById(item.assignmentId);
         if (!a) continue;
-        const dateKey = item.date.toISOString().slice(0, 10);
+        const dateKey = berlinDayKey(item.date);
         const daily = a.dailySignatures || [];
         const hasDaily =
           Array.isArray(daily) &&

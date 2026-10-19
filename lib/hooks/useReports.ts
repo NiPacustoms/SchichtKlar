@@ -10,6 +10,7 @@ import { assignmentService } from '@/lib/services/assignments';
 import type { Assignment } from '@/lib/services/assignments';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/utils/toast';
+import { berlinDayKey } from '@/lib/utils/dateKey';
 
 interface ReportGenerationData {
   type: 'timesheet' | 'allowances' | 'shifts' | 'summary';
@@ -177,7 +178,7 @@ export function useReports() {
       if (fileUrl) {
         const a = document.createElement('a');
         a.href = fileUrl;
-        a.download = `report-${new Date().toISOString().split('T')[0]}.pdf`;
+        a.download = `report-${berlinDayKey(new Date())}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

@@ -37,6 +37,7 @@ export const ROUTES = {
     EINRICHTUNGEN: '/admin/einrichtungen',
     EINRICHTUNGEN_DETAIL: (id: string) => `/admin/einrichtungen/${id}`,
     STUNDEN: '/admin/stunden',
+    ZEITNACHWEISE: '/admin/zeitnachweise',
     BERICHTE: '/admin/berichte',
     EINSTELLUNGEN: '/admin/einstellungen',
     UEBERSICHT: '/admin/uebersicht',

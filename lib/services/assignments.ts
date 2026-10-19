@@ -115,6 +115,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
+import { berlinDayKeyOpt } from '@/lib/utils/dateKey';
 
 const COLLECTION_NAME = 'assignments';
 
@@ -880,12 +881,12 @@ return assignments;
           // Convert to format expected by checkTimeOverlap
           const newShiftData = newShift as Record<string, unknown>;
           const newShiftForCheck = {
-            date: (newShiftData.date as { toDate?: () => Date })?.toDate?.()?.toISOString().split('T')[0] || String(newShiftData.date || ''),
+            date: berlinDayKeyOpt((newShiftData.date as { toDate?: () => Date })?.toDate?.()) || String(newShiftData.date || ''),
             startTime: String(newShiftData.startTime || ''),
             endTime: String(newShiftData.endTime || ''),
           };
           const existingShiftForCheck = {
-            date: (existingShiftData.date as { toDate?: () => Date })?.toDate?.()?.toISOString().split('T')[0] || String(existingShiftData.date || ''),
+            date: berlinDayKeyOpt((existingShiftData.date as { toDate?: () => Date })?.toDate?.()) || String(existingShiftData.date || ''),
             startTime: String(existingShiftData.startTime || ''),
             endTime: String(existingShiftData.endTime || ''),
           };
@@ -953,7 +954,7 @@ return assignments;
       const newShiftData = shiftDoc.data() as Record<string, unknown>;
       const newDayKey = toDayKey(newShiftData.date);
       const newShiftForCheck = {
-        date: (newShiftData.date as { toDate?: () => Date })?.toDate?.()?.toISOString().split('T')[0] ?? String(newShiftData.date ?? ''),
+        date: berlinDayKeyOpt((newShiftData.date as { toDate?: () => Date })?.toDate?.()) ?? String(newShiftData.date ?? ''),
         startTime: String(newShiftData.startTime ?? ''),
         endTime: String(newShiftData.endTime ?? ''),
       };
@@ -988,7 +989,7 @@ return assignments;
         const d = await getDoc(doc(getDb(), 'shifts', sid));
         if (d.exists()) {
           const data = d.data() as Record<string, unknown>;
-          const date = (data.date as { toDate?: () => Date })?.toDate?.()?.toISOString().split('T')[0] ?? String(data.date ?? '');
+          const date = berlinDayKeyOpt((data.date as { toDate?: () => Date })?.toDate?.()) ?? String(data.date ?? '');
           shiftDataById[sid] = {
             dayKey: toDayKey(data.date),
             date,

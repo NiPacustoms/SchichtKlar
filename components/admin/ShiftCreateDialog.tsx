@@ -43,6 +43,7 @@ import {
   shouldRetryAssignment,
   useDayRuleOverridePrompt,
 } from '@/components/admin/DayRuleOverrideDialog';
+import { berlinDayKey } from '@/lib/utils/dateKey';
 
 // Validation Schema
 const shiftCreateSchema = z
@@ -332,7 +333,7 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
           for (const day of days) {
             const shiftId = await shiftService.createWithCapacity({
               facilityId: data.facilityId,
-              date: typeof day === 'string' ? day : day.toISOString().split('T')[0],
+              date: typeof day === 'string' ? day : berlinDayKey(day),
               startTime: data.startTime,
               endTime: data.endTime,
               type: data.type,

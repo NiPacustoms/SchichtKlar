@@ -32,36 +32,32 @@ export const protectApprovedTimesheets = onDocumentUpdated(
     const beforeStatus = beforeData.status;
     const afterStatus = afterData.status;
 
-    // Prüfe, ob ein approved/submitted Timesheet geändert werden soll
-    if (
-      (beforeStatus === 'approved' || beforeStatus === 'submitted') &&
-      beforeStatus === afterStatus
-    ) {
-      // Timesheet war bereits approved/submitted und Status wurde nicht geändert
-      // Prüfe, ob andere Felder geändert wurden (außer updatedAt, validation)
-      const protectedFields = [
-        'startTime',
-        'endTime',
-        'breakMinutes',
-        'totalHours',
-        'date',
-        'nightHours',
-        'weekendHours',
-        'holidayHours',
-        'overtimeHours',
-        'regularHours',
-      ];
+    // Nur freigegebene Zeiten sind unveränderlich. Eingereichte darf die
+    // Disposition korrigieren (Firestore-Regeln prüfen Rolle und Firma).
+    if (beforeStatus === 'approved' && beforeStatus === afterStatus) {
+      // Die Zuschlags-Aufteilung schreibt nur der Server-Trigger
+      // computeTimesheetBreakdown (erkennbar am geänderten breakdownKey) –
+      // sie ändert keine erfassten Zeiten und wird nicht zurückgesetzt.
+      const breakdownByServer = beforeData.breakdownKey !== afterData.breakdownKey;
+      const protectedFields = breakdownByServer
+        ? ['startTime', 'endTime', 'breakMinutes', 'totalHours', 'date']
+        : ['startTime', 'endTime', 'breakMinutes', 'totalHours', 'date', 'nightHours', 'weekendHours', 'holidayHours', 'overtimeHours', 'regularHours'];
+
+      // Werte vergleichen, nicht Objekt-Identität (Timestamp !== Timestamp wäre immer „geändert“)
+      const norm = (v: unknown): unknown => {
+        if (v && typeof v === 'object' && typeof (v as { toMillis?: () => number }).toMillis === 'function') {
+          return (v as { toMillis: () => number }).toMillis();
+        }
+        return v ?? null;
+      };
 
       let hasProtectedFieldChanged = false;
-      const changedFields: Record<string, { old: any; new: any }> = {};
+      const changedFields: Record<string, { old: unknown; new: unknown }> = {};
 
       for (const field of protectedFields) {
-        if (beforeData[field] !== afterData[field]) {
+        if (JSON.stringify(norm(beforeData[field])) !== JSON.stringify(norm(afterData[field]))) {
           hasProtectedFieldChanged = true;
-          changedFields[field] = {
-            old: beforeData[field],
-            new: afterData[field],
-          };
+          changedFields[field] = { old: norm(beforeData[field]), new: norm(afterData[field]) };
         }
       }
 
@@ -95,10 +91,9 @@ export const protectApprovedTimesheets = onDocumentUpdated(
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           };
 
-          for (const field of protectedFields) {
-            if (beforeData[field] !== afterData[field]) {
-              restoreData[field] = beforeData[field];
-            }
+          for (const field of Object.keys(changedFields)) {
+            // fehlte das Feld vorher, wird es wieder entfernt
+            restoreData[field] = beforeData[field] === undefined ? admin.firestore.FieldValue.delete() : beforeData[field];
           }
 
           await db.collection('timesheets').doc(timesheetId).update(restoreData);

@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
 import { validateTimesheetArbZG, TimesheetValidationData } from './timesheetValidationUtils';
 import { computeWorkHoursBreakdown } from './utils/workHoursBreakdown';
+import { parseShiftToUTC } from './utils/timeUtils';
 
 const db = admin.firestore();
 
@@ -58,16 +59,13 @@ export const submitTimesheet = functions.https.onCall(async (data, context) => {
 
       const timesheetDate = timesheet.date?.toDate ? timesheet.date.toDate() : new Date(timesheet.date || new Date());
 
-      // Start/Ende mit echtem Schichtdatum (für ArbZG Ruhezeit/Wochenstunden korrekt)
-      const [startH, startM] = String(startTime).split(':').map(Number);
-      const [endH, endM] = String(endTime).split(':').map(Number);
-      const start = new Date(timesheetDate);
-      start.setHours(startH, startM || 0, 0, 0);
-      const end = new Date(timesheetDate);
-      end.setHours(endH, endM || 0, 0, 0);
-      if (end.getTime() <= start.getTime()) {
-        end.setDate(end.getDate() + 1);
+      // Start/Ende in deutscher Zeit – der Server läuft in UTC; setHours() würde
+      // den Dienst auf den Vortag und um 1–2 h verschoben legen (Ruhezeit,
+      // Nacht-/Sonntags-/Feiertagsstunden wären falsch).
+      if (String(startTime) === String(endTime)) {
+        throw new functions.https.HttpsError('failed-precondition', 'Der Dienst läuft noch – bitte erst beenden.');
       }
+      const { startUTC: start, endUTC: end } = parseShiftToUTC(timesheetDate, String(startTime), String(endTime));
 
       const totalMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
       if ((breakMinutes || 0) >= totalMinutes) {
@@ -82,6 +80,18 @@ export const submitTimesheet = functions.https.onCall(async (data, context) => {
       // Stunden-Breakdown (Nacht/Wochenende/Feiertag/Überstunden) + Zuschlag.
       // Stundenlohn aus dem User-Dokument; ohne Lohn bleibt surchargeAmount 0.
       let hourlyRate = 0;
+      // Bundesland der Firma für regionale Feiertage (z. B. NW: Fronleichnam, Allerheiligen)
+      let holidayState: string | undefined;
+      try {
+        if (timesheet.companyId) {
+          const companySnap = await db.collection('companies').doc(timesheet.companyId).get();
+          const c = companySnap.exists ? companySnap.data() : undefined;
+          const raw = c?.holidayState ?? c?.state ?? c?.bundesland;
+          holidayState = typeof raw === 'string' && /^[A-Za-z]{2}$/.test(raw) ? raw.toUpperCase() : undefined;
+        }
+      } catch {
+        holidayState = undefined;
+      }
       try {
         const userSnap = await db.collection('users').doc(timesheet.userId).get();
         const rateRaw = userSnap.exists ? userSnap.data()?.hourlyRate : 0;
@@ -89,7 +99,7 @@ export const submitTimesheet = functions.https.onCall(async (data, context) => {
       } catch {
         hourlyRate = 0;
       }
-      const breakdown = computeWorkHoursBreakdown(start, end, breakMinutes || 0, hourlyRate);
+      const breakdown = computeWorkHoursBreakdown(start, end, breakMinutes || 0, hourlyRate, holidayState);
 
       // 5. VOLLSTÄNDIGE ARBZG-VALIDIERUNG (inkl. Ruhezeiten, 45-Minuten-Pause, etc.)
       const validationData: TimesheetValidationData = {

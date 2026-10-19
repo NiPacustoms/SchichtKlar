@@ -5,6 +5,7 @@ import { adminSettingsService } from '@/lib/services/adminSettings';
 import { toast } from '@/lib/utils/toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
+import { berlinDayKey } from '@/lib/utils/dateKey';
 
 export interface SystemSettings {
   systemName: string;
@@ -204,7 +205,7 @@ export function useAdminSettings() {
       if (backupUrl) {
         const a = document.createElement('a');
         a.href = backupUrl;
-        a.download = `backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `backup-${berlinDayKey(new Date())}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

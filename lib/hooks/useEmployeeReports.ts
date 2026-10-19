@@ -11,6 +11,7 @@ import type { TimeEntry } from '@/lib/services/times';
 import { reportService } from '@/lib/services/reports';
 import { toast } from '@/lib/utils/toast';
 import { logger } from '@/lib/utils/logger';
+import { berlinDayKey } from '@/lib/utils/dateKey';
 
 export interface EmployeeReportFilters {
   year?: number;
@@ -167,7 +168,7 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
     for (const ts of list) {
       const d = ts.date instanceof Date ? ts.date : new Date(ts.date);
       if (Number.isNaN(d.getTime())) continue;
-      const dayKey = d.toISOString().slice(0, 10);
+      const dayKey = berlinDayKey(d);
       weeks.add(format(d, "RRRR-'W'II")); // ISO-Woche
       const th = ts.totalHours || 0;
       const ot = ts.overtimeHours || 0;

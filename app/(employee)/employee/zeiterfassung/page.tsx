@@ -9,12 +9,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTimesheet } from '@/lib/hooks/useTimesheet';
 import { TimesheetForm as TimesheetFormType, Timesheet } from '@/lib/types';
 import { toast } from '@/lib/utils/toast';
+import { calculateTimesheet, describeTimesheetFlags, requiredBreakFor, TimesheetInputError } from '@/lib/domain/timesheetCalc';
 import { Alert, Box, Grid, Typography, Button, Card, CardContent, Stack } from '@mui/material';
 import { DailySignatureDialog } from '@/components/admin/DailySignatureDialog';
 import { RelievingPersonnelSignatureDialog } from '@/components/assignments/RelievingPersonnelSignatureDialog';
 import { useState } from 'react';
 import { logger } from '@/lib/logging';
-import { EventAvailable, Pause, Stop } from '@mui/icons-material';
+import { EventAvailable, Stop } from '@mui/icons-material';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { getTodayAssignment, listAssignmentsForUser } from '@/src/composition';
 import { shiftService } from '@/lib/services/shifts';
@@ -99,7 +100,7 @@ export default function TimePage() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const [editingTimesheet, setEditingTimesheet] = useState<TimesheetFormType | null>(null);
+  const [editingTimesheet, setEditingTimesheet] = useState<(TimesheetFormType & { id: string }) | null>(null);
   const [openDailySignature, setOpenDailySignature] = useState<{
     open: boolean;
     tsId?: string;
@@ -149,22 +150,44 @@ export default function TimePage() {
       const timesheetData = {
         ...data,
         startTime: startTimeForStorage,
+        // Verknüpfung zum Einsatz: Soll/Ist und fehlende Nachweise je Einrichtung
+        assignmentId: todayAssignment?.id,
+        shiftId: todayAssignment?.shiftId ?? shift?.id,
+        facilityId: data.facilityId || shift?.facilityId,
       };
 
-      if (editingTimesheet && timesheet) {
+      // Eingaben vor dem Speichern prüfen – verständliche Meldung statt kryptischem Fehler
+      let hints: string[] = [];
+      try {
+        hints = describeTimesheetFlags(
+          calculateTimesheet(timesheetData.startTime, timesheetData.endTime, timesheetData.breakMinutes)
+        );
+      } catch (e) {
+        if (e instanceof TimesheetInputError) {
+          toast.error(e.message);
+          return;
+        }
+        throw e;
+      }
+      hints.forEach(h => toast.warning(h));
+
+      // Bearbeitet wird genau der gewählte Eintrag – sonst der heutige, falls vorhanden
+      const targetId = editingTimesheet?.id ?? timesheet?.id;
+      if (targetId) {
+        // Verknüpfung nicht überschreiben, wenn der Eintrag zu einem anderen Tag gehört
+        const { assignmentId: _a, shiftId: _s, ...withoutLink } = timesheetData;
         await updateTimesheet.mutateAsync({
-          id: timesheet.id,
-          data: timesheetData,
+          id: targetId,
+          data: editingTimesheet ? withoutLink : timesheetData,
         });
-        toast.success('Zeiterfassung aktualisiert!');
+        toast.success('Zeiterfassung aktualisiert');
         setEditingTimesheet(null);
-        // Prüfe ob Signatur-Dialog geöffnet werden soll
-        if (timesheetData.endTime) {
-          setOpenDailySignature({ open: true, tsId: timesheet.id, date: data.date });
+        if (timesheetData.endTime && timesheetData.endTime !== timesheetData.startTime) {
+          setOpenDailySignature({ open: true, tsId: targetId, date: data.date });
         }
       } else {
         const timesheetId = await createTimesheet.mutateAsync(timesheetData);
-        toast.success('Zeiterfassung erstellt!');
+        toast.success('Zeiterfassung gespeichert');
         setEditingTimesheet(null);
 
         // Prüfe ob Signatur-Dialoge geöffnet werden sollen
@@ -249,7 +272,12 @@ export default function TimePage() {
   };
 
   const handleEditTimesheet = (timesheet: Timesheet) => {
+    if (timesheet.status === 'approved' || timesheet.status === 'submitted') {
+      toast.info('Eingereichte oder freigegebene Zeiten können nicht mehr geändert werden.');
+      return;
+    }
     setEditingTimesheet({
+      id: timesheet.id,
       date: timesheet.date,
       startTime: timesheet.startTime,
       endTime: timesheet.endTime,
@@ -450,22 +478,6 @@ export default function TimePage() {
                 <Stack direction="row" spacing={2} flexWrap="wrap" justifyContent="center" sx={{ mt: 1 }}>
                   <Button
                     variant="contained"
-                    startIcon={<Pause />}
-                    size="large"
-                    sx={{
-                      backgroundColor: 'warning.main',
-                      color: '#ffffff',
-                      boxShadow: 'none',
-                      '&:hover': { backgroundColor: 'warning.dark', boxShadow: 'none' },
-                    }}
-                    data-testid="pause-button"
-                    aria-label="Pause erfassen (in zukünftiger Version)"
-                    onClick={() => toast.info('Pause wird in einer zukünftigen Version unterstützt. Bitte erfassen Sie Pausen im Formular unten.')}
-                  >
-                    Pause
-                  </Button>
-                  <Button
-                    variant="contained"
                     color="error"
                     startIcon={<Stop />}
                     size="large"
@@ -473,23 +485,32 @@ export default function TimePage() {
                     data-testid="end-shift-button"
                     aria-label="Schicht beenden"
                     disabled={updateTimesheet.isPending}
-                    onClick={async () => {
-                      const now = new Date();
-                      const endTime = now.toTimeString().slice(0, 5);
+                    onClick={() => {
+                      const endTime = new Date().toTimeString().slice(0, 5);
+                      // Pause nicht stillschweigend mit 0 speichern: Formular mit Endzeit und
+                      // Pflichtpause vorbelegen, die Pflegekraft bestätigt die tatsächliche Pause
+                      let suggestedBreak = timesheet.breakMinutes ?? 0;
                       try {
-                        await updateTimesheet.mutateAsync({
-                          id: timesheet.id,
-                          data: {
-                            date: timesheet.date,
-                            startTime: timesheet.startTime,
-                            endTime,
-                            breakMinutes: timesheet.breakMinutes ?? 0,
-                            notes: timesheet.notes,
-                          },
-                        });
-                        toast.success('Schicht beendet.');
-                      } catch (e) {
-                        toast.error(e instanceof Error ? e.message : 'Fehler beim Beenden');
+                        const r = calculateTimesheet(timesheet.startTime, endTime, 0);
+                        suggestedBreak = Math.max(suggestedBreak, requiredBreakFor(r.grossMinutes));
+                      } catch {
+                        /* Eingabe wird im Formular geprüft */
+                      }
+                      setEditingTimesheet({
+                        id: timesheet.id,
+                        date: timesheet.date,
+                        startTime: timesheet.startTime,
+                        endTime,
+                        breakMinutes: suggestedBreak,
+                        notes: timesheet.notes || '',
+                        facilityId: timesheet.facilityId || assignmentDetails?.shift?.facilityId || '',
+                        station: timesheet.station || assignmentDetails?.station?.name || '',
+                      });
+                      toast.info('Bitte Pause prüfen und speichern – danach unterschreibt die Einrichtung.');
+                      if (typeof window !== 'undefined') {
+                        requestAnimationFrame(() =>
+                          document.getElementById('zeiten-formular')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                        );
                       }
                     }}
                   >
@@ -507,7 +528,7 @@ export default function TimePage() {
       )}
 
       {/* Zeiten manuell eintragen */}
-      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+      <Typography id="zeiten-formular" variant="h6" sx={{ fontWeight: 600, mb: 2, scrollMarginTop: 80 }}>
         Zeiten manuell eintragen
       </Typography>
 
@@ -520,6 +541,7 @@ export default function TimePage() {
             </Alert>
           )}
           <TimesheetForm
+            key={`${timesheet?.id ?? 'neu'}-${assignmentDetails?.shift?.id ?? ''}-${editingTimesheet ? `${editingTimesheet.id}-${editingTimesheet.endTime}` : ''}`}
             initialData={
               editingTimesheet ||
               (timesheet
@@ -529,8 +551,20 @@ export default function TimePage() {
                     endTime: timesheet.endTime,
                     breakMinutes: timesheet.breakMinutes,
                     notes: timesheet.notes,
+                    // ohne Einrichtung ließe sich die Korrektur nicht speichern
+                    facilityId: timesheet.facilityId || assignmentDetails?.shift?.facilityId,
+                    station: timesheet.station || assignmentDetails?.station?.name,
                   }
-                : undefined)
+                : assignmentDetails?.shift
+                  ? {
+                      // Vorbelegung aus dem heutigen Einsatz
+                      date: new Date(),
+                      startTime: assignmentDetails.shift.startTime,
+                      endTime: assignmentDetails.shift.endTime,
+                      facilityId: assignmentDetails.shift.facilityId,
+                      station: assignmentDetails.station?.name,
+                    }
+                  : undefined)
             }
             onSubmit={handleSubmitTimesheet}
             isLoading={createTimesheet.isPending || updateTimesheet.isPending}

@@ -9,6 +9,7 @@ import { timesheetService } from './timesheets';
 import { userService } from './users';
 import { facilityService } from './facilities';
 import { logger } from '@/lib/logging';
+import { berlinDayKey } from '@/lib/utils/dateKey';
 
 export interface AssignmentForCollection {
   id: string;
@@ -191,7 +192,7 @@ export async function buildAssignmentCollectionPdf(
  * Löst den Download des Sammel-PDFs aus (im Browser).
  */
 export function downloadCollectionPdf(bytes: Uint8Array, fileName?: string): void {
-  const name = fileName || `Einsatzmitteilungen_Sammlung_${new Date().toISOString().slice(0, 10)}.pdf`;
+  const name = fileName || `Einsatzmitteilungen_Sammlung_${berlinDayKey(new Date())}.pdf`;
   const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

@@ -1,5 +1,7 @@
 'use client';
 
+import { format } from 'date-fns';
+
 import { logger } from '@/lib/logging';
 
 import { useEffect, useState } from 'react';
@@ -101,7 +103,7 @@ export function DailySignatureDialog({
 
       const upload = await firebaseStorageService.uploadFile(
         file,
-        `signatures/timesheets/${timesheetId}/${date.toISOString().slice(0, 10)}.png`,
+        `signatures/timesheets/${timesheetId}/${format(date, 'yyyy-MM-dd')}.png`,
         {
           kind: 'timesheet-daily',
           role: 'facility',
