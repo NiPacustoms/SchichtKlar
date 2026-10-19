@@ -311,12 +311,23 @@ export const timesheetService = {
       return [];
     }
     try {
-      const q = query(
-        collection(getDb(), COLLECTION_NAME),
-        where('userId', '==', userId),
-        orderBy('date', 'desc'),
-        limit(limitCount)
-      );
+      // Admins dürfen fremde Zeiten nur mandantengefiltert lesen (Regel verlangt companyId);
+      // eigene Zeiten sind über userId erlaubt – der Firmenfilter schadet dort nicht.
+      const companyId = await getCompanyIdFromAuth();
+      const q = companyId
+        ? query(
+            collection(getDb(), COLLECTION_NAME),
+            where('companyId', '==', companyId),
+            where('userId', '==', userId),
+            orderBy('date', 'desc'),
+            limit(limitCount)
+          )
+        : query(
+            collection(getDb(), COLLECTION_NAME),
+            where('userId', '==', userId),
+            orderBy('date', 'desc'),
+            limit(limitCount)
+          );
 
       const snapshot = await getDocs(q);
       const timesheets: Timesheet[] = [];
@@ -788,6 +799,12 @@ export const timesheetService = {
 
       if (normalizedUserId) {
         constraints.unshift(where('userId', '==', normalizedUserId));
+      }
+
+      // Mandantenfilter: ohne ihn lehnt die Regel Admin-Abfragen fremder Zeiten ab
+      const rangeCompanyId = await getCompanyIdFromAuth();
+      if (rangeCompanyId) {
+        constraints.unshift(where('companyId', '==', rangeCompanyId));
       }
 
       if (approvedOnly) {
