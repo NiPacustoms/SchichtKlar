@@ -1677,6 +1677,20 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "absences",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "companyId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "fromKey",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

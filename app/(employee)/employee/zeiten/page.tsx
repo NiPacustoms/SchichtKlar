@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState, useEffect, useMemo } from 'react';
 import { logger } from '@/lib/logging';
 import { useAuth } from '@/contexts/AuthContext';
@@ -63,7 +65,6 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { berlinDayKey } from '@/lib/utils/dateKey';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -100,7 +101,6 @@ export default function EmployeeTimesPage() {
     endShift,
     addBreak,
     endBreak,
-    reportSick,
     getTimeStats,
     exportTimes,
     isStarting,
@@ -117,17 +117,10 @@ export default function EmployeeTimesPage() {
 
   const [activeTab, setActiveTab] = useState(0);
 
-  const [sickDialogOpen, setSickDialogOpen] = useState(false);
   const [breakDialogOpen, setBreakDialogOpen] = useState(false);
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string>('');
   const [breakFormData, setBreakFormData] = useState({ reason: '', duration: 30 });
-  const [sickFormData, setSickFormData] = useState({
-    startDate: berlinDayKey(new Date()),
-    endDate: berlinDayKey(new Date()),
-    reason: '',
-    doctorNote: '',
-  });
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeWorkEntry, setActiveWorkEntry] = useState<TimeEntry | null>(null);
   const [activeBreakEntry, setActiveBreakEntry] = useState<TimeEntry | null>(null);
@@ -327,29 +320,6 @@ export default function EmployeeTimesPage() {
       await addBreak(breakFormData);
       setBreakDialogOpen(false);
       setBreakFormData({ reason: '', duration: 30 });
-    } catch (_error) {
-      // Error handling is done in the mutations
-    }
-  };
-
-  const handleReportSick = async () => {
-    if (!sickFormData.reason.trim() || !sickFormData.startDate || !sickFormData.endDate) {
-      return; // Form validation
-    }
-    try {
-      await reportSick({
-        startDate: new Date(sickFormData.startDate),
-        endDate: new Date(sickFormData.endDate),
-        reason: sickFormData.reason,
-        doctorNote: sickFormData.doctorNote || undefined,
-      });
-      setSickDialogOpen(false);
-      setSickFormData({
-        startDate: berlinDayKey(new Date()),
-        endDate: berlinDayKey(new Date()),
-        reason: '',
-        doctorNote: '',
-      });
     } catch (_error) {
       // Error handling is done in the mutations
     }
@@ -802,7 +772,7 @@ export default function EmployeeTimesPage() {
 
       {/* Actions */}
       <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-        <Button variant="outlined" startIcon={<Sick />} onClick={() => setSickDialogOpen(true)}>
+        <Button variant="outlined" startIcon={<Sick />} component={Link} href="/employee/abwesenheiten?neu=krank">
           Krankmeldung
         </Button>
         <Button variant="outlined" startIcon={<Download />} onClick={() => exportTimes('pdf')}>
@@ -1086,107 +1056,6 @@ export default function EmployeeTimesPage() {
           </CardContent>
         </Card>
       </TabPanel>
-
-      {/* Sick Report Dialog */}
-      <Dialog
-        open={sickDialogOpen}
-        onClose={() => setSickDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Sick />
-            Krankmeldung
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Bitte melden Sie sich krank, sobald Sie wissen, dass Sie nicht zur Arbeit kommen können.
-          </Alert>
-          <Grid container spacing={3} sx={{ mt: 1 }}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Von"
-                type="date"
-                InputLabelProps={{ shrink: true }}
-                value={sickFormData.startDate}
-                onChange={e => setSickFormData({ ...sickFormData, startDate: e.target.value })}
-                required
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Bis"
-                type="date"
-                InputLabelProps={{ shrink: true }}
-                value={sickFormData.endDate}
-                onChange={e => setSickFormData({ ...sickFormData, endDate: e.target.value })}
-                required
-                error={sickFormData.endDate < sickFormData.startDate}
-                helperText={
-                  sickFormData.endDate < sickFormData.startDate
-                    ? 'Enddatum muss nach Startdatum liegen'
-                    : ''
-                }
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Grund"
-                multiline
-                rows={3}
-                placeholder="Beschreibung der Krankheit oder Symptome..."
-                value={sickFormData.reason}
-                onChange={e => setSickFormData({ ...sickFormData, reason: e.target.value })}
-                required
-                error={!sickFormData.reason.trim()}
-                helperText={!sickFormData.reason.trim() ? 'Bitte geben Sie einen Grund an' : ''}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Arztbesuch (optional)"
-                placeholder="Name des Arztes oder Praxis..."
-                value={sickFormData.doctorNote}
-                onChange={e => setSickFormData({ ...sickFormData, doctorNote: e.target.value })}
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setSickDialogOpen(false);
-              setSickFormData({
-                startDate: berlinDayKey(new Date()),
-                endDate: berlinDayKey(new Date()),
-                reason: '',
-                doctorNote: '',
-              });
-            }}
-          >
-            Abbrechen
-          </Button>
-          <Button
-            onClick={handleReportSick}
-            variant="contained"
-            disabled={
-              !sickFormData.reason.trim() ||
-              !sickFormData.startDate ||
-              !sickFormData.endDate ||
-              sickFormData.endDate < sickFormData.startDate
-            }
-            startIcon={<CheckCircle />}
-          >
-            Krankmeldung absenden
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Assignment Selection Dialog */}
       <Dialog

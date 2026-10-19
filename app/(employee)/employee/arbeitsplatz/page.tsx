@@ -455,6 +455,14 @@ function DashboardPageContent() {
                       >
                         Dokumente abrufen
                       </Button>
+                      <Button
+                        component={Link}
+                        href="/employee/abwesenheiten"
+                        variant="outlined"
+                        size="small"
+                      >
+                        Urlaub & Krankmeldung
+                      </Button>
                     </Stack>
                   </CardContent>
                 </GlassCard>
