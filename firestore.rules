@@ -641,6 +641,66 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ── Monatlicher Stundennachweis (Arbeitnehmer „erfasst“, Arbeitgeber „anerkannt“) ──
+    // Doc-ID: {companyId}_{userId}_{YYYY-MM}. Die Stunden selbst stehen in
+    // timesheets; hier liegen nur Unterschriften + Fingerabdruck der Zeilen.
+    function stmtEmployeeKeys() {
+      return ['employeeSignature', 'employeeSignedName', 'employeeSignedAt', 'signedFingerprint', 'signedTotalHours', 'updatedAt'];
+    }
+    function stmtEmployerKeys() {
+      return ['employerSignature', 'employerSignedName', 'employerSignedAt', 'employerSignedBy', 'updatedAt'];
+    }
+    function stmtEmployeeValid(d) {
+      return d.employeeSignature is string && d.employeeSignature.size() < 400000 &&
+        d.employeeSignature.matches('^data:image/png;base64,.*') &&
+        d.employeeSignedName is string && d.employeeSignedName.size() <= 120 &&
+        d.employeeSignedAt is timestamp &&
+        d.signedFingerprint is string && d.signedFingerprint.size() <= 32 &&
+        d.signedTotalHours is number;
+    }
+    match /timesheetStatements/{statementId} {
+      // Noch nicht vorhandene Nachweise dürfen abgefragt werden (Status „offen“),
+      // aber nur unter der eigenen ID bzw. der eigenen Firma.
+      allow read: if isAuthenticated() && (
+        (resource == null && (
+          statementId.matches('^' + getRequesterCompanyId() + '_' + request.auth.uid + '_[0-9]{4}-[0-9]{2}$') ||
+          (isAdmin() && statementId.matches('^' + getRequesterCompanyId() + '_.+'))
+        )) ||
+        (resource != null && (
+          resource.data.userId == request.auth.uid ||
+          tsIsCompanyAdmin(resource.data.get('companyId', null))
+        ))
+      );
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.companyId == getRequesterCompanyId() &&
+        request.resource.data.month is string &&
+        request.resource.data.month.matches('^[0-9]{4}-(0[1-9]|1[0-2])$') &&
+        statementId == request.resource.data.companyId + '_' + request.auth.uid + '_' + request.resource.data.month &&
+        request.resource.data.keys().hasOnly(['companyId', 'userId', 'month', 'createdAt'].concat(stmtEmployeeKeys())) &&
+        stmtEmployeeValid(request.resource.data);
+      allow update: if isAuthenticated() &&
+        request.resource.data.userId == resource.data.userId &&
+        request.resource.data.companyId == resource.data.companyId &&
+        request.resource.data.month == resource.data.month &&
+        (
+          // Mitarbeiter/in unterschreibt neu, solange noch nicht anerkannt
+          (resource.data.userId == request.auth.uid &&
+            !('employerSignedAt' in resource.data) &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(stmtEmployeeKeys()) &&
+            stmtEmployeeValid(request.resource.data)) ||
+          // Arbeitgeber erkennt an (oder nimmt die Anerkennung zurück)
+          (tsIsCompanyAdmin(resource.data.get('companyId', null)) &&
+            ('employeeSignedAt' in resource.data) &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(stmtEmployerKeys()) &&
+            (!('employerSignature' in request.resource.data) ||
+              (request.resource.data.employerSignature is string &&
+               request.resource.data.employerSignature.size() < 400000 &&
+               request.resource.data.employerSignature.matches('^data:image/png;base64,.*'))))
+        );
+      allow delete: if false;
+    }
+
     // Lohnexport-Einstellungen (Beraternummer, Lohnarten) – je Firma, nur Admins
     match /payrollSettings/{companyId} {
       allow read, write: if isAdmin() && companyId == getRequesterCompanyId();

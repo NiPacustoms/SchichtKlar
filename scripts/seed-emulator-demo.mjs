@@ -247,6 +247,35 @@ async function main() {
     }
   }
 
+  // Vormonat: freigegebene Zeiten für den Stundennachweis (Lea, Jonas)
+  {
+    const now = new Date();
+    const prev = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+    const ym = `${prev.getUTCFullYear()}-${String(prev.getUTCMonth() + 1).padStart(2, '0')}`;
+    const berlinMidnight = d => {
+      const noon = new Date(`${ym}-${String(d).padStart(2, '0')}T12:00:00Z`);
+      const h = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', hour: '2-digit', hourCycle: 'h23' }).format(noon));
+      return new Date(noon.getTime() - h * 3600_000);
+    };
+    const plan = [
+      ['n-lea', 3, '13:30', '21:15', 30, 7.25, facilities[0].id],
+      ['n-lea', 11, '07:00', '13:00', 30, 5.5, facilities[1].id],
+      ['n-lea', 22, '07:00', '13:00', 30, 5.5, facilities[0].id],
+      ['n-lea', 24, '07:00', '11:30', 30, 4, facilities[0].id],
+      ['n-jonas', 8, '06:00', '14:00', 30, 7.5, facilities[2].id],
+      ['n-jonas', 9, '06:00', '14:00', 30, 7.5, facilities[2].id],
+    ];
+    for (const [userId, d, start, end, pause, hours, facilityId] of plan) {
+      await db.doc(`timesheets/prev-${userId}-${d}`).set({
+        companyId: COMPANY_ID, userId, facilityId, date: Timestamp.fromDate(berlinMidnight(d)),
+        startTime: start, endTime: end, breakMinutes: pause, totalHours: hours, status: 'approved',
+        facilitySignerName: 'Frau Lehmann (PDL)', facilitySignedAt: Timestamp.fromDate(berlinMidnight(d)),
+        createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
+      });
+      tsCount++;
+    }
+  }
+
   // Ein per Matching ausgeschriebener Einsatz (Angebot an Lea)
   await db.doc('assignments/a-angebot-1').set({
     companyId: COMPANY_ID,

@@ -463,6 +463,14 @@ function DashboardPageContent() {
                       >
                         Urlaub & Krankmeldung
                       </Button>
+                      <Button
+                        component={Link}
+                        href="/employee/stundennachweis"
+                        variant="outlined"
+                        size="small"
+                      >
+                        Stundennachweis
+                      </Button>
                     </Stack>
                   </CardContent>
                 </GlassCard>

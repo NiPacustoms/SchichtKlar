@@ -107,7 +107,8 @@ export async function drawLetterhead(doc: any, opts: LetterheadOptions): Promise
       }
       const offsetY = boxTop + (boxMaxH - drawH) / 2;
       const fmt = /^data:image\/jpe?g/i.test(logo) ? 'JPEG' : 'PNG';
-      doc.addImage(logo, fmt, boxX, offsetY, drawW, drawH);
+      // Alias: in mehrseitigen Sammel-PDFs wird das Logo nur einmal eingebettet
+      doc.addImage(logo, fmt, boxX, offsetY, drawW, drawH, 'letterhead-logo', 'FAST');
     } catch {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(14);
