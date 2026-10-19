@@ -20,7 +20,7 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { CheckRounded, CloseRounded, DrawOutlined, RefreshOutlined, SearchRounded } from '@mui/icons-material';
+import { CheckRounded, CloseRounded, DrawOutlined, LinkRounded, RefreshOutlined, SearchRounded, SendRounded } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -32,6 +32,8 @@ import type { Timesheet } from '@/lib/types';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatStrip } from '@/components/ui/StatStrip';
 import { toast } from '@/lib/utils/toast';
+import { FacilityApprovalLinkDialog } from '@/components/admin/FacilityApprovalLinkDialog';
+import type { Facility } from '@/lib/types';
 
 type Status = Timesheet['status'];
 type Filter = Status | 'all';
@@ -72,6 +74,7 @@ export function TimesheetReview() {
   const [rejecting, setRejecting] = useState<Timesheet | null>(null);
   const [reason, setReason] = useState('');
   const [confirmFlagged, setConfirmFlagged] = useState<Timesheet[] | null>(null);
+  const [linkOpen, setLinkOpen] = useState(false);
 
   const { data: sheets = [], isLoading, refetch } = useQuery({
     queryKey: ['timesheet-review', companyId],
@@ -87,11 +90,15 @@ export function TimesheetReview() {
     },
     enabled: !!companyId,
   });
-  const { data: facilities = {} } = useQuery({
+  const { data: facilityList = [] } = useQuery({
     queryKey: ['timesheet-review-facilities', companyId],
-    queryFn: async () => Object.fromEntries((await facilityService.getAll(companyId)).map(f => [f.id, f.name])) as Record<string, string>,
+    queryFn: async () => (await facilityService.getAll(companyId)) as Facility[],
     enabled: !!companyId,
   });
+  const facilities = useMemo(
+    () => Object.fromEntries(facilityList.map(f => [f.id, f.name])) as Record<string, string>,
+    [facilityList]
+  );
 
   const counts = useMemo(() => {
     const c: Record<Filter, number> = { all: sheets.length, draft: 0, submitted: 0, approved: 0, rejected: 0 };
@@ -167,7 +174,11 @@ export function TimesheetReview() {
     s.facilitySignerName ? (
       <Tooltip title={s.facilitySignedAt ? `Unterschrieben am ${format(s.facilitySignedAt, 'dd.MM.yyyy HH:mm', { locale: de })}` : 'Unterschrieben'}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
-          <DrawOutlined sx={{ fontSize: 16, color: 'success.main' }} />
+          {s.facilityApprovedVia === 'link' ? (
+            <LinkRounded sx={{ fontSize: 16, color: 'success.main' }} />
+          ) : (
+            <DrawOutlined sx={{ fontSize: 16, color: 'success.main' }} />
+          )}
           <Typography noWrap sx={{ fontSize: 13.5 }}>
             {s.facilitySignerName}
           </Typography>
@@ -221,6 +232,9 @@ export function TimesheetReview() {
                 <RefreshOutlined />
               </IconButton>
             </Tooltip>
+            <Button variant={selected.length ? 'outlined' : 'contained'} startIcon={<SendRounded />} onClick={() => setLinkOpen(true)}>
+              Freigabe anfragen
+            </Button>
             {selected.length > 0 && (
               <Button variant="contained" startIcon={<CheckRounded />} disabled={approve.isPending} onClick={() => requestApprove(selectedSheets)}>
                 {selected.length} freigeben
@@ -305,7 +319,7 @@ export function TimesheetReview() {
             </Typography>
             <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
               {filter === 'submitted'
-                ? 'Sobald Pflegekräfte Zeiten ohne Unterschrift der Einrichtung einreichen, erscheinen sie hier.'
+                ? 'Sobald Pflegekräfte Zeiten ohne Unterschrift der Einrichtung einreichen, erscheinen sie hier. Über „Freigabe anfragen“ bestätigt die Einrichtung per Link.'
                 : 'Für diese Auswahl gibt es keine Einträge.'}
             </Typography>
           </Box>
@@ -415,6 +429,15 @@ export function TimesheetReview() {
             );
           })}
       </Box>
+
+      <FacilityApprovalLinkDialog
+        open={linkOpen}
+        onClose={() => {
+          setLinkOpen(false);
+          invalidate();
+        }}
+        facilities={facilityList}
+      />
 
       <Dialog open={!!rejecting} onClose={() => setRejecting(null)} fullWidth maxWidth="xs">
         <DialogTitle>Zeiten ablehnen</DialogTitle>

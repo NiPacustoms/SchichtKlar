@@ -594,6 +594,11 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
+    // Freigabe-Links für Einrichtungen: nur über Cloud Functions (Token-Hash als ID)
+    match /facilityApprovalLinks/{linkId} {
+      allow read, write: if false;
+    }
+
     // Default: deny
     match /{document=**} {
       allow read, write: if false;

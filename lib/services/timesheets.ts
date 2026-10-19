@@ -1192,6 +1192,7 @@ export const timesheetService = {
       facilitySignedBy: data.facilitySignedBy,
       facilityConfirmationStatus: data.facilityConfirmationStatus,
       facilitySignerName: data.facilitySignerName,
+      facilityApprovedVia: (data as { facilityApprovedVia?: 'link' | 'device' }).facilityApprovedVia,
       assignmentId: data.assignmentId ?? undefined,
       shiftId: data.shiftId ?? undefined,
       arbzgFlags: data.arbzgFlags ?? [],

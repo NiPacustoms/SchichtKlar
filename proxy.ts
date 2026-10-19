@@ -71,6 +71,7 @@ const PUBLIC_ROUTES = [
   '/admin-registrieren',
   '/passwort-vergessen',
   '/einladung-annehmen',
+  '/freigabe',
   '/recht',
   '/legal',
   '/api',

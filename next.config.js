@@ -6,7 +6,7 @@ const IS_DEV = process.env.NODE_ENV !== 'production';
 // Ein Live-Deploy mit Emulator-Config blockiert scripts/deploy.sh.
 const USES_EMULATOR = process.env.NEXT_PUBLIC_USE_EMULATOR === 'true';
 const EMULATOR_CONNECT = IS_DEV || USES_EMULATOR
-  ? ' http://127.0.0.1:8080 http://127.0.0.1:9099 http://127.0.0.1:9199 http://localhost:8080 http://localhost:9099 ws://127.0.0.1:* ws://localhost:*'
+  ? ' http://127.0.0.1:8080 http://127.0.0.1:9099 http://127.0.0.1:9199 http://127.0.0.1:5001 http://localhost:5001 http://localhost:8080 http://localhost:9099 ws://127.0.0.1:* ws://localhost:*'
   : '';
 
 /** @type {import('next').NextConfig} */
