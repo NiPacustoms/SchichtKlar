@@ -15,6 +15,8 @@ export interface User {
   phone?: string;
   qualifications: string[];
   workingHoursPerWeek?: number;
+  /** Personalnummer in der Lohnabrechnung (DATEV) */
+  personnelNumber?: string;
   /** Wochenstunden-Limit (Admin, 20–80h) für ArbZG/MiLoG */
   wochenstundenLimit?: number;
   /** Live Mo–So Summe (Cloud Function) */

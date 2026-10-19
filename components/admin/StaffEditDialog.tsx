@@ -192,6 +192,7 @@ export function StaffEditDialog({ open, onClose, onSave, staff }: StaffEditDialo
       jobTitle: '',
       qualifications: [],
       workingHoursPerWeek: undefined,
+      personnelNumber: '',
       group: '',
       active: true,
       address: {
@@ -252,6 +253,7 @@ export function StaffEditDialog({ open, onClose, onSave, staff }: StaffEditDialo
         jobTitle: fallbackJobTitle,
         qualifications: staff.qualifications || [],
         workingHoursPerWeek: staff.workingHoursPerWeek || undefined,
+        personnelNumber: staff.personnelNumber || '',
         group: fallbackGroup,
         active: staff.active,
         address: {
@@ -685,6 +687,24 @@ export function StaffEditDialog({ open, onClose, onSave, staff }: StaffEditDialo
                     'Vertraglich vereinbarte Arbeitsstunden pro Woche (Standard: 40h = Vollzeit)'
                   }
                   error={!!errors.workingHoursPerWeek}
+                />
+              )}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller
+              control={control}
+              name="personnelNumber"
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  label="Personalnummer (Lohnabrechnung)"
+                  value={field.value ?? ''}
+                  inputProps={{ inputMode: 'numeric', maxLength: 5 }}
+                  helperText={errors.personnelNumber?.message || 'Wie in DATEV – nötig für den Lohnexport'}
+                  error={!!errors.personnelNumber}
                 />
               )}
             />

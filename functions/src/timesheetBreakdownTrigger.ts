@@ -23,6 +23,9 @@ const db = admin.firestore();
 export const BREAKDOWN_FIELDS = [
   'nightHours',
   'weekendHours',
+  'saturdayHours',
+  'sundayHours',
+  'sundayNonHolidayHours',
   'holidayHours',
   'overtimeHours',
   'regularHours',
@@ -80,7 +83,7 @@ export const computeTimesheetBreakdown = onDocumentWritten(
     }
 
     const dayKey = formatInTimeZone(day, BREAKDOWN_TZ, 'yyyy-MM-dd');
-    const key = `v2|${dayKey}|${startTime}|${endTime}|${breakMinutes}|${holidayState ?? ''}|${hourlyRate}`;
+    const key = `v3|${dayKey}|${startTime}|${endTime}|${breakMinutes}|${holidayState ?? ''}|${hourlyRate}`;
     if (after.breakdownKey === key) return;
 
     const { startUTC, endUTC } = parseShiftToUTC(day, startTime, endTime);
@@ -89,6 +92,9 @@ export const computeTimesheetBreakdown = onDocumentWritten(
     await event.data!.after.ref.update({
       nightHours: b.nightHours,
       weekendHours: b.weekendHours,
+      saturdayHours: b.saturdayHours,
+      sundayHours: b.sundayHours,
+      sundayNonHolidayHours: b.sundayNonHolidayHours,
       holidayHours: b.holidayHours,
       overtimeHours: b.overtimeHours,
       regularHours: Math.max(0, Math.round((b.totalHours - b.overtimeHours) * 100) / 100),

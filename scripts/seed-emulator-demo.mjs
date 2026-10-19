@@ -112,7 +112,9 @@ async function main() {
     phone: '0170 1234567',
   });
 
+  let pnr = 100;
   for (const n of nurses) {
+    pnr += 1;
     const ascii = t => t.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/ı/g, 'i').normalize('NFD').replace(/[^a-z]/g, '');
     const email = `${ascii(n.first)}.${ascii(n.last)}@demo.schichtklar.de`;
     await upsertUser({
@@ -124,6 +126,8 @@ async function main() {
       role: 'nurse',
       qualifications: n.q,
       workingHoursPerWeek: n.h,
+      // eine Person ohne Personalnummer, damit der Lohnexport den Hinweis zeigt
+      ...(n.uid === 'n-elif' ? {} : { personnelNumber: String(pnr) }),
       wochenstundenLimit: 48,
       aktuelleWochenstunden: Math.round(n.h * 0.7),
       limitStatus: 'normal',

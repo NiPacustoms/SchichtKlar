@@ -676,6 +676,22 @@ export const timesheetService = {
     await deleteDoc(timesheetRef);
   },
 
+  /** Freigegebene Zeiten der Firma in einem Zeitraum (Lohnexport) */
+  async listApprovedInRange(companyId: string, start: Date, end: Date): Promise<Timesheet[]> {
+    if (!db || !companyId) return [];
+    const snap = await getDocs(
+      query(
+        collection(getDb(), COLLECTION_NAME),
+        where('companyId', '==', companyId),
+        where('status', '==', 'approved'),
+        where('date', '>=', start),
+        where('date', '<=', end),
+        orderBy('date', 'asc')
+      )
+    );
+    return snap.docs.map(d => this.mapDocToTimesheet({ id: d.id, data: () => d.data() }));
+  },
+
   /** Prüfliste der Disposition: Zeiten der Firma nach Status, neueste zuerst */
   async listForReview(
     companyId: string,
@@ -1176,6 +1192,7 @@ export const timesheetService = {
       nightHours: data.nightHours || 0,
       weekendHours: data.weekendHours || 0,
       holidayHours: data.holidayHours || 0,
+      sundayNonHolidayHours: (data as { sundayNonHolidayHours?: number }).sundayNonHolidayHours || 0,
       overtimeHours: data.overtimeHours || 0,
       regularHours: data.regularHours || 0,
       notes: data.notes,

@@ -35,6 +35,8 @@ export interface Timesheet {
   nightHours?: number;
   weekendHours?: number;
   holidayHours?: number;
+  /** Sonntagsstunden ohne Feiertage (Server) */
+  sundayNonHolidayHours?: number;
   notes?: string;
   facilityId?: string;
   station?: string;
