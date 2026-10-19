@@ -36,6 +36,8 @@ export interface WorkHoursBreakdown {
   /** Samstag + Sonntag (Reporting-Feld `weekendHours`) */
   weekendHours: number;
   holidayHours: number;
+  /** Sonntagsstunden ohne Feiertage (Grundlage Sonntagszuschlag) */
+  sundayNonHolidayHours: number;
   overtimeHours: number;
   /** Zuschlag in €, 0 wenn kein Stundenlohn bekannt */
   surchargeAmount: number;
@@ -150,7 +152,7 @@ export function computeWorkHoursBreakdown(
   const en = end.getTime();
   const grossMinutes = (en - s) / 60000;
   if (!(grossMinutes > 0)) {
-    return { totalHours: 0, nightHours: 0, saturdayHours: 0, sundayHours: 0, weekendHours: 0, holidayHours: 0, overtimeHours: 0, surchargeAmount: 0 };
+    return { totalHours: 0, nightHours: 0, saturdayHours: 0, sundayHours: 0, weekendHours: 0, holidayHours: 0, sundayNonHolidayHours: 0, overtimeHours: 0, surchargeAmount: 0 };
   }
 
   const breakM = Math.min(Math.max(breakMinutes || 0, 0), grossMinutes);
@@ -194,9 +196,9 @@ export function computeWorkHoursBreakdown(
   const holidayHours = toH(holidayM);
   const overtimeHours = Math.max(0, Math.round((totalHours - 8) * 100) / 100);
 
+  const sundayOnlyHours = toH(sundayNonHolidayM);
   let surchargeAmount = 0;
   if (hourlyRate && hourlyRate > 0) {
-    const sundayOnlyHours = toH(sundayNonHolidayM);
     surchargeAmount =
       nightHours * hourlyRate * SURCHARGE_RATES.night +
       sundayOnlyHours * hourlyRate * SURCHARGE_RATES.sunday +
@@ -211,6 +213,7 @@ export function computeWorkHoursBreakdown(
     sundayHours,
     weekendHours: Math.round((saturdayHours + sundayHours) * 100) / 100,
     holidayHours,
+    sundayNonHolidayHours: sundayOnlyHours,
     overtimeHours,
     surchargeAmount,
   };

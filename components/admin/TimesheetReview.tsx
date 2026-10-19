@@ -458,7 +458,7 @@ export function TimesheetReview() {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setRejecting(null)}>Abbrechen</Button>
+          <Button variant="text" onClick={() => setRejecting(null)}>Abbrechen</Button>
           <Button
             color="error"
             variant="contained"
@@ -480,7 +480,7 @@ export function TimesheetReview() {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmFlagged(null)}>Abbrechen</Button>
+          <Button variant="text" onClick={() => setConfirmFlagged(null)}>Abbrechen</Button>
           <Button
             variant="contained"
             onClick={() => {

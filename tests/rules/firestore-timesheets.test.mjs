@@ -84,6 +84,13 @@ await check('Admin fremder Firma liest Altdaten ohne Firma', 'DENY', () => getDo
 await check('Pflegekraft liest eigene Altdaten', 'ALLOW', () => getDoc(doc(nurseA, 'timesheets/legacy')));
 await check('Admin listet Zeiten der Firma', 'ALLOW', () => getDocs(query(collection(adminA, 'timesheets'), where('companyId', '==', 'firmaA'))));
 
+console.log('--- Lohnexport-Einstellungen ---');
+await check('Admin liest noch leere Einstellungen der eigenen Firma', 'ALLOW', () => getDoc(doc(adminA, 'payrollSettings/firmaA')));
+await check('Admin speichert Einstellungen der eigenen Firma', 'ALLOW', () => setDoc(doc(adminA, 'payrollSettings/firmaA'), { beraterNr: '1234567' }));
+await check('Admin fremder Firma liest sie nicht', 'DENY', () => getDoc(doc(adminB, 'payrollSettings/firmaA')));
+await check('Pflegekraft liest sie nicht', 'DENY', () => getDoc(doc(nurseA, 'payrollSettings/firmaA')));
+await check('Freigabe-Links sind für Clients gesperrt', 'DENY', () => getDoc(doc(adminA, 'facilityApprovalLinks/x')));
+
 await env.cleanup();
 console.log(failures ? `\n${failures} Prüfung(en) fehlgeschlagen` : '\nAlle Prüfungen bestanden');
 process.exit(failures ? 1 : 0);

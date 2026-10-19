@@ -58,6 +58,7 @@ function eq(actual: unknown, expected: unknown, what: string) {
     const d = await run('bd-sun', { date: berlin('2026-10-18', 2), startTime: '06:00', endTime: '14:00', breakMinutes: 0 });
     eq(d.nightHours, 0, 'Nachtstunden');
     eq(d.weekendHours, 8, 'Wochenendstunden');
+    eq(d.sundayNonHolidayHours, 8, 'Sonntagsstunden ohne Feiertag');
     eq(d.surchargeAmount, 80, 'Zuschlag');
     eq(d.overtimeHours, 0, 'Überstunden');
     eq(d.regularHours, 8, 'reguläre Stunden');

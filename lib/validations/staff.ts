@@ -34,6 +34,11 @@ export const staffCreateSchema = z.object({
     .min(1, 'Mindestens 1 Stunde pro Woche erforderlich')
     .max(80, 'Maximal 80 Stunden pro Woche erlaubt')
     .optional(),
+  personnelNumber: z
+    .string()
+    .trim()
+    .regex(/^\d{0,5}$/, 'Personalnummer: bis zu 5 Ziffern (wie in DATEV)')
+    .optional(),
   group: z.string().optional().default(''),
   active: z.boolean().default(true),
   address: z
