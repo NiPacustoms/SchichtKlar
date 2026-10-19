@@ -1,5 +1,8 @@
 'use client';
 
+import { PageHeader } from '@/components/layout/PageHeader';
+import { alpha } from '@mui/material/styles';
+
 import { FacilityCreateDialog } from '@/components/admin/FacilityCreateDialog';
 import { FacilityEditDialog } from '@/components/admin/FacilityEditDialog';
 import { PageContainer } from '@/components/layout/PageContainer';
@@ -114,47 +117,15 @@ export default function AdminEinrichtungenPage() {
 
   return (
     <PageContainer maxWidth="wide">
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: { xs: 'flex-start', sm: 'center' },
-          justifyContent: 'space-between',
-          flexWrap: { xs: 'wrap', sm: 'nowrap' },
-          gap: 2,
-          mb: 4,
-        }}
-      >
-        <Box>
-          <Typography
-            component="h1"
-            sx={{
-              fontSize: { xs: 26, lg: 28 },
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-              lineHeight: 1.08,
-              color: 'text.primary',
-            }}
-          >
-            Einrichtungen
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-            Standorte, Stationen und Kontaktdaten verwalten
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => setCreateDialogOpen(true)}
-          sx={{
-            minHeight: 44,
-            borderRadius: `${radius.md}px`,
-            bgcolor: 'primary.main',
-            '&:hover': { bgcolor: 'primary.dark' },
-          }}
-        >
-          Neue Einrichtung
-        </Button>
-      </Box>
+      <PageHeader
+        title="Einrichtungen"
+        subtitle="Kunden, Stationen und Ansprechpartner"
+        actions={
+          <Button variant="contained" startIcon={<Add />} onClick={() => setCreateDialogOpen(true)}>
+            Neue Einrichtung
+          </Button>
+        }
+      />
 
       <Grid container spacing={2}>
           {facilities.length === 0 ? (
@@ -192,26 +163,37 @@ export default function AdminEinrichtungenPage() {
                   <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 2 }}>
                     <Box
                       sx={{
-                        width: 48,
-                        height: 48,
+                        width: 44,
+                        height: 44,
                         flexShrink: 0,
-                        borderRadius: `${radius.md}px`,
-                        bgcolor: facility.colorCode || 'primary.main',
-                        color: '#ffffff',
+                        borderRadius: '10px',
+                        bgcolor: alpha(facility.colorCode || '#0f766e', 0.12),
+                        color: facility.colorCode || 'primary.main',
+                        boxShadow: `inset 0 0 0 1px ${alpha(facility.colorCode || '#0f766e', 0.22)}`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        fontSize: 16,
+                        fontWeight: 700,
+                        letterSpacing: '-0.02em',
                       }}
+                      aria-hidden
                     >
-                      <Business />
+                      {facility.name
+                        .replace(/^(Ev\.|Kath\.|St\.)\s+/i, '')
+                        .split(/\s+/)
+                        .filter(w => /^[A-ZÄÖÜ]/.test(w))
+                        .slice(0, 2)
+                        .map(w => w[0])
+                        .join('') || facility.name[0]}
                     </Box>
                     <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                       <Typography
                         sx={{
-                          fontSize: 17,
-                          fontWeight: 700,
+                          fontSize: 16,
+                          fontWeight: 650,
                           letterSpacing: '-0.01em',
-                          lineHeight: 1.25,
+                          lineHeight: 1.3,
                         }}
                         noWrap
                       >
@@ -255,17 +237,25 @@ export default function AdminEinrichtungenPage() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Phone sx={{ fontSize: 18, color: 'text.secondary', flexShrink: 0 }} />
                       <Typography
+                        component="a"
+                        href={`tel:${(facility.phone || '').replace(/\s+/g, '')}`}
                         variant="body2"
-                        color="text.secondary"
                         className="tabular-nums"
                         noWrap
+                        sx={{ color: 'text.secondary', textDecoration: 'none', '&:hover': { color: 'primary.main' } }}
                       >
                         {facility.phone}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Email sx={{ fontSize: 18, color: 'text.secondary', flexShrink: 0 }} />
-                      <Typography variant="body2" color="text.secondary" noWrap>
+                      <Typography
+                        component="a"
+                        href={`mailto:${facility.email}`}
+                        variant="body2"
+                        noWrap
+                        sx={{ color: 'text.secondary', textDecoration: 'none', '&:hover': { color: 'primary.main' } }}
+                      >
                         {facility.email}
                       </Typography>
                     </Box>
@@ -282,7 +272,7 @@ export default function AdminEinrichtungenPage() {
                           <Box component="span" className="tabular-nums">
                             {facility.stations.length}
                           </Box>{' '}
-                          Station(en)
+                          {facility.stations.length === 1 ? 'Station' : 'Stationen'}
                         </Typography>
                       </Box>
                     )}
@@ -302,24 +292,24 @@ export default function AdminEinrichtungenPage() {
                         )}
                       </Box>
                       <Box sx={{ flexShrink: 0 }}>
-                        <Tooltip title="Bearbeiten">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleEdit(facility)}
-                            sx={{ mr: 1 }}
-                            aria-label={`${facility.name} bearbeiten`}
-                          >
-                            <Edit />
-                          </IconButton>
-                        </Tooltip>
+                        <Button
+                          size="small"
+                          variant="text"
+                          startIcon={<Edit sx={{ fontSize: '18px !important' }} />}
+                          onClick={() => handleEdit(facility)}
+                          aria-label={`${facility.name} bearbeiten`}
+                          sx={{ mr: 0.5 }}
+                        >
+                          Bearbeiten
+                        </Button>
                         <Tooltip title="Löschen">
                           <IconButton
                             size="small"
                             onClick={() => handleDelete(facility)}
-                            color="error"
                             aria-label={`${facility.name} löschen`}
+                            sx={{ color: 'text.secondary', '&:hover': { color: 'error.main', bgcolor: 'rgba(220,38,38,0.06)' } }}
                           >
-                            <Delete />
+                            <Delete fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       </Box>

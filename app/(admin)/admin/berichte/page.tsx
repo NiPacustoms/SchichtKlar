@@ -16,6 +16,9 @@ import {
   Refresh,
   Work,
   BarChart,
+  TrendingDown,
+  TrendingFlat,
+  TrendingUp,
 } from '@mui/icons-material';
 import {
   Box,
@@ -92,7 +95,7 @@ export default function AdminBerichtePage() {
     error,
     formatCurrency,
     formatHours,
-    getTrendIcon,
+    getTrendIcon: _getTrendIcon,
     getTrendText,
     exportTimeAccountReport,
     exportEmployeeStatistics,
@@ -151,7 +154,7 @@ export default function AdminBerichtePage() {
   if (!user) {
     return (
       <PageContainer maxWidth="wide">
-        <Alert severity="error">Bitte melde dich an, um Berichte zu sehen.</Alert>
+        <Alert severity="error">Bitte melden Sie sich an, um Berichte zu sehen.</Alert>
       </PageContainer>
     );
   }
@@ -409,12 +412,7 @@ export default function AdminBerichtePage() {
                     </Typography>
                   </Box>
 
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2">Top Performer</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {employeeStatistics?.topPerformers ?? 0}
-                    </Typography>
-                  </Box>
+
                 </CardContent>
               </Card>
             </Grid>
@@ -435,10 +433,12 @@ export default function AdminBerichtePage() {
                             ? 'success.main'
                             : timeAccountReport?.trend === 'down'
                               ? 'error.main'
-                              : 'info.main',
+                              : 'grey.500',
+                        width: 36,
+                        height: 36,
                       }}
                     >
-                      {getTrendIcon(timeAccountReport?.trend ?? 'flat')}
+                      {(t => (t === 'up' ? <TrendingUp /> : t === 'down' ? <TrendingDown /> : <TrendingFlat />))(timeAccountReport?.trend ?? 'flat')}
                     </Avatar>
                     <Box>
                       <Typography variant="h6">
@@ -458,10 +458,12 @@ export default function AdminBerichtePage() {
                             ? 'success.main'
                             : employeeStatistics?.employeeTrend === 'down'
                               ? 'error.main'
-                              : 'info.main',
+                              : 'grey.500',
+                        width: 36,
+                        height: 36,
                       }}
                     >
-                      {getTrendIcon(employeeStatistics?.employeeTrend ?? 'flat')}
+                      {(t => (t === 'up' ? <TrendingUp /> : t === 'down' ? <TrendingDown /> : <TrendingFlat />))(employeeStatistics?.employeeTrend ?? 'flat')}
                     </Avatar>
                     <Box>
                       <Typography variant="h6">

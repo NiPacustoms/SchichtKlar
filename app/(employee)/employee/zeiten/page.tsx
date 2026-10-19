@@ -288,7 +288,7 @@ export default function EmployeeTimesPage() {
       setAssignmentDialogOpen(true);
     } else {
       toast.warning(
-        'Kein aktiver Auftrag für heute gefunden. Bitte warte auf eine Zuweisung oder kontaktiere deine Leitung.'
+        'Kein aktiver Auftrag für heute gefunden. Bitte warten Sie auf eine Zuweisung oder wenden Sie sich an Ihre Disposition.'
       );
       // No assignments - error will be shown by the service
       try {
@@ -397,7 +397,7 @@ export default function EmployeeTimesPage() {
   if (!user) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="error">Bitte melde dich an, um deine Zeiten zu verwalten.</Alert>
+        <Alert severity="error">Bitte melden Sie sich an, um Ihre Zeiten zu sehen.</Alert>
       </Box>
     );
   }
@@ -704,7 +704,7 @@ export default function EmployeeTimesPage() {
                     }}
                   >
                     {stats.overtimeHours > 0 ? '+' : ''}
-                    {stats.overtimeHours.toFixed(1)}h
+                    {stats.overtimeHours.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h
                   </Typography>
                 </Box>
               </Box>
@@ -751,7 +751,7 @@ export default function EmployeeTimesPage() {
                   Gesamtstunden (Monat)
                 </Typography>
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                  {stats.totalHours.toFixed(1)}h
+                  {stats.totalHours.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h
                 </Typography>
               </Box>
             </CardContent>

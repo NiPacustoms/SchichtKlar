@@ -92,9 +92,9 @@ export function GlobalHeader({ withSidebar = false }: GlobalHeaderProps) {
   const isOnDashboard = pathname === '/admin/uebersicht' || pathname === '/employee/arbeitsplatz';
   // Elemente, die am Desktop die Seitenleiste übernimmt
   const mobileOnly = withSidebar ? { display: { [SIDEBAR_BREAKPOINT]: 'none' } } : {};
-  const desktopOnly = withSidebar
-    ? { display: { xs: 'none', [SIDEBAR_BREAKPOINT]: 'flex' } }
-    : { display: 'none' };
+  // Konto-Menü am Desktop (mit Seitenleiste ab lg, sonst ab md)
+  const accountBp = withSidebar ? SIDEBAR_BREAKPOINT : 'md';
+  const desktopOnly = { display: { xs: 'none', [accountBp]: 'flex' } };
 
   const handleSignOut = async () => {
     if (loggingOut) return;
@@ -122,18 +122,14 @@ export function GlobalHeader({ withSidebar = false }: GlobalHeaderProps) {
             component={Link}
             href={homeHref}
             sx={{
-              // Mobil links im Fluss, ab md optisch zentriert
-              position: { xs: 'static', md: 'absolute' },
-              left: { md: '50%' },
-              transform: { md: 'translateX(-50%)' },
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               textDecoration: 'none',
-              width: 88,
+              width: { xs: 88, md: 112 },
               height: 48,
               flexShrink: 0,
-              mr: { xs: 1, md: 0 },
+              mr: 1,
               ...(withSidebar && { display: { xs: 'flex', [SIDEBAR_BREAKPOINT]: 'none' } }),
             }}
             aria-label="Zur Startseite"
@@ -154,7 +150,7 @@ export function GlobalHeader({ withSidebar = false }: GlobalHeaderProps) {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 0, ...mobileOnly }}>
           {user && !isOnDashboard && <BackButton iconOnly size="small" variant="outlined" />}
           {user && (
-            <Typography variant="body2" sx={{ color: 'text.secondary', display: { xs: 'none', sm: 'block' } }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary', display: { xs: 'none', sm: 'block', md: 'none' } }}>
               {displayName}
             </Typography>
           )}
@@ -212,8 +208,7 @@ export function GlobalHeader({ withSidebar = false }: GlobalHeaderProps) {
               variant="outlined"
               color="primary"
               sx={{
-                display: { xs: 'none', sm: 'inline-flex' },
-                ...(withSidebar && { display: { xs: 'none', sm: 'inline-flex', [SIDEBAR_BREAKPOINT]: 'none' } }),
+                display: { xs: 'none', sm: 'inline-flex', [accountBp]: 'none' },
                 borderColor: 'primary.main',
                 '&:hover': { borderColor: 'primary.dark', backgroundColor: 'action.hover' },
               }}
@@ -292,7 +287,7 @@ export function GlobalHeader({ withSidebar = false }: GlobalHeaderProps) {
               px: { xs: 1.5, sm: 2.5 },
               '& .MuiButton-startIcon': { mr: { xs: 0, sm: 1 }, ml: { xs: 0, sm: -0.5 } },
               '&:hover': { borderColor: 'text.secondary', backgroundColor: 'action.hover' },
-              ...(withSidebar && { display: { [SIDEBAR_BREAKPOINT]: 'none' } }),
+              display: { [accountBp]: 'none' },
             }}
             disabled={loggingOut}
             data-testid="logout-button"

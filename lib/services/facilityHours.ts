@@ -19,9 +19,14 @@ export interface FacilityHoursSummary {
   facilityId: string;
   facilityName: string;
   plannedHours: number;
+  /** Geplante Stunden der Schichten, die bereits vorbei sind (Soll bis jetzt) */
+  dueHours: number;
   workedHours: number;
+  /** Vergangene Schichten ohne eingereichte Zeiterfassung */
   missingEntries: number;
   shiftCount: number;
+  /** Davon bereits beendete Schichten */
+  dueShiftCount: number;
   timesheetCount: number;
   pendingTimesheets: number;
   range: FacilityHoursSummaryRange;
@@ -140,6 +145,8 @@ async function collectPlannedHours(
     return {
       plannedHours: 0,
       shiftCount: 0,
+      dueHours: 0,
+      dueShiftCount: 0,
     };
   }
 
@@ -159,9 +166,13 @@ async function collectPlannedHours(
   const snapshot = await getDocs(q);
   let plannedHours = 0;
   let shiftCount = 0;
+  let dueHours = 0;
+  let dueShiftCount = 0;
+  const now = Date.now();
 
   snapshot.forEach(docSnap => {
     const data = docSnap.data() as {
+      date?: { toDate?: () => Date } | Date | string;
       startTime?: string;
       endTime?: string;
       durationMinutes?: number;
@@ -170,6 +181,8 @@ async function collectPlannedHours(
       maxStaff?: number;
     };
     shiftCount += 1;
+    const before = plannedHours;
+    const isDue = shiftHasEnded(data.date, data.startTime, data.endTime, now);
 
     if (typeof data.durationMinutes === 'number' && data.durationMinutes > 0) {
       const participants = Math.max(
@@ -179,6 +192,10 @@ async function collectPlannedHours(
         1,
       );
       plannedHours += (data.durationMinutes / 60) * participants;
+      if (isDue) {
+        dueShiftCount += 1;
+        dueHours += plannedHours - before;
+      }
       return;
     }
 
@@ -190,12 +207,41 @@ async function collectPlannedHours(
       1,
     );
     plannedHours += duration * participants;
+    if (isDue) {
+      dueShiftCount += 1;
+      dueHours += plannedHours - before;
+    }
   });
 
   return {
     plannedHours,
     shiftCount,
+    dueHours,
+    dueShiftCount,
   };
+}
+
+/** Ist die Schicht (inkl. Nachtschicht über Mitternacht) bereits zu Ende? */
+function shiftHasEnded(
+  rawDate: { toDate?: () => Date } | Date | string | undefined,
+  startTime: string | undefined,
+  endTime: string | undefined,
+  now: number
+): boolean {
+  if (!rawDate) return false;
+  const day =
+    rawDate instanceof Date
+      ? new Date(rawDate)
+      : typeof rawDate === 'string'
+        ? new Date(rawDate)
+        : rawDate.toDate?.() ?? null;
+  if (!day || Number.isNaN(day.getTime())) return false;
+  const [eh, em] = (endTime || '23:59').split(':').map(Number);
+  const [sh, sm] = (startTime || '00:00').split(':').map(Number);
+  const end = new Date(day);
+  end.setHours(eh || 0, em || 0, 0, 0);
+  if ((eh || 0) * 60 + (em || 0) <= (sh || 0) * 60 + (sm || 0)) end.setDate(end.getDate() + 1);
+  return end.getTime() <= now;
 }
 
 async function collectWorkedHours(
@@ -302,12 +348,15 @@ export const facilityHoursService = {
             collectWorkedHours(facility.id, facility.companyId, range.startDate, range.endDate, allowedStatuses),
           ]);
 
-          const missingEntries = Math.max(planned.shiftCount - worked.timesheetCount, 0);
+          // Nur beendete Schichten können eine Zeiterfassung haben
+          const missingEntries = Math.max(planned.dueShiftCount - worked.timesheetCount, 0);
 
           return {
             facilityId: facility.id,
             facilityName: facility.name,
             plannedHours: roundHours(planned.plannedHours),
+            dueHours: roundHours(planned.dueHours),
+            dueShiftCount: planned.dueShiftCount,
             workedHours: roundHours(worked.workedHours),
             missingEntries,
             shiftCount: planned.shiftCount,
@@ -329,6 +378,8 @@ export const facilityHoursService = {
               facilityId: facility.id,
               facilityName: facility.name,
               plannedHours: 0,
+              dueHours: 0,
+              dueShiftCount: 0,
               workedHours: 0,
               missingEntries: 0,
               shiftCount: 0,

@@ -7,6 +7,7 @@ import { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AppLogo } from '@/components/ui/AppLogo';
+import { HeroRosterPreview } from '@/components/marketing/HeroRosterPreview';
 import {
   alpha,
   Box,
@@ -14,9 +15,6 @@ import {
   Container,
   Stack,
   Typography,
-  useScrollTrigger,
-  Zoom,
-  Fab,
 } from '@mui/material';
 import {
   AccessTime,
@@ -26,7 +24,6 @@ import {
   CheckCircleOutline,
   Description,
   Draw,
-  KeyboardArrowUp,
   VerifiedUser,
   PhoneAndroid,
 } from '@mui/icons-material';
@@ -34,24 +31,6 @@ import { useBrandingSettings } from '@/lib/hooks/useBrandingSettings';
 import { ThemeProvider } from '@mui/material/styles';
 import { createAppTheme } from '@/lib/theme';
 import { colors, gradients, heroGradient } from '@/lib/design-tokens';
-
-function ScrollToTop() {
-  const trigger = useScrollTrigger({ disableHysteresis: true, threshold: 120 });
-
-  return (
-    <Zoom in={trigger}>
-      <Fab
-        color="primary"
-        size="medium"
-        aria-label="Nach oben scrollen"
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        sx={{ position: 'fixed', right: 24, bottom: 24, zIndex: 1000 }}
-      >
-        <KeyboardArrowUp />
-      </Fab>
-    </Zoom>
-  );
-}
 
 /** Getönter Icon-Kreis – dasselbe Muster wie im App-Inneren */
 function TintedIcon({ children }: { children: React.ReactNode }) {
@@ -257,111 +236,105 @@ export default function HomePage() {
               priority
             />
           </Box>
-          <Button component={Link} href="/anmelden" variant="outlined" size="small">
-            Login
+          <Button component={Link} href="/anmelden" variant="text" size="small">
+            Anmelden
           </Button>
         </Box>
       </Container>
 
-      {/* Hero – viel Weißraum, eine Botschaft */}
-      <Container maxWidth="md" sx={{ textAlign: 'center', pt: { xs: 8, md: 14 }, pb: { xs: 8, md: 12 } }}>
-        <Typography
-          variant="overline"
-          component="p"
-          sx={{ color: 'primary.main', mb: 2 }}
-        >
-          Digitale Personalplanung für die Pflege
-        </Typography>
-        <Typography
-          variant="h1"
+      {/* Hero: Botschaft links, Produkt rechts */}
+      <Container maxWidth="lg" sx={{ pt: { xs: 6, md: 10 }, pb: { xs: 8, md: 12 } }}>
+        <Box
           sx={{
-            fontSize: { xs: 34, md: 48 },
-            lineHeight: 1.12,
-            letterSpacing: '-0.02em',
-            mb: 3,
+            display: 'grid',
+            gap: { xs: 6, md: 6 },
+            gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 5fr) minmax(0, 7fr)' },
+            alignItems: 'center',
           }}
         >
-          Dienstplan, Zeiterfassung und Einsätze – an einem Ort.
-        </Typography>
-        <Typography
-          variant="body1"
-          color="text.secondary"
-          sx={{ fontSize: 17, maxWidth: 620, mx: 'auto', mb: 5 }}
-        >
-          Schichtklar verbindet Einrichtungen und Pflegekräfte: Einsätze planen, Arbeitszeiten
-          erfassen und digital signieren – ohne Zettelwirtschaft, konform mit § 11 AÜG.
-        </Typography>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center" sx={{ mb: 6 }}>
-          <Button
-            component={Link}
-            href="/admin-registrieren"
-            variant="contained"
-            size="large"
-            endIcon={<ArrowForward />}
-          >
-            Firma registrieren
-          </Button>
-          <Button component={Link} href="/anmelden" size="large" variant="text">
-            Ich habe bereits ein Konto
-          </Button>
-        </Stack>
-
-        {/* Sachliche Vertrauens-Hinweise – Text statt Deko */}
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={{ xs: 1, sm: 4 }}
-          justifyContent="center"
-          sx={{ color: 'text.secondary' }}
-        >
-          {['DSGVO-konforme Datenhaltung', 'Einsatzmitteilungen nach § 11 AÜG', 'Digitale Signatur'].map(
-            item => (
-              <Stack key={item} direction="row" spacing={1} alignItems="center" justifyContent="center">
-                <CheckCircleOutline sx={{ fontSize: 18, color: 'success.main' }} />
-                <Typography variant="body2">{item}</Typography>
-              </Stack>
-            )
-          )}
-        </Stack>
+          <Box>
+            <Typography
+              variant="h1"
+              sx={{
+                fontSize: { xs: 34, md: 46 },
+                lineHeight: 1.06,
+                letterSpacing: '-0.035em',
+                fontWeight: 700,
+                mb: 2.5,
+                maxWidth: 520,
+              }}
+            >
+              Jede Schicht besetzt.
+              <br />
+              Jede Stunde belegt.
+            </Typography>
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ fontSize: 17.5, lineHeight: 1.6, maxWidth: 480, mb: 4 }}
+            >
+              Schichtklar plant Einsätze in Pflegeeinrichtungen, erfasst die Arbeitszeit vor Ort
+              und lässt sie direkt gegenzeichnen – mit Einsatzmitteilung nach § 11 AÜG und
+              Wochenlimit nach ArbZG im Blick.
+            </Typography>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 4 }}>
+              <Button component={Link} href="/admin-registrieren" variant="contained" size="large">
+                Firma registrieren
+              </Button>
+              <Button component={Link} href="/anmelden" size="large" variant="outlined">
+                Anmelden
+              </Button>
+            </Stack>
+            <Stack spacing={1} sx={{ color: 'text.secondary' }}>
+              {['Daten in der EU, DSGVO-konform', 'Läuft im Browser – Smartphone, Tablet, Desktop'].map(item => (
+                <Stack key={item} direction="row" spacing={1} alignItems="center">
+                  <CheckCircleOutline sx={{ fontSize: 17, color: 'primary.main' }} />
+                  <Typography sx={{ fontSize: 14 }}>{item}</Typography>
+                </Stack>
+              ))}
+            </Stack>
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
+            <HeroRosterPreview />
+          </Box>
+        </Box>
       </Container>
 
-      {/* Funktionen */}
+      {/* Funktionen: ruhige Liste statt Kachelraster */}
       <Container maxWidth="lg" sx={{ pb: { xs: 8, md: 12 } }}>
-        <Typography variant="overline" component="p" sx={{ color: 'text.secondary', textAlign: 'center', mb: 1 }}>
-          Funktionen
-        </Typography>
-        <Typography variant="h2" sx={{ textAlign: 'center', mb: 6 }}>
-          Alles, was der Pflegealltag braucht
+        <Typography variant="h2" sx={{ fontSize: { xs: 26, md: 32 }, letterSpacing: '-0.02em', mb: { xs: 3, md: 5 }, maxWidth: 560 }}>
+          Von der offenen Schicht bis zur Abrechnung
         </Typography>
         <Box
           sx={{
             display: 'grid',
-            gap: 3,
-            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' },
+            columnGap: 6,
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            borderTop: '1px solid',
+            borderColor: 'divider',
           }}
         >
           {FEATURES.map(f => (
-            <GlassCard key={f.title} hover={false} sx={{ p: 3, height: '100%' }}>
-              <Stack spacing={2}>
-                <TintedIcon>{f.icon}</TintedIcon>
-                <Box>
-                  <Typography variant="h5" component="h3" sx={{ mb: 0.5 }}>
-                    {f.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {f.desc}
-                  </Typography>
-                </Box>
-              </Stack>
-            </GlassCard>
+            <Box
+              key={f.title}
+              sx={{ display: 'flex', gap: 2, py: 3, borderBottom: '1px solid', borderColor: 'divider' }}
+            >
+              <TintedIcon>{f.icon}</TintedIcon>
+              <Box>
+                <Typography variant="h5" component="h3" sx={{ fontSize: 17, mb: 0.5 }}>
+                  {f.title}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                  {f.desc}
+                </Typography>
+              </Box>
+            </Box>
           ))}
         </Box>
       </Container>
 
       {/* So funktioniert es */}
       <Container maxWidth="lg" sx={{ pb: { xs: 8, md: 12 } }}>
-        <Typography variant="overline" component="p" sx={{ color: 'text.secondary', textAlign: 'center', mb: 1 }}>
-          So funktioniert es
-        </Typography>
         <Typography variant="h2" sx={{ textAlign: 'center', mb: 6 }}>
           In drei Schritten startklar
         </Typography>
@@ -532,7 +505,6 @@ export default function HomePage() {
         </Box>
       </Container>
 
-      <ScrollToTop />
       </Box>
     </ThemeProvider>
   );

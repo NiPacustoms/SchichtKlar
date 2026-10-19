@@ -132,7 +132,7 @@ export default function BerichtePage() {
   if (!user) {
     return (
       <PageContainer maxWidth="wide">
-        <Alert severity="error">Bitte melde dich an, um deine Berichte zu sehen.</Alert>
+        <Alert severity="error">Bitte melden Sie sich an, um Ihre Berichte zu sehen.</Alert>
       </PageContainer>
     );
   }

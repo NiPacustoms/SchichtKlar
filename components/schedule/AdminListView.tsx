@@ -1,124 +1,28 @@
 'use client';
 
-import { GlassCard } from '@/components/ui/GlassCard';
-import { ShiftManagementCard } from '@/components/admin/ShiftManagementCard';
-import { semanticColors } from '@/lib/design-tokens';
-import { Shift } from '@/lib/types';
-import { assignmentService } from '@/lib/services';
 import {
-  CalendarMonth,
-  CheckCircle,
-  Edit,
-  Error,
-  LocationOn,
-  MoreVert,
-  PersonAdd,
-  Warning,
-  Assignment as AssignmentIcon,
-} from '@mui/icons-material';
-import {
+  Avatar,
+  AvatarGroup,
   Box,
   Button,
-  CardContent,
   Chip,
-  Grid,
   IconButton,
-  LinearProgress,
+  ListItemIcon,
   Menu,
   MenuItem,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+  Skeleton,
   Tooltip,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { useMediaQuery } from '@mui/material';
-import { format } from 'date-fns';
+import { DeleteOutline, EditOutlined, EventBusyOutlined, MoreHoriz, PersonAddAlt1Outlined } from '@mui/icons-material';
+import { format, isToday, isTomorrow } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { useEffect, useState } from 'react';
-import {
-  getShiftDisplayStatus,
-  getShiftStatusLabel,
-  type ShiftDisplayStatus,
-} from '@/lib/utils/shiftStatus';
-
-function FormStatusBadge({ shiftId }: { shiftId: string }) {
-  const [counts, setCounts] = useState<{ ack: number; dec: number; open: number } | null>(null);
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const assignments = await assignmentService.getByShiftId(shiftId);
-        if (!mounted) return;
-        type AssignmentLite = { formStatus?: 'acknowledged' | 'declined' };
-        const ack = assignments.filter(
-          a => (a as unknown as AssignmentLite).formStatus === 'acknowledged'
-        ).length;
-        const dec = assignments.filter(
-          a => (a as unknown as AssignmentLite).formStatus === 'declined'
-        ).length;
-        const total = assignments.length;
-        const open = Math.max(0, total - ack - dec);
-        setCounts({ ack, dec, open });
-      } catch (_e) {
-        setCounts({ ack: 0, dec: 0, open: 0 });
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [shiftId]);
-
-  if (!counts) return null;
-  const { ack, dec, open } = counts;
-  const label = `Formular: ${ack}✓ / ${dec}✕ / ${open} offen`;
-  let color: 'default' | 'success' | 'warning' | 'error' = 'default';
-  if (open > 0) color = 'warning';
-  if (dec > 0) color = 'error';
-  if (open === 0 && dec === 0 && ack > 0) color = 'success';
-  return <Chip size="small" label={label} color={color} variant="outlined" />;
-}
-
-function CompletedBadge({ shiftId }: { shiftId: string }) {
-  const [completed, setCompleted] = useState<boolean | null>(null);
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const assignments = await assignmentService.getByShiftId(shiftId);
-        if (!mounted) return;
-        if (assignments.length === 0) {
-          setCompleted(false);
-          return;
-        }
-        const allCompleted = assignments.every((a: unknown) => {
-          const x = a as { status?: string; finalSummarySignedAt?: Date | string };
-          return x.status === 'completed' && !!x.finalSummarySignedAt;
-        });
-        setCompleted(allCompleted);
-      } catch {
-        setCompleted(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [shiftId]);
-  if (!completed) return null;
-  return (
-    <Chip
-      size="small"
-      color="success"
-      label="Abgeschlossen"
-      icon={<CheckCircle sx={{ color: 'inherit' }} />}
-    />
-  );
-}
+import { Fragment, useMemo, useState } from 'react';
+import type { Shift } from '@/lib/types';
+import { useShiftEnrichment } from '@/lib/hooks/useShiftEnrichment';
+import { getShiftDisplayStatus, getShiftStatusLabel, type ShiftDisplayStatus } from '@/lib/utils/shiftStatus';
 
 interface AdminListViewProps {
   shifts: Shift[];
@@ -126,417 +30,350 @@ interface AdminListViewProps {
   onEdit: (shift: Shift) => void;
   onAssign: (shift: Shift) => void;
   onDelete: (shift: Shift) => void;
+  /** Optional: companyId für die Namensauflösung (sonst aus dem Login) */
+  companyId?: string;
 }
 
-export function AdminListView({
-  shifts,
-  onShiftClick: _onShiftClick,
-  onEdit,
-  onAssign,
-  onDelete,
-}: AdminListViewProps) {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
-  const [visibleCount, setVisibleCount] = useState<number>(() => Math.min(shifts.length, 200));
+const PAGE = 150;
+
+const STATUS_CHIP: Record<ShiftDisplayStatus, 'warning' | 'success' | 'error' | 'default'> = {
+  open: 'warning',
+  filled: 'success',
+  cancelled: 'error',
+  ended: 'default',
+};
+
+function dayLabel(d: Date) {
+  const base = format(d, 'EEEE, d. MMMM', { locale: de });
+  if (isToday(d)) return `Heute · ${base}`;
+  if (isTomorrow(d)) return `Morgen · ${base}`;
+  return base;
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(s => s[0]?.toUpperCase())
+    .join('');
+}
+
+function toDate(v: unknown): Date {
+  return v instanceof Date ? v : new Date(v as string);
+}
+
+/**
+ * Schichtliste nach Tagen gruppiert. Einrichtungs-, Stations- und Personennamen
+ * kommen gesammelt aus useShiftEnrichment (keine Abfrage je Zeile).
+ */
+export function AdminListView({ shifts, onShiftClick, onEdit, onAssign, onDelete, companyId }: AdminListViewProps) {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'), { noSsr: true });
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'), { noSsr: true });
+  const [visible, setVisible] = useState(PAGE);
+  const [menu, setMenu] = useState<{ el: HTMLElement; shift: Shift } | null>(null);
+  const { enrichment, isLoading } = useShiftEnrichment(shifts, companyId);
 
-  const handleLoadMore = () => {
-    setVisibleCount(prev => Math.min(shifts.length, prev + 200));
-  };
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, shift: Shift) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedShift(shift);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedShift(null);
-  };
-
-  const handleAction = (action: (shift: Shift) => void) => {
-    if (selectedShift) {
-      action(selectedShift);
+  const groups = useMemo(() => {
+    const sorted = [...shifts].sort((a, b) => {
+      const d = toDate(a.date).getTime() - toDate(b.date).getTime();
+      return d !== 0 ? d : (a.startTime || '').localeCompare(b.startTime || '');
+    });
+    const out: { key: string; date: Date; items: Shift[] }[] = [];
+    for (const s of sorted.slice(0, visible)) {
+      const d = toDate(s.date);
+      const key = format(d, 'yyyy-MM-dd');
+      const last = out[out.length - 1];
+      if (last?.key === key) last.items.push(s);
+      else out.push({ key, date: d, items: [s] });
     }
-    handleMenuClose();
-  };
-
-  const getStatusColor = (displayStatus: ShiftDisplayStatus) => {
-    switch (displayStatus) {
-      case 'open':
-        return 'warning';
-      case 'filled':
-        return 'success';
-      case 'cancelled':
-        return 'error';
-      case 'ended':
-        return 'default';
-      default:
-        return 'default';
-    }
-  };
-
-  const getStatusIcon = (displayStatus: ShiftDisplayStatus) => {
-    switch (displayStatus) {
-      case 'open':
-        return <Warning color="warning" />;
-      case 'filled':
-        return <CheckCircle color="success" />;
-      case 'cancelled':
-        return <Error color="error" />;
-      case 'ended':
-        return <CheckCircle color="action" />;
-      default:
-        return <AssignmentIcon />;
-    }
-  };
-
-  const _getCapacityColor = (assigned: number, capacity: number) => {
-    const percentage = (assigned / capacity) * 100;
-    if (percentage >= 80) return semanticColors.success.main;
-    if (percentage >= 50) return semanticColors.warning.main;
-    return semanticColors.error.main;
-  };
+    return out;
+  }, [shifts, visible]);
 
   if (shifts.length === 0) {
     return (
-      <Box sx={{ textAlign: 'center', py: 8 }}>
-        <AssignmentIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-        <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-          Keine Schichten vorhanden
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Erstellen Sie die erste Schicht, um zu beginnen.
+      <Box
+        sx={{
+          textAlign: 'center',
+          py: 8,
+          px: 2,
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: '12px',
+        }}
+      >
+        <EventBusyOutlined sx={{ fontSize: 36, color: 'text.disabled', mb: 1 }} />
+        <Typography sx={{ fontWeight: 600, mb: 0.5 }}>Keine Schichten im gewählten Zeitraum</Typography>
+        <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
+          Ändern Sie die Filter oder legen Sie eine neue Schicht an.
         </Typography>
       </Box>
     );
   }
 
-  if (isMobile) {
-    return (
-      <Box>
-        <Box sx={{ mb: 3 }}>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <GlassCard>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Typography variant="h5" color="primary" sx={{ fontWeight: 600 }}>
-                    {shifts.length}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Gesamt Schichten
-                  </Typography>
-                </CardContent>
-              </GlassCard>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <GlassCard>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Typography variant="h5" color="warning.main" sx={{ fontWeight: 600 }}>
-                    {shifts.filter(s => getShiftDisplayStatus(s) === 'open').length}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Offene Schichten
-                  </Typography>
-                </CardContent>
-              </GlassCard>
-            </Grid>
-          </Grid>
+  const cols = '96px minmax(180px, 1.4fr) minmax(160px, 1fr) minmax(110px, 0.6fr) 120px 76px';
+
+  const row = (shift: Shift) => {
+    const e = enrichment[shift.id];
+    const status = getShiftDisplayStatus(shift);
+    const chipColor = STATUS_CHIP[status] ?? 'default';
+    const assigned = shift.assignedCount || 0;
+    const free = Math.max(0, shift.capacity - assigned);
+    const names = e?.assigneeNames ?? [];
+    const facility = e?.facilityName;
+    const quals = shift.requiredQualifications ?? [];
+
+    const facilityCell = (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
+        <Box sx={{ width: 8, height: 8, borderRadius: '2px', flexShrink: 0, bgcolor: e?.facilityColor || 'primary.main' }} />
+        <Box sx={{ minWidth: 0 }}>
+          {facility ? (
+            <Typography noWrap sx={{ fontSize: 14, fontWeight: 600 }}>
+              {facility}
+            </Typography>
+          ) : isLoading ? (
+            <Skeleton width={140} />
+          ) : (
+            <Typography noWrap sx={{ fontSize: 14, color: 'text.secondary' }}>
+              Einrichtung unbekannt
+            </Typography>
+          )}
+          {e?.stationName && (
+            <Typography noWrap sx={{ fontSize: 13, color: 'text.secondary' }}>
+              {e.stationName}
+            </Typography>
+          )}
         </Box>
-
-        <Grid container spacing={2}>
-          {shifts.slice(0, visibleCount).map(shift => (
-            <Grid key={shift.id} size={{ xs: 12 }}>
-              <ShiftManagementCard
-                shift={shift}
-                onEdit={onEdit}
-                onAssign={onAssign}
-                onDelete={onDelete}
-              />
-            </Grid>
-          ))}
-        </Grid>
-
-        {shifts.length > visibleCount && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-            <Button variant="outlined" onClick={handleLoadMore}>
-              Weitere laden ({Math.min(200, shifts.length - visibleCount)})
-            </Button>
-          </Box>
-        )}
       </Box>
     );
-  }
+
+    const staffCell =
+      names.length > 0 ? (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+          <AvatarGroup max={3} sx={{ '& .MuiAvatar-root': { width: 24, height: 24, fontSize: 10.5, fontWeight: 600, borderWidth: 1.5 } }}>
+            {names.map(n => (
+              <Avatar key={n} sx={{ bgcolor: 'primary.main', color: '#ffffff' }}>
+                {initials(n)}
+              </Avatar>
+            ))}
+          </AvatarGroup>
+          <Typography noWrap sx={{ fontSize: 14 }}>
+            {names.length === 1 ? names[0] : `${names[0]} +${names.length - 1}`}
+          </Typography>
+        </Box>
+      ) : (
+        <Typography sx={{ fontSize: 14, color: status === 'open' ? 'warning.dark' : 'text.disabled' }}>
+          {status === 'open' ? `${free} ${free === 1 ? 'Platz' : 'Plätze'} frei` : '—'}
+        </Typography>
+      );
+
+    const actions = (
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.25 }} onClick={ev => ev.stopPropagation()}>
+        {free > 0 && status !== 'cancelled' && status !== 'ended' && (
+          <Tooltip title="Mitarbeiter zuweisen">
+            <IconButton size="small" aria-label="Mitarbeiter zuweisen" onClick={() => onAssign(shift)}>
+              <PersonAddAlt1Outlined fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+        <IconButton size="small" aria-label="Weitere Aktionen" onClick={ev => setMenu({ el: ev.currentTarget, shift })}>
+          <MoreHoriz fontSize="small" />
+        </IconButton>
+      </Box>
+    );
+
+    const time = (
+      <Typography className="tabular-nums" sx={{ fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}>
+        {shift.startTime}–{shift.endTime}
+      </Typography>
+    );
+
+    if (!isDesktop) {
+      return (
+        <Box
+          key={shift.id}
+          role="button"
+          tabIndex={0}
+          onClick={() => onShiftClick(shift)}
+          onKeyDown={ev => ev.key === 'Enter' && onShiftClick(shift)}
+          sx={{ display: 'flex', gap: 1.5, px: 1.75, py: 1.5, borderTop: '1px solid', borderColor: 'divider', cursor: 'pointer' }}
+        >
+          <Box sx={{ width: 76, flexShrink: 0, pt: 0.25 }}>{time}</Box>
+          <Box sx={{ flex: 1, minWidth: 0, display: 'grid', gap: 0.75 }}>
+            {facilityCell}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+              {staffCell}
+              <Chip size="small" label={getShiftStatusLabel(status)} color={chipColor} variant="outlined" />
+            </Box>
+          </Box>
+          {actions}
+        </Box>
+      );
+    }
+
+    return (
+      <Box
+        key={shift.id}
+        role="row"
+        tabIndex={0}
+        onClick={() => onShiftClick(shift)}
+        onKeyDown={ev => ev.key === 'Enter' && onShiftClick(shift)}
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: cols,
+          alignItems: 'center',
+          gap: 2,
+          px: 2,
+          minHeight: 56,
+          borderTop: '1px solid',
+          borderColor: 'divider',
+          cursor: 'pointer',
+          '&:hover': { bgcolor: 'action.hover' },
+          '&:focus-visible': { outline: `2px solid ${theme.palette.primary.main}`, outlineOffset: -2 },
+        }}
+      >
+        {time}
+        {facilityCell}
+        {staffCell}
+        <Box sx={{ display: 'flex', gap: 0.5, minWidth: 0, overflow: 'hidden' }}>
+          {quals.length === 0 ? (
+            <Typography sx={{ fontSize: 13, color: 'text.disabled' }}>—</Typography>
+          ) : (
+            <Tooltip title={quals.join(', ')}>
+              <Typography noWrap sx={{ fontSize: 13, color: 'text.secondary' }}>
+                {quals.join(', ')}
+              </Typography>
+            </Tooltip>
+          )}
+        </Box>
+        <Box>
+          <Chip size="small" label={getShiftStatusLabel(status)} color={chipColor} variant="outlined" />
+        </Box>
+        {actions}
+      </Box>
+    );
+  };
 
   return (
     <Box>
-      {/* Summary Cards */}
-      <Box sx={{ mb: 3 }}>
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <GlassCard>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" color="primary" sx={{ fontWeight: 600 }}>
-                  {shifts.length}
+      <Box
+        role="table"
+        aria-label="Schichten"
+        sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: '12px', overflow: 'hidden' }}
+      >
+        {isDesktop && (
+          <Box
+            role="row"
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: cols,
+              gap: 2,
+              px: 2,
+              py: 1,
+              bgcolor: 'action.hover',
+              '& > span': { fontSize: 13, fontWeight: 600, color: 'text.secondary' },
+            }}
+          >
+            <span role="columnheader">Zeit</span>
+            <span role="columnheader">Einrichtung</span>
+            <span role="columnheader">Besetzung</span>
+            <span role="columnheader">Qualifikation</span>
+            <span role="columnheader">Status</span>
+            <span />
+          </Box>
+        )}
+        {groups.map(g => {
+          const open = g.items.filter(s => getShiftDisplayStatus(s) === 'open').length;
+          return (
+            <Fragment key={g.key}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: 1.5,
+                  px: 2,
+                  pt: 2,
+                  pb: 1,
+                  borderTop: '1px solid',
+                  borderColor: 'divider',
+                  bgcolor: isToday(g.date) ? 'rgba(15,118,110,0.04)' : 'transparent',
+                }}
+              >
+                <Typography component="h3" sx={{ fontSize: 14, fontWeight: 650, color: isToday(g.date) ? 'primary.dark' : 'text.primary' }}>
+                  {dayLabel(g.date)}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Gesamt Schichten
+                <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+                  {g.items.length} {g.items.length === 1 ? 'Schicht' : 'Schichten'}
+                  {open > 0 && (
+                    <Box component="span" sx={{ color: 'warning.dark', fontWeight: 600 }}>
+                      {`, ${open} offen`}
+                    </Box>
+                  )}
                 </Typography>
-              </CardContent>
-            </GlassCard>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <GlassCard>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" color="warning.main" sx={{ fontWeight: 600 }}>
-                  {shifts.filter(s => getShiftDisplayStatus(s) === 'open').length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Offene Schichten
-                </Typography>
-              </CardContent>
-            </GlassCard>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <GlassCard>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" color="success.main" sx={{ fontWeight: 600 }}>
-                  {shifts.filter(s => getShiftDisplayStatus(s) === 'filled').length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Besetzte Schichten
-                </Typography>
-              </CardContent>
-            </GlassCard>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <GlassCard>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" color="info.main" sx={{ fontWeight: 600 }}>
-                  {shifts.reduce((sum, s) => sum + (s.assignedCount || 0), 0)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Zugewiesene Mitarbeiter
-                </Typography>
-              </CardContent>
-            </GlassCard>
-          </Grid>
-        </Grid>
+              </Box>
+              {g.items.map(row)}
+            </Fragment>
+          );
+        })}
       </Box>
 
-      {/* Shifts Table */}
-      <TableContainer
-        component={Paper}
-        elevation={0}
-        sx={{
-          overflowX: 'auto',
-          '&::-webkit-scrollbar': {
-            height: 8,
-          },
-          '&::-webkit-scrollbar-track': {
-            backgroundColor: 'transparent',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'var(--color-border-strong)',
-            borderRadius: '4px',
-          },
-        }}
-      >
-        <Table stickyHeader size="medium">
-          <TableHead>
-            <TableRow>
-              <TableCell>Schicht</TableCell>
-              <TableCell>Datum & Zeit</TableCell>
-              <TableCell>Einrichtung</TableCell>
-              <TableCell>Besetzung</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Qualifikationen</TableCell>
-              <TableCell align="right">Aktionen</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {shifts.slice(0, visibleCount).map(shift => {
-              const availableSlots = shift.capacity - (shift.assignedCount || 0);
-              const isFullyAssigned = availableSlots === 0;
-              const isOverAssigned = availableSlots < 0;
-              const occupancyRate = ((shift.assignedCount || 0) / shift.capacity) * 100;
-
-              return (
-                <TableRow key={shift.id} hover>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box
-                        sx={{
-                          width: 12,
-                          height: 12,
-                          borderRadius: '50%',
-                          backgroundColor: 'primary.main',
-                        }}
-                      />
-                      <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          Schicht
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          ID: {shift.id.slice(0, 8)}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </TableCell>
-
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CalendarMonth sx={{ fontSize: 16, color: 'text.secondary' }} />
-                      <Box>
-                        <Typography variant="body2">
-                          {format(shift.date, 'dd.MM.yyyy', { locale: de })}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {shift.startTime} - {shift.endTime}
-                        </Typography>
-                      </Box>
-                      <FormStatusBadge shiftId={shift.id} />
-                      <CompletedBadge shiftId={shift.id} />
-                    </Box>
-                  </TableCell>
-
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LocationOn sx={{ fontSize: 16, color: 'text.secondary' }} />
-                      <Box>
-                        <Typography variant="body2">Station {shift.stationId}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Einrichtung {shift.facilityId}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </TableCell>
-
-                  <TableCell>
-                    <Box sx={{ minWidth: 120 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography variant="body2">
-                          {shift.assignedCount || 0}/{shift.capacity}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {isFullyAssigned
-                            ? 'Voll'
-                            : isOverAssigned
-                              ? 'Überbelegt'
-                              : `${availableSlots} frei`}
-                        </Typography>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={Math.min(occupancyRate, 100)}
-                        color={isOverAssigned ? 'error' : isFullyAssigned ? 'success' : 'primary'}
-                        sx={{ height: 6, borderRadius: 3 }}
-                      />
-                    </Box>
-                  </TableCell>
-
-                  <TableCell>
-                    <Chip
-                      icon={getStatusIcon(getShiftDisplayStatus(shift))}
-                      label={getShiftStatusLabel(getShiftDisplayStatus(shift))}
-                      color={
-                        getStatusColor(getShiftDisplayStatus(shift)) as
-                          | 'default'
-                          | 'primary'
-                          | 'secondary'
-                          | 'error'
-                          | 'info'
-                          | 'success'
-                          | 'warning'
-                      }
-                      size="small"
-                    />
-                  </TableCell>
-
-                  <TableCell>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, maxWidth: 200 }}>
-                      {shift.requiredQualifications?.slice(0, 2).map((qual, index) => (
-                        <Chip
-                          key={index}
-                          label={qual}
-                          size="small"
-                          variant="outlined"
-                          color="primary"
-                        />
-                      ))}
-                      {shift.requiredQualifications && shift.requiredQualifications.length > 2 && (
-                        <Chip
-                          key={`${shift.id}-more`}
-                          label={`+${shift.requiredQualifications.length - 2}`}
-                          size="small"
-                          variant="outlined"
-                          color="default"
-                        />
-                      )}
-                    </Box>
-                  </TableCell>
-
-                  <TableCell align="right">
-                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                      <Tooltip title="Bearbeiten">
-                        <IconButton size="small" aria-label="Schicht bearbeiten" onClick={() => onEdit(shift)} color="primary">
-                          <Edit />
-                        </IconButton>
-                      </Tooltip>
-
-                      <Tooltip title="Zuweisen">
-                        <IconButton
-                          size="small"
-                          aria-label="Mitarbeiter zuweisen"
-                          onClick={() => onAssign(shift)}
-                          color="success"
-                          disabled={isFullyAssigned}
-                        >
-                          <PersonAdd />
-                        </IconButton>
-                      </Tooltip>
-
-                      <IconButton size="small" aria-label="Weitere Optionen" onClick={e => handleMenuOpen(e, shift)}>
-                        <MoreVert />
-                      </IconButton>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {shifts.length > visibleCount && (
+      {shifts.length > visible && (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-          <Button variant="outlined" onClick={handleLoadMore}>
-            Weitere laden ({Math.min(200, shifts.length - visibleCount)})
+          <Button variant="outlined" onClick={() => setVisible(v => v + PAGE)}>
+            Weitere {Math.min(PAGE, shifts.length - visible)} Schichten laden
           </Button>
         </Box>
       )}
 
-      {/* Actions Menu */}
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        <MenuItem onClick={() => handleAction(onEdit)}>
-          <Edit sx={{ mr: 1 }} />
+      <Menu
+        anchorEl={menu?.el}
+        open={Boolean(menu)}
+        onClose={() => setMenu(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MenuItem
+          onClick={() => {
+            const s = menu!.shift;
+            setMenu(null);
+            onEdit(s);
+          }}
+        >
+          <ListItemIcon>
+            <EditOutlined fontSize="small" />
+          </ListItemIcon>
           Bearbeiten
         </MenuItem>
         <MenuItem
-          onClick={() => handleAction(onAssign)}
-          disabled={
-            selectedShift ? selectedShift.capacity - (selectedShift.assignedCount || 0) <= 0 : false
-          }
+          disabled={menu ? menu.shift.capacity - (menu.shift.assignedCount || 0) <= 0 : false}
+          onClick={() => {
+            const s = menu!.shift;
+            setMenu(null);
+            onAssign(s);
+          }}
         >
-          <PersonAdd sx={{ mr: 1 }} />
+          <ListItemIcon>
+            <PersonAddAlt1Outlined fontSize="small" />
+          </ListItemIcon>
           Zuweisen
         </MenuItem>
-        <MenuItem onClick={() => handleAction(onDelete)} sx={{ color: 'error.main' }}>
-          <Error sx={{ mr: 1 }} />
+        <MenuItem
+          onClick={() => {
+            const s = menu!.shift;
+            setMenu(null);
+            onDelete(s);
+          }}
+          sx={{ color: 'error.main', '& .MuiListItemIcon-root': { color: 'error.main' } }}
+        >
+          <ListItemIcon>
+            <DeleteOutline fontSize="small" />
+          </ListItemIcon>
           Löschen
         </MenuItem>
       </Menu>
     </Box>
   );
 }
+
+export default AdminListView;

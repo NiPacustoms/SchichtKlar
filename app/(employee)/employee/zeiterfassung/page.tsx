@@ -283,7 +283,7 @@ export default function TimePage() {
             Schichtklar
           </Typography>
           <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-            Bitte melde dich an, um fortzufahren
+            Bitte melden Sie sich an, um fortzufahren
           </Typography>
         </Box>
       </Box>
@@ -303,7 +303,7 @@ export default function TimePage() {
         <EmptyState
           icon={<EventAvailable />}
           title="Kein akzeptierter Einsatz"
-          description="Zeiten lassen sich erst erfassen, wenn dir ein Einsatz zugewiesen wurde und du ihn akzeptiert hast. Prüfe dazu deinen Dienstplan."
+          description="Zeiten lassen sich erfassen, sobald Ihnen ein Einsatz zugewiesen wurde und Sie ihn angenommen haben. Ihre Einsätze finden Sie im Dienstplan."
           action={{ label: 'Zum Dienstplan', onClick: () => router.push('/employee/dienstplan') }}
         />
 
@@ -328,7 +328,7 @@ export default function TimePage() {
             Arbeitszeit erfassen
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            Erfasse deine Arbeitszeiten manuell
+            Arbeitszeit zum aktuellen Einsatz erfassen
           </Typography>
         </Box>
         <SyncStatusIndicator />

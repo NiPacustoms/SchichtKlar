@@ -43,7 +43,7 @@ export default function SchedulePage() {
             Nicht angemeldet
           </Typography>
           <Typography variant="body2">
-            Bitte melde dich an, um auf den Dienstplan zuzugreifen.
+            Bitte melden Sie sich an, um den Dienstplan zu sehen.
           </Typography>
         </Alert>
       </Box>
@@ -59,7 +59,7 @@ export default function SchedulePage() {
             Weiterleitung...
           </Typography>
           <Typography variant="body2">
-            Du wirst zur Admin-Schichtverwaltung weitergeleitet.
+            Sie werden zur Schichtverwaltung weitergeleitet.
           </Typography>
         </Alert>
       </Box>

@@ -3,11 +3,11 @@ export function formatCurrency(value: number, currency: string = 'EUR', locale =
 }
 export function formatHours(value: number) {
   const v = Number.isFinite(value) ? value : 0;
-  return `${v.toFixed(2)} Std`;
+  return `${v.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} Std.`;
 }
 export function formatPercent(value: number) {
   const v = Number.isFinite(value) ? value : 0;
-  return `${v.toFixed(1)}%`;
+  return `${v.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`;
 }
 export function formatDateISO(d: Date | string) {
   const date = typeof d === 'string' ? new Date(d) : d;

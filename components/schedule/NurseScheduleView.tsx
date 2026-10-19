@@ -155,7 +155,7 @@ export function NurseScheduleView() {
               Mein Dienstplan
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Übersicht deiner geplanten und ausstehenden Schichten
+              Ihre geplanten und ausstehenden Schichten
             </Typography>
           </Box>
           <ToggleButtonGroup
@@ -431,7 +431,7 @@ export function NurseScheduleView() {
                 Keine Dienste geplant
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Du hast aktuell keine geplanten Schichten.
+                Aktuell sind keine Schichten für Sie geplant.
               </Typography>
             </Card>
           )}

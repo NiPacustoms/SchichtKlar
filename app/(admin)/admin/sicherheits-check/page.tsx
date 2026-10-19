@@ -33,7 +33,7 @@ export default function AdminSecureSetupPage() {
         </Alert>
       )}
       <Typography variant="body1" sx={{ mb: 3 }}>
-        Bitte aktiviere 2FA in deinen Kontoeinstellungen. Du wirst danach automatisch zum
+        Bitte aktivieren Sie 2FA in Ihren Kontoeinstellungen. Sie werden danach automatisch zum
         Admin-Bereich weitergeleitet.
       </Typography>
       <Button variant="contained" onClick={goToAccountSecurity}>

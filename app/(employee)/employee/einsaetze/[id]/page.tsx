@@ -121,7 +121,7 @@ export default function AssignmentDetailPage() {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="info">
-          Dieser Einsatz ist für dich nicht verfügbar oder wurde bereits vergeben.
+          Dieser Einsatz ist für Sie nicht verfügbar oder wurde bereits vergeben.
         </Alert>
         <Button component={Link} href="/employee/einsaetze" sx={{ mt: 2 }}>
           Zurück zu Meine Einsätze
@@ -189,7 +189,7 @@ export default function AssignmentDetailPage() {
           {alreadyAccepted && (
             <>
               <Alert severity="success" sx={{ mt: 2 }}>
-                Du hast diesen Einsatz angenommen.
+                Sie haben diesen Einsatz angenommen.
               </Alert>
               <Button
                 component={Link}

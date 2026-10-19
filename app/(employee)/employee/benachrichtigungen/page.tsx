@@ -284,7 +284,7 @@ export default function EmployeeNotificationsPage() {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error">
-          Bitte melde dich an, um deine Benachrichtigungen zu verwalten.
+          Bitte melden Sie sich an, um Ihre Benachrichtigungen zu sehen.
         </Alert>
       </Box>
     );

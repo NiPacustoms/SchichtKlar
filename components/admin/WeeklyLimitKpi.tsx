@@ -26,14 +26,14 @@ export function WeeklyLimitKpi({ mitarbeiterId, onClick }: WeeklyLimitKpiProps) 
 
   const displayValue = limit
     ? limit.status === 'blocked'
-      ? `+${limit.ueberschreitung.toFixed(1)}h über Limit`
-      : `${limit.aktuelleWochenstunden.toFixed(1)}h / ${limit.wochenstundenLimit}h`
+      ? `+${limit.ueberschreitung.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h über Limit`
+      : `${limit.aktuelleWochenstunden.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h / ${limit.wochenstundenLimit}h`
     : '—';
 
   const subtitle = limit?.status === 'blocked'
     ? `Limit ${limit.wochenstundenLimit}h überschritten`
     : limit
-      ? `${limit.aktuelleWochenstunden.toFixed(1)}h diese Woche`
+      ? `${limit.aktuelleWochenstunden.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h diese Woche`
       : undefined;
 
   if (isLoading) {

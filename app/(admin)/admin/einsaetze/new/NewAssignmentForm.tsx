@@ -31,6 +31,7 @@ import {
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { de } from 'date-fns/locale';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import Link from 'next/link';
@@ -215,7 +216,7 @@ export function NewAssignmentForm() {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="warning">
-          Deinem Konto ist keine Firma zugeordnet. Einsatz-Erstellung nicht möglich.
+          Ihrem Konto ist keine Firma zugeordnet. Einsätze können deshalb nicht angelegt werden.
         </Alert>
       </Box>
     );
@@ -226,7 +227,7 @@ export function NewAssignmentForm() {
   }
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={undefined}>
+    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={de}>
       <PageContainer maxWidth="form">
         <PageHeader
           title="Neuer Einsatz"

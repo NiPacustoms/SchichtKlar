@@ -95,6 +95,9 @@ export function BottomNav() {
           justifyContent: 'space-around',
           minHeight: bottomNavHeightPx,
           px: 0.5,
+          // Am Desktop nicht über die volle Breite ziehen
+          maxWidth: { md: 640 },
+          mx: 'auto',
         }}
       >
         {tabs.map((tab, index) => {
@@ -124,7 +127,7 @@ export function BottomNav() {
                 pb: 0.75,
                 cursor: 'pointer',
                 userSelect: 'none',
-                color: active ? 'primary.main' : '#8e8e93',
+                color: active ? 'primary.main' : '#5f6b6a',
                 transition: 'color 200ms cubic-bezier(0.4,0,0.2,1)',
                 '&:focus-visible': {
                   outline: '2px solid',
@@ -139,7 +142,7 @@ export function BottomNav() {
               <Box
                 component="span"
                 sx={{
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: active ? 600 : 500,
                   letterSpacing: '-0.01em',
                   lineHeight: 1,
@@ -151,7 +154,6 @@ export function BottomNav() {
           );
         })}
       </Box>
-      <Box aria-hidden className="ios-home-indicator" sx={{ mb: 0.5 }} />
     </Paper>
   );
 }

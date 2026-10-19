@@ -27,8 +27,8 @@ export function LimitWarningBanner({ limit, onRequestIncrease, variant }: LimitW
     >
       <Typography variant="body2" fontWeight={600} component="span">
         {isBlocked
-          ? `Wochenlimit (${limit.wochenstundenLimit}h) überschritten (${limit.ueberschreitung.toFixed(1)}h über Limit). `
-          : `Wochenlimit (${limit.wochenstundenLimit}h) fast erreicht (${limit.aktuelleWochenstunden.toFixed(1)}h). `}
+          ? `Wochenlimit (${limit.wochenstundenLimit}h) überschritten (${limit.ueberschreitung.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h über Limit). `
+          : `Wochenlimit (${limit.wochenstundenLimit}h) fast erreicht (${limit.aktuelleWochenstunden.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h). `}
       </Typography>
       <Button
         size="small"

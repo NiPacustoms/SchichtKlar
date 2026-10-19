@@ -19,11 +19,11 @@ import {
   CircularProgress,
   Grid,
   IconButton,
-  Paper,
-  Tab,
-  Tabs,
   Alert,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
+import { StatStrip } from '@/components/ui/StatStrip';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -42,8 +42,9 @@ import { PageHeader } from '@/components/layout/PageHeader';
 export default function AdminDienstplanPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
-  const [dateFrom, setDateFrom] = useState<Date | null>(null);
-  const [dateTo, setDateTo] = useState<Date | null>(null);
+  // Standard: aktuelle Woche – der Dienstplan beginnt dort, wo gerade gearbeitet wird
+  const [dateFrom, setDateFrom] = useState<Date | null>(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [dateTo, setDateTo] = useState<Date | null>(() => endOfWeek(new Date(), { weekStartsOn: 1 }));
   const [statusFilter, setStatusFilter] = useState<ServiceShift['status'] | 'ended' | ''>('');
   const [facilityFilter, setFacilityFilter] = useState<string>('');
   const { data: facilities = [] } = useQuery({
@@ -208,7 +209,7 @@ export default function AdminDienstplanPage() {
     setEditOpen(true);
   };
 
-  const filteredShifts = useMemo(() => {
+  const rangeShifts = useMemo(() => {
     const dayStart = dateFrom
       ? new Date(dateFrom.getFullYear(), dateFrom.getMonth(), dateFrom.getDate(), 0, 0, 0, 0)
       : null;
@@ -216,13 +217,17 @@ export default function AdminDienstplanPage() {
       ? new Date(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999)
       : null;
 
-    let list = shifts.filter(s => {
+    const list = shifts.filter(s => {
       const date = s?.date ? new Date(s.date) : null;
       if (dayStart && date && date < dayStart) return false;
       if (dayEnd && date && date > dayEnd) return false;
       return true;
     });
+    return list;
+  }, [shifts, dateFrom, dateTo]);
 
+  const filteredShifts = useMemo(() => {
+    let list = rangeShifts;
     // Nach Anzeige-Status: Beendete Schichten nicht unter "Besetzt"
     if (statusFilter === 'filled') list = list.filter(s => getShiftDisplayStatus(s) === 'filled');
     else if (statusFilter === 'open') list = list.filter(s => getShiftDisplayStatus(s) === 'open');
@@ -230,12 +235,12 @@ export default function AdminDienstplanPage() {
     else if (statusFilter === 'cancelled') list = list.filter(s => s.status === 'cancelled');
 
     return list;
-  }, [shifts, dateFrom, dateTo, statusFilter]);
+  }, [rangeShifts, statusFilter]);
 
   if (!user) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="error">Bitte melde dich an, um den Admin-Dienstplan zu sehen.</Alert>
+        <Alert severity="error">Bitte melden Sie sich an, um den Dienstplan zu sehen.</Alert>
       </Box>
     );
   }
@@ -279,112 +284,137 @@ export default function AdminDienstplanPage() {
         }
       />
 
-      <Paper className="glass" sx={{ mb: 3 }}>
-        <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
-          <Tab label="Liste" />
-          <Tab label="Kalender" />
-        </Tabs>
-      </Paper>
-
-      <Paper className="glass" sx={{ p: 2, mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
-          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={de}>
-            <DatePicker
-              label="Von Datum"
-              value={dateFrom}
-              onChange={d => setDateFrom(d)}
-              slotProps={{ textField: { size: 'small' } }}
-            />
-            <DatePicker
-              label="Bis Datum"
-              value={dateTo}
-              onChange={d => setDateTo(d)}
-              slotProps={{ textField: { size: 'small' } }}
-            />
-          </LocalizationProvider>
-          <Select
-            size="small"
-            displayEmpty
-            value={statusFilter}
-            onChange={e => setStatusFilter((e.target.value as ServiceShift['status'] | 'ended') || '')}
-          >
-            <MenuItem value="">
-              <em>Status: Alle</em>
-            </MenuItem>
-            <MenuItem value="open">Offen</MenuItem>
-            <MenuItem value="filled">Besetzt</MenuItem>
-            <MenuItem value="ended">Beendet</MenuItem>
-            <MenuItem value="cancelled">Abgesagt</MenuItem>
-          </Select>
-          <Select
-            size="small"
-            displayEmpty
-            value={facilityFilter}
-            onChange={e => setFacilityFilter((e.target.value as string) || '')}
-          >
-            <MenuItem value="">
-              <em>Einrichtung: Alle</em>
-            </MenuItem>
-            {facilities.map(f => (
-              <MenuItem key={f.id} value={f.id}>
-                {f.name}
-              </MenuItem>
-            ))}
-          </Select>
-          <Box sx={{ ml: 'auto' }}>
-            <Button
-              size="small"
-              sx={{ mr: 1 }}
-              onClick={() => {
-                const now = new Date();
-                setDateFrom(startOfDay(now));
-                setDateTo(endOfDay(now));
+      {(() => {
+        const now = new Date();
+        const presets = {
+          today: [startOfDay(now), endOfDay(now)],
+          week: [startOfWeek(now, { weekStartsOn: 1 }), endOfWeek(now, { weekStartsOn: 1 })],
+          month: [startOfMonth(now), endOfMonth(now)],
+        } as const;
+        const same = (a: Date | null, b: Date) => !!a && a.getTime() === b.getTime();
+        const preset = !dateFrom && !dateTo
+          ? 'all'
+          : (Object.keys(presets) as (keyof typeof presets)[]).find(
+              k => same(dateFrom, presets[k][0]) && same(dateTo, presets[k][1])
+            ) ?? 'custom';
+        const filtersActive = !!(dateFrom || dateTo || statusFilter || facilityFilter);
+        const counts = {
+          open: rangeShifts.filter(s => getShiftDisplayStatus(s) === 'open').length,
+          filled: rangeShifts.filter(s => getShiftDisplayStatus(s) === 'filled').length,
+          ended: rangeShifts.filter(s => getShiftDisplayStatus(s) === 'ended').length,
+        };
+        return (
+          <>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                flexWrap: 'wrap',
+                mb: 2,
               }}
             >
-              Heute
-            </Button>
-            <Button
-              size="small"
-              sx={{ mr: 1 }}
-              onClick={() => {
-                const now = new Date();
-                setDateFrom(startOfWeek(now, { weekStartsOn: 1 }));
-                setDateTo(endOfWeek(now, { weekStartsOn: 1 }));
-              }}
-            >
-              Diese Woche
-            </Button>
-            <Button
-              size="small"
-              sx={{ mr: 1 }}
-              onClick={() => {
-                const now = new Date();
-                setDateFrom(startOfMonth(now));
-                setDateTo(endOfMonth(now));
-              }}
-            >
-              Dieser Monat
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => {
-                setDateFrom(null);
-                setDateTo(null);
-                setStatusFilter('');
-                setFacilityFilter('');
-                try {
-                  if (typeof window !== 'undefined') window.localStorage.removeItem(storageKey);
-                } catch (_e) {
-                  /* noop */
-                }
-              }}
-            >
-              Zurücksetzen
-            </Button>
-          </Box>
-        </Box>
-      </Paper>
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={activeTab}
+                onChange={(_, v) => v !== null && setActiveTab(v)}
+                aria-label="Ansicht"
+              >
+                <ToggleButton value={0}>Liste</ToggleButton>
+                <ToggleButton value={1}>Kalender</ToggleButton>
+              </ToggleButtonGroup>
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={preset}
+                aria-label="Zeitraum"
+                onChange={(_, v) => {
+                  if (!v || v === 'custom') return;
+                  if (v === 'all') {
+                    setDateFrom(null);
+                    setDateTo(null);
+                    return;
+                  }
+                  const [f, t] = presets[v as keyof typeof presets];
+                  setDateFrom(f);
+                  setDateTo(t);
+                }}
+              >
+                <ToggleButton value="today">Heute</ToggleButton>
+                <ToggleButton value="week">Woche</ToggleButton>
+                <ToggleButton value="month">Monat</ToggleButton>
+                <ToggleButton value="all">Alle</ToggleButton>
+              </ToggleButtonGroup>
+              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={de}>
+                <DatePicker
+                  label="Von"
+                  value={dateFrom}
+                  onChange={d => setDateFrom(d)}
+                  slotProps={{ textField: { size: 'small', sx: { width: 160 } } }}
+                />
+                <DatePicker
+                  label="Bis"
+                  value={dateTo}
+                  onChange={d => setDateTo(d)}
+                  slotProps={{ textField: { size: 'small', sx: { width: 160 } } }}
+                />
+              </LocalizationProvider>
+              <Select
+                size="small"
+                displayEmpty
+                value={facilityFilter}
+                onChange={e => setFacilityFilter((e.target.value as string) || '')}
+                inputProps={{ 'aria-label': 'Einrichtung' }}
+                sx={{ minWidth: 200 }}
+              >
+                <MenuItem value="">Alle Einrichtungen</MenuItem>
+                {facilities.map(f => (
+                  <MenuItem key={f.id} value={f.id}>
+                    {f.name}
+                  </MenuItem>
+                ))}
+              </Select>
+              {filtersActive && (
+                <Button
+                  size="small"
+                  variant="text"
+                  onClick={() => {
+                    setDateFrom(null);
+                    setDateTo(null);
+                    setStatusFilter('');
+                    setFacilityFilter('');
+                    try {
+                      if (typeof window !== 'undefined') window.localStorage.removeItem(storageKey);
+                    } catch (_e) {
+                      /* noop */
+                    }
+                  }}
+                >
+                  Filter zurücksetzen
+                </Button>
+              )}
+            </Box>
+            {activeTab === 0 && (
+              <StatStrip
+                aria-label="Schichten nach Status"
+                items={[
+                  { label: 'Alle', value: rangeShifts.length, selected: !statusFilter, onClick: () => setStatusFilter('') },
+                  {
+                    label: 'Offen',
+                    value: counts.open,
+                    tone: counts.open > 0 ? 'attention' : 'default',
+                    selected: statusFilter === 'open',
+                    onClick: () => setStatusFilter(statusFilter === 'open' ? '' : 'open'),
+                  },
+                  { label: 'Besetzt', value: counts.filled, selected: statusFilter === 'filled', onClick: () => setStatusFilter(statusFilter === 'filled' ? '' : 'filled') },
+                  { label: 'Beendet', value: counts.ended, tone: 'muted', selected: statusFilter === 'ended', onClick: () => setStatusFilter(statusFilter === 'ended' ? '' : 'ended') },
+                ]}
+              />
+            )}
+          </>
+        );
+      })()}
 
       {isLoading ? (
         <Box

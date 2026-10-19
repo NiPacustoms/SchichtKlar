@@ -330,7 +330,7 @@ export function ShiftRangeDialog({ open, onClose, initialFrom, initialTo }: Shif
               size={isMobile ? 'large' : 'medium'}
               fullWidth={isMobile}
             >
-              {createRangeMutation.isPending ? 'Erstelle…' : 'Erstellen'}
+              {createRangeMutation.isPending ? 'Wird angelegt …' : 'Erstellen'}
             </Button>
           </DialogActions>
         </form>

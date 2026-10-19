@@ -790,7 +790,7 @@ export function StaffCreateDialog({ open, onClose, onSave }: StaffCreateDialogPr
             boxShadow: 'var(--shadow-soft)',
           }}
         >
-          {isSubmitting ? 'Erstelle...' : 'Mitarbeiter erstellen'}
+          {isSubmitting ? 'Wird angelegt …' : 'Mitarbeiter erstellen'}
         </Button>
       </DialogActions>
     </Dialog>

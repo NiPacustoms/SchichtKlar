@@ -69,7 +69,7 @@ export function DeclineAssignmentModal({
         <DialogTitle>Ablehnung bestätigen</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Bitte wähle einen Grund und bestätige mit deiner Unterschrift.
+            Bitte wählen Sie einen Grund und bestätigen Sie mit Ihrer Unterschrift.
           </Typography>
           <FormControl fullWidth required sx={{ mt: 1 }}>
             <InputLabel>Grund</InputLabel>

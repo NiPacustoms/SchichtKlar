@@ -96,7 +96,7 @@ export function WeeklyLimitSetter({ employee, compact = false }: WeeklyLimitSett
         </Button>
       </Box>
       <Typography variant="caption" sx={{ display: 'block', mt: 1, color: statusColor }}>
-        Aktuell: {currentHours.toFixed(1)}h / {currentLimit}h – {statusLabel}
+        Aktuell: {currentHours.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h / {currentLimit}h – {statusLabel}
       </Typography>
       {status === 'blocked' && (
         <Alert severity="error" sx={{ mt: 1 }}>
