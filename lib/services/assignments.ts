@@ -1,4 +1,8 @@
 import { db, getDb } from '@/lib/firebase';
+import {
+  getTodayAssignment as todayByDay,
+  getUpcomingAssignments as upcomingByDay,
+} from './assignments/read5';
 import { errorHandler, logger } from '@/lib/errors';
 import { getCompanyIdFromAuth } from '@/lib/utils/companyId';
 import {
@@ -1017,81 +1021,14 @@ return assignments;
   },
 
   // Get today's assignment for a user (only accepted or assigned)
+  /** Heutiger Einsatz – nach Einsatztag (startDate bzw. Schichtdatum), nicht nach Zuweisungszeitpunkt */
   async getTodayAssignment(userId: string): Promise<Assignment | null> {
-    try {
-      if (!getDb()) {
-        logger.warn('Firebase not initialized, returning null');
-        return null;
-      }
-
-      const companyId = await getCompanyIdFromAuth();
-      if (!companyId) {
-        logger.warn('No companyId found, returning null');
-        return null;
-      }
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      
-      // Hole alle Assignments für heute und filtere nach Status
-      const q = query(
-        collection(getDb(), COLLECTION_NAME),
-        where('companyId', '==', companyId),
-        where('userId', '==', userId),
-        where('assignedAt', '>=', today),
-        where('assignedAt', '<', tomorrow),
-        orderBy('assignedAt', 'asc')
-      );
-      
-      const snapshot = await getDocs(q);
-      if (snapshot.empty) return null;
-      
-      // Filtere nach akzeptiertem oder zugewiesenem Status
-      for (const doc of snapshot.docs) {
-        const assignment = this.mapDocToAssignment(doc);
-        if (assignment && (assignment.status === 'accepted' || assignment.status === 'assigned')) {
-          return assignment;
-        }
-      }
-      
-      return null;
-    } catch (error) {
-      logger.error('Error fetching today assignment', error instanceof Error ? error : new Error(String(error)));
-      // Nicht weiterwerfen, sondern null zurückgeben, um 500-Fehler zu vermeiden
-      return null;
-    }
+    return (await todayByDay(userId)) as Assignment | null;
   },
 
-  // Get upcoming assignments for a user
+  /** Nächste Einsätze ab morgen, chronologisch (inkl. offener Angebote) */
   async getUpcomingAssignments(userId: string): Promise<Assignment[]> {
-    try {
-      const companyId = await getCompanyIdFromAuth();
-      if (!companyId) {
-        return [];
-      }
-
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
-      
-      const q = query(
-        collection(getDb(), COLLECTION_NAME),
-        where('companyId', '==', companyId),
-        where('userId', '==', userId),
-        where('assignedAt', '>=', tomorrow),
-        where('status', '==', 'pending'),
-        orderBy('assignedAt', 'asc'),
-        limit(5)
-      );
-      
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => this.mapDocToAssignment(doc));
-    } catch (error) {
-      logger.error('Error fetching upcoming assignments', error instanceof Error ? error : new Error(String(error)));
-      throw error;
-    }
+    return (await upcomingByDay(userId)) as Assignment[];
   },
 
   // Helper method to map Firestore document to Assignment

@@ -255,12 +255,12 @@ export const useAdminReports = (filters: AdminReportFilters) => {
   };
 
   const formatHours = (hours: number) => {
-    return `${hours.toFixed(1)}h`;
+    return `${hours.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h`;
   };
 
   const formatPercentage = (value: number, total: number) => {
-    if (total === 0) return '0%';
-    return `${((value / total) * 100).toFixed(1)}%`;
+    if (total === 0) return '0 %';
+    return `${((value / total) * 100).toLocaleString('de-DE', { maximumFractionDigits: 1 })} %`;
   };
 
   const getStatusColor = (status: string) => {

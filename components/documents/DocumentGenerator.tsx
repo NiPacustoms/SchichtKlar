@@ -281,7 +281,7 @@ export function DocumentGenerator({ open, onClose, onDocumentGenerated }: Docume
           startIcon={isGenerating ? <CircularProgress size={16} /> : <Description />}
           sx={{ minWidth: 150 }}
         >
-          {isGenerating ? 'Erstelle...' : 'Dokument erstellen'}
+          {isGenerating ? 'Wird angelegt …' : 'Dokument erstellen'}
         </Button>
       </DialogActions>
     </Dialog>

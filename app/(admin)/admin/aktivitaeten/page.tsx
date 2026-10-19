@@ -52,7 +52,7 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 function exportToCsv(activities: Activity[]) {
-  const header = ['Zeit', 'Benutzer', 'Rolle', 'Typ', 'Aktion', 'Entity', 'Beschreibung'];
+  const header = ['Zeit', 'Benutzer', 'Rolle', 'Typ', 'Aktion', 'Objekt', 'Beschreibung'];
   const rows = activities.map(a => [
     format(a.timestamp, 'dd.MM.yyyy HH:mm', { locale: de }),
     a.userName,
@@ -165,15 +165,18 @@ export default function AdminAktivitaetenPage() {
                 <TableCell>Rolle</TableCell>
                 <TableCell>Typ</TableCell>
                 <TableCell>Aktion</TableCell>
-                <TableCell>Entity</TableCell>
+                <TableCell>Objekt</TableCell>
                 <TableCell>Beschreibung</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                    <Typography color="text.secondary">Keine Einträge</Typography>
+                  <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
+                    <Typography sx={{ fontWeight: 600, mb: 0.5 }}>Noch keine Aktivitäten</Typography>
+                    <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
+                      Anmeldungen und Änderungen erscheinen hier, sobald jemand im System arbeitet.
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : (

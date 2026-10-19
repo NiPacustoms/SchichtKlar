@@ -835,7 +835,7 @@ export function TemplateManager() {
     return (
       <GlassCard>
         <Box sx={{ p: 3 }}>
-          <Alert severity="warning">Bitte melde dich an, um Templates zu verwalten.</Alert>
+          <Alert severity="warning">Bitte melden Sie sich an, um Templates zu verwalten.</Alert>
         </Box>
       </GlassCard>
     );

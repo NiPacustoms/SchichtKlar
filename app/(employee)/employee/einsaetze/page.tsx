@@ -129,7 +129,7 @@ export default function MyAssignmentsPage() {
         }}
       >
         <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-          Bitte melde dich an, um fortzufahren
+          Bitte melden Sie sich an, um fortzufahren
         </Typography>
       </Box>
     );

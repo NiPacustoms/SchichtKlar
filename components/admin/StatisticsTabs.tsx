@@ -288,7 +288,7 @@ export const StatisticsTabs = React.memo(
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <TrendingUpIcon color="success" fontSize="small" />
                     <Typography variant="body2" color="success.main">
-                      Ø {averageHours.toFixed(1)}h/Tag
+                      Ø {averageHours.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h/Tag
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -354,7 +354,7 @@ export const StatisticsTabs = React.memo(
                     }}
                   >
                     <Typography variant="h3" color="primary.main" sx={{ fontWeight: 800, mb: 0.5 }}>
-                      {currentData.reduce((sum, item) => sum + (item.hours || 0), 0).toFixed(0)}h
+                      {currentData.reduce((sum, item) => sum + (item.hours || 0), 0).toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} h
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: '13px' }}>
                       Gesamtstunden

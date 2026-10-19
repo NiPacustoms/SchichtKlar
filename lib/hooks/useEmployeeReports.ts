@@ -142,7 +142,8 @@ const { data: timeEntries = [], isLoading: loadingTimeEntries } = useQuery<SickE
   const formatWeek = (date: Date | string) => format(new Date(date), "'KW'ww yyyy");
   const formatMonth = (date: Date | string) => format(new Date(date), 'MMMM yyyy');
   const formatCurrency = (value: number) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
-  const formatHours = (value: number) => `${value.toFixed(2)} h`;
+  const formatHours = (value: number) =>
+    `${value.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} h`;
   const formatPercentage = (value: number, total?: number) =>
     total != null && total > 0 ? `${((value / total) * 100).toFixed(1)} %` : `${value.toFixed(1)} %`;
   const getStatusColor = (_status: string) => 'default' as const;

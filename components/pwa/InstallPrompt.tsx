@@ -178,7 +178,7 @@ export function InstallPrompt() {
               Schichtklar installieren
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
-              Installiere Schichtklar auf deinem Gerät für einen schnelleren Zugriff und eine bessere
+              Installieren Sie Schichtklar auf Ihrem Gerät für einen schnelleren Zugriff und eine bessere
               Erfahrung.
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>

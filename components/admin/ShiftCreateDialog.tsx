@@ -732,7 +732,7 @@ export function ShiftCreateDialog({ open, onClose, initialDate }: ShiftCreateDia
               }}
             >
               {createShiftMutation.isPending || assignUserMutation.isPending
-                ? 'Erstelle...'
+                ? 'Wird angelegt …'
                 : 'Schicht erstellen'}
             </Button>
           </DialogActions>

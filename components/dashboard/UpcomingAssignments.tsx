@@ -28,7 +28,7 @@ export function UpcomingAssignments({
             Keine anstehenden Dienste
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Alle deine Dienste sind bereits bestätigt
+            Alle Ihre Dienste sind bestätigt
           </Typography>
         </Box>
       </GlassCard>

@@ -160,7 +160,7 @@ export function StatisticsChart({
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <TrendingUpIcon color="success" fontSize="small" />
                   <Typography variant="body2" color="success.main">
-                    Ø {averageHours.toFixed(1)}h/Tag
+                    Ø {averageHours.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h/Tag
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

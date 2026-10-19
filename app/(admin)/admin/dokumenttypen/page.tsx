@@ -10,7 +10,7 @@ export default function AdminDocumentTypesPage() {
   if (!user) {
     return (
     <Box sx={{ p: 3 }}>
-          <Alert severity="error">Bitte melde dich an, um Dokumententypen zu verwalten.</Alert>
+          <Alert severity="error">Bitte melden Sie sich an, um Dokumententypen zu verwalten.</Alert>
         </Box>
   );
   }

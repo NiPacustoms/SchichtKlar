@@ -1,460 +1,323 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  Box,
-  CardContent,
-  Typography,
-  CircularProgress,
   Alert,
+  Box,
   Button,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
+  Chip,
   IconButton,
+  LinearProgress,
+  Skeleton,
+  ToggleButton,
+  ToggleButtonGroup,
   Tooltip,
-  Divider,
+  Typography,
+  useMediaQuery,
 } from '@mui/material';
-import Grid from '@mui/material/Grid';
-import { Download, CheckCircleRounded, WarningAmberRounded } from '@mui/icons-material';
+import { useTheme } from '@mui/material/styles';
+import { ChevronLeft, ChevronRight, FileDownloadOutlined, RefreshOutlined } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { de } from 'date-fns/locale';
+import {
+  addMonths,
+  addWeeks,
+  endOfDay,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isSameMonth,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+} from 'date-fns';
 import { useFacilityHours } from '@/lib/hooks/useFacilityHours';
+import type { FacilityHoursSummary } from '@/lib/services/facilityHours';
 import { AppError } from '@/lib/errors';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { radius } from '@/lib/design-tokens';
-import { format } from 'date-fns';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { StatStrip } from '@/components/ui/StatStrip';
 
 interface FacilityHoursDashboardProps {
   facilityId?: string;
 }
 
-/** Tönung der Status-/ArbZG-Pille – OK = grün, sonst amber/rot Warnung */
-const STATUS_TONE: Record<'success' | 'warning' | 'error', { fg: string; bg: string }> = {
-  success: { fg: '#16a34a', bg: 'rgba(22,163,74,0.12)' },
-  warning: { fg: '#d97706', bg: 'rgba(217,119,6,0.12)' },
-  error: { fg: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
-};
+type RangeMode = 'week' | 'month' | 'custom';
 
+const fmtH = (n: number) => `${n.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h`;
+
+function statusOf(s: FacilityHoursSummary): { label: string; color: 'success' | 'warning' | 'error' | 'info' | 'default' } {
+  if (s.missingEntries > 5) return { label: `${s.missingEntries} Nachweise fehlen`, color: 'error' };
+  if (s.missingEntries > 0) return { label: `${s.missingEntries} ${s.missingEntries === 1 ? 'Nachweis fehlt' : 'Nachweise fehlen'}`, color: 'warning' };
+  if (s.pendingTimesheets > 0) return { label: 'Zur Freigabe', color: 'info' };
+  if ((s.dueShiftCount ?? 0) === 0) return { label: 'Noch nichts fällig', color: 'default' };
+  return { label: 'Vollständig', color: 'success' };
+}
+
+function rangeFor(mode: RangeMode, anchor: Date): [Date, Date] {
+  if (mode === 'month') return [startOfMonth(anchor), endOfMonth(anchor)];
+  return [startOfWeek(anchor, { weekStartsOn: 1 }), endOfWeek(anchor, { weekStartsOn: 1 })];
+}
+
+function rangeTitle(mode: RangeMode, from: Date, to: Date) {
+  if (mode === 'month') return format(from, 'MMMM yyyy', { locale: de });
+  const sameMonth = isSameMonth(from, to);
+  return `${format(from, sameMonth ? 'd.' : 'd. MMM', { locale: de })} – ${format(to, 'd. MMM yyyy', { locale: de })}`;
+}
+
+/**
+ * Soll/Ist je Einrichtung. „Soll bis heute“ zählt nur Schichten, die bereits
+ * vorbei sind – künftige Schichten sind keine fehlenden Nachweise.
+ */
 export function FacilityHoursDashboard({ facilityId }: FacilityHoursDashboardProps) {
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
-  const [dateRange, setDateRange] = useState<'week' | 'month' | 'custom'>('week');
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'), { noSsr: true });
+  const [mode, setMode] = useState<RangeMode>('week');
+  const [anchor, setAnchor] = useState(() => new Date());
+  const [custom, setCustom] = useState<[Date | null, Date | null]>([null, null]);
 
-  const { summaries, isLoading, error, refetch } = useFacilityHours({
-    facilityId,
-    startDate: startDate || undefined,
-    endDate: endDate || undefined,
-  });
-
-  const handleDateRangeChange = (range: 'week' | 'month' | 'custom') => {
-    setDateRange(range);
-    const now = new Date();
-
-    if (range === 'week') {
-      const mondayOffset = (now.getDay() + 6) % 7;
-      const weekStart = new Date(now);
-      weekStart.setDate(now.getDate() - mondayOffset);
-      weekStart.setHours(0, 0, 0, 0);
-
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-      weekEnd.setHours(23, 59, 59, 999);
-
-      setStartDate(weekStart);
-      setEndDate(weekEnd);
-    } else if (range === 'month') {
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      monthStart.setHours(0, 0, 0, 0);
-
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      monthEnd.setHours(23, 59, 59, 999);
-
-      setStartDate(monthStart);
-      setEndDate(monthEnd);
-    } else {
-      setStartDate(null);
-      setEndDate(null);
+  const [from, to] = useMemo<[Date | undefined, Date | undefined]>(() => {
+    if (mode === 'custom') {
+      return [custom[0] ? startOfDay(custom[0]) : undefined, custom[1] ? endOfDay(custom[1]) : undefined];
     }
+    return rangeFor(mode, anchor);
+  }, [mode, anchor, custom]);
+
+  const { summaries, isLoading, error, refetch } = useFacilityHours({ facilityId, startDate: from, endDate: to });
+
+  const rows = useMemo(() => [...summaries].sort((a, b) => b.missingEntries - a.missingEntries || a.facilityName.localeCompare(b.facilityName)), [summaries]);
+  const totals = useMemo(
+    () =>
+      summaries.reduce(
+        (t, s) => ({
+          planned: t.planned + s.plannedHours,
+          due: t.due + (s.dueHours ?? 0),
+          worked: t.worked + s.workedHours,
+          missing: t.missing + s.missingEntries,
+          pending: t.pending + s.pendingTimesheets,
+        }),
+        { planned: 0, due: 0, worked: 0, missing: 0, pending: 0 }
+      ),
+    [summaries]
+  );
+
+  const shift = (dir: 1 | -1) => setAnchor(a => (mode === 'month' ? addMonths(a, dir) : addWeeks(a, dir)));
+
+  const exportCsv = () => {
+    if (rows.length === 0) return;
+    const head = ['Einrichtung', 'Schichten', 'davon beendet', 'Soll gesamt (h)', 'Soll bis heute (h)', 'Geleistet (h)', 'Fehlende Nachweise', 'Zur Freigabe', 'Status'];
+    const body = rows.map(s => [
+      s.facilityName,
+      s.shiftCount,
+      s.dueShiftCount ?? 0,
+      s.plannedHours.toFixed(1).replace('.', ','),
+      (s.dueHours ?? 0).toFixed(1).replace('.', ','),
+      s.workedHours.toFixed(1).replace('.', ','),
+      s.missingEntries,
+      s.pendingTimesheets,
+      statusOf(s).label,
+    ]);
+    const csv = [head, ...body].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n');
+    const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `stunden_${from ? format(from, 'yyyy-MM-dd') : 'alle'}_${to ? format(to, 'yyyy-MM-dd') : ''}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
-  React.useEffect(() => {
-    if (dateRange === 'week') {
-      handleDateRangeChange('week');
-    }
-  }, [dateRange]);
-
-  const handleExportCSV = () => {
-    if (summaries.length === 0) return;
-
-    const headers = [
-      'Einrichtung',
-      'Geplant (h)',
-      'Geleistet (h)',
-      'Differenz (h)',
-      'Differenz (%)',
-      'Schichten',
-      'Timesheets',
-      'Fehlend',
-      'Ausstehend',
-      'Status',
-    ];
-
-    const rows = summaries.map(summary => {
-      const diff = summary.workedHours - summary.plannedHours;
-      const diffPercent =
-        summary.plannedHours > 0 ? Math.round((diff / summary.plannedHours) * 100) : 0;
-
-      return [
-        summary.facilityName,
-        summary.plannedHours.toFixed(1),
-        summary.workedHours.toFixed(1),
-        diff.toFixed(1),
-        `${diffPercent >= 0 ? '+' : ''}${diffPercent}`,
-        summary.shiftCount.toString(),
-        summary.timesheetCount.toString(),
-        summary.missingEntries.toString(),
-        summary.pendingTimesheets.toString(),
-        getStatusLabel(summary),
-      ];
-    });
-
-    const csvContent = [headers.join(';'), ...rows.map(row => row.join(';'))].join('\n');
-
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    const dateRangeStr =
-      summaries[0]?.range.startDate && summaries[0]?.range.endDate
-        ? `${format(summaries[0].range.startDate, 'yyyy-MM-dd')}_${format(summaries[0].range.endDate, 'yyyy-MM-dd')}`
-        : format(new Date(), 'yyyy-MM-dd');
-
-    link.setAttribute('href', url);
-    link.setAttribute('download', `stundenuebersicht_${dateRangeStr}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const getStatusColor = (summary: (typeof summaries)[0]) => {
-    if (summary.missingEntries > 5) return 'error';
-    if (summary.missingEntries > 0) return 'warning';
-    if (summary.pendingTimesheets > 0) return 'warning';
-    return 'success';
-  };
-
-  const getStatusLabel = (summary: (typeof summaries)[0]) => {
-    if (summary.missingEntries > 5) return 'Kritisch';
-    if (summary.missingEntries > 0) return 'Offen';
-    if (summary.pendingTimesheets > 0) return 'Ausstehend';
-    return 'Vollständig';
-  };
-
-  const hasIncompleteData = summaries.some(summary => summary.incompleteData);
-
-  if (error) {
-    const errorMessage =
-      error instanceof AppError
-        ? error.userMessage
-        : error instanceof Error
-          ? error.message
-          : 'Unbekannter Fehler';
-    return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        Fehler beim Laden der Stundenübersicht: {errorMessage}
-      </Alert>
-    );
-  }
+  const cols = 'minmax(200px, 1.6fr) 90px 120px 120px minmax(140px, 1fr) 180px';
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={de}>
-      <Box>
-        {hasIncompleteData && (
-          <Alert severity="warning" sx={{ mb: 3 }}>
-            Einige Einrichtungen enthalten historische Daten ohne <code>companyId</code>. Die
-            Stunden sind unvollständig und müssen über eine Migration nachgezogen werden.
-          </Alert>
-        )}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: { xs: 'flex-start', md: 'center' },
-            flexWrap: { xs: 'wrap', md: 'nowrap' },
-            gap: 2,
-            mb: 1,
-          }}
-        >
-          <Typography
-            component="h1"
-            sx={{
-              fontSize: { xs: 26, lg: 28 },
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-              lineHeight: 1.08,
-            }}
-          >
-            Stunden je Einrichtung
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Zeitraum</InputLabel>
-              <Select
-                value={dateRange}
-                label="Zeitraum"
-                onChange={e => handleDateRangeChange(e.target.value as 'week' | 'month' | 'custom')}
-              >
-                <MenuItem value="week">Aktuelle Woche</MenuItem>
-                <MenuItem value="month">Aktueller Monat</MenuItem>
-                <MenuItem value="custom">Benutzerdefiniert</MenuItem>
-              </Select>
-            </FormControl>
-            {dateRange === 'custom' && (
-              <>
-                <DatePicker
-                  label="Von"
-                  value={startDate}
-                  onChange={newValue => setStartDate(newValue)}
-                  slotProps={{ textField: { size: 'small', sx: { width: 150 } } }}
-                />
-                <DatePicker
-                  label="Bis"
-                  value={endDate}
-                  onChange={newValue => setEndDate(newValue)}
-                  slotProps={{ textField: { size: 'small', sx: { width: 150 } } }}
-                />
-              </>
-            )}
-            <Tooltip title="Als CSV exportieren">
-              <IconButton
-                onClick={handleExportCSV}
-                disabled={isLoading || summaries.length === 0}
-                color="primary"
-                aria-label="Als CSV exportieren"
-                sx={{ border: '1px solid', borderColor: 'divider', borderRadius: `${radius.md}px` }}
-              >
-                <Download />
+      <PageHeader
+        title="Stunden"
+        subtitle="Soll und Ist je Einrichtung – fehlende Zeitnachweise auf einen Blick"
+        actions={
+          <>
+            <Tooltip title="Neu laden">
+              <IconButton aria-label="Neu laden" onClick={() => refetch()} disabled={isLoading}>
+                <RefreshOutlined />
               </IconButton>
             </Tooltip>
-            <Button
-              variant="outlined"
-              onClick={() => refetch()}
-              disabled={isLoading}
-              sx={{ minHeight: 44, borderRadius: `${radius.md}px` }}
-            >
-              Aktualisieren
+            <Button variant="outlined" startIcon={<FileDownloadOutlined />} onClick={exportCsv} disabled={isLoading || rows.length === 0}>
+              CSV exportieren
+            </Button>
+          </>
+        }
+      />
+
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+        <ToggleButtonGroup size="small" exclusive value={mode} onChange={(_, v) => v && setMode(v)} aria-label="Zeitraum">
+          <ToggleButton value="week">Woche</ToggleButton>
+          <ToggleButton value="month">Monat</ToggleButton>
+          <ToggleButton value="custom">Zeitraum</ToggleButton>
+        </ToggleButtonGroup>
+        {mode !== 'custom' ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <IconButton size="small" aria-label={mode === 'week' ? 'Vorherige Woche' : 'Vorheriger Monat'} onClick={() => shift(-1)}>
+              <ChevronLeft />
+            </IconButton>
+            <Typography component="h2" sx={{ fontSize: 15, fontWeight: 600, minWidth: 170, textAlign: 'center' }}>
+              {from && to ? rangeTitle(mode, from, to) : ''}
+            </Typography>
+            <IconButton size="small" aria-label={mode === 'week' ? 'Nächste Woche' : 'Nächster Monat'} onClick={() => shift(1)}>
+              <ChevronRight />
+            </IconButton>
+            <Button size="small" variant="text" onClick={() => setAnchor(new Date())}>
+              Heute
             </Button>
           </Box>
-        </Box>
-
-        {summaries.length > 0 && (
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="body2" color="text.secondary">
-              Zeitraum:{' '}
-              {summaries[0]?.range.startDate && format(summaries[0].range.startDate, 'dd.MM.yyyy')}{' '}
-              - {summaries[0]?.range.endDate && format(summaries[0].range.endDate, 'dd.MM.yyyy')}
-            </Typography>
-          </Box>
-        )}
-
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
-          </Box>
-        ) : summaries.length === 0 ? (
-          <Alert severity="info">Keine Daten für den ausgewählten Zeitraum gefunden.</Alert>
         ) : (
-          <Grid container spacing={2}>
-            {summaries.map(summary => {
-              const diff = summary.workedHours - summary.plannedHours;
-              const diffPercent =
-                summary.plannedHours > 0 ? Math.round((diff / summary.plannedHours) * 100) : 0;
-              const status = getStatusColor(summary);
-              const tone = STATUS_TONE[status];
-              const StatusIcon = status === 'success' ? CheckCircleRounded : WarningAmberRounded;
-
-              return (
-                <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={summary.facilityId}>
-                  <GlassCard sx={{ height: '100%' }}>
-                    <CardContent
-                      sx={{
-                        p: 2.5,
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        '&:last-child': { pb: 2.5 },
-                      }}
-                    >
-                      {/* Kopf: Einrichtung + ArbZG-/Status-Badge */}
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          justifyContent: 'space-between',
-                          gap: 1.5,
-                          mb: 2,
-                        }}
-                      >
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography
-                            sx={{
-                              fontSize: 17,
-                              fontWeight: 700,
-                              letterSpacing: '-0.01em',
-                              lineHeight: 1.25,
-                            }}
-                          >
-                            {summary.facilityName}
-                          </Typography>
-                          {summary.incompleteData && (
-                            <Typography variant="caption" color="warning.main">
-                              Daten unvollständig (Migration erforderlich)
-                            </Typography>
-                          )}
-                        </Box>
-                        <Box
-                          sx={{
-                            flexShrink: 0,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                            px: 1.25,
-                            py: 0.4,
-                            borderRadius: 999,
-                            fontSize: 12,
-                            fontWeight: 700,
-                            whiteSpace: 'nowrap',
-                            color: tone.fg,
-                            bgcolor: tone.bg,
-                          }}
-                        >
-                          <StatusIcon sx={{ fontSize: 15 }} />
-                          {getStatusLabel(summary)}
-                        </Box>
-                      </Box>
-
-                      {/* Kernzahl: geleistete vs. geplante Stunden */}
-                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
-                        <Typography
-                          sx={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em' }}
-                          className="tabular-nums"
-                        >
-                          {summary.workedHours.toFixed(1)} h
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" className="tabular-nums">
-                          von {summary.plannedHours.toFixed(1)} h geplant
-                        </Typography>
-                      </Box>
-                      <Typography
-                        variant="body2"
-                        className="tabular-nums"
-                        sx={{
-                          mt: 0.25,
-                          fontWeight: 600,
-                          color: diff >= 0 ? 'success.main' : 'error.main',
-                        }}
-                      >
-                        {diff >= 0 ? '+' : ''}
-                        {diff.toFixed(1)} h ({diffPercent >= 0 ? '+' : ''}
-                        {diffPercent}%)
-                      </Typography>
-
-                      <Divider sx={{ my: 2 }} />
-
-                      {/* Kennzahlen */}
-                      <Grid container spacing={1.5} sx={{ mt: 'auto' }}>
-                        {[
-                          { label: 'Schichten', value: summary.shiftCount, color: undefined },
-                          { label: 'Timesheets', value: summary.timesheetCount, color: undefined },
-                          {
-                            label: 'Fehlend',
-                            value: summary.missingEntries,
-                            color:
-                              summary.missingEntries > 0 ? 'error.main' : ('text.primary' as const),
-                          },
-                          {
-                            label: 'Ausstehend',
-                            value: summary.pendingTimesheets,
-                            color:
-                              summary.pendingTimesheets > 0
-                                ? 'warning.main'
-                                : ('text.primary' as const),
-                          },
-                        ].map(stat => (
-                          <Grid size={6} key={stat.label}>
-                            <Typography variant="caption" color="text.secondary">
-                              {stat.label}
-                            </Typography>
-                            <Typography
-                              className="tabular-nums"
-                              sx={{ fontSize: 17, fontWeight: 600, color: stat.color }}
-                            >
-                              {stat.value}
-                            </Typography>
-                          </Grid>
-                        ))}
-                      </Grid>
-                    </CardContent>
-                  </GlassCard>
-                </Grid>
-              );
-            })}
-          </Grid>
-        )}
-
-        {summaries.length > 0 && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 2 }}>
-            <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(33.333% - 16px)' }, minWidth: 0 }}>
-              <GlassCard>
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Gesamt geplant
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 600 }} className="tabular-nums">
-                    {summaries.reduce((sum, s) => sum + s.plannedHours, 0).toFixed(1)} h
-                  </Typography>
-                </CardContent>
-              </GlassCard>
-            </Box>
-            <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(33.333% - 16px)' }, minWidth: 0 }}>
-              <GlassCard>
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Gesamt geleistet
-                  </Typography>
-                  <Typography
-                    variant="h5"
-                    sx={{ fontWeight: 600, color: 'primary.main' }}
-                    className="tabular-nums"
-                  >
-                    {summaries.reduce((sum, s) => sum + s.workedHours, 0).toFixed(1)} h
-                  </Typography>
-                </CardContent>
-              </GlassCard>
-            </Box>
-            <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(33.333% - 16px)' }, minWidth: 0 }}>
-              <GlassCard>
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Fehlende Einträge
-                  </Typography>
-                  <Typography
-                    variant="h5"
-                    sx={{ fontWeight: 600, color: 'error.main' }}
-                    className="tabular-nums"
-                  >
-                    {summaries.reduce((sum, s) => sum + s.missingEntries, 0)}
-                  </Typography>
-                </CardContent>
-              </GlassCard>
-            </Box>
-          </Box>
+          <>
+            <DatePicker label="Von" value={custom[0]} onChange={d => setCustom(c => [d, c[1]])} slotProps={{ textField: { size: 'small', sx: { width: 160 } } }} />
+            <DatePicker label="Bis" value={custom[1]} onChange={d => setCustom(c => [c[0], d])} slotProps={{ textField: { size: 'small', sx: { width: 160 } } }} />
+          </>
         )}
       </Box>
+
+      {error ? (
+        <Alert severity="error">
+          Stunden konnten nicht geladen werden:{' '}
+          {error instanceof AppError ? error.userMessage : error instanceof Error ? error.message : 'Unbekannter Fehler'}
+        </Alert>
+      ) : (
+        <>
+          {summaries.some(s => s.incompleteData) && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              Einige Einrichtungen haben ältere Daten ohne Firmenzuordnung. Die Stunden sind dort unvollständig.
+            </Alert>
+          )}
+
+          <StatStrip
+            aria-label="Summen im Zeitraum"
+            items={[
+              { label: 'Soll bis heute', value: isLoading ? '–' : fmtH(totals.due), hint: totals.planned - totals.due > 0.05 ? `von ${fmtH(totals.planned)} im Zeitraum` : undefined },
+              { label: 'Geleistet', value: isLoading ? '–' : fmtH(totals.worked) },
+              { label: 'Fehlende Nachweise', value: isLoading ? '–' : totals.missing, tone: totals.missing > 0 ? 'attention' : 'default' },
+              { label: 'Zur Freigabe', value: isLoading ? '–' : totals.pending, tone: totals.pending > 0 ? 'attention' : 'muted' },
+            ]}
+          />
+
+          <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: '12px', overflow: 'hidden' }}>
+            {isDesktop && (
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: cols,
+                  gap: 2,
+                  px: 2,
+                  py: 1,
+                  bgcolor: 'action.hover',
+                  '& > *': { fontSize: 13, fontWeight: 600, color: 'text.secondary' },
+                }}
+              >
+                <span>Einrichtung</span>
+                <span style={{ textAlign: 'right' }}>Schichten</span>
+                <span style={{ textAlign: 'right' }}>Soll bis heute</span>
+                <span style={{ textAlign: 'right' }}>Geleistet</span>
+                <span>Erfüllung</span>
+                <span>Status</span>
+              </Box>
+            )}
+
+            {isLoading &&
+              [0, 1, 2].map(i => (
+                <Box key={i} sx={{ px: 2, py: 1.75, borderTop: i || isDesktop ? '1px solid' : 'none', borderColor: 'divider' }}>
+                  <Skeleton width="60%" />
+                </Box>
+              ))}
+
+            {!isLoading && rows.length === 0 && (
+              <Box sx={{ px: 2, py: 6, textAlign: 'center' }}>
+                <Typography sx={{ fontWeight: 600, mb: 0.5 }}>Keine Schichten im Zeitraum</Typography>
+                <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>Wählen Sie einen anderen Zeitraum.</Typography>
+              </Box>
+            )}
+
+            {!isLoading &&
+              rows.map((s, i) => {
+                const st = statusOf(s);
+                const due = s.dueHours ?? 0;
+                const pct = due > 0 ? Math.min(100, Math.round((s.workedHours / due) * 100)) : null;
+                const bar = (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <LinearProgress
+                      variant="determinate"
+                      value={pct ?? 0}
+                      color={pct === null ? 'inherit' : pct >= 95 ? 'success' : pct >= 60 ? 'primary' : 'warning'}
+                      sx={{ flex: 1, height: 6, borderRadius: 3, bgcolor: 'action.hover', color: 'text.disabled' }}
+                    />
+                    <Typography className="tabular-nums" sx={{ fontSize: 13, color: 'text.secondary', width: 40, textAlign: 'right' }}>
+                      {pct === null ? '—' : `${pct} %`}
+                    </Typography>
+                  </Box>
+                );
+
+                if (!isDesktop) {
+                  return (
+                    <Box key={s.facilityId} sx={{ px: 1.75, py: 1.5, borderTop: i ? '1px solid' : 'none', borderColor: 'divider', display: 'grid', gap: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, alignItems: 'center' }}>
+                        <Typography noWrap sx={{ fontWeight: 600, fontSize: 15 }}>
+                          {s.facilityName}
+                        </Typography>
+                        <Chip size="small" variant="outlined" color={st.color} label={st.label} />
+                      </Box>
+                      <Typography className="tabular-nums" sx={{ fontSize: 13.5, color: 'text.secondary' }}>
+                        {fmtH(s.workedHours)} von {fmtH(due)} bis heute · {s.shiftCount} Schichten
+                      </Typography>
+                      {bar}
+                    </Box>
+                  );
+                }
+
+                return (
+                  <Box
+                    key={s.facilityId}
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: cols,
+                      gap: 2,
+                      alignItems: 'center',
+                      px: 2,
+                      minHeight: 56,
+                      borderTop: '1px solid',
+                      borderColor: 'divider',
+                      fontSize: 14,
+                    }}
+                  >
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography noWrap sx={{ fontSize: 14, fontWeight: 600 }}>
+                        {s.facilityName}
+                      </Typography>
+                      {s.incompleteData && <Typography sx={{ fontSize: 12.5, color: 'warning.dark' }}>Daten unvollständig</Typography>}
+                    </Box>
+                    <Tooltip title={`${s.dueShiftCount ?? 0} davon bereits beendet`}>
+                      <Typography className="tabular-nums" sx={{ fontSize: 14, textAlign: 'right' }}>
+                        {s.shiftCount}
+                      </Typography>
+                    </Tooltip>
+                    <Tooltip title={`${fmtH(s.plannedHours)} im ganzen Zeitraum geplant`}>
+                      <Typography className="tabular-nums" sx={{ fontSize: 14, textAlign: 'right' }}>
+                        {fmtH(due)}
+                      </Typography>
+                    </Tooltip>
+                    <Typography className="tabular-nums" sx={{ fontSize: 14, textAlign: 'right', fontWeight: 600 }}>
+                      {fmtH(s.workedHours)}
+                    </Typography>
+                    {bar}
+                    <Box>
+                      <Chip size="small" variant="outlined" color={st.color} label={st.label} />
+                    </Box>
+                  </Box>
+                );
+              })}
+          </Box>
+        </>
+      )}
     </LocalizationProvider>
   );
 }
+
+export default FacilityHoursDashboard;

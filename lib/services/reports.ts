@@ -585,8 +585,11 @@ export const reportService = {
       const timesheets = await timesheetService.getTimesheetsByDateRange(startDate, endDate, filters.userId);
       
       // Calculate totals from real data
+      // Ohne gespeicherte Aufteilung zählt alles, was keine Überstunde ist, als regulär
+      const regularOf = (ts: { totalHours: number; regularHours?: number; overtimeHours?: number }) =>
+        ts.regularHours ?? Math.max(0, (ts.totalHours || 0) - (ts.overtimeHours || 0));
       const totalHours = timesheets.reduce((sum, ts) => sum + ts.totalHours, 0);
-      const regularHours = timesheets.reduce((sum, ts) => sum + (ts.regularHours || 0), 0);
+      const regularHours = timesheets.reduce((sum, ts) => sum + regularOf(ts), 0);
       const overtimeHours = timesheets.reduce((sum, ts) => sum + (ts.overtimeHours || 0), 0);
       const nightHours = timesheets.reduce((sum, ts) => sum + (ts.nightHours || 0), 0);
       const weekendHours = timesheets.reduce((sum, ts) => sum + (ts.weekendHours || 0), 0);
@@ -595,7 +598,7 @@ export const reportService = {
       const hoursByDay = timesheets.map(timesheet => ({
         day: timesheet.date instanceof Date ? timesheet.date.toISOString().slice(0, 10) : new Date(timesheet.date).toISOString().slice(0, 10),
         totalHours: timesheet.totalHours,
-        regularHours: timesheet.regularHours || 0,
+        regularHours: regularOf(timesheet),
         overtimeHours: timesheet.overtimeHours || 0,
       }));
 

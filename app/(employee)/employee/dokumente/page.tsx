@@ -198,7 +198,7 @@ export default function DocumentsPage() {
             Schichtklar
           </Typography>
           <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-            Bitte melde dich an, um fortzufahren
+            Bitte melden Sie sich an, um fortzufahren
           </Typography>
         </Box>
       </Box>
@@ -209,7 +209,7 @@ export default function DocumentsPage() {
     <PageContainer maxWidth="standard">
       <PageHeader
         title="Meine Nachweise"
-        subtitle="Verwalte deine Dokumente und behalte Ablaufdaten im Blick"
+        subtitle="Ihre Nachweise und deren Ablaufdaten"
         actions={
           <Stack direction="row" spacing={1}>
             <Button
@@ -251,7 +251,7 @@ export default function DocumentsPage() {
                 Keine Nachweise vorhanden
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Lade deine ersten Dokumente hoch
+                Laden Sie Ihre ersten Dokumente hoch
               </Typography>
               <Button
                 variant="contained"

@@ -82,7 +82,7 @@ function DashboardPageContent() {
             Schichtklar
           </Typography>
           <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-            Bitte melde dich an, um fortzufahren
+            Bitte melden Sie sich an, um fortzufahren
           </Typography>
         </Box>
       </Box>
@@ -169,7 +169,7 @@ function DashboardPageContent() {
                       <Typography sx={{ fontSize: 12.5, fontWeight: 600 }}>{t.label}</Typography>
                     </Stack>
                     <Typography sx={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em' }} className="tabular-nums">
-                      {t.value.toFixed(1)}
+                      {t.value.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                       <Box component="span" sx={{ fontSize: 14, fontWeight: 600, color: 'text.secondary', ml: 0.5 }}>h</Box>
                     </Typography>
                   </CardContent>
@@ -302,7 +302,7 @@ function DashboardPageContent() {
                             {todayTimesheet.endTime || '—'}
                           </Typography>
                           <Typography variant="body2">
-                            Gesamtstunden: {Math.max(todayTimesheet.totalHours ?? 0, 0).toFixed(2)}{' '}
+                            Gesamtstunden: {Math.max(todayTimesheet.totalHours ?? 0, 0).toLocaleString('de-DE', { maximumFractionDigits: 2 })}{' '}
                             h
                           </Typography>
                           <Typography variant="body2">
@@ -342,13 +342,18 @@ function DashboardPageContent() {
                                     <Event fontSize="small" />
                                   </ListItemIcon>
                                   <ListItemText
-                                    primary={shift?.title || facility?.name || 'Einsatz'}
+                                    primary={[
+                                      (shift as { type?: string } | undefined)?.type,
+                                      facility?.name,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(' · ') || 'Einsatz'}
+                                    primaryTypographyProps={{ sx: { fontWeight: 600, fontSize: 15 } }}
                                     secondary={[
                                       formatDate(
                                         shift?.date ? new Date(shift.date) : assignment.assignedAt
                                       ),
-                                      shift ? `${shift.startTime} – ${shift.endTime}` : null,
-                                      facility?.name ? `Einrichtung: ${facility.name}` : null,
+                                      shift ? `${shift.startTime}–${shift.endTime} Uhr` : null,
                                     ]
                                       .filter(Boolean)
                                       .join(' · ')}

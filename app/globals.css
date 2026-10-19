@@ -290,10 +290,9 @@ main {
 }
 /* kleines Sektions-Label über einer Gruppe */
 .ios-section-label {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
   color: var(--color-text-secondary);
   margin: 20px 4px 8px;
 }

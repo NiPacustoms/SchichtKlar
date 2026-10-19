@@ -51,7 +51,7 @@ export function TimesheetHistory({ timesheets, onEdit, onView }: TimesheetHistor
             Keine Zeiterfassungen
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Erstelle deine erste Zeiterfassung
+            Erfassen Sie Ihre erste Arbeitszeit
           </Typography>
         </Box>
       </GlassCard>

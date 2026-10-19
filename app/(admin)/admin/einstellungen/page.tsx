@@ -6,6 +6,7 @@ import { GlobalErrorBoundary } from '@/components/errors/GlobalErrorBoundary';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { GlassCard } from '@/components/ui/GlassCard';
 import {
@@ -64,8 +65,6 @@ import {
   Notifications,
   Backup,
   Restore,
-  Save,
-  Refresh,
   Add,
   Edit,
   Delete,
@@ -160,7 +159,7 @@ export default function AdminSettingsPage() {
     settings,
     roles,
     documentTypes,
-    systemInfo,
+    systemInfo: _systemInfo,
     isLoading,
     error,
     updateSettings,
@@ -410,7 +409,7 @@ export default function AdminSettingsPage() {
   if (!user) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="error">Bitte melde dich an, um die Einstellungen zu verwalten.</Alert>
+        <Alert severity="error">Bitte melden Sie sich an, um die Einstellungen zu verwalten.</Alert>
       </Box>
     );
   }
@@ -418,25 +417,10 @@ export default function AdminSettingsPage() {
   return (
     <GlobalErrorBoundary component="AdminSettingsPage">
       <PageContainer maxWidth="wide">
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Typography
-            component="h1"
-            sx={{
-              fontSize: { xs: 26, lg: 28 },
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-              lineHeight: 1.08,
-              color: 'text.primary',
-              mb: 1,
-            }}
-          >
-            Einstellungen
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            Verwalten Sie Systemkonfiguration, Rollen und Dokumenttypen
-          </Typography>
-        </Box>
+        <PageHeader
+          title="Einstellungen"
+          subtitle="Firmenauftritt, Rollen, Dokumenttypen und Benachrichtigungen"
+        />
 
         {/* Branding */}
         <GlassCard hover={false} sx={{ mb: 4 }}>
@@ -521,118 +505,12 @@ export default function AdminSettingsPage() {
                     />
                   }
                   label="Logo anzeigen"
+                  sx={{ ml: 0.5, mr: 0, gap: 1.25, '& .MuiFormControlLabel-label': { fontSize: 14, whiteSpace: 'nowrap' } }}
                 />
               </Box>
             </Box>
           </CardContent>
         </GlassCard>
-
-        {/* System Status */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
-            <GlassCard hover={false} sx={{ height: '100%' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography
-                  variant="h4"
-                  color="success.main"
-                  className="tabular-nums"
-                  sx={{ fontWeight: 700 }}
-                >
-                  {systemInfo.status}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  System-Status
-                </Typography>
-              </CardContent>
-            </GlassCard>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
-            <GlassCard hover={false} sx={{ height: '100%' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography
-                  variant="h4"
-                  color="primary"
-                  className="tabular-nums"
-                  sx={{ fontWeight: 700 }}
-                >
-                  {systemInfo.version}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Version
-                </Typography>
-              </CardContent>
-            </GlassCard>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
-            <GlassCard hover={false} sx={{ height: '100%' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography
-                  variant="h4"
-                  color="info.main"
-                  className="tabular-nums"
-                  sx={{ fontWeight: 700 }}
-                >
-                  {systemInfo.uptime}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Uptime
-                </Typography>
-              </CardContent>
-            </GlassCard>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 6, md: 3 }}>
-            <GlassCard hover={false} sx={{ height: '100%' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography
-                  variant="h4"
-                  color="warning.main"
-                  className="tabular-nums"
-                  sx={{ fontWeight: 700 }}
-                >
-                  {systemInfo.storage}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Speicher
-                </Typography>
-              </CardContent>
-            </GlassCard>
-          </Grid>
-        </Grid>
-
-        {/* Actions */}
-        <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-          <Button
-            variant="contained"
-            startIcon={<Save />}
-            onClick={() => setSettingsDialogOpen(true)}
-            disabled={isUpdating}
-          >
-            {isUpdating ? 'Speichere...' : 'Einstellungen speichern'}
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<CloudUpload />}
-            onClick={() => setBackupDialogOpen(true)}
-            disabled={isBackingUp}
-          >
-            {isBackingUp ? 'Backup...' : 'Backup erstellen'}
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<CloudDownload />}
-            onClick={() => setRestoreDialogOpen(true)}
-            disabled={isRestoring}
-          >
-            {isRestoring ? 'Restore...' : 'Restore'}
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<Refresh />}
-            onClick={() => window.location.reload()}
-          >
-            Aktualisieren
-          </Button>
-        </Box>
 
         {/* Tabs */}
         <Paper className="glass" sx={{ mb: 3 }}>
@@ -655,38 +533,18 @@ export default function AdminSettingsPage() {
                 <SettingsRow
                   primary="System-Name"
                   secondary={settings.systemName}
-                  action={
-                    <IconButton size="small" aria-label="Bearbeiten">
-                      <Edit />
-                    </IconButton>
-                  }
                 />
                 <SettingsRow
                   primary="Standard-Zeitzone"
                   secondary={settings.timezone}
-                  action={
-                    <IconButton size="small" aria-label="Bearbeiten">
-                      <Edit />
-                    </IconButton>
-                  }
                 />
                 <SettingsRow
                   primary="Sprache"
-                  secondary={settings.language}
-                  action={
-                    <IconButton size="small" aria-label="Bearbeiten">
-                      <Edit />
-                    </IconButton>
-                  }
+                  secondary={({ de: 'Deutsch', en: 'Englisch', fr: 'Französisch' } as Record<string, string>)[settings.language] ?? settings.language}
                 />
                 <SettingsRow
                   primary="Währung"
                   secondary={settings.currency}
-                  action={
-                    <IconButton size="small" aria-label="Bearbeiten">
-                      <Edit />
-                    </IconButton>
-                  }
                 />
               </Box>
             </Grid>
@@ -697,20 +555,10 @@ export default function AdminSettingsPage() {
                 <SettingsRow
                   primary="Passwort-Policy"
                   secondary="Mindestens 8 Zeichen, Groß-/Kleinbuchstaben, Zahlen"
-                  action={
-                    <IconButton size="small" aria-label="Bearbeiten">
-                      <Edit />
-                    </IconButton>
-                  }
                 />
                 <SettingsRow
                   primary="Session-Timeout"
                   secondary={`${settings.sessionTimeout} Minuten`}
-                  action={
-                    <IconButton size="small" aria-label="Bearbeiten">
-                      <Edit />
-                    </IconButton>
-                  }
                 />
                 <SettingsRow
                   primary="2FA erforderlich"
@@ -729,11 +577,6 @@ export default function AdminSettingsPage() {
                 <SettingsRow
                   primary="Login-Versuche"
                   secondary={`Maximal ${settings.maxLoginAttempts} Versuche`}
-                  action={
-                    <IconButton size="small" aria-label="Bearbeiten">
-                      <Edit />
-                    </IconButton>
-                  }
                 />
               </Box>
             </Grid>
@@ -764,7 +607,7 @@ export default function AdminSettingsPage() {
                   }}
                   disabled={isCreating}
                 >
-                  {isCreating ? 'Erstelle...' : 'Neue Rolle'}
+                  {isCreating ? 'Wird angelegt …' : 'Neue Rolle'}
                 </Button>
               </Box>
 
@@ -878,7 +721,7 @@ export default function AdminSettingsPage() {
                   onClick={() => setDocumentTypeDialogOpen(true)}
                   disabled={isCreating}
                 >
-                  {isCreating ? 'Erstelle...' : 'Neuer Dokumenttyp'}
+                  {isCreating ? 'Wird angelegt …' : 'Neuer Dokumenttyp'}
                 </Button>
               </Box>
 

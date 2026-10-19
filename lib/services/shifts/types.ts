@@ -49,6 +49,20 @@ export function safeToDate(value: unknown): Date {
   return new Date();
 }
 
+const BERLIN_DAY = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Berlin',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+/**
+ * Kalendertag (YYYY-MM-DD) in deutscher Zeit. Schichtdaten liegen als
+ * Mitternacht Europe/Berlin vor (= 22:00/23:00 UTC am Vortag); toISOString()
+ * würde deshalb den Vortag liefern.
+ */
 export function safeDateToISOString(value: unknown): string {
-  return safeToDate(value).toISOString().split('T')[0];
+  const d = safeToDate(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return BERLIN_DAY.format(d);
 }

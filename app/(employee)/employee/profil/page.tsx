@@ -153,7 +153,7 @@ export default function ProfilePage() {
             Schichtklar
           </Typography>
           <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-            Bitte melde dich an, um fortzufahren
+            Bitte melden Sie sich an, um fortzufahren
           </Typography>
         </Box>
       </Box>
@@ -178,7 +178,7 @@ export default function ProfilePage() {
             Mein Profil
           </Typography>
           <Typography variant="body1" sx={{ color: 'text.secondary', mt: 0.75 }}>
-            Verwalte deine persönlichen Daten und Einstellungen
+            Persönliche Daten und Einstellungen
           </Typography>
         </Box>
 
