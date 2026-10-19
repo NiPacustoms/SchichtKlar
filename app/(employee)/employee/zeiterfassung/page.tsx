@@ -1,4 +1,6 @@
 'use client';
+
+import Link from 'next/link';
 import { TimesheetForm } from '@/components/time/TimesheetForm';
 import { TimesheetHistory } from '@/components/time/TimesheetHistory';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
@@ -359,7 +361,12 @@ export default function TimePage() {
             Arbeitszeit zum aktuellen Einsatz erfassen
           </Typography>
         </Box>
-        <SyncStatusIndicator />
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <Button variant="outlined" size="small" component={Link} href="/employee/stundennachweis">
+            Stundennachweis
+          </Button>
+          <SyncStatusIndicator />
+        </Stack>
       </Box>
 
       {/* Einsatz-Informationen */}

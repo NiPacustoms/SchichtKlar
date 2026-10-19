@@ -26,6 +26,7 @@ export const ROUTES = {
     BERICHTE: '/employee/berichte',
     BENACHRICHTIGUNGEN: '/employee/benachrichtigungen',
     ABWESENHEITEN: '/employee/abwesenheiten',
+    STUNDENNACHWEIS: '/employee/stundennachweis',
   },
 
   // Admin-Routen
@@ -40,6 +41,7 @@ export const ROUTES = {
     STUNDEN: '/admin/stunden',
     ZEITNACHWEISE: '/admin/zeitnachweise',
     ABWESENHEITEN: '/admin/abwesenheiten',
+    STUNDENNACHWEISE: '/admin/stundennachweise',
     BERICHTE: '/admin/berichte',
     EINSTELLUNGEN: '/admin/einstellungen',
     UEBERSICHT: '/admin/uebersicht',

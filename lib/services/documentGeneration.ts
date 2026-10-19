@@ -23,7 +23,7 @@ import { getLegalInfo } from '@/lib/config/legal';
 import { berlinDayKey } from '@/lib/utils/dateKey';
 
 /** Baut die Firmen-Fußzeilen-Daten aus der Legal-Konfiguration (Env). */
-function buildCompanyFooterInfo(): CompanyFooterInfo {
+export function buildCompanyFooterInfo(): CompanyFooterInfo {
   const legal = getLegalInfo();
   const responsible = legal.responsiblePerson
     ? `${legal.responsiblePerson.position} ${legal.responsiblePerson.name}`

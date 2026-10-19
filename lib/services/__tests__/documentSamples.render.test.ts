@@ -319,4 +319,37 @@ describe.runIf(ENABLED)('Dokument-Muster rendern', () => {
     });
     writeFileSync(path.join(OUT, 'einsatz-sammel-pdf.pdf'), Buffer.from(bytes));
   }, 30000);
+
+  it('stundennachweisPdf: Monatlicher Stundennachweis', async () => {
+    const { buildMonthlyStatement } = await import('@/lib/domain/stundennachweis');
+    const { generateStatementPdf, generateStatementsPdf } = await import('@/lib/services/pdf/stundennachweisPdf');
+    const { buildCompanyFooterInfo } = await import('@/lib/services/documentGeneration');
+    const mk = (id: string, dayKey: string, startTime: string, endTime: string, breakMinutes: number, totalHours: number, extra = {}) => ({
+      id, dayKey, startTime, endTime, breakMinutes, totalHours, status: 'approved' as const,
+      facilityName: 'Seniorenheim Sonnengarten', station: 'Wohnbereich 2', facilitySignerName: 'B. Leitung', ...extra,
+    });
+    const statement = buildMonthlyStatement('2026-09', [
+      mk('a', '2026-09-03', '13:30', '21:15', 30, 7.25),
+      mk('b', '2026-09-11', '07:00', '13:00', 30, 5.5, { facilityName: 'Caritas St. Michael', station: 'Station Wasser', facilitySignerName: 'S. Kurz (PDL)' }),
+      mk('c', '2026-09-20', '06:30', '14:30', 30, 7.5, { sundayNonHolidayHours: 7.5 }),
+      mk('d', '2026-09-22', '21:00', '06:00', 45, 8.25, { nightHours: 7, overtimeHours: 0.25 }),
+      mk('e', '2026-09-24', '07:00', '11:30', 30, 4, { status: 'submitted', facilitySignerName: undefined }),
+    ], [{ type: 'vacation', status: 'approved', fromKey: '2026-09-14', toKey: '2026-09-16' }]);
+    const sigs = {
+      employeeSignature: signatureDataUrl, employeeSignedName: 'Maria Beispiel', employeeSignedAt: new Date('2026-09-30T10:00:00Z'),
+      signedFingerprint: statement.fingerprint, signedTotalHours: statement.totals.hours,
+      employerSignature: signatureDataUrl, employerSignedName: 'Pepe Disposition', employerSignedAt: new Date('2026-10-01T09:00:00Z'),
+    };
+    const input = { statement, signatures: sigs, employeeName: 'Maria Beispiel', personnelNumber: '101', functionLabel: 'Pflegefachkraft', companyName: 'AufAbruf GmbH', place: 'Herten' };
+    const blob = await generateStatementPdf(input, buildCompanyFooterInfo());
+    const toBuf = (b: Blob) => new Promise<Buffer>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(Buffer.from(reader.result as ArrayBuffer));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(b);
+    });
+    writeFileSync(path.join(OUT, 'stundennachweis.pdf'), await toBuf(blob));
+    const many = await generateStatementsPdf([input, { ...input, signatures: null, employeeName: 'Jonas Schäfer' }], buildCompanyFooterInfo());
+    writeFileSync(path.join(OUT, 'stundennachweis-sammel.pdf'), await toBuf(many));
+  }, 30000);
 });
