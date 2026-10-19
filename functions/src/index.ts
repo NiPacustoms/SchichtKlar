@@ -70,6 +70,12 @@ export { unassignShift } from './unassignShift';
 export { submitTimesheet } from './submitTimesheet';
 export { protectApprovedTimesheets } from './protectTimesheet';
 export { computeTimesheetBreakdown } from './timesheetBreakdownTrigger';
+export {
+  createFacilityApprovalLink,
+  revokeFacilityApprovalLink,
+  getFacilityApproval,
+  decideFacilityApproval,
+} from './facilityApproval';
 export { onTimesheetWrite } from './weeklyLimitOnTimesheetWrite';
 
 // Email – lazy load to avoid loading email/nodemailer at deploy (prevents backend discovery timeout)

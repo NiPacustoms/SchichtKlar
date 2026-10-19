@@ -5,6 +5,7 @@
  */
 
 import * as admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { logger } from 'firebase-functions';
 
@@ -80,7 +81,7 @@ export const protectApprovedTimesheets = onDocumentUpdated(
           changes: changedFields,
           beforeStatus,
           afterStatus,
-          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          timestamp: FieldValue.serverTimestamp(),
         });
 
         // Stelle ursprüngliche Werte wieder her
@@ -88,12 +89,12 @@ export const protectApprovedTimesheets = onDocumentUpdated(
         // Die Firestore Rules sollten dies bereits verhindern
         try {
           const restoreData: Record<string, any> = {
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
           };
 
           for (const field of Object.keys(changedFields)) {
             // fehlte das Feld vorher, wird es wieder entfernt
-            restoreData[field] = beforeData[field] === undefined ? admin.firestore.FieldValue.delete() : beforeData[field];
+            restoreData[field] = beforeData[field] === undefined ? FieldValue.delete() : beforeData[field];
           }
 
           await db.collection('timesheets').doc(timesheetId).update(restoreData);

@@ -10,6 +10,7 @@
  * (verhindert Trigger-Schleifen).
  */
 import * as admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { logger } from 'firebase-functions';
 import { formatInTimeZone } from 'date-fns-tz';
@@ -94,7 +95,7 @@ export const computeTimesheetBreakdown = onDocumentWritten(
       surchargeAmount: b.surchargeAmount,
       arbzgFlags: arbzgFlagsFor((endUTC.getTime() - startUTC.getTime()) / 60000, breakMinutes),
       breakdownKey: key,
-      breakdownComputedAt: admin.firestore.FieldValue.serverTimestamp(),
+      breakdownComputedAt: FieldValue.serverTimestamp(),
     });
   }
 );

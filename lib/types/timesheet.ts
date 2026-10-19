@@ -52,6 +52,8 @@ export interface Timesheet {
   facilitySignedBy?: string;
   facilityConfirmationStatus?: 'performed' | 'aborted' | 'no-show';
   facilitySignerName?: string;
+  /** Wie die Einrichtung bestätigt hat: Unterschrift vor Ort oder Freigabe-Link */
+  facilityApprovedVia?: 'link' | 'device';
   /** Einsatz, zu dem die Zeiten gehören */
   assignmentId?: string;
   shiftId?: string;

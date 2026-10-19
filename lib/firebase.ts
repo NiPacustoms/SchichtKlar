@@ -113,6 +113,32 @@ export function getAuthSafe(): Auth | null {
   return auth;
 }
 
+/**
+ * Functions in der EU-Region (europe-west1) – für neue, öffentlich aufrufbare
+ * Funktionen wie den Freigabe-Link. Bestehende Callables laufen noch in der
+ * Standardregion (siehe KNOWN_LIMITATIONS).
+ */
+let functionsEU: Functions | null = null;
+export function getFunctionsEU(): Functions | null {
+  if (typeof window === 'undefined') return null;
+  if (functionsEU) return functionsEU;
+  getAuthSafe();
+  if (!app) return null;
+  functionsEU = getFunctions(app, 'europe-west1');
+  if (process.env.NEXT_PUBLIC_USE_EMULATOR === 'true') {
+    try {
+      connectFunctionsEmulator(
+        functionsEU,
+        process.env.NEXT_PUBLIC_EMULATOR_HOST || '127.0.0.1',
+        Number(process.env.NEXT_PUBLIC_FUNCTIONS_EMULATOR_PORT || 5001)
+      );
+    } catch {
+      /* bereits verbunden */
+    }
+  }
+  return functionsEU;
+}
+
 // Exportiere alle Services
 export { auth, db, storage, functions, messaging };
 

@@ -37,6 +37,7 @@ export function ConditionalHeader() {
       currentPath === '/passwort-vergessen' ||
       currentPath.startsWith('/anmeldung/') ||
       currentPath.startsWith('/recht/') ||
+      currentPath.startsWith('/freigabe/') ||
       currentPath.startsWith('/admin') ||
       // Gemeinsame App-Seiten (Gruppe (app)) bringen ihren Header über AppLayout mit
       currentPath === '/profil' ||
