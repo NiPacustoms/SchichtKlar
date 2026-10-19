@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import {
   AccessTimeOutlined,
+  EventBusyOutlined,
   AssignmentOutlined,
   BusinessOutlined,
   CalendarMonthOutlined,
@@ -52,6 +53,7 @@ const ADMIN_PAGES: Command[] = [
   { id: 'p-einsaetze', group: 'Seiten', label: 'Einsätze', icon: <AssignmentOutlined />, href: '/admin/einsaetze' },
   { id: 'p-mitarbeiter', group: 'Seiten', label: 'Mitarbeiter', icon: <PersonOutline />, href: '/admin/mitarbeiter', keywords: 'personal' },
   { id: 'p-zeitnachweise', group: 'Seiten', label: 'Zeitnachweise', icon: <AccessTimeOutlined />, href: '/admin/zeitnachweise', keywords: 'freigeben prüfen stundenzettel zeiterfassung ablehnen' },
+  { id: 'p-abwesenheiten', group: 'Seiten', label: 'Abwesenheiten', icon: <EventBusyOutlined />, href: '/admin/abwesenheiten', keywords: 'urlaub krank krankmeldung urlaubsantrag genehmigen au' },
   { id: 'p-stunden', group: 'Seiten', label: 'Stunden', icon: <AccessTimeOutlined />, href: '/admin/stunden', keywords: 'zeiterfassung soll ist' },
   { id: 'p-einrichtungen', group: 'Seiten', label: 'Einrichtungen', icon: <BusinessOutlined />, href: '/admin/einrichtungen', keywords: 'kunden' },
   { id: 'p-einstellungen', group: 'Seiten', label: 'Einstellungen', icon: <SettingsOutlined />, href: '/admin/einstellungen' },

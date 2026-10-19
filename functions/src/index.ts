@@ -76,6 +76,7 @@ export {
   getFacilityApproval,
   decideFacilityApproval,
 } from './facilityApproval';
+export { onAbsenceWritten } from './absences';
 export { onTimesheetWrite } from './weeklyLimitOnTimesheetWrite';
 
 // Email – lazy load to avoid loading email/nodemailer at deploy (prevents backend discovery timeout)

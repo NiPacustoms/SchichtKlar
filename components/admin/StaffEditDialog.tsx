@@ -193,6 +193,7 @@ export function StaffEditDialog({ open, onClose, onSave, staff }: StaffEditDialo
       qualifications: [],
       workingHoursPerWeek: undefined,
       personnelNumber: '',
+      vacationDaysPerYear: undefined,
       group: '',
       active: true,
       address: {
@@ -254,6 +255,7 @@ export function StaffEditDialog({ open, onClose, onSave, staff }: StaffEditDialo
         qualifications: staff.qualifications || [],
         workingHoursPerWeek: staff.workingHoursPerWeek || undefined,
         personnelNumber: staff.personnelNumber || '',
+        vacationDaysPerYear: staff.vacationDaysPerYear ?? undefined,
         group: fallbackGroup,
         active: staff.active,
         address: {
@@ -705,6 +707,26 @@ export function StaffEditDialog({ open, onClose, onSave, staff }: StaffEditDialo
                   inputProps={{ inputMode: 'numeric', maxLength: 5 }}
                   helperText={errors.personnelNumber?.message || 'Wie in DATEV – nötig für den Lohnexport'}
                   error={!!errors.personnelNumber}
+                />
+              )}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller
+              control={control}
+              name="vacationDaysPerYear"
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  label="Urlaubsanspruch (Tage/Jahr)"
+                  type="number"
+                  inputProps={{ min: 0, max: 60, step: 1 }}
+                  value={field.value ?? ''}
+                  onChange={e => field.onChange(e.target.value === '' ? undefined : Number.parseInt(e.target.value, 10))}
+                  helperText={errors.vacationDaysPerYear?.message || 'Arbeitstage bei 5-Tage-Woche – für den Resturlaub'}
+                  error={!!errors.vacationDaysPerYear}
                 />
               )}
             />
