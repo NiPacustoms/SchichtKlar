@@ -52,6 +52,11 @@ export interface Timesheet {
   facilitySignedBy?: string;
   facilityConfirmationStatus?: 'performed' | 'aborted' | 'no-show';
   facilitySignerName?: string;
+  /** Einsatz, zu dem die Zeiten gehören */
+  assignmentId?: string;
+  shiftId?: string;
+  /** Hinweise aus der Stundenberechnung (Pause zu kurz, > 8 h / > 10 h) */
+  arbzgFlags?: string[];
 }
 
 export interface TimesheetForm {
@@ -62,6 +67,9 @@ export interface TimesheetForm {
   notes?: string;
   facilityId?: string;
   station?: string;
+  /** Einsatz, zu dem die Zeiten gehören */
+  assignmentId?: string;
+  shiftId?: string;
   location?: {
     latitude: number;
     longitude: number;

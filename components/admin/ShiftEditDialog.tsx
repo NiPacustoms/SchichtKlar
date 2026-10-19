@@ -33,6 +33,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Autocomplete } from '@mui/material';
 import { toast } from '@/lib/utils/toast';
+import { berlinDayKey } from '@/lib/utils/dateKey';
 
 interface ShiftEditDialogProps {
   open: boolean;
@@ -98,7 +99,7 @@ export default function ShiftEditDialog({ open, shift, onClose, onUpdated }: Shi
         date: (shift as unknown as { date?: Date | string }).date
           ? typeof (shift as unknown as { date: Date }).date === 'string'
             ? (shift as unknown as { date: string }).date
-            : (shift as unknown as { date: Date }).date.toISOString().slice(0, 10)
+            : berlinDayKey((shift as unknown as { date: Date }).date)
           : '',
         startTime: (shift as unknown as { startTime?: string }).startTime || '',
         endTime: (shift as unknown as { endTime?: string }).endTime || '',

@@ -63,6 +63,7 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { berlinDayKey } from '@/lib/utils/dateKey';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -122,8 +123,8 @@ export default function EmployeeTimesPage() {
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string>('');
   const [breakFormData, setBreakFormData] = useState({ reason: '', duration: 30 });
   const [sickFormData, setSickFormData] = useState({
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
+    startDate: berlinDayKey(new Date()),
+    endDate: berlinDayKey(new Date()),
     reason: '',
     doctorNote: '',
   });
@@ -344,8 +345,8 @@ export default function EmployeeTimesPage() {
       });
       setSickDialogOpen(false);
       setSickFormData({
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0],
+        startDate: berlinDayKey(new Date()),
+        endDate: berlinDayKey(new Date()),
         reason: '',
         doctorNote: '',
       });
@@ -1162,8 +1163,8 @@ export default function EmployeeTimesPage() {
             onClick={() => {
               setSickDialogOpen(false);
               setSickFormData({
-                startDate: new Date().toISOString().split('T')[0],
-                endDate: new Date().toISOString().split('T')[0],
+                startDate: berlinDayKey(new Date()),
+                endDate: berlinDayKey(new Date()),
                 reason: '',
                 doctorNote: '',
               });

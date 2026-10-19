@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { timesService } from '@/lib/services/times';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/utils/toast';
+import { berlinDayKey } from '@/lib/utils/dateKey';
 
 export interface TimeEntry {
   id: string;
@@ -161,7 +162,7 @@ export function useTimes() {
       if (fileUrl) {
         const a = document.createElement('a');
         a.href = fileUrl;
-        a.download = `times-${new Date().toISOString().split('T')[0]}.csv`;
+        a.download = `times-${berlinDayKey(new Date())}.csv`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

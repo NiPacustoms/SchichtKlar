@@ -4,6 +4,7 @@ import type { Timesheet } from '@/lib/services/timesheets';
 // Echte Services verwenden - keine Mocks mehr
 import { timesheetService } from '@/lib/services/timesheets';
 import { useAuth as useAuthReal } from '@/contexts/AuthContext';
+import { berlinDayKey } from '@/lib/utils/dateKey';
 const useAuth = useAuthReal;
 
 export interface TimesheetHistoryFilters {
@@ -145,7 +146,7 @@ export const useTimesheetHistory = (filters: TimesheetHistoryFilters = {}) => {
       const date = new Date(timesheet.startDate);
       const weekStart = new Date(date);
       weekStart.setDate(date.getDate() - date.getDay()); // Sonntag
-      const weekKey = weekStart.toISOString().split('T')[0];
+      const weekKey = berlinDayKey(weekStart);
       
       if (!grouped[weekKey]) {
         grouped[weekKey] = [];
@@ -162,7 +163,7 @@ export const useTimesheetHistory = (filters: TimesheetHistoryFilters = {}) => {
     
     timesheets.forEach(timesheet => {
       const date = new Date(timesheet.startDate);
-      const dayKey = date.toISOString().split('T')[0];
+      const dayKey = berlinDayKey(date);
       
       if (!grouped[dayKey]) {
         grouped[dayKey] = [];

@@ -1,3 +1,5 @@
+import { berlinDayKey } from '@/lib/utils/dateKey';
+
 /**
  * Utility functions for time calculations and formatting
  */
@@ -107,7 +109,7 @@ export function calculateWorkedMinutes(timesheet: {
  * @returns Current date as "yyyy-MM-dd"
  */
 export function todayISO(): string {
-  return new Date().toISOString().split('T')[0];
+  return berlinDayKey(new Date());
 }
 
 /**

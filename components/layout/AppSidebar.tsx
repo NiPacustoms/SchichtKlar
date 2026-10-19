@@ -13,6 +13,7 @@ import {
   HistoryOutlined,
   PeopleOutlined,
   SettingsOutlined,
+  TaskAltOutlined,
   ViewWeekOutlined,
 } from '@mui/icons-material';
 import { Box, ButtonBase, Typography } from '@mui/material';
@@ -57,6 +58,7 @@ const ADMIN_NAV: NavGroup[] = [
     label: 'Personal',
     items: [
       { href: ROUTES.ADMIN.MITARBEITER, icon: <PeopleOutlined />, label: 'Mitarbeiter' },
+      { href: ROUTES.ADMIN.ZEITNACHWEISE, icon: <TaskAltOutlined />, label: 'Zeitnachweise' },
       { href: ROUTES.ADMIN.STUNDEN, icon: <AccessTimeOutlined />, label: 'Stunden' },
     ],
   },

@@ -69,6 +69,7 @@ export { unassignShift } from './unassignShift';
 // Timesheet Cloud Functions
 export { submitTimesheet } from './submitTimesheet';
 export { protectApprovedTimesheets } from './protectTimesheet';
+export { computeTimesheetBreakdown } from './timesheetBreakdownTrigger';
 export { onTimesheetWrite } from './weeklyLimitOnTimesheetWrite';
 
 // Email – lazy load to avoid loading email/nodemailer at deploy (prevents backend discovery timeout)

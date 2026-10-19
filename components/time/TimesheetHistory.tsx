@@ -90,15 +90,15 @@ export function TimesheetHistory({ timesheets, onEdit, onView }: TimesheetHistor
                   />
                 </Box>
                 <Typography variant="body2" color="text.secondary">
-                  {timesheet.startTime} - {timesheet.endTime} • {timesheet.totalHours}h
-                  {timesheet.breakMinutes > 0 && ` • ${timesheet.breakMinutes}min Pause`}
+                  {timesheet.startTime}–{timesheet.endTime} · {(timesheet.totalHours || 0).toLocaleString('de-DE', { maximumFractionDigits: 2 })} h
+                  {timesheet.breakMinutes > 0 && ` · ${timesheet.breakMinutes} min Pause`}
                 </Typography>
                 {timesheet.notes && (
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                     {timesheet.notes}
                   </Typography>
                 )}
-                {timesheet.rejectionReason && (
+                {timesheet.status === 'rejected' && timesheet.rejectionReason && (
                   <Typography variant="body2" color="error" sx={{ mt: 0.5 }}>
                     Grund: {timesheet.rejectionReason}
                   </Typography>
@@ -115,14 +115,14 @@ export function TimesheetHistory({ timesheets, onEdit, onView }: TimesheetHistor
                     Ansehen
                   </Button>
                 )}
-                {onEdit && timesheet.status === 'draft' && (
+                {onEdit && (timesheet.status === 'draft' || timesheet.status === 'rejected') && (
                   <Button
                     variant="outlined"
                     size="small"
                     startIcon={<Edit />}
                     onClick={() => onEdit(timesheet)}
                   >
-                    Bearbeiten
+                    {timesheet.status === 'rejected' ? 'Korrigieren' : 'Bearbeiten'}
                   </Button>
                 )}
               </Box>

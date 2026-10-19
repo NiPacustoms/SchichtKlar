@@ -32,6 +32,7 @@ import { eachDayOfInterval } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { berlinDayKey } from '@/lib/utils/dateKey';
 
 const rangeSchema = z
   .object({
@@ -117,7 +118,7 @@ export function ShiftRangeDialog({ open, onClose, initialFrom, initialTo }: Shif
         await shiftService.createWithCapacity({
           facilityId: data.facilityId,
           stationId: data.stationId,
-          date: typeof day === 'string' ? day : day.toISOString().split('T')[0],
+          date: typeof day === 'string' ? day : berlinDayKey(day),
           startTime: data.startTime,
           endTime: data.endTime,
           type: data.type,

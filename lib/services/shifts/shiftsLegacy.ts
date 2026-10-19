@@ -60,6 +60,7 @@ import * as read from './read';
 import * as read2 from './read2';
 import * as subscribe from './subscribe';
 import * as write from './write';
+import { berlinDayKey } from '@/lib/utils/dateKey';
 
 const COLLECTION_NAME = 'shifts';
 
@@ -77,7 +78,7 @@ const safeToDate = (value: unknown): Date => {
 // Hilfsfunktion für sichere Konvertierung von Firestore Timestamp zu ISO-Datum-String
 const safeDateToISOString = (value: unknown): string => {
   const date = safeToDate(value);
-  return date.toISOString().split('T')[0];
+  return berlinDayKey(date);
 };
 
 const serviceErrorHandler = ErrorUtils.createServiceHandler('shiftService');

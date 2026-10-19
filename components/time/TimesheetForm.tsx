@@ -6,7 +6,6 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { TimesheetForm as TimesheetFormType } from '@/lib/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Alert,
   Box,
   Button,
   Card,
@@ -22,11 +21,10 @@ import {
   Typography,
   CircularProgress,
 } from '@mui/material';
-import WarningAmber from '@mui/icons-material/WarningAmber';
 import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
-import { getRequiredBreakMinutes } from '@/lib/utils/time';
+import { calculateTimesheet, requiredBreakFor } from '@/lib/domain/timesheetCalc';
 import { facilityService } from '@/lib/services/facilities';
 import { Facility } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -53,18 +51,29 @@ const timesheetSchema = z.object({
   notes: z.string().max(500, 'Notizen dürfen maximal 500 Zeichen haben').optional(),
   facilityId: z.string().min(1, 'Einrichtung ist erforderlich'),
   station: z.string().optional(),
+  breakMinutes: z
+    .number({ message: 'Pause in Minuten angeben' })
+    .int('Pause in ganzen Minuten angeben')
+    .min(0, 'Pause kann nicht negativ sein')
+    .max(600, 'Pause unrealistisch lang'),
 });
 
 type TimesheetFormData = z.infer<typeof timesheetSchema>;
 
+/** YYYY-MM-DD im lokalen Kalender (toISOString() würde nachts den Vortag liefern) */
+const localDateKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 const toDateInputValue = (value?: Date | string) => {
-  if (value instanceof Date) {
-    return value.toISOString().slice(0, 10);
-  }
-  if (typeof value === 'string' && value) {
-    return value.slice(0, 10);
-  }
-  return new Date().toISOString().slice(0, 10);
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return localDateKey(value);
+  if (typeof value === 'string' && value) return value.slice(0, 10);
+  return localDateKey(new Date());
+};
+
+/** 'YYYY-MM-DD' → lokale Mitternacht (new Date('YYYY-MM-DD') wäre UTC) */
+const parseLocalDate = (key: string) => {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
 };
 
 interface TimesheetFormProps {
@@ -106,12 +115,15 @@ export function TimesheetForm({
       notes: initialData?.notes || '',
       facilityId: initialData?.facilityId || '',
       station: initialData?.station || '',
+      breakMinutes: initialData?.breakMinutes ?? 0,
     },
   });
+  // Solange die Pause nicht von Hand geändert wurde, folgt sie der Pflichtpause
+  const [breakTouched, setBreakTouched] = useState(initialData?.breakMinutes !== undefined && initialData?.breakMinutes !== null);
+  const watchedBreak = watch('breakMinutes');
 
   const watchedStartTime = watch('startTime');
   const watchedEndTime = watch('endTime');
-  const watchedDate = watch('date');
 
   // Load facilities
   useEffect(() => {
@@ -132,50 +144,27 @@ export function TimesheetForm({
     }
   }, [user?.companyId]);
 
-  // Calculate break minutes and total hours when times change
+  // Pflichtpause und Arbeitszeit neu berechnen, sobald sich die Zeiten ändern
   useEffect(() => {
-    if (watchedStartTime && watchedEndTime && watchedDate) {
-      const start = new Date(`${watchedDate}T${watchedStartTime}`);
-      const end = new Date(`${watchedDate}T${watchedEndTime}`);
-
-      // Handle overnight shifts
-      if (end.getTime() <= start.getTime()) {
-        end.setDate(end.getDate() + 1);
-      }
-
-      const totalMinutes = Math.floor((end.getTime() - start.getTime()) / (1000 * 60));
-
-      // Calculate required break minutes based on work time
-      const requiredBreakMinutes = getRequiredBreakMinutes(totalMinutes);
-      setCalculatedBreakMinutes(requiredBreakMinutes);
-
-      // Calculate total hours (work time minus break)
-      const totalHours = (totalMinutes - requiredBreakMinutes) / 60;
-      const roundedHours = Math.round(totalHours * 100) / 100;
-      setTotalHours(roundedHours);
+    if (!watchedStartTime || !watchedEndTime) return;
+    try {
+      const gross = calculateTimesheet(watchedStartTime, watchedEndTime, 0);
+      const required = requiredBreakFor(Math.max(0, gross.grossMinutes - (breakTouched ? Number(watchedBreak) || 0 : 0)));
+      setCalculatedBreakMinutes(required);
+      if (!breakTouched) setValue('breakMinutes', required);
+      const pause = breakTouched ? Number(watchedBreak) || 0 : required;
+      setTotalHours(gross.grossMinutes > pause ? calculateTimesheet(watchedStartTime, watchedEndTime, pause).totalHours : 0);
+    } catch {
+      setTotalHours(0);
     }
-  }, [watchedStartTime, watchedEndTime, watchedDate]);
+  }, [watchedStartTime, watchedEndTime, watchedBreak, breakTouched, setValue]);
 
   const handleFormSubmit = (data: TimesheetFormData) => {
-    const parsedDate = new Date(data.date);
-
-    // Calculate break minutes based on work time
-    const start = new Date(`${data.date}T${data.startTime}`);
-    const end = new Date(`${data.date}T${data.endTime}`);
-
-    // Handle overnight shifts
-    if (end.getTime() <= start.getTime()) {
-      end.setDate(end.getDate() + 1);
-    }
-
-    const totalMinutes = Math.floor((end.getTime() - start.getTime()) / (1000 * 60));
-    const breakMinutes = getRequiredBreakMinutes(totalMinutes);
-
     onSubmit({
-      date: parsedDate,
+      date: parseLocalDate(data.date),
       startTime: data.startTime,
       endTime: data.endTime,
-      breakMinutes: breakMinutes,
+      breakMinutes: Number(data.breakMinutes) || 0,
       notes: data.notes,
       facilityId: data.facilityId,
       station: data.station,
@@ -319,7 +308,7 @@ export function TimesheetForm({
                     <Select
                       {...field}
                       value={field.value || ''}
-                      label="Einrichtung **"
+                      label="Einrichtung"
                       disabled={disabled || facilitiesLoading}
                     >
                       {facilitiesLoading ? (
@@ -345,41 +334,23 @@ export function TimesheetForm({
               </FormControl>
             </Grid>
 
-            {watchedStartTime && watchedEndTime && calculatedBreakMinutes > 0 && (
-              <Grid size={{ xs: 12 }}>
-                <Alert
-                  severity="warning"
-                  icon={<WarningAmber fontSize="small" />}
-                  sx={{
-                    borderRadius: 2,
-                    border: '1px solid',
-                    borderColor: 'warning.main',
-                  }}
-                  aria-label="Hinweis Arbeitszeitgesetz Pausenregel"
-                >
-                  <Typography variant="body2" fontWeight={600}>
-                    Gemäß ArbZG ist eine Pause von mind. {calculatedBreakMinutes} Minuten erforderlich.
-                  </Typography>
-                </Alert>
-              </Grid>
-            )}
-            {watchedStartTime && watchedEndTime && (
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  label="Pausenzeit (automatisch berechnet)"
-                  value={`${calculatedBreakMinutes} Minuten`}
-                  fullWidth
-                  disabled
-                  helperText={
-                    calculatedBreakMinutes === 0
-                      ? 'Keine gesetzliche Pause erforderlich'
-                      : calculatedBreakMinutes === 30
-                        ? 'Gesetzliche Mindestpause bei mehr als 6 Stunden'
-                        : 'Gesetzliche Mindestpause bei mehr als 9 Stunden'
-                  }
-                />
-              </Grid>
-            )}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                {...register('breakMinutes', { valueAsNumber: true, onChange: () => setBreakTouched(true) })}
+                label="Pause (Minuten)"
+                type="number"
+                inputProps={{ min: 0, step: 5, inputMode: 'numeric' }}
+                fullWidth
+                disabled={disabled}
+                error={!!errors.breakMinutes || (watchedStartTime && watchedEndTime ? (Number(watchedBreak) || 0) < calculatedBreakMinutes : false)}
+                helperText={
+                  errors.breakMinutes?.message ??
+                  (calculatedBreakMinutes > 0
+                    ? `Mindestens ${calculatedBreakMinutes} min nach § 4 ArbZG – tatsächliche Pause eintragen`
+                    : 'Tatsächliche Pause eintragen')
+                }
+              />
+            </Grid>
 
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
@@ -415,23 +386,8 @@ export function TimesheetForm({
                     sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                   >
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      Gesamtzeit: {totalHours} Stunden
+                      Arbeitszeit: {totalHours.toLocaleString('de-DE', { maximumFractionDigits: 2 })} Stunden
                     </Typography>
-                    {calculatedBreakMinutes > 0 && (
-                      <Alert
-                        severity="info"
-                        sx={{
-                          flex: 1,
-                          ml: 2,
-                          borderRadius: 2,
-                          border: '1px solid',
-                          borderColor: 'info.main',
-                        }}
-                      >
-                        Automatisch berechnete Pausenzeit: {calculatedBreakMinutes} Minuten (gemäß
-                        Arbeitszeitgesetz)
-                      </Alert>
-                    )}
                   </Box>
                 </Card>
               </Grid>

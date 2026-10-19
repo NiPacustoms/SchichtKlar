@@ -2,6 +2,7 @@ import { db, getDb, auth } from '@/lib/firebase';
 import { ValidationError, ErrorCode, createAppError } from '@/lib/errors';
 import { offlineQueueService } from './offlineQueue';
 import { getCompanyIdFromAuth } from '@/lib/utils/companyId';
+import { calculateTimesheet } from '@/lib/domain/timesheetCalc';
 import { logger } from '@/lib/logging';
 
 // Timesheet Interface - sollte mit lib/types/index.ts kompatibel sein
@@ -60,6 +61,9 @@ export interface TimesheetForm {
   notes?: string;
   facilityId?: string;
   station?: string;
+  /** Verknüpfung zum Einsatz – Grundlage für Soll/Ist und fehlende Nachweise */
+  assignmentId?: string;
+  shiftId?: string;
   location?: {
     latitude: number;
     longitude: number;
@@ -107,6 +111,9 @@ type FirestoreTimesheetData = {
   facilitySignedBy?: string;
   facilityConfirmationStatus?: 'performed' | 'aborted' | 'no-show';
   facilitySignerName?: string;
+  assignmentId?: string | null;
+  shiftId?: string | null;
+  arbzgFlags?: string[];
 };
 
 const DEFAULT_DECIMALS = 2;
@@ -397,17 +404,8 @@ export const timesheetService = {
         throw new Error('No companyId found for timesheet');
       }
 
-      // Calculate total hours
-      const startTime = new Date(`2000-01-01T${data.startTime}`);
-      const endTime = new Date(`2000-01-01T${data.endTime}`);
-
-      // Handle overnight shifts
-      let totalMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
-      if (totalMinutes < 0) {
-        totalMinutes += 24 * 60; // Add 24 hours for overnight
-      }
-
-      const totalHours = (totalMinutes - data.breakMinutes) / 60;
+      // Stunden zentral berechnen (Nachtdienst, Pausenprüfung, Eingabefehler)
+      const calc = calculateTimesheet(data.startTime, data.endTime, data.breakMinutes);
 
       const timesheetData = {
         userId: userId,
@@ -416,10 +414,13 @@ export const timesheetService = {
         startTime: data.startTime,
         endTime: data.endTime,
         breakMinutes: data.breakMinutes,
-        totalHours: Math.round(totalHours * 100) / 100, // Round to 2 decimal places
-        notes: data.notes,
-        facilityId: data.facilityId,
-        station: data.station,
+        totalHours: calc.totalHours,
+        arbzgFlags: calc.flags,
+        notes: data.notes ?? null,
+        facilityId: data.facilityId ?? null,
+        station: data.station ?? null,
+        assignmentId: data.assignmentId ?? null,
+        shiftId: data.shiftId ?? null,
         location: data.location, // GPS-Standort
         status: 'draft',
         createdAt: serverTimestamp(),
@@ -456,6 +457,7 @@ export const timesheetService = {
           // Ignoriere Fehler beim Holen von companyId für Offline-Queue
         }
 
+        const calc = calculateTimesheet(data.startTime, data.endTime, data.breakMinutes);
         const timesheetData = {
           userId: userId,
           companyId: companyId || '',
@@ -463,7 +465,13 @@ export const timesheetService = {
           startTime: data.startTime,
           endTime: data.endTime,
           breakMinutes: data.breakMinutes,
-          notes: data.notes,
+          // Ohne Stunden würde der Dienst nach dem Sync mit 0 h in Berichten stehen
+          totalHours: calc.totalHours,
+          arbzgFlags: calc.flags,
+          notes: data.notes ?? null,
+          facilityId: data.facilityId ?? null,
+          assignmentId: data.assignmentId ?? null,
+          shiftId: data.shiftId ?? null,
           location: data.location,
           status: 'draft',
         };
@@ -478,7 +486,14 @@ export const timesheetService = {
   async update(id: string, data: Partial<TimesheetForm>): Promise<void> {
     try {
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        await offlineQueueService.addToQueue('timesheet', 'update', { id, ...data });
+        // Nur vollständige Zeitangaben lassen sich offline neu berechnen
+        const extra =
+          data.startTime && data.endTime && data.breakMinutes !== undefined
+            ? (({ totalHours, flags }) => ({ totalHours, arbzgFlags: flags }))(
+                calculateTimesheet(data.startTime, data.endTime, data.breakMinutes)
+              )
+            : {};
+        await offlineQueueService.addToQueue('timesheet', 'update', { id, ...data, ...extra });
         return;
       }
       const timesheetRef = doc(getDb(), COLLECTION_NAME, id);
@@ -491,7 +506,7 @@ export const timesheetService = {
       
       const currentData = currentDoc.data() as FirestoreTimesheetData;
       if (currentData.status === 'approved' || currentData.status === 'submitted') {
-        throw new Error('Cannot update approved or submitted timesheet. GoBD-Konformität: Belege müssen nach Genehmigung unveränderlich sein.');
+        throw new Error('Eingereichte oder freigegebene Zeiten können nicht mehr geändert werden.');
       }
 
       // Recalculate total hours if times changed
@@ -506,16 +521,13 @@ export const timesheetService = {
         const breakMinutes =
           data.breakMinutes !== undefined ? data.breakMinutes : (currentData.breakMinutes ?? 0);
 
-        const start = new Date(`2000-01-01T${startTime}`);
-        const end = new Date(`2000-01-01T${endTime}`);
-
-        let totalMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
-        if (totalMinutes < 0) {
-          totalMinutes += 24 * 60;
-        }
-
-        const totalHours = (totalMinutes - breakMinutes) / 60;
-        updateData.totalHours = Math.round(totalHours * 100) / 100;
+        const calc = calculateTimesheet(startTime, endTime, breakMinutes);
+        updateData.totalHours = calc.totalHours;
+        (updateData as Record<string, unknown>).arbzgFlags = calc.flags;
+      }
+      // Korrektur abgelehnter Zeiten startet wieder als Entwurf
+      if (currentData.status === 'rejected') {
+        (updateData as Record<string, unknown>).status = 'draft';
       }
 
       await updateDoc(timesheetRef, updateData);
@@ -528,6 +540,16 @@ export const timesheetService = {
   async submit(id: string): Promise<void> {
     try {
       const timesheetRef = doc(getDb(), COLLECTION_NAME, id);
+      const current = await getDoc(timesheetRef);
+      if (!current.exists()) throw new Error('Zeiterfassung nicht gefunden.');
+      const st = (current.data() as FirestoreTimesheetData).status ?? 'draft';
+      if (st !== 'draft' && st !== 'rejected') {
+        throw new Error(st === 'approved' ? 'Diese Zeiten sind bereits freigegeben.' : 'Diese Zeiten sind bereits eingereicht.');
+      }
+      const cur = current.data() as FirestoreTimesheetData;
+      if (!cur.endTime || cur.endTime === cur.startTime) {
+        throw new Error('Ein laufender Dienst kann erst nach dem Beenden eingereicht werden.');
+      }
       await updateDoc(timesheetRef, {
         status: 'submitted',
         submittedAt: serverTimestamp(),
@@ -542,6 +564,7 @@ export const timesheetService = {
   // GoBD-konform: Doppelprüfung verhindert mehrfache Genehmigung
   async approve(id: string, approvedBy: string): Promise<void> {
     try {
+      if (!approvedBy) throw new Error('Freigebende Person fehlt.');
       const timesheetRef = doc(getDb(), COLLECTION_NAME, id);
       
       // KRITISCH: Doppelprüfung - verhindert mehrfache Genehmigung
@@ -552,9 +575,9 @@ export const timesheetService = {
       
       const currentData = currentDoc.data() as FirestoreTimesheetData;
       if (currentData.status === 'approved') {
-        throw new Error('Timesheet already approved');
+        throw new Error('Diese Zeiten sind bereits freigegeben.');
       }
-      
+
       await updateDoc(timesheetRef, {
         status: 'approved',
         approvedAt: serverTimestamp(),
@@ -587,9 +610,18 @@ export const timesheetService = {
       
       const currentData = currentDoc.data() as FirestoreTimesheetData;
       if (currentData.status === 'approved') {
-        throw new Error('Timesheet already approved');
+        throw new Error('Diese Zeiten sind bereits freigegeben.');
       }
-      
+      if (currentData.status === 'rejected') {
+        throw new Error('Abgelehnte Zeiten bitte erst korrigieren.');
+      }
+      if (!signerName?.trim()) {
+        throw new Error('Bitte den Namen der unterschreibenden Person angeben.');
+      }
+      if (!currentData.endTime || currentData.endTime === currentData.startTime) {
+        throw new Error('Ein laufender Dienst kann erst nach dem Beenden unterschrieben werden.');
+      }
+
       await updateDoc(timesheetRef, {
         facilitySignatureUrl: signatureUrl,
         facilitySignedAt: new Date(),
@@ -608,7 +640,13 @@ export const timesheetService = {
   // Reject timesheet (admin only)
   async reject(id: string, rejectionReason: string): Promise<void> {
     try {
+      if (!rejectionReason?.trim()) throw new Error('Bitte einen Grund für die Ablehnung angeben.');
       const timesheetRef = doc(getDb(), COLLECTION_NAME, id);
+      const current = await getDoc(timesheetRef);
+      if (!current.exists()) throw new Error('Zeiterfassung nicht gefunden.');
+      if ((current.data() as FirestoreTimesheetData).status === 'approved') {
+        throw new Error('Freigegebene Zeiten können nicht mehr abgelehnt werden.');
+      }
       await updateDoc(timesheetRef, {
         status: 'rejected',
         rejectionReason,
@@ -636,6 +674,21 @@ export const timesheetService = {
     }
     
     await deleteDoc(timesheetRef);
+  },
+
+  /** Prüfliste der Disposition: Zeiten der Firma nach Status, neueste zuerst */
+  async listForReview(
+    companyId: string,
+    status: Timesheet['status'] | 'all' = 'submitted',
+    max = 300
+  ): Promise<Timesheet[]> {
+    if (!db || !companyId) return [];
+    const constraints = [where('companyId', '==', companyId)];
+    if (status !== 'all') constraints.push(where('status', '==', status));
+    const snap = await getDocs(
+      query(collection(getDb(), COLLECTION_NAME), ...constraints, orderBy('date', 'desc'), limit(max))
+    );
+    return snap.docs.map(d => this.mapDocToTimesheet({ id: d.id, data: () => d.data() }));
   },
 
   // Get all timesheets (admin view)
@@ -1081,17 +1134,23 @@ export const timesheetService = {
     end: Date;
     signatureUrl: string;
     signerUserId: string;
+    signerName: string;
   }): Promise<number> {
-    const { userId, start, end, signatureUrl, signerUserId } = params;
+    const { userId, start, end, signatureUrl, signerUserId, signerName } = params;
+    if (!signerName?.trim()) throw new Error('Bitte den Namen der unterschreibenden Person angeben.');
     const list = await this.getByUserAndDateRange(userId, start, end);
     let updated = 0;
     for (const t of list) {
+      // Freigegebenes ist unveränderlich, abgelehnte/laufende Dienste werden nicht mitgezeichnet
+      if (t.status !== 'draft' && t.status !== 'submitted') continue;
+      if (!t.endTime || t.endTime === t.startTime) continue;
       const ref = doc(getDb(), COLLECTION_NAME, t.id);
       await updateDoc(ref, {
         facilitySignatureUrl: signatureUrl,
         facilitySignedAt: new Date(),
         facilitySignedBy: signerUserId,
-        status: t.status === 'submitted' ? 'approved' : t.status,
+        facilitySignerName: signerName,
+        status: 'approved',
         updatedAt: new Date(),
       });
       updated++;
@@ -1133,6 +1192,9 @@ export const timesheetService = {
       facilitySignedBy: data.facilitySignedBy,
       facilityConfirmationStatus: data.facilityConfirmationStatus,
       facilitySignerName: data.facilitySignerName,
+      assignmentId: data.assignmentId ?? undefined,
+      shiftId: data.shiftId ?? undefined,
+      arbzgFlags: data.arbzgFlags ?? [],
       facilityId: data.facilityId,
       station: data.station,
       location: data.location,

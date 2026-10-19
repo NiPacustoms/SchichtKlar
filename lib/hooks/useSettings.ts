@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { settingsService } from '@/lib/services/settings';
 import { toast } from '@/lib/utils/toast';
+import { berlinDayKey } from '@/lib/utils/dateKey';
 
 export interface UserRole {
   id: string;
@@ -179,7 +180,7 @@ export function useSettings() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `settings-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `settings-${berlinDayKey(new Date())}.json`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

@@ -3,6 +3,7 @@ import { logger } from '@/lib/errors';
 import { getCompanyIdFromAuth } from '@/lib/utils/companyId';
 import { getDoc, getDocs, doc, collection, query, where } from 'firebase/firestore';
 import { COLLECTION_NAME } from './types';
+import { berlinDayKeyOpt } from '@/lib/utils/dateKey';
 
 export function timeToMs(timeString: string): number {
   const [hours, minutes] = timeString.split(':').map(Number);
@@ -45,7 +46,7 @@ export async function checkConflict(
     if (!shiftDoc.exists()) return null;
     const newShift = { id: shiftDoc.id, ...shiftDoc.data() } as Record<string, unknown>;
     const newShiftForCheck = {
-      date: (newShift.date as { toDate?: () => Date })?.toDate?.()?.toISOString().split('T')[0] || String(newShift.date ?? ''),
+      date: berlinDayKeyOpt((newShift.date as { toDate?: () => Date })?.toDate?.()) || String(newShift.date ?? ''),
       startTime: String(newShift.startTime ?? ''),
       endTime: String(newShift.endTime ?? ''),
     };
@@ -55,7 +56,7 @@ export async function checkConflict(
       if (!existingShiftDoc.exists()) continue;
       const existingShiftData = existingShiftDoc.data() as Record<string, unknown>;
       const existingShiftForCheck = {
-        date: (existingShiftData.date as { toDate?: () => Date })?.toDate?.()?.toISOString().split('T')[0] || String(existingShiftData.date ?? ''),
+        date: berlinDayKeyOpt((existingShiftData.date as { toDate?: () => Date })?.toDate?.()) || String(existingShiftData.date ?? ''),
         startTime: String(existingShiftData.startTime ?? ''),
         endTime: String(existingShiftData.endTime ?? ''),
       };
@@ -98,7 +99,7 @@ export async function checkConflictsForShift(
     }
     const newShiftData = shiftDoc.data() as Record<string, unknown>;
     const newShiftForCheck = {
-      date: (newShiftData.date as { toDate?: () => Date })?.toDate?.()?.toISOString().split('T')[0] ?? String(newShiftData.date ?? ''),
+      date: berlinDayKeyOpt((newShiftData.date as { toDate?: () => Date })?.toDate?.()) ?? String(newShiftData.date ?? ''),
       startTime: String(newShiftData.startTime ?? ''),
       endTime: String(newShiftData.endTime ?? ''),
     };
@@ -125,7 +126,7 @@ export async function checkConflictsForShift(
       if (d.exists()) {
         const data = d.data() as Record<string, unknown>;
         shiftDataById[sid] = {
-          date: (data.date as { toDate?: () => Date })?.toDate?.()?.toISOString().split('T')[0] ?? String(data.date ?? ''),
+          date: berlinDayKeyOpt((data.date as { toDate?: () => Date })?.toDate?.()) ?? String(data.date ?? ''),
           startTime: String(data.startTime ?? ''),
           endTime: String(data.endTime ?? ''),
         };

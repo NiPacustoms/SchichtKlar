@@ -20,6 +20,7 @@ import {
   type CompanyFooterInfo,
 } from '@/lib/services/pdf/brandedPdf';
 import { getLegalInfo } from '@/lib/config/legal';
+import { berlinDayKey } from '@/lib/utils/dateKey';
 
 /** Baut die Firmen-Fußzeilen-Daten aus der Legal-Konfiguration (Env). */
 function buildCompanyFooterInfo(): CompanyFooterInfo {
@@ -1144,7 +1145,7 @@ class DocumentGenerationService {
    * Generiert einen Dateinamen für das Dokument
    */
   private generateFileName(options: DocumentGenerationOptions): string {
-    const date = new Date().toISOString().split('T')[0];
+    const date = berlinDayKey(new Date());
     const typeMap: Record<DocumentType, string> = {
       'timesheet-report': 'Zeiterfassungsbericht',
       'assignment-confirmation': 'Einsatzbestätigung',
