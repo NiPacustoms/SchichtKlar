@@ -52,12 +52,10 @@ Diese Datei listet die **essentiellen Dokumentationsdateien** auf, die für den 
 
 - **`README.md`** - Projekt-Übersicht (Hauptdokumentation)
 - **`ADMIN_GUIDE.md`** - Admin-Benutzerhandbuch
-- **`LOHNABRECHNUNG_USER_GUIDE.md`** - Lohnabrechnung Benutzerhandbuch
 - **`IMPLEMENTATION_GUIDE.md`** - Implementation Guide
 
 ### API & Services
 
-- **`PAYROLL_API_KONFIGURATION.md`** - Payroll API Konfiguration
 - **`SERVICE_INTEGRATION.md`** - Service-Integration Guide
 - **`CHAT_REQUIREMENTS.md`** - Chat-System Anforderungen ⚠️ **ENTFERNT** (siehe CHANGELOG.md)
 
@@ -70,7 +68,6 @@ Diese Datei listet die **essentiellen Dokumentationsdateien** auf, die für den 
 ### Feature-Dokumentation
 
 - **`ZEITERFASSUNG_IMPLEMENTIERUNG.md`** - Zeiterfassung Implementation
-- **`LOHNABRECHNUNG_IMPLEMENTATION.md`** - Lohnabrechnung Implementation
 - **`RECHTSKONFORMITÄT_ZEITERFASSUNG_2025.md`** - Rechtliche Anforderungen
 
 ### Release & Audit
@@ -159,7 +156,6 @@ Diese Datei listet die **essentiellen Dokumentationsdateien** auf, die für den 
 ### Veraltete TODOs
 
 - `chat.todo.md` - Abgeschlossen
-- `payroll.todo.md` - Abgeschlossen
 - `LAUNCH_SALES_READINESS_TODO.md` - Abgeschlossen
 
 ### Veraltete Release-Dokumente
@@ -205,10 +201,8 @@ docs/
 ├── IMPLEMENTATION_GUIDE.md            # Implementation
 ├── CHANGELOG.md                       # Changelog
 ├── TESTS.md                           # Tests
-├── PAYROLL_API_KONFIGURATION.md       # API Docs
 ├── SERVICE_INTEGRATION.md             # Service Integration
 ├── ZEITERFASSUNG_IMPLEMENTIERUNG.md   # Features
-├── LOHNABRECHNUNG_IMPLEMENTATION.md   # Features
 └── release/
     ├── PRODUCTION_READINESS_AUDIT_RE_RUN.md
     └── CONSOLE_LOG_CLEANUP_PLAN.md
