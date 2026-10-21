@@ -90,25 +90,20 @@ type Callable = (d: unknown, c: unknown) => Promise<Record<string, unknown>>;
   const admin_ = ctx('sim-admin', 'admin', C);
   const lea = ctx('sim-lea', 'nurse', C);
 
-  console.log('--- S1 Krankmeldung sperrt Planung ---');
-  await db.doc('absences/sim-urlaub').set({ companyId: C, userId: 'sim-lea', type: 'sick', fromKey: '2026-12-14', toKey: '2026-12-18', status: 'reported' });
-  await check('Disposition kann krank gemeldete Person nicht einplanen', () => expectError(assign({ shiftId: 'sim-s1', userId: 'sim-lea' }, admin_), 'failed-precondition', 'ABSENT'));
-  await check('Krank gemeldete Pflegekraft kann keine Schicht anfragen', () => expectError(request({ shiftId: 'sim-s2' }, lea), 'failed-precondition', 'ABSENT'));
-  await check('Ausgeschriebenen Einsatz während Krankmeldung nicht annehmbar', async () => {
-    await db.doc('assignments/sim-pub').set({ companyId: C, status: 'published', userId: null, candidateUserIds: ['sim-lea'], startDate: berlinMidnight('2026-12-16'), facilityId: 'sim-f' });
-    await expectError(acceptPub({ assignmentId: 'sim-pub' }, lea), 'failed-precondition', 'ABSENT');
-  });
-  await check('Zurückgezogene Krankmeldung gibt den Tag wieder frei', async () => {
-    await db.doc('absences/sim-urlaub').update({ status: 'cancelled' });
+  console.log('--- S1 Keine Krankmeldung: Altbestand sperrt nicht ---');
+  await db.doc('absences/sim-alt').set({ companyId: C, userId: 'sim-lea', type: 'sick', fromKey: '2026-12-14', toKey: '2026-12-18', status: 'reported' });
+  await check('Alte Krankmeldung blockiert die Einplanung nicht mehr', async () => {
     const r = await assign({ shiftId: 'sim-s1', userId: 'sim-lea' }, admin_);
     if (!r.assignmentId) throw new Error('keine Zuweisung');
   });
-  await check('Krankmeldung sperrt sofort (ohne Genehmigung)', async () => {
-    await db.doc('absences/sim-krank').set({ companyId: C, userId: 'sim-tom', type: 'sick', fromKey: '2026-12-15', toKey: '2026-12-15', status: 'reported' });
-    await expectError(assign({ shiftId: 'sim-s2', userId: 'sim-tom' }, admin_), 'failed-precondition', 'ABSENT');
+  await check('Ausgeschriebener Einsatz trotz Altbestand annehmbar', async () => {
+    await db.doc('assignments/sim-pub').set({ companyId: C, status: 'published', userId: null, candidateUserIds: ['sim-lea'], startDate: berlinMidnight('2026-12-16'), facilityId: 'sim-f' });
+    await acceptPub({ assignmentId: 'sim-pub' }, lea);
   });
-  await check('Zurückgezogene Krankmeldung gibt wieder frei', async () => {
-    await db.doc('absences/sim-krank').update({ status: 'cancelled' });
+  await check('Pflegekraft kann trotz Altbestand anfragen', async () => {
+    await request({ shiftId: 'sim-s2' }, lea);
+  });
+  await check('Disposition plant Kollegin am Folgetag ein', async () => {
     await assign({ shiftId: 'sim-s2', userId: 'sim-tom' }, admin_);
   });
 
@@ -172,9 +167,8 @@ type Callable = (d: unknown, c: unknown) => Promise<Record<string, unknown>>;
   await db.doc('timesheets/sim-entwurf').set({ ...ts, status: 'draft' });
   await db.doc('employeeNotifications/sim-n1').set({ companyId: C, userId: 'sim-tom', title: 'x' });
   await db.doc('timesheets/sim-tom-frei').set({ ...ts, userId: 'sim-tom', status: 'approved' });
-  await check('Pflegekraft erhält eigene Daten inkl. Abwesenheiten', async () => {
+  await check('Pflegekraft erhält eigene Daten', async () => {
     const r = (await doExport({}, lea)) as { data: Record<string, unknown[]> };
-    if (!r.data.absences?.length) throw new Error('Abwesenheiten fehlen');
     if (!r.data.timesheets?.length) throw new Error('Zeiten fehlen');
   });
   await check('Pflegekraft kann Daten der Kollegin NICHT abrufen', () => expectError(doExport({ uid: 'sim-tom' }, lea), 'permission-denied'));

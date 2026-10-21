@@ -40,19 +40,12 @@ describe('Monatlicher Stundennachweis', () => {
     expect(s.allApproved).toBe(false);
   });
 
-  it('Krankheit (K) an Kalendertagen ohne Arbeitszeit; Urlaub erscheint nicht', () => {
-    const s = buildMonthlyStatement(
-      '2026-10',
-      [sheet('a', '2026-10-17', '07:00', '15:00', 30, 7.5)],
-      [
-        { type: 'sick', status: 'reported', fromKey: '2026-10-16', toKey: '2026-10-18' }, // 17. gearbeitet
-        { type: 'sick', status: 'cancelled', fromKey: '2026-10-20', toKey: '2026-10-20' },
-        { type: 'vacation', status: 'approved', fromKey: '2026-10-01', toKey: '2026-10-02' }, // Altbestand
-      ]
-    );
-    expect(s.rows.filter(r => r.zusatz === 'K').map(r => r.dayKey)).toEqual(['2026-10-16', '2026-10-18']);
-    expect(s.rows.length).toBe(3);
-    expect(s.totals).toMatchObject({ sickDays: 2, workDays: 1 });
+  it('zählt Diensttage, keine Krank- oder Urlaubszeilen', () => {
+    const s = buildMonthlyStatement('2026-10', [sheet('a', '2026-10-17', '07:00', '15:00', 30, 7.5)]);
+    expect(s.rows.length).toBe(1);
+    expect(s.rows[0]).not.toHaveProperty('zusatz');
+    expect(s.totals).toMatchObject({ workDays: 1 });
+    expect(s.totals).not.toHaveProperty('sickDays');
   });
 
   it('Fingerabdruck erkennt Änderungen nach der Unterschrift', () => {

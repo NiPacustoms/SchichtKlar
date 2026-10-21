@@ -140,21 +140,6 @@ export function useTimes() {
     },
   });
 
-  // Report sick mutation
-  const reportSickMutation = useMutation({
-    mutationFn: (data: { startDate: Date; endDate: Date; reason: string; doctorNote?: string }) => {
-      if (!userId) throw new Error('No user ID');
-      return timesService.reportSick(userId, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['times'] });
-      toast.success('Krankmeldung erfolgreich eingereicht');
-    },
-    onError: (error) => {
-      toast.error('Fehler beim Einreichen der Krankmeldung: ' + error.message);
-    },
-  });
-
   // Export times mutation
   const exportTimesMutation = useMutation({
     mutationFn: (format: 'pdf' | 'excel' | 'csv') => timesService.exportTimes(format),
@@ -189,10 +174,6 @@ export function useTimes() {
 
   const endBreak = async () => {
     return endBreakMutation.mutateAsync();
-  };
-
-  const reportSick = async (data: { startDate: Date; endDate: Date; reason: string; doctorNote?: string }) => {
-    return reportSickMutation.mutateAsync(data);
   };
 
   const exportTimes = async (format: 'pdf' | 'excel' | 'csv') => {
@@ -333,7 +314,6 @@ export function useTimes() {
     endShift,
     addBreak,
     endBreak,
-    reportSick,
     exportTimes,
     getTimeStats,
     refetch,

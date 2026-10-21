@@ -435,7 +435,6 @@ export default function EmployeeNotificationsPage() {
                 <MenuItem value="error">Fehler</MenuItem>
                 <MenuItem value="success">Erfolg</MenuItem>
                 <MenuItem value="shift">Schicht</MenuItem>
-                <MenuItem value="sick">Krankheit</MenuItem>
                 <MenuItem value="message">Nachricht</MenuItem>
                 <MenuItem value="email">E-Mail</MenuItem>
                 <MenuItem value="sms">SMS</MenuItem>
@@ -1010,7 +1009,6 @@ export default function EmployeeNotificationsPage() {
                   control={<Switch defaultChecked />}
                   label="Schicht-Erinnerungen"
                 />
-                <FormControlLabel control={<Switch defaultChecked />} label="Krankmeldungen" />
                 <FormControlLabel control={<Switch defaultChecked />} label="System-Updates" />
               </FormGroup>
             </Grid>

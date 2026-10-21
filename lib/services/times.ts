@@ -38,7 +38,7 @@ export interface TimeEntry {
   remark?: string;
   approvedBy?: string;
   doctor?: string;
-  startDate?: Date; // Zeitraumfelder für Abwesenheiten (z. B. Krankheit)
+  startDate?: Date; // Zeitraumfelder (Altbestand)
   endDate?: Date;
   days?: number;
   createdAt?: Date; // Erstellungsdatum
@@ -646,40 +646,6 @@ export const timesService = {
     }
   },
 
-  // Report sick
-  async reportSick(userId: string, data: {
-    startDate: Date;
-    endDate: Date;
-    reason: string;
-    doctorNote?: string;
-  }): Promise<string> {
-    try {
-      const sickUserId = userId || 'current-user-id'; // Use provided userId or fallback
-      const days = Math.ceil((data.endDate.getTime() - data.startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-      
-      const sickData = {
-        userId: sickUserId,
-        date: data.startDate,
-        type: 'sick',
-        hours: days * 8, // Assuming 8 hours per day
-        balance: -(days * 8),
-        status: 'pending',
-        reason: data.reason,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        days,
-        doctorNote: data.doctorNote,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-
-      const docRef = await addDoc(collection(getDb(), COLLECTION_NAME), sickData);
-      return docRef.id;
-    } catch (error) {
-      throw error;
-    }
-  },
-
   // Export times
   async exportTimes(format: 'pdf' | 'excel' | 'csv'): Promise<string> {
     try {
@@ -781,22 +747,6 @@ export const timesService = {
       const breakSnapshot = await getDocs(breakQuery);
       if (!breakSnapshot.empty) {
         return 'break';
-      }
-
-      // Check for krankheitsbedingte Abwesenheit
-      const today = new Date();
-      const sickQuery = query(
-        collection(getDb(), COLLECTION_NAME),
-        where('userId', '==', userId),
-        where('type', '==', 'sick'),
-        where('startDate', '<=', today),
-        where('endDate', '>=', today),
-        where('status', '==', 'approved')
-      );
-
-      const sickSnapshot = await getDocs(sickQuery);
-      if (!sickSnapshot.empty) {
-        return 'sick';
       }
 
       return 'off';

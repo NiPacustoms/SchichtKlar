@@ -19,12 +19,8 @@ describe('Prüfprotokoll', () => {
     expect(auditFor('timesheetStatements', { ...base, employeeSignedAt: 1 }, { ...base, employeeSignedAt: 1, employerSignedAt: 2, employerSignedName: 'Pepe', employerSignedBy: 'a' })).toMatchObject({ action: 'statement.acknowledged', actorUid: 'a' });
     expect(auditFor('timesheetStatements', { ...base, employeeSignedAt: 1, employerSignedAt: 2 }, { ...base, employeeSignedAt: 1 })?.action).toBe('statement.acknowledgement-revoked');
   });
-  it('Krankmeldung: gemeldet, verlängert, zurückgezogen – Urlaub wird ignoriert', () => {
-    const a = { companyId: 'c', userId: 'u', type: 'sick', fromKey: '2026-11-02', toKey: '2026-11-03', status: 'reported' };
-    expect(auditFor('absences', undefined, a)).toMatchObject({ action: 'absence.reported', summary: 'Krankmeldung 02.11.2026 – 03.11.2026 gemeldet', actorUid: 'u' });
-    expect(auditFor('absences', a, { ...a, toKey: '2026-11-06' })?.action).toBe('absence.extended');
-    expect(auditFor('absences', a, { ...a, status: 'cancelled' })?.action).toBe('absence.cancelled');
-    expect(auditFor('absences', undefined, { ...a, type: 'vacation' })).toBeNull();
+  it('Krankmeldungen gibt es nicht mehr – Altbestand wird nicht protokolliert', () => {
+    expect(auditFor('absences', undefined, { companyId: 'c', userId: 'u', type: 'sick', fromKey: '2026-11-02', toKey: '2026-11-03', status: 'reported' })).toBeNull();
   });
   it('Personalstamm: nur lohn-/rechterelevante Felder', () => {
     const u = { companyId: 'c', displayName: 'Lea', role: 'nurse', phone: '1' };

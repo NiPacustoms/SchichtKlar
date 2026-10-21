@@ -3,7 +3,6 @@ import * as functions from 'firebase-functions/v1';
 import { assertSameCompany, getCaller } from './utils/tenant';
 import { dayRuleConflictError, findDayRuleConflicts, toDayKey } from './utils/dayRule';
 import { REGION } from './utils/region';
-import { absenceConflictError, isAbsentOn } from './absences';
 
 const db = admin.firestore();
 
@@ -51,7 +50,6 @@ export const requestShift = functions.region(REGION).https.onCall(async (data, c
       if (dayKey) {
         const sameDay = await findDayRuleConflicts(db, { userId, companyId: caller.companyId, dayKey }, transaction);
         if (sameDay.length > 0) throw dayRuleConflictError(dayKey, sameDay, false);
-        if (await isAbsentOn(db, userId, caller.companyId, dayKey)) throw absenceConflictError(dayKey, false);
       }
 
       // 3. Prüfen ob User bereits eine Anfrage für diese Schicht hat
@@ -98,6 +96,8 @@ export const requestShift = functions.region(REGION).https.onCall(async (data, c
 
       for (const assignmentDoc of userAssignments.docs) {
         const assignment = assignmentDoc.data();
+        // Angenommene Ausschreibungen haben keine Schicht – Tagesregel deckt sie oben ab
+        if (typeof assignment.shiftId !== 'string' || !assignment.shiftId) continue;
         const existingShiftRef = db.collection('shifts').doc(assignment.shiftId);
         const existingShiftDoc = await transaction.get(existingShiftRef);
 
@@ -157,7 +157,7 @@ export const requestShift = functions.region(REGION).https.onCall(async (data, c
         companyId: shiftCompanyId, // WICHTIG: companyId für Mandantenisolation
         status: 'requested',
         assignedAt: admin.firestore.FieldValue.serverTimestamp(),
-        notes: message,
+        notes: typeof message === 'string' ? message.slice(0, 1000) : null,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
@@ -179,7 +179,7 @@ export const requestShift = functions.region(REGION).https.onCall(async (data, c
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
 
-      transaction.set(adminNotificationRef, adminNotificationData);
+      if (shift.createdBy) transaction.set(adminNotificationRef, adminNotificationData);
 
       // 8. User-Notification (Bestätigung) - in richtige Collection basierend auf User-Rolle
       const userRole = user.role || 'nurse';

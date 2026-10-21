@@ -1,7 +1,7 @@
 /**
  * Monatlicher Stundennachweis – digitales Gegenstück zum Papierbogen
  * „Arbeitszeiterfassung / Stunden-Nachweis“ (Datum, Beginn, Ende, Pause,
- * Dauer, Zusatz, Bemerkungen; Summe; Unterschrift Arbeitnehmer „erfasst“
+ * Dauer, Bemerkungen; Summe; Unterschrift Arbeitnehmer „erfasst“
  * und Arbeitgeber „anerkannt“).
  *
  * Reine Logik ohne Firebase: Zeilen bauen, summieren, Fingerabdruck für
@@ -13,12 +13,6 @@
  *   signedFingerprint, signedTotalHours,
  *   employerSignature, employerSignedName, employerSignedAt, employerSignedBy
  */
-
-import { daysBetween } from './absence';
-
-/** Kennzeichen wie auf dem Papierbogen */
-export type ZusatzCode = 'K';
-export const ZUSATZ_LEGEND = 'K = Krank (arbeitsunfähig)';
 
 export const MILOG_HINT =
   'Hinweis zu § 17 Mindestlohngesetz (MiLoG): Beginn, Ende und Dauer der täglichen Arbeitszeit sind spätestens bis zum Ablauf des siebten auf den Tag der Arbeitsleistung folgenden Kalendertages aufzuzeichnen und mindestens zwei Jahre aufzubewahren.';
@@ -41,14 +35,6 @@ export interface StatementSheet {
   notes?: string;
 }
 
-export interface StatementAbsence {
-  type: string;
-  status: string;
-  fromKey: string;
-  toKey: string;
-  auProvided?: boolean;
-}
-
 export interface StatementRow {
   dayKey: string;
   begin: string;
@@ -56,7 +42,6 @@ export interface StatementRow {
   /** Pause in Stunden (wie auf dem Bogen) */
   pauseHours: number | null;
   hours: number | null;
-  zusatz: ZusatzCode | '';
   remark: string;
   status?: StatementSheet['status'];
   facilityName?: string;
@@ -72,7 +57,6 @@ export interface StatementTotals {
   sundayHours: number;
   holidayHours: number;
   workDays: number;
-  sickDays: number;
   byFacility: { name: string; hours: number }[];
 }
 
@@ -122,16 +106,8 @@ export function statementFingerprint(rows: StatementRow[]): string {
 
 const fmtH = (n: number) => n.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
-/**
- * Baut den Monatsnachweis. Abgelehnte Zeiten zählen nicht. Krankheit zählt
- * an jedem Kalendertag (K), sofern an dem Tag keine Arbeitszeit erfasst ist.
- * Eine Urlaubsverwaltung gibt es nicht.
- */
-export function buildMonthlyStatement(
-  month: string,
-  sheets: StatementSheet[],
-  absences: StatementAbsence[] = []
-): MonthlyStatement {
+/** Baut den Monatsnachweis aus den erfassten Zeiten. Abgelehnte Zeiten zählen nicht. */
+export function buildMonthlyStatement(month: string, sheets: StatementSheet[]): MonthlyStatement {
   const { fromKey, toKey } = monthRangeKeys(month);
   const inMonth = sheets.filter(s => s.status !== 'rejected' && s.dayKey >= fromKey && s.dayKey <= toKey);
 
@@ -150,7 +126,6 @@ export function buildMonthlyStatement(
       end: s.endTime,
       pauseHours: r2((s.breakMinutes || 0) / 60),
       hours: r2(s.totalHours || 0),
-      zusatz: '' as const,
       remark: [place, extras.join(', '), confirmed].filter(Boolean).join(' · '),
       status: s.status,
       facilityName: s.facilityName,
@@ -158,20 +133,6 @@ export function buildMonthlyStatement(
     };
   });
 
-  const worked = new Set(rows.map(r => r.dayKey));
-  let sickDays = 0;
-  for (const a of absences) {
-    if (a.type !== 'sick' || a.status !== 'reported') continue;
-    const from = a.fromKey < fromKey ? fromKey : a.fromKey;
-    const to = a.toKey > toKey ? toKey : a.toKey;
-    if (from > to) continue;
-    for (const k of daysBetween(from, to)) {
-      if (worked.has(k)) continue;
-      sickDays++;
-      rows.push({ dayKey: k, begin: '', end: '', pauseHours: null, hours: null, zusatz: 'K', remark: a.auProvided ? 'Arbeitsunfähig (ärztlich festgestellt)' : 'Arbeitsunfähig' });
-      worked.add(k);
-    }
-  }
   rows.sort((a, b) => a.dayKey.localeCompare(b.dayKey) || a.begin.localeCompare(b.begin));
 
   const facilities = new Map<string, number>();
@@ -191,7 +152,6 @@ export function buildMonthlyStatement(
     sundayHours: sum(s => s.sundayNonHolidayHours),
     holidayHours: sum(s => s.holidayHours),
     workDays: new Set(inMonth.map(s => s.dayKey)).size,
-    sickDays,
     byFacility: [...facilities.entries()].map(([name, hours]) => ({ name, hours: r2(hours) })).sort((a, b) => b.hours - a.hours),
   };
 

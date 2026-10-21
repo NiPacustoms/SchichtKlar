@@ -334,7 +334,7 @@ describe.runIf(ENABLED)('Dokument-Muster rendern', () => {
       mk('c', '2026-09-20', '06:30', '14:30', 30, 7.5, { sundayNonHolidayHours: 7.5 }),
       mk('d', '2026-09-22', '21:00', '06:00', 45, 8.25, { nightHours: 7, overtimeHours: 0.25 }),
       mk('e', '2026-09-24', '07:00', '11:30', 30, 4, { status: 'submitted', facilitySignerName: undefined }),
-    ], [{ type: 'sick', status: 'reported', fromKey: '2026-09-14', toKey: '2026-09-16', auProvided: true }]);
+    ]);
     const sigs = {
       employeeSignature: signatureDataUrl, employeeSignedName: 'Maria Beispiel', employeeSignedAt: new Date('2026-09-30T10:00:00Z'),
       signedFingerprint: statement.fingerprint, signedTotalHours: statement.totals.hours,

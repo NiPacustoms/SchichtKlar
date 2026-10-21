@@ -198,7 +198,6 @@ export function StatementOverview() {
                       <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
                         {fmtStd(t.hours)} Std. · {t.workDays} Dienste
                         {t.openHours ? ` · ${fmtStd(t.openHours)} Std. noch nicht freigegeben` : ''}
-                        {t.sickDays ? ` · ${t.sickDays} K` : ''}
                       </Typography>
                     </Box>
                   </Box>

@@ -319,10 +319,9 @@ service cloud.firestore {
       // Helper-Funktion: Prüft, ob assignmentId für work/break vorhanden ist
       function hasRequiredAssignment() {
         let entryType = request.resource.data.type;
-        // work und break benötigen assignmentId
-        return (entryType == 'work' || entryType == 'break') 
-          ? request.resource.data.assignmentId != null
-          : true; // sick benötigt kein assignmentId
+        // Nur Arbeit und Pause, beide mit Einsatz (keine Krankmeldungen)
+        return (entryType == 'work' || entryType == 'break')
+          && request.resource.data.assignmentId != null;
       }
       
       // Helper-Funktion: Prüft Mandantenisolation
@@ -595,42 +594,6 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
-
-    // ── Krankmeldungen (keine Urlaubsverwaltung) ──────────────────────────
-    // Ohne Diagnose (Art. 9 DSGVO); gelten sofort, keine Genehmigung.
-    function absValidRange(d) {
-      return d.fromKey is string && d.toKey is string &&
-        d.fromKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') && d.toKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
-        d.fromKey <= d.toKey;
-    }
-    function absAllowedKeys(d) {
-      return d.keys().hasOnly(['companyId', 'userId', 'type', 'fromKey', 'toKey', 'status', 'auProvided', 'createdAt', 'updatedAt', 'affectedAssignmentIds', 'affectedCheckedAt']);
-    }
-    match /absences/{absenceId} {
-      allow read: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
-        tsIsCompanyAdmin(resource.data.get('companyId', null))
-      );
-      // Pflegekraft meldet sich selbst krank; Disposition kann für Personen der Firma melden
-      allow create: if isAuthenticated() &&
-        request.resource.data.get('companyId', null) == getRequesterCompanyId() &&
-        request.resource.data.type == 'sick' &&
-        request.resource.data.status == 'reported' &&
-        absValidRange(request.resource.data) && absAllowedKeys(request.resource.data) &&
-        !('affectedAssignmentIds' in request.resource.data) &&
-        (request.resource.data.userId == request.auth.uid || isAdmin());
-      allow update: if isAuthenticated() &&
-        request.resource.data.userId == resource.data.userId &&
-        request.resource.data.companyId == resource.data.companyId &&
-        request.resource.data.type == resource.data.type &&
-        request.resource.data.fromKey == resource.data.fromKey &&
-        absValidRange(request.resource.data) && absAllowedKeys(request.resource.data) &&
-        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['affectedAssignmentIds', 'affectedCheckedAt']) &&
-        resource.data.status == 'reported' &&
-        request.resource.data.status in ['reported', 'cancelled'] &&
-        (resource.data.userId == request.auth.uid || tsIsCompanyAdmin(resource.data.get('companyId', null)));
-      allow delete: if false;
-    }
 
     // ── Monatlicher Stundennachweis (Arbeitnehmer „erfasst“, Arbeitgeber „anerkannt“) ──
     // Doc-ID: {companyId}_{userId}_{YYYY-MM}. Die Stunden selbst stehen in

@@ -4,13 +4,13 @@
 
 **Neu**
 - Freigabe-Link für Einrichtungen: Die PDL bestätigt oder beanstandet eine Woche ohne eigenes Konto (#48).
-- Krankmeldung ohne Diagnose: betroffene Einsätze, krank Gemeldete werden in der Planung gesperrt (#50).
 - Stundennachweis: der Papierbogen „Arbeitszeiterfassung / Stunden-Nachweis“ digital, mit Unterschrift „erfasst“ und „anerkannt“, PDF und Sammel-PDF (#51).
 - Prüfprotokoll: serverseitig, unveränderlich, mit Filter und CSV-Export.
 
 **Entfernt**
 - Lohnsteuer-Reste und der DATEV-LODAS-Export (#53, #54) – die Lohnabrechnung macht das Steuerbüro, die App liefert Stundennachweise.
-- Urlaubsverwaltung (Anträge, Genehmigung, Resturlaub, Urlaubsanspruch) – Krankmeldungen bleiben.
+- Urlaubsverwaltung (Anträge, Genehmigung, Resturlaub, Urlaubsanspruch) (#55).
+- Krankmeldungen (Meldung, Postfach, Sperre in der Planung, „K“ im Stundennachweis) – Krankmeldungen laufen außerhalb der App. Altdaten bleiben gesperrt in der Datenbank.
 
 **Sicherheit & Datenschutz**
 - Alle Cloud Functions laufen in der EU (`europe-west1`).
