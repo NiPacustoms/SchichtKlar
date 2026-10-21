@@ -129,7 +129,6 @@ async function main() {
       workingHoursPerWeek: n.h,
       // eine Person ohne Personalnummer (Stundennachweis ohne Nummer)
       ...(n.uid === 'n-elif' ? {} : { personnelNumber: String(pnr) }),
-      vacationDaysPerYear: n.uid === 'n-elif' ? 28 : 30,
       wochenstundenLimit: 48,
       aktuelleWochenstunden: Math.round(n.h * 0.7),
       limitStatus: 'normal',
@@ -294,16 +293,15 @@ async function main() {
     updatedAt: FieldValue.serverTimestamp(),
   });
 
-  // Abwesenheiten: genehmigter Urlaub, offene Anträge (teils überlappend), eine Krankmeldung
+  // Krankmeldungen (keine Urlaubsverwaltung): eine aktuelle, eine überlappende, eine vergangene
   const dayKey = d => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(berlinDay(d));
   const absences = [
-    { id: 'abs-lea-sommer', userId: 'n-lea', type: 'vacation', fromKey: `${dayKey(0).slice(0, 4)}-08-03`, toKey: `${dayKey(0).slice(0, 4)}-08-14`, status: 'approved', decidedBy: 'admin-pepe' },
-    { id: 'abs-lea-antrag', userId: 'n-lea', type: 'vacation', fromKey: dayKey(21), toKey: dayKey(25), status: 'requested', note: 'Familienbesuch' },
-    { id: 'abs-jonas-antrag', userId: 'n-jonas', type: 'vacation', fromKey: dayKey(23), toKey: dayKey(30), status: 'requested' },
+    { id: 'abs-lea-alt', userId: 'n-lea', type: 'sick', fromKey: dayKey(-30), toKey: dayKey(-28), status: 'reported', auProvided: true },
+    { id: 'abs-jonas-krank', userId: 'n-jonas', type: 'sick', fromKey: dayKey(1), toKey: dayKey(3), status: 'reported', auProvided: false },
     { id: 'abs-murat-krank', userId: 'n-murat', type: 'sick', fromKey: dayKey(0), toKey: dayKey(2), status: 'reported', auProvided: false },
   ];
   for (const { id, ...a } of absences) {
-    await db.doc(`absences/${id}`).set({ companyId: COMPANY_ID, note: null, ...a, createdAt: FieldValue.serverTimestamp() });
+    await db.doc(`absences/${id}`).set({ companyId: COMPANY_ID, ...a, createdAt: FieldValue.serverTimestamp() });
   }
 
   await db.doc('adminAnnouncements/ann-1').set({

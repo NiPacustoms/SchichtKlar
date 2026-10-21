@@ -60,43 +60,39 @@ function eq(actual: unknown, expected: unknown, what: string) {
   const notes = async (userId: string, col = 'notifications') =>
     (await db.collection(col).where('companyId', '==', C).where('userId', '==', userId).get()).docs.map(d => d.data());
 
-  const vac = { companyId: C, userId: 'abs-nurse', type: 'vacation', fromKey: '2026-11-02', toKey: '2026-11-06', status: 'requested' };
-
-  await check('Beantragter Urlaub sperrt Planung noch nicht', async () => {
-    await write('v1', null, vac);
-    eq(await isAbsentOn(db, 'abs-nurse', C, '2026-11-03'), false, 'abwesend');
-  });
-  await check('Antrag: betroffener Einsatz wird erkannt, Disposition benachrichtigt', async () => {
-    const d = (await db.doc('absences/v1').get()).data()!;
-    eq(d.affectedAssignmentIds, ['abs-a1'], 'betroffen');
+  await check('Krankmeldung über mehrere Tage sperrt Planung, betroffener Einsatz erkannt', async () => {
+    const sick = { companyId: C, userId: 'abs-nurse', type: 'sick', fromKey: '2026-11-02', toKey: '2026-11-06', status: 'reported' };
+    await write('k1', null, sick);
+    eq((await db.doc('absences/k1').get()).data()!.affectedAssignmentIds, ['abs-a1'], 'betroffen');
     const n = await notes('abs-admin');
-    eq(n.length, 1, 'Anzahl');
-    eq(n[0].title, 'Neuer Urlaubsantrag', 'Titel');
-    if (!String(n[0].message).includes('1 Einsatz ist betroffen')) throw new Error(`Nachricht: ${n[0].message}`);
-  });
-  await check('Genehmigt: Person benachrichtigt, Planung gesperrt', async () => {
-    await write('v1', vac, { ...vac, status: 'approved', decidedBy: 'abs-admin' });
-    const n = await notes('abs-nurse', 'employeeNotifications');
-    eq(n.map(x => x.title), ['Urlaub genehmigt'], 'Titel');
-    eq(await isAbsentOn(db, 'abs-nurse', C, '2026-11-06'), true, 'abwesend Fr');
-    eq(await isAbsentOn(db, 'abs-nurse', C, '2026-11-07'), false, 'abwesend Sa danach');
-    // Schicht Mi 04.11.2026 – kein anderer Einsatz an dem Tag, aber Urlaub
+    if (!n.some(x => String(x.message).includes('1 Einsatz ist betroffen'))) throw new Error('Hinweis auf Einsatz fehlt');
+    eq(await isAbsentOn(db, 'abs-nurse', C, '2026-11-06'), true, 'krank Fr');
+    eq(await isAbsentOn(db, 'abs-nurse', C, '2026-11-07'), false, 'krank Sa danach');
     eq(await isUserAvailableForSlot(db, 'abs-nurse', new Date('2026-11-04T05:00:00Z'), new Date('2026-11-04T13:00:00Z'), C), false, 'verfügbar');
     eq(await isUserAvailableForSlot(db, 'abs-nurse', new Date('2026-11-10T05:00:00Z'), new Date('2026-11-10T13:00:00Z'), C), true, 'verfügbar danach');
+  });
+  await check('Verlängerung benachrichtigt die Disposition', async () => {
+    const before = (await db.doc('absences/k1').get()).data()!;
+    await write('k1', before, { ...before, toKey: '2026-11-09' });
+    eq((await notes('abs-admin')).filter(x => x.title === 'Krankmeldung verlängert').length, 1, 'Anzahl');
+  });
+  await check('Alte Urlaubseinträge sperren nicht mehr (keine Urlaubsverwaltung)', async () => {
+    await db.doc('absences/alt-urlaub').set({ companyId: C, userId: 'abs-nurse', type: 'vacation', fromKey: '2026-12-01', toKey: '2026-12-05', status: 'approved' });
+    eq(await isAbsentOn(db, 'abs-nurse', C, '2026-12-02'), false, 'gesperrt');
   });
   await check('Krankmeldung: Disposition wichtig benachrichtigt, sofort gesperrt', async () => {
     const sick = { companyId: C, userId: 'abs-nurse', type: 'sick', fromKey: '2026-11-19', toKey: '2026-11-20', status: 'reported' };
     await write('s1', null, sick);
     const n = (await notes('abs-admin')).filter(x => x.title === 'Krankmeldung');
-    eq(n.length, 1, 'Anzahl');
-    eq(n[0].important, true, 'wichtig');
+    eq(n.length, 2, 'Anzahl (k1 + s1)');
+    eq(n[1].important, true, 'wichtig');
     eq((await db.doc('absences/s1').get()).data()!.affectedAssignmentIds, ['abs-a2'], 'betroffen');
     eq(await isAbsentOn(db, 'abs-nurse', C, '2026-11-20'), true, 'abwesend');
   });
   await check('Folgeschreibvorgang ohne Änderung erzeugt keine Benachrichtigung', async () => {
     const before = (await db.doc('absences/s1').get()).data()!;
     await write('s1', before, { ...before, auProvided: true });
-    eq((await notes('abs-admin')).filter(x => x.title === 'Krankmeldung').length, 1, 'Anzahl');
+    eq((await notes('abs-admin')).filter(x => x.title === 'Krankmeldung').length, 2, 'Anzahl');
   });
   await check('Zurückgezogen: sperrt nicht mehr', async () => {
     const before = (await db.doc('absences/s1').get()).data()!;
@@ -108,6 +104,6 @@ function eq(actual: unknown, expected: unknown, what: string) {
   });
 
   fft.cleanup();
-  console.log(failures ? `\n${failures} Fehler` : '\nAbwesenheiten OK');
+  console.log(failures ? `\n${failures} Fehler` : '\nKrankmeldungen OK');
   process.exit(failures ? 1 : 0);
 })();

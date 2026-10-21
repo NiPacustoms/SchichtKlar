@@ -141,7 +141,7 @@ async function renderStatement(doc: any, autoTable: any, input: StatementPdfInpu
     t.holidayHours ? `Feiertag ${num(t.holidayHours)}` : '',
   ].filter(Boolean);
   if (surcharge.length) sumRows.push(['Zuschlagsstunden', surcharge.join(' · '), false]);
-  const absenceLine = [t.vacationDays ? `${t.vacationDays} Urlaubstag${t.vacationDays === 1 ? '' : 'e'}` : '', t.sickDays ? `${t.sickDays} Krankheitstag${t.sickDays === 1 ? '' : 'e'}` : ''].filter(Boolean);
+  const absenceLine = [t.sickDays ? `${t.sickDays} Krankheitstag${t.sickDays === 1 ? '' : 'e'}` : ''].filter(Boolean);
   if (absenceLine.length) sumRows.push(['Abwesenheit', absenceLine.join(' · '), false]);
 
   y = ensureSpace(doc, y, sumRows.length * 5.6 + 4);

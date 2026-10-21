@@ -3,9 +3,9 @@
  *
  * Protokolliert die für GoBD/AÜG und Lohn relevanten Vorgänge:
  * Zeiten (eingereicht, freigegeben, abgelehnt, geändert), Monatsnachweise
- * (unterschrieben, anerkannt), Abwesenheiten (beantragt, entschieden),
+ * (unterschrieben, anerkannt), Krankmeldungen,
  * Einsätze (Status) und Personalstamm
- * (Rolle, Stundenlohn, Personalnummer, Urlaubsanspruch).
+ * (Rolle, Stundenlohn, Personalnummer).
  *
  * auditLogs sind per Rules unveränderlich (create/update/delete: false).
  */
@@ -75,20 +75,13 @@ export function auditFor(collection: string, before: Data, after: Data): AuditDe
       return null;
     }
     case 'absences': {
-      if (!after) return null;
-      const kind = after.type === 'sick' ? 'Krankmeldung' : 'Urlaub';
-      const period = `${str(after.fromKey)} – ${str(after.toKey)}`;
-      if (!before) return { action: `absence.${status(after)}`, summary: `${kind} ${period} ${after.type === 'sick' ? 'gemeldet' : 'beantragt'}`, actorUid: str(after.userId) };
-      if (status(before) !== status(after)) {
-        const label: Record<string, string> = { approved: 'genehmigt', rejected: 'abgelehnt', cancelled: 'zurückgezogen' };
-        return {
-          action: `absence.${status(after)}`,
-          summary: `${kind} ${period} ${label[status(after)] ?? status(after)}${after.decisionNote ? ` – ${str(after.decisionNote)}` : ''}`,
-          actorUid: str(after.decidedBy) || undefined,
-          fields: ['status'],
-        };
-      }
-      if (changed(before, after, 'toKey')) return { action: 'absence.extended', summary: `${kind} geändert: ${period}`, fields: ['toKey'] };
+      if (!after || after.type !== 'sick') return null;
+      const fmt = (k: unknown) => { const [y, m, d] = str(k).split('-'); return d ? `${d}.${m}.${y}` : str(k); };
+      const period = after.fromKey === after.toKey ? fmt(after.fromKey) : `${fmt(after.fromKey)} – ${fmt(after.toKey)}`;
+      if (!before) return { action: 'absence.reported', summary: `Krankmeldung ${period} gemeldet`, actorUid: str(after.userId) };
+      if (status(before) !== status(after) && status(after) === 'cancelled')
+        return { action: 'absence.cancelled', summary: `Krankmeldung ${period} zurückgezogen`, fields: ['status'] };
+      if (changed(before, after, 'toKey')) return { action: 'absence.extended', summary: `Krankmeldung verlängert: ${period}`, fields: ['toKey'] };
       return null;
     }
     case 'assignments': {
@@ -117,9 +110,9 @@ export function auditFor(collection: string, before: Data, after: Data): AuditDe
     }
     case 'users': {
       if (!before || !after) return null;
-      const fields = ['role', 'hourlyRate', 'personnelNumber', 'vacationDaysPerYear', 'active'].filter(f => changed(before, after, f));
+      const fields = ['role', 'hourlyRate', 'personnelNumber', 'active'].filter(f => changed(before, after, f));
       if (!fields.length) return null;
-      const label: Record<string, string> = { role: 'Rolle', hourlyRate: 'Stundenlohn', personnelNumber: 'Personalnummer', vacationDaysPerYear: 'Urlaubsanspruch', active: 'Status' };
+      const label: Record<string, string> = { role: 'Rolle', hourlyRate: 'Stundenlohn', personnelNumber: 'Personalnummer', active: 'Status' };
       return { action: 'user.master-data-changed', summary: `${str(after.displayName) || 'Person'}: ${fields.map(f => label[f]).join(', ')} geändert`, fields };
     }
   }

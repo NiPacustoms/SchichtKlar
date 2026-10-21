@@ -4,7 +4,7 @@ Stand: Oktober 2026. Reihenfolge einhalten; alles aus dem Projektordner auf dem 
 
 ## 1. Einmalig vorbereiten
 
-- [ ] **Firmen-Dokument** in der Firebase-Konsole (Firestore → `companies/<eure companyId>`): `holidayState: "NW"` setzen (Feiertage NRW für Zuschläge und Urlaubstage).
+- [ ] **Firmen-Dokument** in der Firebase-Konsole (Firestore → `companies/<eure companyId>`): `holidayState: "NW"` setzen (Feiertage NRW für die Zuschlagsstunden).
 - [ ] **Impressums-/Firmendaten** (`NEXT_PUBLIC_COMPANY_*`, inkl. Steuernummer und Bank) im Hosting setzen. Sie erscheinen in der Fußzeile von Einsatzmitteilung und Stundennachweis.
 - [ ] **E-Mail:** `RESEND_API_KEY` (und `RESEND_FROM` mit eurer Domain) für Einladungen setzen; SMTP-Zugang für die Benachrichtigungen der Cloud Functions.
 - [ ] **AVV mit Google Cloud** abschließen (alle Daten und Functions liegen in `europe-west1`).
@@ -25,7 +25,7 @@ firebase deploy --only functions,firestore:rules,firestore:indexes,hosting
 ## 3. Nach dem Deploy prüfen (10 Minuten)
 
 - [ ] `/api/health` liefert 200, `/systemstatus` ist grün.
-- [ ] Als Disposition: Personal → Abwesenheiten, Stundennachweise und Prüfprotokolle öffnen – ohne Fehlermeldung.
+- [ ] Als Disposition: Personal → Krankmeldungen, Stundennachweise und Prüfprotokolle öffnen – ohne Fehlermeldung.
 - [ ] Test-Pflegekraft einladen → Link öffnen → Passwort setzen → landet im Arbeitsplatz.
 - [ ] Testschicht zuweisen → Einsatzmitteilung erscheint bei der Pflegekraft; Unterschrift → PDF.
 - [ ] Zeiten erfassen → einreichen → freigeben → im Prüfprotokoll steht „Zeiten vom … freigegeben“ mit Namen.

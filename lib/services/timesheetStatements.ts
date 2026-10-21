@@ -54,7 +54,7 @@ function monthQueryRange(month: string) {
  * Abwesenheiten, Unterschriften aus dem Nachweis-Dokument.
  */
 export const timesheetStatementService = {
-  async load(p: { companyId: string; userId: string; month: string; holidays?: Set<string> }): Promise<LoadedStatement> {
+  async load(p: { companyId: string; userId: string; month: string }): Promise<LoadedStatement> {
     const db = getDb();
     const { start, end, fromKey, toKey } = monthQueryRange(p.month);
     const [tsSnap, absSnap, sigSnap] = await Promise.all([
@@ -117,7 +117,7 @@ export const timesheetStatementService = {
 
     const s = sigSnap.exists() ? sigSnap.data() : null;
     return {
-      statement: buildMonthlyStatement(p.month, sheets, absences, p.holidays),
+      statement: buildMonthlyStatement(p.month, sheets, absences),
       signatures: s
         ? {
             employeeSignature: s.employeeSignature,

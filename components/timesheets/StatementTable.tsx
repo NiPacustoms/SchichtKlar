@@ -12,7 +12,7 @@ const day = (k: string) => {
 export const fmtStd = (n: number | null | undefined) =>
   n == null ? '' : n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const ZUSATZ_COLOR = { U: 'success', K: 'info' } as const;
+const ZUSATZ_COLOR = { K: 'info' } as const;
 
 /**
  * Tagestabelle des Stundennachweises – Spalten wie auf dem Papierbogen
@@ -46,7 +46,7 @@ export function StatementTable({ statement }: { statement: MonthlyStatement }) {
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
               <Typography sx={{ fontWeight: 600, fontSize: 15, minWidth: 74 }}>{day(r.dayKey)}</Typography>
               {r.zusatz ? (
-                <Chip size="small" color={ZUSATZ_COLOR[r.zusatz as 'U' | 'K'] ?? 'default'} label={`${r.zusatz} · ${r.remark}`} sx={{ height: 22 }} />
+                <Chip size="small" color={ZUSATZ_COLOR[r.zusatz as 'K'] ?? 'default'} label={`${r.zusatz} · ${r.remark}`} sx={{ height: 22 }} />
               ) : (
                 <Typography sx={{ fontSize: 15, flex: 1 }}>
                   {r.begin}–{r.end} <Box component="span" sx={{ color: 'text.secondary' }}>· Pause {fmtStd(r.pauseHours)} h</Box>
@@ -91,7 +91,7 @@ export function StatementTable({ statement }: { statement: MonthlyStatement }) {
           <Box role="cell">{r.end}</Box>
           <Box role="cell" sx={{ textAlign: 'right', pr: 2 }}>{fmtStd(r.pauseHours)}</Box>
           <Box role="cell" sx={{ textAlign: 'right', pr: 2, fontWeight: 700 }}>{fmtStd(r.hours)}</Box>
-          <Box role="cell">{r.zusatz && <Chip size="small" color={ZUSATZ_COLOR[r.zusatz as 'U' | 'K'] ?? 'default'} label={r.zusatz} sx={{ height: 22, minWidth: 28 }} />}</Box>
+          <Box role="cell">{r.zusatz && <Chip size="small" color={ZUSATZ_COLOR[r.zusatz as 'K'] ?? 'default'} label={r.zusatz} sx={{ height: 22, minWidth: 28 }} />}</Box>
           <Box role="cell" sx={{ display: 'flex', gap: 1, alignItems: 'center', minWidth: 0 }}>
             <Typography noWrap title={r.remark} sx={{ fontSize: 13.5, color: 'text.secondary', minWidth: 0 }}>
               {r.remark}

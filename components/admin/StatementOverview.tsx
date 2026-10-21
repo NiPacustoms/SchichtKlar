@@ -15,7 +15,6 @@ import { timesheetStatementService, type LoadedStatement } from '@/lib/services/
 import { buildStatementPdf } from '@/lib/services/statementPdfClient';
 import { statementFileName } from '@/lib/services/pdf/stundennachweisPdf';
 import { downloadBlob } from '@/lib/hooks/useMonthlyStatement';
-import { useHolidayKeys } from '@/lib/hooks/useHolidayKeys';
 import { monthLabel, shiftMonth, statementSignState, type StatementSignState } from '@/lib/domain/stundennachweis';
 import { berlinDayKey } from '@/lib/utils/dateKey';
 import { toast } from '@/lib/utils/toast';
@@ -51,7 +50,6 @@ export function StatementOverview() {
   const [adminSig, setAdminSig] = useState<{ dataUrl: string; name: string } | null>(null);
   const [pendingAck, setPendingAck] = useState<Row[] | null>(null);
   const [pdfBusy, setPdfBusy] = useState<string | null>(null);
-  const { data: holidays, isSuccess: holidaysReady } = useHolidayKeys([Number(month.slice(0, 4))]);
 
   const { data: people = [] } = useQuery({
     queryKey: ['statement-people', companyId],
@@ -66,12 +64,12 @@ export function StatementOverview() {
   const { data: rows = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['monthly-statement-overview', companyId, month, people.map(p => p.id).join(',')],
     queryFn: async () => {
-      const loaded = await Promise.all(people.map(u => timesheetStatementService.load({ companyId, userId: u.id, month, holidays })));
+      const loaded = await Promise.all(people.map(u => timesheetStatementService.load({ companyId, userId: u.id, month })));
       return people
         .map((u, i) => ({ user: u, loaded: loaded[i], state: statementSignState(loaded[i].statement, loaded[i].signatures) }))
         .filter(r => r.loaded.statement.rows.length > 0 || r.loaded.signatures);
     },
-    enabled: !!companyId && people.length > 0 && holidaysReady,
+    enabled: !!companyId && people.length > 0,
   });
 
   const counts = useMemo(() => {
@@ -200,7 +198,6 @@ export function StatementOverview() {
                       <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
                         {fmtStd(t.hours)} Std. · {t.workDays} Dienste
                         {t.openHours ? ` · ${fmtStd(t.openHours)} Std. noch nicht freigegeben` : ''}
-                        {t.vacationDays ? ` · ${t.vacationDays} U` : ''}
                         {t.sickDays ? ` · ${t.sickDays} K` : ''}
                       </Typography>
                     </Box>

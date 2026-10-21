@@ -39,12 +39,6 @@ export const staffCreateSchema = z.object({
     .trim()
     .regex(/^\d{0,5}$/, 'Personalnummer: bis zu 5 Ziffern')
     .optional(),
-  vacationDaysPerYear: z
-    .number()
-    .int('Ganze Tage')
-    .min(0, 'Mindestens 0 Tage')
-    .max(60, 'Höchstens 60 Tage')
-    .optional(),
   group: z.string().optional().default(''),
   active: z.boolean().default(true),
   address: z

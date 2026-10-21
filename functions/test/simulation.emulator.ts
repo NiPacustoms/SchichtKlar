@@ -2,7 +2,7 @@
  * Szenario-Simulation gegen Firestore- + Auth-Emulator: Abläufe und
  * Grenzfälle über mehrere Functions hinweg.
  *
- *  S1  Abwesenheit sperrt Planung (Zuweisen, Anfragen, Angebot annehmen)
+ *  S1  Krankmeldung sperrt Planung (Zuweisen, Anfragen, Angebot annehmen)
  *  S2  Nachtdienst über Monatsende in einen Feiertag (NRW)
  *  S3  Prüfprotokoll: Freigabe, Unterschrift, Stammdaten – und was NICHT protokolliert wird
  *  S4  DSGVO: Auskunft und Löschung – Rechte, Aufbewahrungspflicht, Auth-Konto
@@ -90,16 +90,16 @@ type Callable = (d: unknown, c: unknown) => Promise<Record<string, unknown>>;
   const admin_ = ctx('sim-admin', 'admin', C);
   const lea = ctx('sim-lea', 'nurse', C);
 
-  console.log('--- S1 Abwesenheit sperrt Planung ---');
-  await db.doc('absences/sim-urlaub').set({ companyId: C, userId: 'sim-lea', type: 'vacation', fromKey: '2026-12-14', toKey: '2026-12-18', status: 'approved' });
-  await check('Disposition kann Person im Urlaub nicht einplanen', () => expectError(assign({ shiftId: 'sim-s1', userId: 'sim-lea' }, admin_), 'failed-precondition', 'ABSENT'));
-  await check('Pflegekraft kann im eigenen Urlaub keine Schicht anfragen', () => expectError(request({ shiftId: 'sim-s2' }, lea), 'failed-precondition', 'ABSENT'));
-  await check('Ausgeschriebenen Einsatz im Urlaub nicht annehmbar', async () => {
+  console.log('--- S1 Krankmeldung sperrt Planung ---');
+  await db.doc('absences/sim-urlaub').set({ companyId: C, userId: 'sim-lea', type: 'sick', fromKey: '2026-12-14', toKey: '2026-12-18', status: 'reported' });
+  await check('Disposition kann krank gemeldete Person nicht einplanen', () => expectError(assign({ shiftId: 'sim-s1', userId: 'sim-lea' }, admin_), 'failed-precondition', 'ABSENT'));
+  await check('Krank gemeldete Pflegekraft kann keine Schicht anfragen', () => expectError(request({ shiftId: 'sim-s2' }, lea), 'failed-precondition', 'ABSENT'));
+  await check('Ausgeschriebenen Einsatz während Krankmeldung nicht annehmbar', async () => {
     await db.doc('assignments/sim-pub').set({ companyId: C, status: 'published', userId: null, candidateUserIds: ['sim-lea'], startDate: berlinMidnight('2026-12-16'), facilityId: 'sim-f' });
     await expectError(acceptPub({ assignmentId: 'sim-pub' }, lea), 'failed-precondition', 'ABSENT');
   });
-  await check('Beantragter (nicht genehmigter) Urlaub sperrt nicht', async () => {
-    await db.doc('absences/sim-urlaub').update({ status: 'requested' });
+  await check('Zurückgezogene Krankmeldung gibt den Tag wieder frei', async () => {
+    await db.doc('absences/sim-urlaub').update({ status: 'cancelled' });
     const r = await assign({ shiftId: 'sim-s1', userId: 'sim-lea' }, admin_);
     if (!r.assignmentId) throw new Error('keine Zuweisung');
   });

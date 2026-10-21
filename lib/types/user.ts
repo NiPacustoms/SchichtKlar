@@ -17,8 +17,6 @@ export interface User {
   workingHoursPerWeek?: number;
   /** Personalnummer (wie beim Lohnbüro, erscheint auf dem Stundennachweis) */
   personnelNumber?: string;
-  /** Urlaubsanspruch in Arbeitstagen pro Jahr (5-Tage-Woche) */
-  vacationDaysPerYear?: number;
   /** Wochenstunden-Limit (Admin, 20–80h) für ArbZG/MiLoG */
   wochenstundenLimit?: number;
   /** Live Mo–So Summe (Cloud Function) */
