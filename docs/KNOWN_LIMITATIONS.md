@@ -80,7 +80,7 @@ Mehrere Callables prüften nur „ist Admin", nicht „Admin **derselben Firma**
 
 ## E. Optionale Ausbaustufen (Marktrecherche)
 
-PDL-Freigabe per Magic-Link (Remote-Bestätigung ohne Account), §82c-Satzdeckel-Monitor, Equal-Pay-/Höchstüberlassungs-Countdown, DATEV-Export-Vertiefung. Kein Blocker – Differenzierungsmerkmale.
+PDL-Freigabe per Magic-Link (Remote-Bestätigung ohne Account), §82c-Satzdeckel-Monitor, Equal-Pay-/Höchstüberlassungs-Countdown. Kein Blocker – Differenzierungsmerkmale.
 
 ## I. Fertigstellung (21.10.2026)
 

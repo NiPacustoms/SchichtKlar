@@ -702,10 +702,10 @@ export function StaffEditDialog({ open, onClose, onSave, staff }: StaffEditDialo
                 <TextField
                   {...field}
                   fullWidth
-                  label="Personalnummer (Lohnabrechnung)"
+                  label="Personalnummer"
                   value={field.value ?? ''}
                   inputProps={{ inputMode: 'numeric', maxLength: 5 }}
-                  helperText={errors.personnelNumber?.message || 'Wie in DATEV – nötig für den Lohnexport'}
+                  helperText={errors.personnelNumber?.message || 'Wie beim Lohnbüro – erscheint auf dem Stundennachweis'}
                   error={!!errors.personnelNumber}
                 />
               )}

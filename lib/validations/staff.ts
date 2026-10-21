@@ -37,7 +37,7 @@ export const staffCreateSchema = z.object({
   personnelNumber: z
     .string()
     .trim()
-    .regex(/^\d{0,5}$/, 'Personalnummer: bis zu 5 Ziffern (wie in DATEV)')
+    .regex(/^\d{0,5}$/, 'Personalnummer: bis zu 5 Ziffern')
     .optional(),
   vacationDaysPerYear: z
     .number()

@@ -4,10 +4,12 @@
 
 **Neu**
 - Freigabe-Link für Einrichtungen: Die PDL bestätigt oder beanstandet eine Woche ohne eigenes Konto (#48).
-- DATEV-LODAS-Export mit Lohnarten, Personalnummern und Zuschlagsstunden (#49).
 - Urlaub & Krankmeldung: Antrag und Genehmigung, Resturlaub, Krankmeldung ohne Diagnose, betroffene Einsätze, Abwesende werden in der Planung gesperrt (#50).
 - Stundennachweis: der Papierbogen „Arbeitszeiterfassung / Stunden-Nachweis“ digital, mit Unterschrift „erfasst“ und „anerkannt“, PDF und Sammel-PDF (#51).
 - Prüfprotokoll: serverseitig, unveränderlich, mit Filter und CSV-Export.
+
+**Entfernt**
+- Lohnsteuer-Reste und der DATEV-LODAS-Export (#53, #54) – die Lohnabrechnung macht das Steuerbüro, die App liefert Stundennachweise.
 
 **Sicherheit & Datenschutz**
 - Alle Cloud Functions laufen in der EU (`europe-west1`).

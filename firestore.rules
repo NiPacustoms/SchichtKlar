@@ -708,11 +708,6 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Lohnexport-Einstellungen (Beraternummer, Lohnarten) – je Firma, nur Admins
-    match /payrollSettings/{companyId} {
-      allow read, write: if isAdmin() && companyId == getRequesterCompanyId();
-    }
-
     // Freigabe-Links für Einrichtungen: nur über Cloud Functions (Token-Hash als ID)
     match /facilityApprovalLinks/{linkId} {
       allow read, write: if false;

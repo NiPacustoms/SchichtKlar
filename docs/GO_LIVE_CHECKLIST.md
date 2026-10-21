@@ -29,7 +29,7 @@ firebase deploy --only functions,firestore:rules,firestore:indexes,hosting
 - [ ] Test-Pflegekraft einladen → Link öffnen → Passwort setzen → landet im Arbeitsplatz.
 - [ ] Testschicht zuweisen → Einsatzmitteilung erscheint bei der Pflegekraft; Unterschrift → PDF.
 - [ ] Zeiten erfassen → einreichen → freigeben → im Prüfprotokoll steht „Zeiten vom … freigegeben“ mit Namen.
-- [ ] Lohnexport DATEV: Einstellungen vom Steuerbüro eintragen und eine **Testdatei** an das Steuerbüro geben.
+- [ ] Stundennachweis eines Testmonats als PDF erzeugen und mit dem Lohnbüro abstimmen.
 
 ## 4. Vor dem zweiten Kunden (Mandant)
 

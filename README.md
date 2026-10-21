@@ -135,12 +135,11 @@ Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [ARCHITECTURE-HEALTH.md](
 - **Warnungen** für fehlende GPS-Daten, Pausen, Überlappungen
 - **Export-Funktionen** für Berichte und Abrechnungen
 
-### 💰 Lohnexport (DATEV)
+### 💰 Lohnbüro
 
-- **Keine Lohnsteuer- oder Gehaltsberechnung in der App** – die Lohnabrechnung macht das Steuerbüro
-- **DATEV-LODAS-Export** der freigegebenen Stunden je Lohnart (Grund-, Überstunden, Nacht, Sonntag, Feiertag)
-- **Personalnummern** wie in DATEV, Hinweis bei fehlender Nummer
-- **Stundennachweis** je Person und Monat als PDF für das Lohnbüro
+- **Keine Lohnsteuer-, Gehaltsberechnung oder DATEV-Export in der App** – die Lohnabrechnung macht das Steuerbüro
+- **Stundennachweis** je Person und Monat als PDF (einzeln oder gesammelt) für das Lohnbüro
+- **Stunden-Übersicht** mit CSV-Export
 
 ### 📱 PWA & Offline-Support
 
