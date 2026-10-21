@@ -16,7 +16,6 @@ import {
 } from './brandedPdf';
 import {
   MILOG_HINT,
-  ZUSATZ_LEGEND,
   monthLabel,
   statementSignState,
   type MonthlyStatement,
@@ -103,14 +102,13 @@ async function renderStatement(doc: any, autoTable: any, input: StatementPdfInpu
         r.end,
         num(r.pauseHours),
         num(r.hours),
-        r.zusatz,
         r.remark + (r.status && r.status !== 'approved' ? ' · noch nicht freigegeben' : ''),
       ])
-    : [[{ content: 'Keine Arbeitszeiten in diesem Monat erfasst.', colSpan: 7, styles: { textColor: PDF_COLORS.gray, halign: 'center' } }]];
+    : [[{ content: 'Keine Arbeitszeiten in diesem Monat erfasst.', colSpan: 6, styles: { textColor: PDF_COLORS.gray, halign: 'center' } }]];
   autoTable(doc, {
     ...brandedTableOptions([3, 4]),
     startY: y,
-    head: [['Datum', 'Beginn', 'Ende', 'Pause (Std.)', 'Dauer (Std.)', 'Zusatz*', 'Sonstige Angaben / Bemerkungen']],
+    head: [['Datum', 'Beginn', 'Ende', 'Pause (Std.)', 'Dauer (Std.)', 'Sonstige Angaben / Bemerkungen']],
     body,
     styles: { ...(brandedTableOptions().styles as object), fontSize: 8.6, cellPadding: { top: 2, bottom: 2, left: 2.2, right: 2.2 } },
     headStyles: { ...(brandedTableOptions().headStyles as object), fontSize: 8 },
@@ -120,8 +118,7 @@ async function renderStatement(doc: any, autoTable: any, input: StatementPdfInpu
       2: { cellWidth: 14 },
       3: { cellWidth: 16, halign: 'right' },
       4: { cellWidth: 17, halign: 'right', fontStyle: 'bold' },
-      5: { cellWidth: 16, halign: 'center' },
-      6: { cellWidth: 'auto', textColor: PDF_COLORS.gray },
+      5: { cellWidth: 'auto', textColor: PDF_COLORS.gray },
     },
     margin: { left: m, right: m, bottom: COMPANY_FOOTER_HEIGHT + HINT_BLOCK + 2, top: 20 },
   });
@@ -141,8 +138,6 @@ async function renderStatement(doc: any, autoTable: any, input: StatementPdfInpu
     t.holidayHours ? `Feiertag ${num(t.holidayHours)}` : '',
   ].filter(Boolean);
   if (surcharge.length) sumRows.push(['Zuschlagsstunden', surcharge.join(' · '), false]);
-  const absenceLine = [t.sickDays ? `${t.sickDays} Krankheitstag${t.sickDays === 1 ? '' : 'e'}` : ''].filter(Boolean);
-  if (absenceLine.length) sumRows.push(['Abwesenheit', absenceLine.join(' · '), false]);
 
   y = ensureSpace(doc, y, sumRows.length * 5.6 + 4);
   const boxX = m + contentW * 0.42;
@@ -240,7 +235,7 @@ async function renderStatement(doc: any, autoTable: any, input: StatementPdfInpu
   doc.setFontSize(7.2);
   doc.setTextColor(...PDF_COLORS.gray);
   const hint = [
-    ...doc.splitTextToSize(`* ${ZUSATZ_LEGEND}. Die Bestätigung des Einsatzortes ist je Tag vermerkt („bestätigt: Name“).`, contentW),
+    ...doc.splitTextToSize('Die Bestätigung des Einsatzortes ist je Tag vermerkt („bestätigt: Name“).', contentW),
     ...doc.splitTextToSize(MILOG_HINT, contentW),
   ];
   let hy = PAGE_H - COMPANY_FOOTER_HEIGHT - HINT_BLOCK + 4;

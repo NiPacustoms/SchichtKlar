@@ -84,7 +84,19 @@ await check('Admin fremder Firma liest Altdaten ohne Firma', 'DENY', () => getDo
 await check('Pflegekraft liest eigene Altdaten', 'ALLOW', () => getDoc(doc(nurseA, 'timesheets/legacy')));
 await check('Admin listet Zeiten der Firma', 'ALLOW', () => getDocs(query(collection(adminA, 'timesheets'), where('companyId', '==', 'firmaA'))));
 
+console.log('--- Personalstamm ---');
+await check('Pflegekraft ändert eigenen Stundenlohn', 'DENY', () => updateDoc(doc(nurseA, 'users/nurseA'), { hourlyRate: 99 }));
+await check('Pflegekraft ändert eigene Personalnummer', 'DENY', () => updateDoc(doc(nurseA, 'users/nurseA'), { personnelNumber: '999' }));
+await check('Pflegekraft ändert eigene Telefonnummer', 'ALLOW', () => updateDoc(doc(nurseA, 'users/nurseA'), { phone: '0151 1' }));
+
+console.log('--- Zeitstempel ohne Krankmeldung ---');
+await check('Arbeitszeit mit Einsatz erfassen', 'ALLOW', () => setDoc(doc(nurseA, 'times/w1'), { userId: 'nurseA', companyId: 'firmaA', type: 'work', assignmentId: 'a1' }));
+await check('Krankmeldung als Zeiteintrag ist nicht mehr möglich', 'DENY', () => setDoc(doc(nurseA, 'times/k1'), { userId: 'nurseA', companyId: 'firmaA', type: 'sick', status: 'pending' }));
+await check('Arbeitszeit ohne Einsatz ist nicht möglich', 'DENY', () => setDoc(doc(nurseA, 'times/w2'), { userId: 'nurseA', companyId: 'firmaA', type: 'work' }));
+
 console.log('--- Gesperrte Sammlungen ---');
+await check('Krankmeldungen (Altbestand) sind gesperrt', 'DENY', () => getDoc(doc(nurseA, 'absences/x')));
+await check('Firmen-Dokument ist für Clients gesperrt', 'DENY', () => getDoc(doc(nurseA, 'companies/firmaA')));
 await check('Frühere Lohnexport-Einstellungen sind gesperrt', 'DENY', () => getDoc(doc(adminA, 'payrollSettings/firmaA')));
 await check('Freigabe-Links sind für Clients gesperrt', 'DENY', () => getDoc(doc(adminA, 'facilityApprovalLinks/x')));
 

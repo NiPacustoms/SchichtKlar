@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 
 import { useState, useEffect, useMemo } from 'react';
 import { logger } from '@/lib/logging';
@@ -732,7 +731,7 @@ export default function EmployeeTimesPage() {
 
       {/* Statistics */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 6 }}>
           <Card className="glass">
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h4" color="primary" className="tabular-nums">
@@ -744,7 +743,7 @@ export default function EmployeeTimesPage() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 6 }}>
           <Card className="glass">
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h4" color="success.main" className="tabular-nums">
@@ -756,25 +755,10 @@ export default function EmployeeTimesPage() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card className="glass">
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="warning.main" className="tabular-nums">
-                {stats.sickDays}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Krankheitstage
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
       </Grid>
 
       {/* Actions */}
       <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-        <Button variant="outlined" startIcon={<Sick />} component={Link} href="/employee/abwesenheiten?neu=krank">
-          Krankmeldung
-        </Button>
         <Button variant="outlined" startIcon={<Download />} onClick={() => exportTimes('pdf')}>
           Export PDF
         </Button>
@@ -788,7 +772,6 @@ export default function EmployeeTimesPage() {
         <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" allowScrollButtonsMobile>
           <Tab label="Zeitkonto" icon={<AccessTime />} iconPosition="start" />
           <Tab label="Arbeitszeiten" icon={<Work />} iconPosition="start" />
-          <Tab label="Krankheit" icon={<Sick />} iconPosition="start" />
         </Tabs>
       </Paper>
 
@@ -995,68 +978,6 @@ export default function EmployeeTimesPage() {
         </Card>
       </TabPanel>
 
-      <TabPanel value={activeTab} index={2}>
-        <Card className="glass">
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-              <Sick sx={{ mr: 1 }} />
-              Krankheitstage-Übersicht
-            </Typography>
-
-            <TableContainer component={Paper} elevation={0}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Zeitraum</TableCell>
-                    <TableCell>Tage</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Arzt</TableCell>
-                    <TableCell>Bemerkung</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {stats.sickEntries.map((entry, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {format(entry.startDate, 'dd.MM.yyyy', { locale: de })} -{' '}
-                          {format(entry.endDate, 'dd.MM.yyyy', { locale: de })}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {entry.days}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={entry.status}
-                          color={
-                            entry.status === 'approved'
-                              ? 'success'
-                              : entry.status === 'pending'
-                                ? 'warning'
-                                : 'error'
-                          }
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{entry.doctor}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {entry.remark}
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
-      </TabPanel>
 
       {/* Assignment Selection Dialog */}
       <Dialog

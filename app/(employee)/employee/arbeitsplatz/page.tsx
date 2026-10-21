@@ -457,14 +457,6 @@ function DashboardPageContent() {
                       </Button>
                       <Button
                         component={Link}
-                        href="/employee/abwesenheiten"
-                        variant="outlined"
-                        size="small"
-                      >
-                        Krank melden
-                      </Button>
-                      <Button
-                        component={Link}
                         href="/employee/stundennachweis"
                         variant="outlined"
                         size="small"

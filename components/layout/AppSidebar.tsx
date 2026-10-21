@@ -2,7 +2,6 @@
 
 import { useFeatureFlags } from '@/lib/hooks/useFeatureFlags';
 import {
-  EventBusyOutlined,
   ReceiptLongOutlined,
   AccessTimeOutlined,
   AssessmentOutlined,
@@ -62,7 +61,6 @@ const ADMIN_NAV: NavGroup[] = [
       { href: ROUTES.ADMIN.MITARBEITER, icon: <PeopleOutlined />, label: 'Mitarbeiter' },
       { href: ROUTES.ADMIN.ZEITNACHWEISE, icon: <TaskAltOutlined />, label: 'Zeitnachweise' },
       { href: ROUTES.ADMIN.STUNDENNACHWEISE, icon: <ReceiptLongOutlined />, label: 'Stundennachweise' },
-      { href: ROUTES.ADMIN.ABWESENHEITEN, icon: <EventBusyOutlined />, label: 'Krankmeldungen' },
       { href: ROUTES.ADMIN.STUNDEN, icon: <AccessTimeOutlined />, label: 'Stunden' },
     ],
   },

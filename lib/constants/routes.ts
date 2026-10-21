@@ -25,7 +25,6 @@ export const ROUTES = {
     EINRICHTUNGEN: '/employee/einrichtungen',
     BERICHTE: '/employee/berichte',
     BENACHRICHTIGUNGEN: '/employee/benachrichtigungen',
-    ABWESENHEITEN: '/employee/abwesenheiten',
     STUNDENNACHWEIS: '/employee/stundennachweis',
   },
 
@@ -40,7 +39,6 @@ export const ROUTES = {
     EINRICHTUNGEN_DETAIL: (id: string) => `/admin/einrichtungen/${id}`,
     STUNDEN: '/admin/stunden',
     ZEITNACHWEISE: '/admin/zeitnachweise',
-    ABWESENHEITEN: '/admin/abwesenheiten',
     STUNDENNACHWEISE: '/admin/stundennachweise',
     BERICHTE: '/admin/berichte',
     EINSTELLUNGEN: '/admin/einstellungen',

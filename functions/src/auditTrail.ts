@@ -3,7 +3,7 @@
  *
  * Protokolliert die für GoBD/AÜG und Lohn relevanten Vorgänge:
  * Zeiten (eingereicht, freigegeben, abgelehnt, geändert), Monatsnachweise
- * (unterschrieben, anerkannt), Krankmeldungen,
+ * (unterschrieben, anerkannt),
  * Einsätze (Status) und Personalstamm
  * (Rolle, Stundenlohn, Personalnummer).
  *
@@ -72,16 +72,6 @@ export function auditFor(collection: string, before: Data, after: Data): AuditDe
         return after.employerSignedAt
           ? { action: 'statement.acknowledged', summary: `Stundennachweis ${month} anerkannt von ${str(after.employerSignedName)}`, actorUid: str(after.employerSignedBy) }
           : { action: 'statement.acknowledgement-revoked', summary: `Anerkennung Stundennachweis ${month} zurückgenommen` };
-      return null;
-    }
-    case 'absences': {
-      if (!after || after.type !== 'sick') return null;
-      const fmt = (k: unknown) => { const [y, m, d] = str(k).split('-'); return d ? `${d}.${m}.${y}` : str(k); };
-      const period = after.fromKey === after.toKey ? fmt(after.fromKey) : `${fmt(after.fromKey)} – ${fmt(after.toKey)}`;
-      if (!before) return { action: 'absence.reported', summary: `Krankmeldung ${period} gemeldet`, actorUid: str(after.userId) };
-      if (status(before) !== status(after) && status(after) === 'cancelled')
-        return { action: 'absence.cancelled', summary: `Krankmeldung ${period} zurückgezogen`, fields: ['status'] };
-      if (changed(before, after, 'toKey')) return { action: 'absence.extended', summary: `Krankmeldung verlängert: ${period}`, fields: ['toKey'] };
       return null;
     }
     case 'assignments': {
@@ -156,6 +146,5 @@ function handler(collection: string) {
 
 export const auditTimesheets = onDocumentWritten('timesheets/{id}', handler('timesheets'));
 export const auditStatements = onDocumentWritten('timesheetStatements/{id}', handler('timesheetStatements'));
-export const auditAbsences = onDocumentWritten('absences/{id}', handler('absences'));
 export const auditAssignments = onDocumentWritten('assignments/{id}', handler('assignments'));
 export const auditUsers = onDocumentWritten('users/{id}', handler('users'));

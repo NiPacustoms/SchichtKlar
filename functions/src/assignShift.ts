@@ -3,7 +3,6 @@ import * as functions from 'firebase-functions/v1';
 import { assertSameCompany, requireAdmin } from './utils/tenant';
 import { dayRuleConflictError, findDayRuleConflicts, isValidOverrideReason, toDayKey } from './utils/dayRule';
 import { REGION } from './utils/region';
-import { absenceConflictError, isAbsentOn } from './absences';
 
 const db = admin.firestore();
 
@@ -235,10 +234,6 @@ export const assignShift = functions.region(REGION).https.onCall(async (data, co
       // 5b. Tagesregel: 1 Einsatz pro Kalendertag (Europe/Berlin).
       // Bewusst NICHT durch adminOverride abgedeckt – Übersteuern nur mit Begründung.
       const dayKey = toDayKey(shift.date);
-      // 5a. Krankmeldung sperrt die Zuweisung
-      if (dayKey && (await isAbsentOn(db, userId, caller.companyId, dayKey))) {
-        throw absenceConflictError(dayKey, true);
-      }
       let dayRuleOverride: { reason: string; by: string; at: Date; conflictingAssignmentIds: string[] } | null = null;
       if (dayKey) {
         const sameDay = await findDayRuleConflicts(

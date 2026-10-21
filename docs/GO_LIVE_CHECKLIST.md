@@ -25,7 +25,7 @@ firebase deploy --only functions,firestore:rules,firestore:indexes,hosting
 ## 3. Nach dem Deploy prüfen (10 Minuten)
 
 - [ ] `/api/health` liefert 200, `/systemstatus` ist grün.
-- [ ] Als Disposition: Personal → Krankmeldungen, Stundennachweise und Prüfprotokolle öffnen – ohne Fehlermeldung.
+- [ ] Als Disposition: Personal → Stundennachweise und Prüfprotokolle öffnen – ohne Fehlermeldung.
 - [ ] Test-Pflegekraft einladen → Link öffnen → Passwort setzen → landet im Arbeitsplatz.
 - [ ] Testschicht zuweisen → Einsatzmitteilung erscheint bei der Pflegekraft; Unterschrift → PDF.
 - [ ] Zeiten erfassen → einreichen → freigeben → im Prüfprotokoll steht „Zeiten vom … freigegeben“ mit Namen.

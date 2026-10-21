@@ -27,7 +27,6 @@ const GROUPS = [
   { key: 'all', label: 'Alle', match: () => true },
   { key: 'timesheet', label: 'Zeiten', match: (a: string) => a.startsWith('timesheet.') },
   { key: 'statement', label: 'Stundennachweise', match: (a: string) => a.startsWith('statement.') },
-  { key: 'absence', label: 'Abwesenheiten', match: (a: string) => a.startsWith('absence.') },
   { key: 'assignment', label: 'Einsätze', match: (a: string) => a.startsWith('assignment.') },
   { key: 'master', label: 'Stammdaten & Lohn', match: (a: string) => a.startsWith('user.') || a.startsWith('payroll.') || a.startsWith('facility.') },
 ] as const;
@@ -42,7 +41,7 @@ const fmt = (d: Date | null) =>
   d ? d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' }) : '–';
 
 /**
- * Prüfprotokoll: wer hat wann was an Zeiten, Nachweisen, Abwesenheiten,
+ * Prüfprotokoll: wer hat wann was an Zeiten, Nachweisen,
  * Einsätzen und Stammdaten geändert. Einträge schreibt nur der Server.
  */
 export default function AuditLogViewer({ companyId, limit: limitProp, compact = false, showFilters: showFiltersProp, linkToFullPage }: AuditLogViewerProps) {
@@ -141,7 +140,7 @@ export default function AuditLogViewer({ companyId, limit: limitProp, compact = 
         ) : filtered.length === 0 ? (
           <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
             <Typography sx={{ fontWeight: 600, color: 'text.primary' }}>Keine Einträge</Typography>
-            <Typography sx={{ fontSize: 14 }}>Freigaben, Unterschriften, Abwesenheiten und Stammdaten-Änderungen erscheinen hier automatisch.</Typography>
+            <Typography sx={{ fontSize: 14 }}>Freigaben, Unterschriften, Einsätze und Stammdaten-Änderungen erscheinen hier automatisch.</Typography>
           </Box>
         ) : (
           filtered.map((l, i) => (

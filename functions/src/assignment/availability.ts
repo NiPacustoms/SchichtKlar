@@ -1,7 +1,6 @@
 import type { Firestore } from 'firebase-admin/firestore';
 import { parseShiftToUTC, checkOverlap } from '../utils/timeUtils';
 import { berlinDayKey, DAY_RULE_ACTIVE_STATUSES, toDayKey } from '../utils/dayRule';
-import { isAbsentOn } from '../absences';
 
 /** Zeitfenster eines bestehenden Einsatzes – aus verknüpfter Schicht oder eigenem startDate. */
 async function getAssignmentWindow(
@@ -34,8 +33,7 @@ async function getAssignmentWindow(
 /**
  * Prüft, ob ein Nutzer im angegebenen Zeitraum verfügbar ist:
  * - keine zeitliche Überschneidung mit aktiven Einsätzen und
- * - kein anderer aktiver Einsatz am selben Berliner Kalendertag (Regel „1 Einsatz pro Tag") und
- * - keine Krankmeldung an dem Tag.
+ * - kein anderer aktiver Einsatz am selben Berliner Kalendertag (Regel „1 Einsatz pro Tag").
  */
 export async function isUserAvailableForSlot(
   db: Firestore,
@@ -49,8 +47,6 @@ export async function isUserAvailableForSlot(
   const myAssignments = await q.where('status', 'in', [...DAY_RULE_ACTIVE_STATUSES]).get();
 
   const targetDay = berlinDayKey(startUTC);
-  // Krankmeldung → nicht verfügbar
-  if (await isAbsentOn(db, userId, companyId, targetDay)) return false;
   for (const aDoc of myAssignments.docs) {
     const window = await getAssignmentWindow(db, aDoc.data());
     if (!window) continue;

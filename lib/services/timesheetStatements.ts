@@ -19,7 +19,6 @@ import {
   monthRangeKeys,
   statementDocId,
   type MonthlyStatement,
-  type StatementAbsence,
   type StatementSheet,
 } from '@/lib/domain/stundennachweis';
 
@@ -51,13 +50,13 @@ function monthQueryRange(month: string) {
 
 /**
  * Monatlicher Stundennachweis (timesheetStatements): Zeilen aus timesheets +
- * Abwesenheiten, Unterschriften aus dem Nachweis-Dokument.
+ * Unterschriften aus dem Nachweis-Dokument.
  */
 export const timesheetStatementService = {
   async load(p: { companyId: string; userId: string; month: string }): Promise<LoadedStatement> {
     const db = getDb();
     const { start, end, fromKey, toKey } = monthQueryRange(p.month);
-    const [tsSnap, absSnap, sigSnap] = await Promise.all([
+    const [tsSnap, sigSnap] = await Promise.all([
       getDocs(
         query(
           collection(db, 'timesheets'),
@@ -68,7 +67,6 @@ export const timesheetStatementService = {
           orderBy('date', 'asc')
         )
       ),
-      getDocs(query(collection(db, 'absences'), where('userId', '==', p.userId), where('companyId', '==', p.companyId))),
       getDoc(doc(db, 'timesheetStatements', statementDocId(p.companyId, p.userId, p.month))),
     ]);
 
@@ -110,14 +108,9 @@ export const timesheetStatementService = {
         overtimeHours: Number(t.overtimeHours ?? 0) || undefined,
       });
     }
-    const absences: StatementAbsence[] = absSnap.docs.map(d => {
-      const a = d.data();
-      return { type: a.type, status: a.status, fromKey: a.fromKey, toKey: a.toKey, auProvided: !!a.auProvided };
-    });
-
     const s = sigSnap.exists() ? sigSnap.data() : null;
     return {
-      statement: buildMonthlyStatement(p.month, sheets, absences),
+      statement: buildMonthlyStatement(p.month, sheets),
       signatures: s
         ? {
             employeeSignature: s.employeeSignature,

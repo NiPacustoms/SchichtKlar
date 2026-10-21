@@ -293,17 +293,6 @@ async function main() {
     updatedAt: FieldValue.serverTimestamp(),
   });
 
-  // Krankmeldungen (keine Urlaubsverwaltung): eine aktuelle, eine überlappende, eine vergangene
-  const dayKey = d => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(berlinDay(d));
-  const absences = [
-    { id: 'abs-lea-alt', userId: 'n-lea', type: 'sick', fromKey: dayKey(-30), toKey: dayKey(-28), status: 'reported', auProvided: true },
-    { id: 'abs-jonas-krank', userId: 'n-jonas', type: 'sick', fromKey: dayKey(1), toKey: dayKey(3), status: 'reported', auProvided: false },
-    { id: 'abs-murat-krank', userId: 'n-murat', type: 'sick', fromKey: dayKey(0), toKey: dayKey(2), status: 'reported', auProvided: false },
-  ];
-  for (const { id, ...a } of absences) {
-    await db.doc(`absences/${id}`).set({ companyId: COMPANY_ID, ...a, createdAt: FieldValue.serverTimestamp() });
-  }
-
   await db.doc('adminAnnouncements/ann-1').set({
     companyId: COMPANY_ID,
     title: 'Neue Dienstplanung ab November',

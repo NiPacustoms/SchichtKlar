@@ -86,14 +86,15 @@ PDL-Freigabe per Magic-Link (Remote-Bestätigung ohne Account), §82c-Satzdeckel
 
 | # | Thema | Status |
 |---|---|---|
-| I1 | **Krankmeldung blockierte die Planung nicht**: Krank gemeldete Personen konnten über `assignShift`, `requestShift` und `acceptPublishedAssignment` eingeplant werden. | behoben (Fehler `ABSENT`, Szenario-Test) |
+| I1 | **Krankmeldung blockierte die Planung nicht**: Krank gemeldete Personen konnten über `assignShift`, `requestShift` und `acceptPublishedAssignment` eingeplant werden. | gegenstandslos – Krankmeldung entfernt (21.10.2026) |
 | I2 | ⚠️ **DSGVO-Callables ohne Rechteprüfung**: Jede angemeldete Person konnte mit `exportUserData`/`deleteUserData` Daten von Kolleg:innen derselben Firma abrufen oder endgültig löschen (inkl. Auth-Konto). | behoben: fremde Daten nur durch Admins, endgültiges Löschen nur durch Admins, Aufbewahrungspflichtiges bleibt gesperrt (`legalHold`), Batches > 500 aufgeteilt |
 | I3 | **Selbstlöschung anonymisierte Lohnunterlagen** (`userId` überschrieben) und löschte angenommene Einsätze (AÜG-Nachweis). | behoben: Sperrvermerk statt Anonymisierung |
 | I4 | **Prüfprotokoll war leer**: Audit-Trigger waren Platzhalter, `/api/audit/logs` existierte nicht, die Seite fragte firmenübergreifend ab (Berechtigungsfehler). | behoben: serverseitige Trigger (`auditTrail.ts`), API-Route, lesbare Ansicht mit Filter und CSV |
 | I5 | **Einladungsvorschau** (`/api/invitations/[token]`) nutzte das Client-SDK auf dem Server → Fehler 500; abgelaufene Einladungen wurden mit altem Link erneut verschickt; bestehende Konten scheiterten ohne verständliche Meldung. | behoben (Admin-SDK, neuer Link bei erneutem Senden, 7 Tage gültig, klare Meldungen) |
 | I6 | Kurz-URLs (`/einrichtungen`, `/dokumente`, `/zeiten`, `/dienstplan`, `/zeiterfassung`) zeigten der Disposition die Mitarbeiterseite. | behoben (Weiterleitung je Rolle) |
 | I7 | Ungenutzte Proxy-Routen (`/api`, `/api/cf`, `/api/proxy-create`, `/api/assignment/*`) und die Demo-Seite `/customers` vergrößerten die Angriffsfläche. | entfernt |
-| I8 | Urlaubsverwaltung | entfernt (21.10.2026, Entscheidung Eigentümer) – nur Krankmeldungen |
+| I8 | Urlaubsverwaltung | entfernt (21.10.2026, Entscheidung Eigentümer) |
+| I9 | Krankmeldung | entfernt (21.10.2026, Entscheidung Eigentümer); Altbestand `absences` gesperrt, nur für DSGVO-Auskunft/Aufbewahrung |
 | I9 | `functions/test/dsr.test.ts` lief nie (veraltete Handler-Exporte). | ersetzt durch Szenario-Simulation (`test/simulation.emulator.ts`, S4) |
 | I10 | Optional: Mail-Queue mit Zustellstatus (Idee aus geschlossenem PR #8). | offen – Ausbaustufe |
 | I11 | Optional: Überstunden-Übertrag aus dem Vormonat im Stundennachweis. | offen – Ausbaustufe |

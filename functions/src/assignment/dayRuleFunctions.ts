@@ -13,7 +13,6 @@ import {
   formatDayKeyDE,
 } from '../utils/dayRule';
 import { REGION } from '../utils/region';
-import { absenceConflictError, isAbsentOn } from '../absences';
 
 const db = admin.firestore();
 
@@ -58,7 +57,6 @@ export const acceptPublishedAssignment = functions.region(REGION).https.onCall(a
         tx
       );
       if (sameDay.length > 0) throw dayRuleConflictError(dayKey, sameDay, false);
-      if (await isAbsentOn(db, caller.uid, caller.companyId, dayKey)) throw absenceConflictError(dayKey, false);
     }
 
     const now = admin.firestore.FieldValue.serverTimestamp();

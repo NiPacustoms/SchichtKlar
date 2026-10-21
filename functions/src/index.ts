@@ -79,11 +79,9 @@ export {
   getFacilityApproval,
   decideFacilityApproval,
 } from './facilityApproval';
-export { onAbsenceWritten } from './absences';
 export {
   auditTimesheets,
   auditStatements,
-  auditAbsences,
   auditAssignments,
   auditUsers,
 } from './auditTrail';
