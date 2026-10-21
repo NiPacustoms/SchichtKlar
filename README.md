@@ -135,32 +135,12 @@ Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [ARCHITECTURE-HEALTH.md](
 - **Warnungen** für fehlende GPS-Daten, Pausen, Überlappungen
 - **Export-Funktionen** für Berichte und Abrechnungen
 
-### 💰 Lohnabrechnung (Payroll)
+### 💰 Lohnexport (DATEV)
 
-- **Automatische Berechnung** basierend auf approved Timesheets
-- **BMF-Lohnsteuertabelle 2025** mit korrekter Steuerberechnung
-- **Kirchensteuer** und Solidaritätszuschlag (8%/9% bzw. 5,5%)
-- **Sozialversicherung** mit Beitragsbemessungsgrenzen 2025
-- **Lohnnebenkosten** (AG-Anteile, Unfallversicherung, Insolvenzgeldumlage)
-- **MiLoG-Compliance** (Mindestlohn-Prüfung: 12,82 €/h)
-- **ArbZG-Validierung** (Arbeitszeiten, Ruhezeiten, Pausen)
-- **Minijob/Midijob-Unterstützung** (556 € / 556,01-2000 €)
-- **Status-Workflow** (open → calculating → ready → approved → paid → locked)
-- **PDF-Export** mit §108 GewO Pflichtangaben
-- **DATEV-Export** für Buchhaltung
-- **Lohnnebenkosten-Report** (nur Admin)
-- **GoBD-konform**: Unveränderliche Berechnungen, Audit-Logging
-
-**Performance:**
-- Client-seitige Berechnung für < 50 Mitarbeiter (< 30s)
-- Cloud Function für ≥ 50 Mitarbeiter (< 5min)
-- Batch-Processing für Firestore-Writes (max 500 pro Batch)
-
-**Sicherheit:**
-- Firestore Security Rules mit Status-Validierung
-- Gesperrte Perioden sind unveränderlich (GoBD)
-- Nur Admin/Dispatcher können Perioden verwalten
-- Audit-Logging für alle Aktionen
+- **Keine Lohnsteuer- oder Gehaltsberechnung in der App** – die Lohnabrechnung macht das Steuerbüro
+- **DATEV-LODAS-Export** der freigegebenen Stunden je Lohnart (Grund-, Überstunden, Nacht, Sonntag, Feiertag)
+- **Personalnummern** wie in DATEV, Hinweis bei fehlender Nummer
+- **Stundennachweis** je Person und Monat als PDF für das Lohnbüro
 
 ### 📱 PWA & Offline-Support
 

@@ -1,5 +1,6 @@
-// Client-seitige Verschlüsselung für sensible Gehaltsdaten
-// DSGVO-konforme Verschlüsselung sensibler Daten
+// Client-seitige Verschlüsselung sensibler Daten (Bankverbindung)
+// Steuer- und Sozialversicherungsdaten verarbeitet die App bewusst nicht –
+// die Lohnabrechnung inkl. Lohnsteuer macht das Steuerbüro.
 
 import CryptoJS from 'crypto-js';
 
@@ -52,90 +53,11 @@ export class EncryptionService {
   }
 
   /**
-   * Verschlüsselt Sozialversicherungsnummer
-   */
-  static encryptSocialSecurityNumber(ssn: string): string {
-    if (!this.isValidSocialSecurityNumber(ssn)) {
-      throw new Error('Ungültige Sozialversicherungsnummer');
-    }
-    return this.encrypt(ssn);
-  }
-
-  /**
-   * Entschlüsselt Sozialversicherungsnummer
-   */
-  static decryptSocialSecurityNumber(encryptedSSN: string): string {
-    const decrypted = this.decrypt(encryptedSSN);
-    if (!this.isValidSocialSecurityNumber(decrypted)) {
-      throw new Error('Entschlüsselte Sozialversicherungsnummer ist ungültig');
-    }
-    return decrypted;
-  }
-
-  /**
-   * Verschlüsselt Krankenversicherungsnummer
-   */
-  static encryptHealthInsuranceNumber(hin: string): string {
-    if (!this.isValidHealthInsuranceNumber(hin)) {
-      throw new Error('Ungültige Krankenversicherungsnummer');
-    }
-    return this.encrypt(hin);
-  }
-
-  /**
-   * Entschlüsselt Krankenversicherungsnummer
-   */
-  static decryptHealthInsuranceNumber(encryptedHIN: string): string {
-    const decrypted = this.decrypt(encryptedHIN);
-    if (!this.isValidHealthInsuranceNumber(decrypted)) {
-      throw new Error('Entschlüsselte Krankenversicherungsnummer ist ungültig');
-    }
-    return decrypted;
-  }
-
-  /**
-   * Verschlüsselt Steuer-ID
-   */
-  static encryptTaxId(taxId: string): string {
-    if (!this.isValidTaxId(taxId)) {
-      throw new Error('Ungültige Steuer-ID');
-    }
-    return this.encrypt(taxId);
-  }
-
-  /**
-   * Entschlüsselt Steuer-ID
-   */
-  static decryptTaxId(encryptedTaxId: string): string {
-    const decrypted = this.decrypt(encryptedTaxId);
-    if (!this.isValidTaxId(decrypted)) {
-      throw new Error('Entschlüsselte Steuer-ID ist ungültig');
-    }
-    return decrypted;
-  }
-
-  /**
    * Maskiert IBAN für Anzeige
    */
   static maskIBAN(iban: string): string {
     if (iban.length < 8) return iban;
     return iban.substring(0, 4) + '****' + iban.substring(iban.length - 4);
-  }
-
-  /**
-   * Maskiert Sozialversicherungsnummer für Anzeige
-   */
-  static maskSocialSecurityNumber(ssn: string): string {
-    if (ssn.length < 6) return ssn;
-    return ssn.substring(0, 3) + '***' + ssn.substring(ssn.length - 3);
-  }
-
-  /**
-   * Maskiert Steuer-ID für Anzeige
-   */
-  static maskTaxId(taxId: string): string {
-    if (taxId.length < 6) return taxId;
-    return taxId.substring(0, 3) + '***' + taxId.substring(taxId.length - 3);
   }
 
   /**
@@ -145,33 +67,6 @@ export class EncryptionService {
     // Vereinfachte IBAN-Validierung
     const ibanRegex = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/;
     return ibanRegex.test(iban.replace(/\s/g, ''));
-  }
-
-  /**
-   * Validiert Sozialversicherungsnummer
-   */
-  private static isValidSocialSecurityNumber(ssn: string): boolean {
-    // Deutsche SV-Nummer: 12 Ziffern
-    const ssnRegex = /^[0-9]{12}$/;
-    return ssnRegex.test(ssn);
-  }
-
-  /**
-   * Validiert Krankenversicherungsnummer
-   */
-  private static isValidHealthInsuranceNumber(hin: string): boolean {
-    // Deutsche KV-Nummer: 10 Ziffern
-    const hinRegex = /^[0-9]{10}$/;
-    return hinRegex.test(hin);
-  }
-
-  /**
-   * Validiert Steuer-ID
-   */
-  private static isValidTaxId(taxId: string): boolean {
-    // Deutsche Steuer-ID: 11 Ziffern
-    const taxIdRegex = /^[0-9]{11}$/;
-    return taxIdRegex.test(taxId);
   }
 
   /**
