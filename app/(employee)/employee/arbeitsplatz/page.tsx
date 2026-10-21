@@ -461,7 +461,7 @@ function DashboardPageContent() {
                         variant="outlined"
                         size="small"
                       >
-                        Urlaub & Krankmeldung
+                        Krank melden
                       </Button>
                       <Button
                         component={Link}

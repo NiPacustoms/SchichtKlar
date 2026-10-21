@@ -18,39 +18,19 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
-import { BeachAccessOutlined, EventBusyOutlined, LocalHospitalOutlined } from '@mui/icons-material';
+import { EventBusyOutlined, LocalHospitalOutlined } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { StatStrip } from '@/components/ui/StatStrip';
-import { userService } from '@/lib/services';
 import { absenceService, type AbsenceWithConflicts } from '@/lib/services/absences';
-import {
-  ABSENCE_STATUS_LABEL,
-  daysBetween,
-  deRange,
-  vacationBalance,
-  vacationDays,
-  type AbsenceStatus,
-} from '@/lib/domain/absence';
-import { useHolidayKeys } from '@/lib/hooks/useHolidayKeys';
+import { ABSENCE_STATUS_LABEL, daysBetween, deRange } from '@/lib/domain/absence';
 import { berlinDayKey } from '@/lib/utils/dateKey';
 import { toast } from '@/lib/utils/toast';
 
-const STATUS_COLOR: Record<AbsenceStatus, 'default' | 'warning' | 'success' | 'error' | 'info'> = {
-  requested: 'warning',
-  approved: 'success',
-  rejected: 'error',
-  reported: 'info',
-  cancelled: 'default',
-};
-
-type DialogKind = 'vacation' | 'sick' | null;
-
-/** Urlaub beantragen, krank melden, Resturlaub – für Pflegekräfte */
-export default function EmployeeAbsencesPage() {
+/** Krank melden, verlängern, zurückziehen – für Pflegekräfte (keine Urlaubsverwaltung) */
+export default function EmployeeSickPage() {
   const { user } = useAuth();
   const uid = user?.id ?? '';
   const companyId = user?.companyId ?? '';
@@ -58,21 +38,25 @@ export default function EmployeeAbsencesPage() {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'), { noSsr: true });
   const today = berlinDayKey(new Date());
-  const year = Number(today.slice(0, 4));
 
-  const [dialog, setDialog] = useState<DialogKind>(null);
+  const [open, setOpen] = useState(false);
   const [fromKey, setFromKey] = useState(today);
   const [toKey, setToKey] = useState(today);
-  const [note, setNote] = useState('');
   const [au, setAu] = useState(false);
   const [extending, setExtending] = useState<AbsenceWithConflicts | null>(null);
   const [extendTo, setExtendTo] = useState(today);
 
-  // ?neu=krank bzw. ?neu=urlaub öffnet direkt den passenden Dialog
+  function openDialog() {
+    const t = berlinDayKey(new Date());
+    setFromKey(t);
+    setToKey(t);
+    setAu(false);
+    setOpen(true);
+  }
+
+  // ?neu=krank öffnet direkt die Krankmeldung
   useEffect(() => {
-    const p = new URLSearchParams(window.location.search).get('neu');
-    if (p === 'krank') openDialog('sick');
-    if (p === 'urlaub') openDialog('vacation');
+    if (new URLSearchParams(window.location.search).get('neu') === 'krank') openDialog();
   }, []);
 
   const {
@@ -85,77 +69,19 @@ export default function EmployeeAbsencesPage() {
     queryFn: () => absenceService.listMine(uid, companyId),
     enabled: !!uid && !!companyId,
   });
-  const { data: holidays = new Set<string>() } = useHolidayKeys([year - 1, year, year + 1]);
-
-  // Anspruch aus dem Personalstamm (das Auth-Profil trägt nur Basisfelder)
-  const { data: profile } = useQuery({
-    queryKey: ['absences-profile', uid],
-    queryFn: () => userService.getById(uid),
-    enabled: !!uid,
-  });
-  const entitlement = profile?.vacationDaysPerYear;
-  const balance = useMemo(
-    () =>
-      typeof entitlement === 'number'
-        ? vacationBalance(year, entitlement, list, today, holidays)
-        : null,
-    [entitlement, year, list, today, holidays]
-  );
-  const sickDaysThisYear = useMemo(
-    () =>
-      list
-        .filter(a => a.type === 'sick' && a.status === 'reported')
-        .reduce(
-          (n, a) =>
-            n + daysBetween(a.fromKey, a.toKey).filter(k => k.startsWith(String(year))).length,
-          0
-        ),
-    [list, year]
-  );
-
-  function openDialog(kind: Exclude<DialogKind, null>) {
-    const t = berlinDayKey(new Date());
-    setFromKey(t);
-    setToKey(t);
-    setNote('');
-    setAu(false);
-    setDialog(kind);
-  }
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['absences-mine'] });
-  const rangeError =
-    !fromKey || !toKey
-      ? 'Bitte Zeitraum wählen'
-      : toKey < fromKey
-        ? 'Das Ende liegt vor dem Beginn'
-        : '';
-  const requestedDays = !rangeError ? vacationDays(fromKey, toKey, holidays) : 0;
+  const rangeError = !fromKey || !toKey ? 'Bitte Zeitraum wählen' : toKey < fromKey ? 'Das Ende liegt vor dem Beginn' : '';
   const overlapsExisting = useMemo(
-    () =>
-      !rangeError &&
-      list.some(
-        a =>
-          ['requested', 'approved', 'reported'].includes(a.status) &&
-          a.fromKey <= toKey &&
-          fromKey <= a.toKey
-      ),
+    () => !rangeError && list.some(a => a.status === 'reported' && a.fromKey <= toKey && fromKey <= a.toKey),
     [list, fromKey, toKey, rangeError]
   );
 
   const submit = useMutation({
-    mutationFn: async () => {
-      if (dialog === 'vacation')
-        await absenceService.requestVacation({ userId: uid, companyId, fromKey, toKey, note });
-      else
-        await absenceService.reportSick({ userId: uid, companyId, fromKey, toKey, auProvided: au });
-    },
+    mutationFn: () => absenceService.reportSick({ userId: uid, companyId, fromKey, toKey, auProvided: au }),
     onSuccess: () => {
-      toast.success(
-        dialog === 'vacation'
-          ? 'Urlaubsantrag gesendet – die Disposition entscheidet'
-          : 'Krankmeldung gesendet – gute Besserung!'
-      );
-      setDialog(null);
+      toast.success('Krankmeldung gesendet – gute Besserung!');
+      setOpen(false);
       invalidate();
     },
     onError: e => toast.error(e instanceof Error ? e.message : 'Senden fehlgeschlagen'),
@@ -169,8 +95,7 @@ export default function EmployeeAbsencesPage() {
     onError: () => toast.error('Zurückziehen fehlgeschlagen'),
   });
   const updateSick = useMutation({
-    mutationFn: (p: { id: string; toKey?: string; auProvided?: boolean }) =>
-      absenceService.updateSick(p.id, p),
+    mutationFn: (p: { id: string; toKey?: string; auProvided?: boolean }) => absenceService.updateSick(p.id, p),
     onSuccess: () => {
       toast.success('Krankmeldung aktualisiert');
       setExtending(null);
@@ -183,9 +108,8 @@ export default function EmployeeAbsencesPage() {
   const past = list.filter(a => a.status === 'cancelled' || a.toKey < today);
 
   const row = (a: AbsenceWithConflicts) => {
-    const workdays = vacationDays(a.fromKey, a.toKey, holidays);
     const calDays = daysBetween(a.fromKey, a.toKey).length;
-    const isSick = a.type === 'sick';
+    const active = a.status === 'reported' && a.toKey >= today;
     return (
       <Box
         key={a.id}
@@ -202,16 +126,7 @@ export default function EmployeeAbsencesPage() {
           '&:first-of-type': { borderTop: 'none' },
         }}
       >
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-            flex: 1,
-            minWidth: 0,
-            width: '100%',
-          }}
-        >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0, width: '100%' }}>
           <Box
             aria-hidden
             sx={{
@@ -221,37 +136,28 @@ export default function EmployeeAbsencesPage() {
               display: 'grid',
               placeItems: 'center',
               flexShrink: 0,
-              bgcolor: t => alpha(isSick ? t.palette.info.main : t.palette.success.main, 0.1),
-              color: isSick ? 'info.main' : 'success.main',
+              bgcolor: t => alpha(t.palette.info.main, 0.1),
+              color: 'info.main',
             }}
           >
-            {isSick ? (
-              <LocalHospitalOutlined fontSize="small" />
-            ) : (
-              <BeachAccessOutlined fontSize="small" />
-            )}
+            <LocalHospitalOutlined fontSize="small" />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography sx={{ fontWeight: 600, fontSize: 15 }}>
-              {isSick ? 'Krank' : 'Urlaub'} · {deRange(a.fromKey, a.toKey)}
-            </Typography>
+            <Typography sx={{ fontWeight: 600, fontSize: 15 }}>Krank · {deRange(a.fromKey, a.toKey)}</Typography>
             <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
-              {isSick
-                ? `${calDays} ${calDays === 1 ? 'Kalendertag' : 'Kalendertage'}${a.auProvided ? ' · ärztlich festgestellt' : ''}`
-                : `${workdays} ${workdays === 1 ? 'Urlaubstag' : 'Urlaubstage'}`}
-              {a.note ? ` · ${a.note}` : ''}
-              {a.status === 'rejected' && a.decisionNote ? ` · Grund: ${a.decisionNote}` : ''}
+              {calDays} {calDays === 1 ? 'Kalendertag' : 'Kalendertage'}
+              {a.auProvided ? ' · ärztlich festgestellt' : ''}
             </Typography>
           </Box>
         </Box>
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', flexWrap: 'wrap', pl: { xs: 6, sm: 0 } }}>
           <Chip
             size="small"
-            color={STATUS_COLOR[a.status]}
+            color={a.status === 'cancelled' ? 'default' : 'info'}
             variant={a.status === 'cancelled' ? 'outlined' : 'filled'}
             label={ABSENCE_STATUS_LABEL[a.status]}
           />
-          {isSick && a.status === 'reported' && a.toKey >= today && (
+          {active && (
             <>
               <Button
                 size="small"
@@ -264,25 +170,14 @@ export default function EmployeeAbsencesPage() {
                 Verlängern
               </Button>
               {!a.auProvided && (
-                <Button
-                  size="small"
-                  variant="text"
-                  onClick={() => updateSick.mutate({ id: a.id, auProvided: true })}
-                >
+                <Button size="small" variant="text" onClick={() => updateSick.mutate({ id: a.id, auProvided: true })}>
                   Arzt war da
                 </Button>
               )}
             </>
           )}
-          {(a.status === 'requested' ||
-            (isSick && a.status === 'reported' && a.fromKey > today)) && (
-            <Button
-              size="small"
-              variant="text"
-              color="inherit"
-              disabled={cancel.isPending}
-              onClick={() => cancel.mutate(a.id)}
-            >
+          {a.status === 'reported' && a.fromKey > today && (
+            <Button size="small" variant="text" color="inherit" disabled={cancel.isPending} onClick={() => cancel.mutate(a.id)}>
               Zurückziehen
             </Button>
           )}
@@ -294,28 +189,10 @@ export default function EmployeeAbsencesPage() {
   const section = (title: string, items: AbsenceWithConflicts[]) =>
     items.length > 0 && (
       <Box sx={{ mb: 3 }}>
-        <Typography
-          component="h2"
-          sx={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: 'text.secondary',
-            textTransform: 'uppercase',
-            letterSpacing: 0.4,
-            mb: 1,
-          }}
-        >
+        <Typography component="h2" sx={{ fontSize: 13, fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.4, mb: 1 }}>
           {title}
         </Typography>
-        <Box
-          sx={{
-            bgcolor: 'background.paper',
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: '12px',
-            overflow: 'hidden',
-          }}
-        >
+        <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: '12px', overflow: 'hidden' }}>
           {items.map(row)}
         </Box>
       </Box>
@@ -324,75 +201,18 @@ export default function EmployeeAbsencesPage() {
   return (
     <PageContainer maxWidth="standard" withBottomNav>
       <PageHeader
-        title="Urlaub & Krankheit"
-        subtitle="Urlaub beantragen, krank melden und Resturlaub im Blick behalten"
+        title="Krankmeldung"
+        subtitle="Krank melden, verlängern oder zurückziehen – die Disposition wird sofort informiert"
         actions={
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant="outlined"
-              startIcon={<LocalHospitalOutlined />}
-              onClick={() => openDialog('sick')}
-            >
-              Krank melden
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<BeachAccessOutlined />}
-              onClick={() => openDialog('vacation')}
-            >
-              Urlaub beantragen
-            </Button>
-          </Stack>
+          <Button variant="contained" startIcon={<LocalHospitalOutlined />} onClick={openDialog}>
+            Krank melden
+          </Button>
         }
       />
-
-      <StatStrip
-        aria-label={`Urlaubskonto ${year}`}
-        items={
-          balance
-            ? [
-                { label: `Anspruch ${year}`, value: balance.entitlement },
-                { label: 'Genommen', value: balance.taken, tone: 'muted' },
-                { label: 'Geplant', value: balance.planned },
-                {
-                  label: 'Beantragt',
-                  value: balance.requested,
-                  tone: balance.requested ? 'attention' : 'muted',
-                },
-                {
-                  label: 'Resturlaub',
-                  value: balance.remaining,
-                  tone: balance.remaining < 0 ? 'attention' : 'default',
-                  hint: 'Anspruch minus genommen und geplant',
-                },
-              ]
-            : [
-                {
-                  label: 'Beantragt',
-                  value: list.filter(a => a.status === 'requested').length,
-                  tone: 'muted',
-                },
-                { label: `Krankheitstage ${year}`, value: sickDaysThisYear, tone: 'muted' },
-              ]
-        }
-      />
-      {!balance && !isLoading && profile && (
-        <Alert severity="info" variant="outlined" sx={{ mb: 3 }}>
-          Ihr Urlaubsanspruch ist noch nicht hinterlegt – die Disposition trägt ihn im Personalstamm
-          ein. Anträge können Sie trotzdem stellen.
-        </Alert>
-      )}
 
       {isError ? (
-        <Alert
-          severity="error"
-          action={
-            <Button size="small" variant="text" onClick={() => refetch()}>
-              Erneut laden
-            </Button>
-          }
-        >
-          Abwesenheiten konnten nicht geladen werden.
+        <Alert severity="error" action={<Button size="small" variant="text" onClick={() => refetch()}>Erneut laden</Button>}>
+          Krankmeldungen konnten nicht geladen werden.
         </Alert>
       ) : isLoading ? (
         <Stack spacing={1}>
@@ -403,40 +223,27 @@ export default function EmployeeAbsencesPage() {
       ) : list.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
           <EventBusyOutlined sx={{ fontSize: 40, opacity: 0.5, mb: 1 }} />
-          <Typography sx={{ fontWeight: 600, color: 'text.primary' }}>
-            Noch keine Abwesenheiten
-          </Typography>
-          <Typography sx={{ fontSize: 14 }}>
-            Beantragter Urlaub und Krankmeldungen erscheinen hier.
-          </Typography>
+          <Typography sx={{ fontWeight: 600, color: 'text.primary' }}>Keine Krankmeldungen</Typography>
+          <Typography sx={{ fontSize: 14 }}>Ihre Krankmeldungen erscheinen hier.</Typography>
         </Box>
       ) : (
         <>
-          {section('Aktuell & geplant', current)}
+          {section('Aktuell', current)}
           {section('Vergangen', past)}
         </>
       )}
 
-      <Dialog
-        open={dialog !== null}
-        onClose={() => setDialog(null)}
-        fullWidth
-        maxWidth="xs"
-        fullScreen={fullScreen}
-      >
-        <DialogTitle>{dialog === 'sick' ? 'Krank melden' : 'Urlaub beantragen'}</DialogTitle>
+      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="xs" fullScreen={fullScreen}>
+        <DialogTitle>Krank melden</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
-            {dialog === 'sick' && (
-              <Alert severity="info" variant="outlined">
-                Bitte melden Sie sich vor Dienstbeginn. Eine Diagnose geben Sie nicht an. Dauert die
-                Krankheit länger als drei Kalendertage, lassen Sie die Arbeitsunfähigkeit ärztlich
-                feststellen – die eAU ruft das Büro bei der Krankenkasse ab.
-              </Alert>
-            )}
+            <Alert severity="info" variant="outlined">
+              Bitte melden Sie sich vor Dienstbeginn. Eine Diagnose geben Sie nicht an. Dauert die Krankheit länger als drei
+              Kalendertage, lassen Sie die Arbeitsunfähigkeit ärztlich feststellen – die eAU ruft das Büro bei der Krankenkasse ab.
+            </Alert>
             <Stack direction="row" spacing={1.5}>
               <TextField
-                label={dialog === 'sick' ? 'Krank seit' : 'Von'}
+                label="Krank seit"
                 type="date"
                 fullWidth
                 value={fromKey}
@@ -447,7 +254,7 @@ export default function EmployeeAbsencesPage() {
                 slotProps={{ inputLabel: { shrink: true } }}
               />
               <TextField
-                label={dialog === 'sick' ? 'Voraussichtlich bis' : 'Bis'}
+                label="Voraussichtlich bis"
                 type="date"
                 fullWidth
                 value={toKey}
@@ -457,49 +264,23 @@ export default function EmployeeAbsencesPage() {
                 slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: fromKey } }}
               />
             </Stack>
-            {dialog === 'vacation' && !rangeError && (
-              <Typography sx={{ fontSize: 14 }} data-testid="vacation-days-preview">
-                <b>{requestedDays}</b> {requestedDays === 1 ? 'Urlaubstag' : 'Urlaubstage'} (Mo–Fr
-                ohne Feiertage)
-                {balance
-                  ? ` · danach ${balance.remaining - balance.requested - requestedDays} Tage Rest`
-                  : ''}
-              </Typography>
-            )}
             {overlapsExisting && (
               <Alert severity="warning" variant="outlined">
-                Für diesen Zeitraum gibt es bereits eine Abwesenheit.
+                Für diesen Zeitraum gibt es bereits eine Krankmeldung.
               </Alert>
             )}
-            {dialog === 'vacation' ? (
-              <TextField
-                label="Notiz an die Disposition (optional)"
-                value={note}
-                onChange={e => setNote(e.target.value.slice(0, 300))}
-                multiline
-                minRows={2}
-                helperText={`${note.length}/300`}
-              />
-            ) : (
-              <FormControlLabel
-                control={<Checkbox checked={au} onChange={e => setAu(e.target.checked)} />}
-                label="Ich war schon beim Arzt (Arbeitsunfähigkeit festgestellt)"
-              />
-            )}
+            <FormControlLabel
+              control={<Checkbox checked={au} onChange={e => setAu(e.target.checked)} />}
+              label="Ich war schon beim Arzt (Arbeitsunfähigkeit festgestellt)"
+            />
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button variant="text" color="inherit" onClick={() => setDialog(null)}>
+          <Button variant="text" color="inherit" onClick={() => setOpen(false)}>
             Abbrechen
           </Button>
-          <Button
-            variant="contained"
-            disabled={
-              !!rangeError || submit.isPending || (dialog === 'vacation' && requestedDays === 0)
-            }
-            onClick={() => submit.mutate()}
-          >
-            {dialog === 'sick' ? 'Krankmeldung senden' : 'Antrag senden'}
+          <Button variant="contained" disabled={!!rangeError || submit.isPending} onClick={() => submit.mutate()}>
+            Krankmeldung senden
           </Button>
         </DialogActions>
       </Dialog>

@@ -67,10 +67,10 @@ service cloud.firestore {
     // rechte-relevanten Felder verändern. Sonst könnte eine Pflegekraft ihr eigenes
     // users-Dokument auf role='admin' setzen und würde über den Rules-Fallback
     // hasRoleFromUserDoc('admin') zum Administrator (Privilege Escalation).
-    // Ebenso Personalstamm-Felder, die Lohn und Urlaub bestimmen.
+    // Ebenso Personalstamm-Felder, die den Lohn bestimmen.
     function selfUpdateKeepsPrivilegedFields() {
       return !request.resource.data.diff(resource.data).affectedKeys()
-        .hasAny(['role', 'companyId', 'customRoleId', 'hourlyRate', 'personnelNumber', 'vacationDaysPerYear']);
+        .hasAny(['role', 'companyId', 'customRoleId', 'hourlyRate', 'personnelNumber']);
     }
 
     match /users/{uid} {
@@ -595,56 +595,40 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
-    // Firmen-Stammdaten (Name, Bundesland für Feiertage): lesen nur die eigene
-    // Firma; Schreiben nur serverseitig.
-    match /companies/{companyId} {
-      allow read: if isAuthenticated() && getRequesterCompanyId() == companyId;
-      allow write: if false;
-    }
 
-    // ── Abwesenheiten (Urlaub, Krankheit) ─────────────────────────────────
-    // Krankmeldungen ohne Diagnose (Art. 9 DSGVO); Urlaub braucht Genehmigung.
+    // ── Krankmeldungen (keine Urlaubsverwaltung) ──────────────────────────
+    // Ohne Diagnose (Art. 9 DSGVO); gelten sofort, keine Genehmigung.
     function absValidRange(d) {
       return d.fromKey is string && d.toKey is string &&
         d.fromKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') && d.toKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
         d.fromKey <= d.toKey;
     }
-    function absNoteOk(d) {
-      return !('note' in d) || d.note == null || (d.note is string && d.note.size() <= 300);
+    function absAllowedKeys(d) {
+      return d.keys().hasOnly(['companyId', 'userId', 'type', 'fromKey', 'toKey', 'status', 'auProvided', 'createdAt', 'updatedAt', 'affectedAssignmentIds', 'affectedCheckedAt']);
     }
     match /absences/{absenceId} {
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
         tsIsCompanyAdmin(resource.data.get('companyId', null))
       );
+      // Pflegekraft meldet sich selbst krank; Disposition kann für Personen der Firma melden
       allow create: if isAuthenticated() &&
         request.resource.data.get('companyId', null) == getRequesterCompanyId() &&
-        request.resource.data.type in ['vacation', 'sick'] &&
-        absValidRange(request.resource.data) && absNoteOk(request.resource.data) &&
-        (
-          (request.resource.data.userId == request.auth.uid &&
-            !request.resource.data.keys().hasAny(['decidedBy', 'decidedAt', 'decisionNote']) &&
-            ((request.resource.data.type == 'vacation' && request.resource.data.status == 'requested') ||
-             (request.resource.data.type == 'sick' && request.resource.data.status == 'reported'))) ||
-          (isAdmin() && request.resource.data.status in ['requested', 'approved', 'reported'])
-        );
+        request.resource.data.type == 'sick' &&
+        request.resource.data.status == 'reported' &&
+        absValidRange(request.resource.data) && absAllowedKeys(request.resource.data) &&
+        !('affectedAssignmentIds' in request.resource.data) &&
+        (request.resource.data.userId == request.auth.uid || isAdmin());
       allow update: if isAuthenticated() &&
         request.resource.data.userId == resource.data.userId &&
         request.resource.data.companyId == resource.data.companyId &&
         request.resource.data.type == resource.data.type &&
-        absValidRange(request.resource.data) && absNoteOk(request.resource.data) &&
-        (
-          // Person: Antrag zurückziehen; Krankmeldung verlängern/zurückziehen, AU nachreichen
-          (resource.data.userId == request.auth.uid &&
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['decidedBy', 'decidedAt', 'decisionNote', 'affectedAssignmentIds']) &&
-            ((resource.data.status == 'requested' && request.resource.data.status in ['requested', 'cancelled'] &&
-              request.resource.data.fromKey == resource.data.fromKey && request.resource.data.toKey == resource.data.toKey) ||
-             (resource.data.status == 'reported' && request.resource.data.status in ['reported', 'cancelled'] &&
-              request.resource.data.fromKey == resource.data.fromKey))) ||
-          // Disposition der eigenen Firma entscheidet
-          (tsIsCompanyAdmin(resource.data.get('companyId', null)) &&
-            request.resource.data.status in ['requested', 'approved', 'rejected', 'reported', 'cancelled'])
-        );
+        request.resource.data.fromKey == resource.data.fromKey &&
+        absValidRange(request.resource.data) && absAllowedKeys(request.resource.data) &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['affectedAssignmentIds', 'affectedCheckedAt']) &&
+        resource.data.status == 'reported' &&
+        request.resource.data.status in ['reported', 'cancelled'] &&
+        (resource.data.userId == request.auth.uid || tsIsCompanyAdmin(resource.data.get('companyId', null)));
       allow delete: if false;
     }
 

@@ -235,7 +235,7 @@ export const assignShift = functions.region(REGION).https.onCall(async (data, co
       // 5b. Tagesregel: 1 Einsatz pro Kalendertag (Europe/Berlin).
       // Bewusst NICHT durch adminOverride abgedeckt – Übersteuern nur mit Begründung.
       const dayKey = toDayKey(shift.date);
-      // 5a. Abwesenheit (genehmigter Urlaub / Krankmeldung) sperrt die Zuweisung
+      // 5a. Krankmeldung sperrt die Zuweisung
       if (dayKey && (await isAbsentOn(db, userId, caller.companyId, dayKey))) {
         throw absenceConflictError(dayKey, true);
       }

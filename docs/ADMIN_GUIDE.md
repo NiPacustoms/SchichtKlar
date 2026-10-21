@@ -7,7 +7,7 @@ Kurzanleitung für die täglichen Abläufe. Alle Daten und Cloud Functions liege
 ## Rollen
 
 - **Disposition (admin):** plant, gibt frei, rechnet ab, verwaltet Personal und Einrichtungen.
-- **Pflegekraft (nurse):** sieht eigene Einsätze, erfasst Zeiten, beantragt Urlaub, meldet sich krank, unterschreibt den Stundennachweis.
+- **Pflegekraft (nurse):** sieht eigene Einsätze, erfasst Zeiten, meldet sich krank, unterschreibt den Stundennachweis.
 - Jede Firma sieht nur ihre eigenen Daten (Mandantentrennung über `companyId`, durch Firestore-Regeln und Cloud Functions erzwungen).
 
 ## Personal aufnehmen
@@ -15,21 +15,20 @@ Kurzanleitung für die täglichen Abläufe. Alle Daten und Cloud Functions liege
 1. **Personal → Mitarbeiter → Einladen**, E-Mail-Adresse eingeben.
 2. Die Person bekommt einen Link (7 Tage gültig) und legt damit ihr Passwort fest. Erneutes Einladen erzeugt einen neuen Link.
 3. Für Adressen, zu denen es schon ein Konto gibt, lehnt die App die Einladung ab; die Person meldet sich direkt an.
-4. Im Personalstamm (**Bearbeiten**) eintragen: **Personalnummer** (wie beim Lohnbüro, steht auf dem Stundennachweis), **Urlaubsanspruch (Tage/Jahr)**, Stundenlohn und Qualifikationen.
+4. Im Personalstamm (**Bearbeiten**) eintragen: **Personalnummer** (wie beim Lohnbüro, steht auf dem Stundennachweis), Stundenlohn und Qualifikationen.
 
 ## Planen
 
 - **Dienstplan / Schichten:** Schichten anlegen und Personen zuweisen.
 - **Regel „1 Einsatz pro Tag“:** Eine zweite Zuweisung am selben Kalendertag geht nur mit Begründung; die Begründung wird gespeichert.
-- **Abwesenheit:** Wer genehmigten Urlaub hat oder krank gemeldet ist, kann an diesem Tag weder zugewiesen werden noch Schichten anfragen oder Angebote annehmen.
+- **Krankmeldung:** Wer krank gemeldet ist, kann an diesem Tag weder zugewiesen werden noch Schichten anfragen oder Angebote annehmen.
 - **Einsatzmitteilung (§ 11 AÜG):** Die Pflegekraft bestätigt oder lehnt jeden Einsatz digital mit Unterschrift ab; das PDF entspricht der AufAbruf-Vorlage.
 
-## Urlaub & Krankheit (Personal → Abwesenheiten)
+## Krankmeldungen (Personal → Krankmeldungen)
 
-- **Offene Anträge:** genehmigen oder mit Begründung ablehnen. Zu jedem Antrag zeigt die App den Resturlaub danach, wer gleichzeitig fehlt und welche Einsätze betroffen sind.
-- **Krankmeldungen** gelten sofort, ohne Genehmigung, und enthalten keine Diagnose (Art. 9 DSGVO). Ab Tag 4 die eAU bei der Krankenkasse abrufen.
-- Die Glocke meldet neue Anträge und Krankmeldungen (Krankmeldungen als wichtig).
-- Für die Urlaubstage zählen die Feiertage des Bundeslands aus dem Firmen-Dokument (`companies/{id}.holidayState`, z. B. `NW`).
+- Eine Urlaubsverwaltung gibt es in der App bewusst nicht.
+- **Krankmeldungen** der Pflegekräfte gelten sofort, ohne Genehmigung, und enthalten keine Diagnose (Art. 9 DSGVO). Ab Tag 4 die eAU bei der Krankenkasse abrufen.
+- Zu jeder Krankmeldung zeigt die App die betroffenen Einsätze und wer gleichzeitig krank ist. Die Glocke meldet neue Krankmeldungen und Verlängerungen als wichtig.
 
 ## Zeiten prüfen (Personal → Zeitnachweise)
 
@@ -53,14 +52,14 @@ Digitaler Ersatz für den Papierbogen „Arbeitszeiterfassung / Stunden-Nachweis
 
 ## Prüfprotokolle (Auswertung → Prüfprotokolle)
 
-- Der Server schreibt automatisch mit, wer wann was getan hat: Zeiten (erfasst, eingereicht, freigegeben, abgelehnt, geändert, von der Einrichtung bestätigt), Stundennachweise (unterschrieben, anerkannt, zurückgenommen), Abwesenheiten, Einsätze und Stammdaten (Rolle, Stundenlohn, Personalnummer, Urlaubsanspruch).
+- Der Server schreibt automatisch mit, wer wann was getan hat: Zeiten (erfasst, eingereicht, freigegeben, abgelehnt, geändert, von der Einrichtung bestätigt), Stundennachweise (unterschrieben, anerkannt, zurückgenommen), Krankmeldungen, Einsätze und Stammdaten (Rolle, Stundenlohn, Personalnummer).
 - Filter nach Bereich, Suche nach Person oder Vorgang, **CSV-Export** für Prüfungen.
 - Einträge kann niemand ändern oder löschen, auch kein Admin.
 
 ## DSGVO
 
 - **Auskunft:** Die Pflegekraft lädt ihre Daten unter Profil → Datenschutz herunter; die Disposition kann das für jede Person der eigenen Firma tun.
-- **Löschung:** Kontaktdaten werden entfernt und das Konto gesperrt. Aufbewahrungspflichtige Nachweise (eingereichte/freigegebene Zeiten, Einsätze, Stundennachweise, Abwesenheiten) bleiben gesperrt erhalten (`legalHold`, MiLoG § 17, AO § 147, Art. 17 Abs. 3 b DSGVO).
+- **Löschung:** Kontaktdaten werden entfernt und das Konto gesperrt. Aufbewahrungspflichtige Nachweise (eingereichte/freigegebene Zeiten, Einsätze, Stundennachweise, Krankmeldungen) bleiben gesperrt erhalten (`legalHold`, MiLoG § 17, AO § 147, Art. 17 Abs. 3 b DSGVO).
 - Prozesse im Detail: `docs/DSGVO_PROZESSE.md`.
 
 ## Betrieb

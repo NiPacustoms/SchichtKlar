@@ -29,11 +29,7 @@ function map(id: string, d: DocumentData): Absence & { affectedAssignmentIds?: s
     fromKey: d.fromKey,
     toKey: d.toKey,
     status: d.status,
-    note: d.note ?? null,
     auProvided: !!d.auProvided,
-    decidedBy: d.decidedBy ?? null,
-    decidedAt: toDate(d.decidedAt) ?? null,
-    decisionNote: d.decisionNote ?? null,
     createdAt: toDate(d.createdAt),
     affectedAssignmentIds: Array.isArray(d.affectedAssignmentIds) ? d.affectedAssignmentIds : undefined,
   };
@@ -48,30 +44,16 @@ function assertRange(fromKey: string, toKey: string) {
   if (fromKey > toKey) throw new Error('Das Ende liegt vor dem Beginn.');
 }
 
-/** Urlaub und Krankmeldungen (absences/{id}) */
+/** Krankmeldungen (absences/{id}) – keine Urlaubsverwaltung */
 export const absenceService = {
   async listMine(userId: string, companyId: string): Promise<AbsenceWithConflicts[]> {
     const snap = await getDocs(query(collection(getDb(), COL), where('userId', '==', userId), where('companyId', '==', companyId)));
-    return snap.docs.map(d => map(d.id, d.data())).sort(byFromDesc);
+    return snap.docs.map(d => map(d.id, d.data())).filter(a => a.type === 'sick').sort(byFromDesc);
   },
 
   async listForCompany(companyId: string): Promise<AbsenceWithConflicts[]> {
     const snap = await getDocs(query(collection(getDb(), COL), where('companyId', '==', companyId), orderBy('fromKey', 'desc')));
-    return snap.docs.map(d => map(d.id, d.data()));
-  },
-
-  async requestVacation(p: { userId: string; companyId: string; fromKey: string; toKey: string; note?: string }) {
-    assertRange(p.fromKey, p.toKey);
-    await addDoc(collection(getDb(), COL), {
-      companyId: p.companyId,
-      userId: p.userId,
-      type: 'vacation' satisfies AbsenceType,
-      fromKey: p.fromKey,
-      toKey: p.toKey,
-      status: 'requested',
-      note: p.note?.trim() ? p.note.trim().slice(0, 300) : null,
-      createdAt: serverTimestamp(),
-    });
+    return snap.docs.map(d => map(d.id, d.data())).filter(a => a.type === 'sick');
   },
 
   /** Krankmeldung – ohne Diagnose. Gilt sofort, keine Genehmigung. */
@@ -85,7 +67,6 @@ export const absenceService = {
       toKey: p.toKey,
       status: 'reported',
       auProvided: !!p.auProvided,
-      note: null,
       createdAt: serverTimestamp(),
     });
   },
@@ -103,15 +84,5 @@ export const absenceService = {
     }
     if (typeof p.auProvided === 'boolean') patch.auProvided = p.auProvided;
     await updateDoc(doc(getDb(), COL, id), patch);
-  },
-
-  async decide(id: string, adminId: string, approve: boolean, note?: string) {
-    await updateDoc(doc(getDb(), COL, id), {
-      status: approve ? 'approved' : 'rejected',
-      decidedBy: adminId,
-      decidedAt: serverTimestamp(),
-      decisionNote: note?.trim() ? note.trim().slice(0, 300) : null,
-      updatedAt: serverTimestamp(),
-    });
   },
 };

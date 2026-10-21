@@ -1,20 +1,20 @@
 /**
- * Abwesenheiten (Urlaub, Krankheit) – reine Logik ohne Firebase.
+ * Krankmeldungen – reine Logik ohne Firebase.
  *
  * Datenmodell absences/{id}:
- *   companyId, userId, type: 'vacation' | 'sick'
+ *   companyId, userId, type: 'sick'
  *   fromKey, toKey: 'YYYY-MM-DD' (deutsche Kalendertage, inklusive)
- *   status: Urlaub 'requested' → 'approved' | 'rejected'; 'cancelled' durch Person
- *           Krankheit 'reported' (keine Genehmigung nötig), 'cancelled'
- *   note (ohne Diagnose!), auProvided (Bescheinigung liegt vor), decidedBy/At
+ *   status: 'reported' (gilt sofort, keine Genehmigung) | 'cancelled'
+ *   auProvided (Arbeitsunfähigkeit ärztlich festgestellt)
  *
- * Krankmeldungen enthalten bewusst keine Diagnose: Für die Entgeltfortzahlung
- * genügen Beginn und voraussichtliche Dauer (§ 5 EFZG); Gesundheitsdaten
- * dürfen nicht abgefragt werden (Art. 9 DSGVO).
+ * Eine Urlaubsverwaltung gibt es bewusst nicht. Krankmeldungen enthalten
+ * keine Diagnose: Für die Entgeltfortzahlung genügen Beginn und
+ * voraussichtliche Dauer (§ 5 EFZG); Gesundheitsdaten dürfen nicht abgefragt
+ * werden (Art. 9 DSGVO).
  */
 
-export type AbsenceType = 'vacation' | 'sick';
-export type AbsenceStatus = 'requested' | 'approved' | 'rejected' | 'reported' | 'cancelled';
+export type AbsenceType = 'sick';
+export type AbsenceStatus = 'reported' | 'cancelled';
 
 export interface Absence {
   id: string;
@@ -24,16 +24,12 @@ export interface Absence {
   fromKey: string;
   toKey: string;
   status: AbsenceStatus;
-  note?: string | null;
   auProvided?: boolean;
-  decidedBy?: string | null;
-  decidedAt?: Date | null;
-  decisionNote?: string | null;
   createdAt?: Date;
 }
 
 /** Diese Status machen eine Person in der Planung nicht verfügbar */
-export const BLOCKING_ABSENCE_STATUSES: AbsenceStatus[] = ['approved', 'reported'];
+export const BLOCKING_ABSENCE_STATUSES: AbsenceStatus[] = ['reported'];
 
 const KEY = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -63,75 +59,13 @@ export function daysBetween(fromKey: string, toKey: string): string[] {
   return out;
 }
 
-/**
- * Urlaubstage = Werktage Mo–Fr ohne gesetzliche Feiertage (5-Tage-Woche).
- * holidays: Menge von 'YYYY-MM-DD'.
- */
-export function vacationDays(fromKey: string, toKey: string, holidays: Set<string> = new Set()): number {
-  return daysBetween(fromKey, toKey).filter(k => {
-    const dow = new Date(`${k}T12:00:00Z`).getUTCDay();
-    return dow !== 0 && dow !== 6 && !holidays.has(k);
-  }).length;
-}
-
-export interface VacationBalance {
-  entitlement: number;
-  taken: number;
-  planned: number;
-  requested: number;
-  remaining: number;
-}
-
-/**
- * Resturlaub für ein Kalenderjahr. Genommen = genehmigt und vorbei,
- * geplant = genehmigt in der Zukunft, beantragt = noch offen.
- */
-export function vacationBalance(
-  year: number,
-  entitlement: number,
-  absences: Pick<Absence, 'type' | 'status' | 'fromKey' | 'toKey'>[],
-  todayKey: string,
-  holidays: Set<string> = new Set()
-): VacationBalance {
-  const yFrom = `${year}-01-01`;
-  const yTo = `${year}-12-31`;
-  let taken = 0;
-  let planned = 0;
-  let requested = 0;
-  for (const a of absences) {
-    if (a.type !== 'vacation') continue;
-    const from = a.fromKey < yFrom ? yFrom : a.fromKey;
-    const to = a.toKey > yTo ? yTo : a.toKey;
-    if (from > to) continue;
-    if (a.status === 'requested') {
-      requested += vacationDays(from, to, holidays);
-    } else if (a.status === 'approved') {
-      const pastEnd = to < todayKey ? to : prevKey(todayKey);
-      if (from <= pastEnd) taken += vacationDays(from, pastEnd < to ? pastEnd : to, holidays);
-      const futureStart = from > todayKey ? from : todayKey;
-      if (futureStart <= to) planned += vacationDays(futureStart, to, holidays);
-    }
-  }
-  return { entitlement, taken, planned, requested, remaining: entitlement - taken - planned };
-}
-
-function prevKey(k: string): string {
-  const d = new Date(`${k}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - 1);
-  return d.toISOString().slice(0, 10);
-}
-
 export const deDate = (k: string) => {
   const [y, m, d] = k.split('-');
   return `${d}.${m}.${y}`;
 };
 export const deRange = (from: string, to: string) => (from === to ? deDate(from) : `${deDate(from)} – ${deDate(to)}`);
 
-export const ABSENCE_TYPE_LABEL: Record<AbsenceType, string> = { vacation: 'Urlaub', sick: 'Krank' };
 export const ABSENCE_STATUS_LABEL: Record<AbsenceStatus, string> = {
-  requested: 'Beantragt',
-  approved: 'Genehmigt',
-  rejected: 'Abgelehnt',
   reported: 'Gemeldet',
   cancelled: 'Zurückgezogen',
 };

@@ -17,8 +17,8 @@
 import { daysBetween } from './absence';
 
 /** Kennzeichen wie auf dem Papierbogen */
-export type ZusatzCode = 'U' | 'K' | 'F' | 'G' | 'GR' | 'FZ';
-export const ZUSATZ_LEGEND = 'G = Gleitzeit, GR = Geschäftsreise, K = Krank, U = Urlaub, F = Feiertag, FZ = Fehlzeit';
+export type ZusatzCode = 'K';
+export const ZUSATZ_LEGEND = 'K = Krank (arbeitsunfähig)';
 
 export const MILOG_HINT =
   'Hinweis zu § 17 Mindestlohngesetz (MiLoG): Beginn, Ende und Dauer der täglichen Arbeitszeit sind spätestens bis zum Ablauf des siebten auf den Tag der Arbeitsleistung folgenden Kalendertages aufzuzeichnen und mindestens zwei Jahre aufzubewahren.';
@@ -42,7 +42,7 @@ export interface StatementSheet {
 }
 
 export interface StatementAbsence {
-  type: 'vacation' | 'sick';
+  type: string;
   status: string;
   fromKey: string;
   toKey: string;
@@ -72,7 +72,6 @@ export interface StatementTotals {
   sundayHours: number;
   holidayHours: number;
   workDays: number;
-  vacationDays: number;
   sickDays: number;
   byFacility: { name: string; hours: number }[];
 }
@@ -124,15 +123,14 @@ export function statementFingerprint(rows: StatementRow[]): string {
 const fmtH = (n: number) => n.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
 /**
- * Baut den Monatsnachweis. Abgelehnte Zeiten zählen nicht. Urlaub zählt an
- * Werktagen ohne Feiertag (U), Krankheit an jedem Kalendertag (K) – jeweils
- * nur, wenn an dem Tag keine Arbeitszeit erfasst ist.
+ * Baut den Monatsnachweis. Abgelehnte Zeiten zählen nicht. Krankheit zählt
+ * an jedem Kalendertag (K), sofern an dem Tag keine Arbeitszeit erfasst ist.
+ * Eine Urlaubsverwaltung gibt es nicht.
  */
 export function buildMonthlyStatement(
   month: string,
   sheets: StatementSheet[],
-  absences: StatementAbsence[] = [],
-  holidays: Set<string> = new Set()
+  absences: StatementAbsence[] = []
 ): MonthlyStatement {
   const { fromKey, toKey } = monthRangeKeys(month);
   const inMonth = sheets.filter(s => s.status !== 'rejected' && s.dayKey >= fromKey && s.dayKey <= toKey);
@@ -161,24 +159,16 @@ export function buildMonthlyStatement(
   });
 
   const worked = new Set(rows.map(r => r.dayKey));
-  let vacationDays = 0;
   let sickDays = 0;
   for (const a of absences) {
-    if (!['approved', 'reported'].includes(a.status)) continue;
+    if (a.type !== 'sick' || a.status !== 'reported') continue;
     const from = a.fromKey < fromKey ? fromKey : a.fromKey;
     const to = a.toKey > toKey ? toKey : a.toKey;
     if (from > to) continue;
     for (const k of daysBetween(from, to)) {
       if (worked.has(k)) continue;
-      const dow = new Date(`${k}T12:00:00Z`).getUTCDay();
-      if (a.type === 'vacation') {
-        if (dow === 0 || dow === 6 || holidays.has(k)) continue;
-        vacationDays++;
-        rows.push({ dayKey: k, begin: '', end: '', pauseHours: null, hours: null, zusatz: 'U', remark: 'Urlaub' });
-      } else {
-        sickDays++;
-        rows.push({ dayKey: k, begin: '', end: '', pauseHours: null, hours: null, zusatz: 'K', remark: a.auProvided ? 'Arbeitsunfähig (ärztlich festgestellt)' : 'Arbeitsunfähig' });
-      }
+      sickDays++;
+      rows.push({ dayKey: k, begin: '', end: '', pauseHours: null, hours: null, zusatz: 'K', remark: a.auProvided ? 'Arbeitsunfähig (ärztlich festgestellt)' : 'Arbeitsunfähig' });
       worked.add(k);
     }
   }
@@ -201,7 +191,6 @@ export function buildMonthlyStatement(
     sundayHours: sum(s => s.sundayNonHolidayHours),
     holidayHours: sum(s => s.holidayHours),
     workDays: new Set(inMonth.map(s => s.dayKey)).size,
-    vacationDays,
     sickDays,
     byFacility: [...facilities.entries()].map(([name, hours]) => ({ name, hours: r2(hours) })).sort((a, b) => b.hours - a.hours),
   };

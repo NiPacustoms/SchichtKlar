@@ -19,14 +19,16 @@ describe('Prüfprotokoll', () => {
     expect(auditFor('timesheetStatements', { ...base, employeeSignedAt: 1 }, { ...base, employeeSignedAt: 1, employerSignedAt: 2, employerSignedName: 'Pepe', employerSignedBy: 'a' })).toMatchObject({ action: 'statement.acknowledged', actorUid: 'a' });
     expect(auditFor('timesheetStatements', { ...base, employeeSignedAt: 1, employerSignedAt: 2 }, { ...base, employeeSignedAt: 1 })?.action).toBe('statement.acknowledgement-revoked');
   });
-  it('Abwesenheit: Entscheidung mit Grund', () => {
-    const a = { companyId: 'c', userId: 'u', type: 'vacation', fromKey: '2026-11-02', toKey: '2026-11-06', status: 'requested' };
-    expect(auditFor('absences', undefined, a)?.action).toBe('absence.requested');
-    expect(auditFor('absences', a, { ...a, status: 'rejected', decidedBy: 'adm', decisionNote: 'Engpass' })).toMatchObject({ action: 'absence.rejected', actorUid: 'adm' });
+  it('Krankmeldung: gemeldet, verlängert, zurückgezogen – Urlaub wird ignoriert', () => {
+    const a = { companyId: 'c', userId: 'u', type: 'sick', fromKey: '2026-11-02', toKey: '2026-11-03', status: 'reported' };
+    expect(auditFor('absences', undefined, a)).toMatchObject({ action: 'absence.reported', summary: 'Krankmeldung 02.11.2026 – 03.11.2026 gemeldet', actorUid: 'u' });
+    expect(auditFor('absences', a, { ...a, toKey: '2026-11-06' })?.action).toBe('absence.extended');
+    expect(auditFor('absences', a, { ...a, status: 'cancelled' })?.action).toBe('absence.cancelled');
+    expect(auditFor('absences', undefined, { ...a, type: 'vacation' })).toBeNull();
   });
   it('Personalstamm: nur lohn-/rechterelevante Felder', () => {
     const u = { companyId: 'c', displayName: 'Lea', role: 'nurse', phone: '1' };
     expect(auditFor('users', u, { ...u, phone: '2' })).toBeNull();
-    expect(auditFor('users', u, { ...u, vacationDaysPerYear: 30 })?.summary).toBe('Lea: Urlaubsanspruch geändert');
+    expect(auditFor('users', u, { ...u, personnelNumber: '17' })?.summary).toBe('Lea: Personalnummer geändert');
   });
 });

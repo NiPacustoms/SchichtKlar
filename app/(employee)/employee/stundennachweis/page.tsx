@@ -110,7 +110,7 @@ export default function EmployeeStatementPage() {
             { label: 'Summe', value: `${fmtStd(t.hours)} h` },
             { label: 'Freigegeben', value: `${fmtStd(t.approvedHours)} h`, tone: 'muted' },
             { label: 'In Prüfung', value: `${fmtStd(t.openHours)} h`, tone: t.openHours ? 'attention' : 'muted' },
-            { label: 'Urlaub / Krank', value: `${t.vacationDays} / ${t.sickDays}`, tone: 'muted', hint: 'Tage' },
+            { label: 'Krankheitstage', value: t.sickDays, tone: 'muted' },
           ]}
         />
       )}
@@ -148,7 +148,7 @@ export default function EmployeeStatementPage() {
 
       <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 2 }}>
         Mit Ihrer Unterschrift bestätigen Sie die erfassten Zeiten (wie „Unterschrift Arbeitnehmer – erfasst“ auf dem Papierbogen). Die Bestätigung der
-        Einrichtung ist je Tag vermerkt. U = Urlaub, K = Krank.
+        Einrichtung ist je Tag vermerkt. K = Krank.
       </Typography>
 
       <SignatureDialog
