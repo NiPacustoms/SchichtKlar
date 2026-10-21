@@ -18,7 +18,7 @@ const INVITE_HTML = (companyName: string, acceptLink: string) => `
 <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111;">
   <h2>Einladung zu Schichtklar</h2>
   <p>Sie wurden von <strong>${companyName}</strong> eingeladen, Schichtklar beizutreten.</p>
-  <p>Bitte klicken Sie innerhalb von 24 Stunden auf den folgenden Link, um Ihr Konto zu erstellen:</p>
+  <p>Bitte klicken Sie innerhalb von 7 Tagen auf den folgenden Link, um Ihr Konto zu erstellen:</p>
   <p>
     <a href="${acceptLink}" style="display:inline-block;background:#3b82f6;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
       Einladung annehmen
@@ -41,7 +41,7 @@ export async function sendInvitationEmailServer(
   const html = INVITE_HTML(companyName, payload.acceptLink);
   const text = [
     `Sie wurden von ${companyName} eingeladen, Schichtklar zu nutzen.`,
-    `Bitte öffnen Sie innerhalb von 24 Stunden folgenden Link: ${payload.acceptLink}`,
+    `Bitte öffnen Sie innerhalb von 7 Tagen folgenden Link: ${payload.acceptLink}`,
   ].join('\n\n');
 
   const resendKey = process.env.RESEND_API_KEY?.trim();

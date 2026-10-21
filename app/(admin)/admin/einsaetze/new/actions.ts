@@ -51,7 +51,11 @@ export async function createAssignmentWithMatchingAction(
     return { ok: false, error: 'Firebase-Projekt nicht konfiguriert' };
   }
 
-  const cfUrl = `https://us-central1-${projectId}.cloudfunctions.net/createWithMatching`;
+  // Region wie alle Functions: europe-west1 (DSGVO); lokal gegen den Emulator
+  const cfUrl =
+    process.env.NEXT_PUBLIC_USE_EMULATOR === 'true'
+      ? `http://${process.env.NEXT_PUBLIC_EMULATOR_HOST || '127.0.0.1'}:${process.env.NEXT_PUBLIC_FUNCTIONS_EMULATOR_PORT || 5001}/${projectId}/europe-west1/createWithMatching`
+      : `https://europe-west1-${projectId}.cloudfunctions.net/createWithMatching`;
 
   let res: Response;
   try {

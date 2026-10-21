@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/middleware/rateLimit';
 import * as nodeCrypto from 'node:crypto';
-import { adminDb } from '@/lib/server/firebaseAdmin';
+import { adminAuth, adminDb } from '@/lib/server/firebaseAdmin';
 import { requireAuthContext, HttpError } from '@/lib/server/requestContext';
 import { sendInvitationEmailServer } from '@/lib/server/email';
 import {
@@ -15,6 +15,8 @@ import { logger } from '@/lib/logging';
 export const runtime = 'nodejs';
 
 const ROUTE = '/api/invitations';
+/** Einladungen gelten 7 Tage – Pflegekräfte im Schichtdienst sehen Mails oft erst später */
+const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 function generateToken(length = 48): string {
   const bytes = new Uint8Array(length);
@@ -68,6 +70,17 @@ export async function POST(req: NextRequest) {
     }
 
     const emailTrim = String(email).trim().toLowerCase();
+    // Bestehendes Konto? Dann ist keine Einladung nötig (sonst scheitert die Annahme).
+    if (adminAuth) {
+      const existingUser = await adminAuth.getUserByEmail(emailTrim).catch(() => null);
+      if (existingUser) {
+        return createValidationErrorResponse(
+          'Für diese E-Mail-Adresse gibt es bereits ein Konto. Die Person kann sich direkt anmelden.',
+          ErrorCode.VALIDATION_DUPLICATE_VALUE,
+          ROUTE
+        );
+      }
+    }
     const invitationsSnap = await adminDb
       .collection('invitations')
       .where('companyId', '==', companyId)
@@ -79,13 +92,15 @@ export async function POST(req: NextRequest) {
 
     const existing = invitationsSnap.docs.find(d => !d.data().acceptedAt);
     if (existing) {
-      const d = existing.data();
+      // Offene Einladung erneut senden: gleiche ID, neuer Link, neue Frist
+      // (ein abgelaufener Link wäre sonst nicht mehr einlösbar).
       invitationId = existing.id;
-      token = d.token as string;
-      expiresAt = (d.expiresAt as { toDate?: () => Date })?.toDate?.() ?? new Date(Date.now() + 24 * 60 * 60 * 1000);
+      token = generateToken(48);
+      expiresAt = new Date(Date.now() + INVITE_TTL_MS);
+      await existing.ref.update({ token, expiresAt, resentAt: FieldValue.serverTimestamp(), createdByUserId: adminUid });
     } else {
       token = generateToken(48);
-      expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      expiresAt = new Date(Date.now() + INVITE_TTL_MS);
       const invRef = await adminDb.collection('invitations').add({
         companyId,
         email: emailTrim,

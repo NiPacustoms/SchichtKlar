@@ -436,7 +436,7 @@ export default function StaffManagementPage() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data?.message || data?.error?.userMessage || 'Fehler beim Erstellen der Einladung');
+        throw new Error(data?.message || data?.error?.message || data?.error?.userMessage || 'Fehler beim Erstellen der Einladung');
       }
       const invitationData = await res.json();
 

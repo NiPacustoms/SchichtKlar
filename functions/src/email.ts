@@ -1,4 +1,5 @@
 import * as functions from 'firebase-functions/v1';
+import { REGION } from './utils/region';
 
 let cachedTransporter: import('nodemailer').Transporter | null = null;
 
@@ -167,7 +168,7 @@ export async function sendInvitationEmailHandler(
   return sendInvitationEmailInternal(data);
 }
 
-export const sendInvitationEmailCF = functions.https.onCall(sendInvitationEmailHandler);
+export const sendInvitationEmailCF = functions.region(REGION).https.onCall(sendInvitationEmailHandler);
 
 /** HTTP-Variante von sendInvitationEmailHttp ist in index.ts definiert (lazy load). */
 
@@ -234,7 +235,7 @@ function renderAssignmentSignatureEmailHtml(payload: AssignmentSignatureEmailPay
   `;
 }
 
-export const sendAssignmentSignatureEmailCF = functions.https.onCall(async (data: AssignmentSignatureEmailPayload, context) => {
+export const sendAssignmentSignatureEmailCF = functions.region(REGION).https.onCall(async (data: AssignmentSignatureEmailPayload, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Authentication required.');
   }

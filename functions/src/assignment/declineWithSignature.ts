@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
 import { logger } from '../utils/logger';
 import { sendUserPushNotification } from '../pushNotifications';
+import { REGION } from '../utils/region';
 
 const db = admin.firestore();
 const storage = admin.storage();
@@ -22,7 +23,7 @@ const DECLINE_REASONS: Record<string, string> = {
  * Mitarbeiter lehnt einen published-Einsatz ab: Grund + Canvas-Signatur.
  * Speichert in declines-Array und Subcollection, optional PDF; benachrichtigt nächsten Kandidaten per FCM.
  */
-export const declineWithSignature = functions.https.onCall(async (data: DeclineWithSignaturePayload, context) => {
+export const declineWithSignature = functions.region(REGION).https.onCall(async (data: DeclineWithSignaturePayload, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }

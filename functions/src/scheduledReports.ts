@@ -8,6 +8,7 @@ import { FieldValue, getFirestore, Timestamp } from 'firebase-admin/firestore';
 import * as functions from 'firebase-functions/v1';
 import { sendTemplatedEmail } from './email';
 import { logger } from './utils/logger';
+import { REGION } from './utils/region';
 
 const db = getFirestore();
 
@@ -117,7 +118,7 @@ async function runScheduledReports(onlyCompanyId?: string): Promise<void> {
 }
 
 /** Läuft täglich um 6:00 Uhr Europe/Berlin */
-export const scheduledReportsJob = functions.pubsub
+export const scheduledReportsJob = functions.region(REGION).pubsub
   .schedule('0 6 * * *')
   .timeZone('Europe/Berlin')
   .onRun(async () => {
@@ -125,7 +126,7 @@ export const scheduledReportsJob = functions.pubsub
   });
 
 /** Manueller Aufruf für Tests/Admin */
-export const runScheduledReportsNow = functions.https.onCall(async (_data, context) => {
+export const runScheduledReportsNow = functions.region(REGION).https.onCall(async (_data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Nicht angemeldet');
   }

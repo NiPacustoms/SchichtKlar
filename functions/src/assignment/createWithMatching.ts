@@ -5,6 +5,7 @@ import { logger } from '../utils/logger';
 import { parseShiftToUTC } from '../utils/timeUtils';
 import { sendUserPushNotification } from '../pushNotifications';
 import { getAvailableEmployeeIds, isUserAvailableForSlot } from './availability';
+import { REGION } from '../utils/region';
 
 const db = admin.firestore();
 
@@ -26,7 +27,7 @@ export interface CreateWithMatchingPayload {
  * Erstellt einen Einsatz (Assignment) mit Status published, findet 5–10 passende MA
  * und sendet FCM an alle Kandidaten.
  */
-export const createWithMatching = functions.https.onCall(async (data: CreateWithMatchingPayload, context) => {
+export const createWithMatching = functions.region(REGION).https.onCall(async (data: CreateWithMatchingPayload, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }

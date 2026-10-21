@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
+import { REGION } from '../utils/region';
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -8,7 +9,7 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 // Geplanter Task: löscht abgelaufene oder benutzte Export-Tokens regelmäßig
-export const cleanupExportTokens = functions.pubsub.schedule('every 6 hours').onRun(async () => {
+export const cleanupExportTokens = functions.region(REGION).pubsub.schedule('every 6 hours').onRun(async () => {
   const now = admin.firestore.Timestamp.now();
 
   // Abgelaufene Tokens

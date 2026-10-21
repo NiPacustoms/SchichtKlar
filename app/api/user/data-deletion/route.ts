@@ -69,14 +69,11 @@ export async function POST(req: NextRequest) {
 
     for (const doc of timesheetsSnapshot.docs) {
       const data = doc.data();
-      // Approved/submitted Timesheets müssen behalten werden (GoBD)
+      // Eingereichte/freigegebene Zeiten sind Lohnunterlagen (MiLoG § 17, AO § 147):
+      // Sie bleiben der Person zugeordnet, werden aber gesperrt (Art. 17 Abs. 3 b DSGVO).
+      // Eine Anonymisierung der userId würde die Lohnabrechnung unprüfbar machen.
       if (data.status === 'approved' || data.status === 'submitted') {
-        // Anonymisieren statt löschen
-        batch.update(doc.ref, {
-          userId: `[ANONYMISIERT-${userId.substring(0, 8)}]`,
-          anonymized: true,
-          anonymizedAt: new Date(),
-        });
+        batch.update(doc.ref, { legalHold: true, deletionRequestedAt: new Date() });
         anonymizeCount++;
       } else {
         // Nicht-approved können gelöscht werden
@@ -86,13 +83,22 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Normale Daten LÖSCHEN
-    // Assignments (nicht GoBD-relevant)
+    // Einsätze mit Einsatzmitteilung (§ 11 AÜG) sind Nachweise und bleiben gesperrt
+    // erhalten; nur nie angenommene Anfragen/Angebote werden gelöscht.
     const assignmentsSnapshot = await adminDb
       .collection('assignments')
       .where('userId', '==', userId)
       .get();
-    assignmentsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
-    deleteCount += assignmentsSnapshot.docs.length;
+    for (const doc of assignmentsSnapshot.docs) {
+      const st = String(doc.data().status ?? '');
+      if (['requested', 'published', 'declined', 'cancelled'].includes(st)) {
+        batch.delete(doc.ref);
+        deleteCount++;
+      } else {
+        batch.update(doc.ref, { legalHold: true, deletionRequestedAt: new Date() });
+        anonymizeCount++;
+      }
+    }
 
     // Documents (außer GoBD-relevante)
     const documentsSnapshot = await adminDb
@@ -165,7 +171,7 @@ export async function POST(req: NextRequest) {
       message: 'Daten wurden gelöscht oder anonymisiert',
       deletedCount: deleteCount,
       anonymizedCount: anonymizeCount,
-      note: 'GoBD-konforme Daten (approved Timesheets u. Ä.) wurden anonymisiert statt gelöscht (10 Jahre Aufbewahrungspflicht)',
+      note: 'Aufbewahrungspflichtige Nachweise (eingereichte/freigegebene Zeiten, Einsätze) bleiben gesperrt erhalten (MiLoG § 17, AO § 147, Art. 17 Abs. 3 b DSGVO).',
     });
   } catch (error) {
     logger.error(

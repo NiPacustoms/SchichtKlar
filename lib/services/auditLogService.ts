@@ -175,7 +175,8 @@ const DEFAULT_LIMIT = 100;
  */
 export function subscribeAuditLogs(
   options: { companyId?: string; limit?: number } | undefined,
-  callback: (logs: AuditLogViewItem[]) => void
+  callback: (logs: AuditLogViewItem[]) => void,
+  onError?: (e: Error) => void
 ): () => void {
   const db = getDb();
   if (!db) {
@@ -199,6 +200,9 @@ export function subscribeAuditLogs(
   const unsub = onSnapshot(q, (snap) => {
     const data = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) })) as AuditLogViewItem[];
     callback(data);
+  }, (e) => {
+    callback([]);
+    onError?.(e);
   });
   return () => unsub();
 }

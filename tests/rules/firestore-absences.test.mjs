@@ -85,6 +85,12 @@ await check('Pflegekraft ändert eigenen Stundenlohn', 'DENY', () => updateDoc(d
 await check('Pflegekraft ändert eigene Telefonnummer', 'ALLOW', () => updateDoc(doc(nurseA, 'users/nurseA'), { phone: '0151 1' }));
 await check('Disposition setzt Urlaubsanspruch', 'ALLOW', () => updateDoc(doc(adminA, 'users/nurseA'), { vacationDaysPerYear: 30 }));
 
+console.log('--- Firmen-Stammdaten ---');
+await env.withSecurityRulesDisabled(async ctx => { await setDoc(doc(ctx.firestore(), 'companies/firmaA'), { name: 'A', holidayState: 'NW' }); await setDoc(doc(ctx.firestore(), 'companies/firmaB'), { name: 'B' }); });
+await check('Pflegekraft liest eigene Firma', 'ALLOW', () => getDoc(doc(nurseA, 'companies/firmaA')));
+await check('Pflegekraft liest fremde Firma', 'DENY', () => getDoc(doc(nurseA, 'companies/firmaB')));
+await check('Disposition ändert Firma direkt', 'DENY', () => updateDoc(doc(adminA, 'companies/firmaA'), { holidayState: 'BY' }));
+
 await env.cleanup();
 console.log(failures ? `\n${failures} Fehler` : '\nAlle Abwesenheits-Regeln OK');
 process.exit(failures ? 1 : 0);

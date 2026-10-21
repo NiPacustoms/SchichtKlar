@@ -1,4 +1,4 @@
-import { db, getDb, auth } from '@/lib/firebase';
+import { db, getDb, auth, getAuthSafe } from '@/lib/firebase';
 import { ValidationError, ErrorCode, createAppError } from '@/lib/errors';
 import { offlineQueueService } from './offlineQueue';
 import { getCompanyIdFromAuth } from '@/lib/utils/companyId';
@@ -650,6 +650,8 @@ export const timesheetService = {
       await updateDoc(timesheetRef, {
         status: 'rejected',
         rejectionReason,
+        // für das Prüfprotokoll (wer hat abgelehnt)
+        rejectedBy: getAuthSafe()?.currentUser?.uid ?? null,
         updatedAt: serverTimestamp(),
       });
     } catch (error) {

@@ -2,6 +2,9 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator, type Auth } from 'firebase/auth';
 import { initializeFirestore, connectFirestoreEmulator, type Firestore } from 'firebase/firestore';
 import { getFunctions, connectFunctionsEmulator, type Functions } from 'firebase/functions';
+
+/** Alle Cloud Functions laufen in der EU (DSGVO) – muss zu functions/src/utils/region.ts passen */
+export const FUNCTIONS_REGION = 'europe-west1';
 import { getStorage as getFirebaseStorage, connectStorageEmulator, type FirebaseStorage } from 'firebase/storage';
 import { logger } from '@/lib/utils/logger';
 // Messaging wird komplett dynamisch importiert, da es nur im Browser verfügbar ist
@@ -70,7 +73,7 @@ if (typeof window !== 'undefined' && app) {
       ignoreUndefinedProperties: true,
     });
     storage = getFirebaseStorage(app);
-    functions = getFunctions(app);
+    functions = getFunctions(app, FUNCTIONS_REGION);
     
     // Messaging wird nicht mehr hier initialisiert, um Webpack-Chunk-Probleme zu vermeiden
     // Verwende stattdessen pushNotifications.ts für Messaging-Initialisierung
@@ -105,7 +108,7 @@ export function getAuthSafe(): Auth | null {
         });
       }
       if (!storage) storage = getFirebaseStorage(app);
-      if (!functions) functions = getFunctions(app);
+      if (!functions) functions = getFunctions(app, FUNCTIONS_REGION);
     } catch (error) {
       logger.warn('⚠️ Firebase services lazy init failed:', error);
     }
@@ -114,9 +117,8 @@ export function getAuthSafe(): Auth | null {
 }
 
 /**
- * Functions in der EU-Region (europe-west1) – für neue, öffentlich aufrufbare
- * Funktionen wie den Freigabe-Link. Bestehende Callables laufen noch in der
- * Standardregion (siehe KNOWN_LIMITATIONS).
+ * Functions-Instanz der EU-Region (identisch mit `functions`, alle Callables
+ * laufen in europe-west1). Lazy, damit öffentliche Seiten ohne Login sie nutzen.
  */
 let functionsEU: Functions | null = null;
 export function getFunctionsEU(): Functions | null {
@@ -124,7 +126,7 @@ export function getFunctionsEU(): Functions | null {
   if (functionsEU) return functionsEU;
   getAuthSafe();
   if (!app) return null;
-  functionsEU = getFunctions(app, 'europe-west1');
+  functionsEU = functions ?? getFunctions(app, FUNCTIONS_REGION);
   if (process.env.NEXT_PUBLIC_USE_EMULATOR === 'true') {
     try {
       connectFunctionsEmulator(

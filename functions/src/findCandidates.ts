@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
 import { assertSameCompany, requireAdmin } from './utils/tenant';
 import { berlinDayKey, DAY_RULE_ACTIVE_STATUSES, formatDayKeyDE } from './utils/dayRule';
+import { REGION } from './utils/region';
 
 const db = admin.firestore();
 
@@ -9,7 +10,7 @@ const db = admin.firestore();
  * Cloud Function für Kandidatensuche bei Schichtzuweisung
  * Filtert nach Qualifikationen, Verfügbarkeit und Erfahrung
  */
-export const findCandidates = functions.https.onCall(async (data, context) => {
+export const findCandidates = functions.region(REGION).https.onCall(async (data, context) => {
   const { checkOverlap, parseShiftToUTC } = await import('./utils/timeUtils');
 
   if (!context.auth) {

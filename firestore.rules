@@ -242,7 +242,7 @@ service cloud.firestore {
       return !request.resource.data.keys().hasAny(['approvedBy', 'approvedAt']);
     }
     function tsApprovalFieldsUntouched() {
-      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['approvedBy', 'approvedAt', 'rejectionReason']);
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['approvedBy', 'approvedAt', 'rejectionReason', 'rejectedBy']);
     }
     function tsHasFacilitySignature() {
       return request.resource.data.get('facilitySignatureUrl', '') is string &&
@@ -593,6 +593,13 @@ service cloud.firestore {
         request.auth.uid in
           get(/databases/$(database)/documents/channels/$(request.resource.data.channelId)).data.participants;
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Firmen-Stammdaten (Name, Bundesland für Feiertage): lesen nur die eigene
+    // Firma; Schreiben nur serverseitig.
+    match /companies/{companyId} {
+      allow read: if isAuthenticated() && getRequesterCompanyId() == companyId;
+      allow write: if false;
     }
 
     // ── Abwesenheiten (Urlaub, Krankheit) ─────────────────────────────────
