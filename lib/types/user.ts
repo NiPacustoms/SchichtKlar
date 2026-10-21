@@ -15,7 +15,7 @@ export interface User {
   phone?: string;
   qualifications: string[];
   workingHoursPerWeek?: number;
-  /** Personalnummer in der Lohnabrechnung (DATEV) */
+  /** Personalnummer (wie beim Lohnbüro, erscheint auf dem Stundennachweis) */
   personnelNumber?: string;
   /** Urlaubsanspruch in Arbeitstagen pro Jahr (5-Tage-Woche) */
   vacationDaysPerYear?: number;

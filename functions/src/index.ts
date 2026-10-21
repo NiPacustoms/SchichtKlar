@@ -85,7 +85,6 @@ export {
   auditStatements,
   auditAbsences,
   auditAssignments,
-  auditPayrollSettings,
   auditUsers,
 } from './auditTrail';
 export { onTimesheetWrite } from './weeklyLimitOnTimesheetWrite';

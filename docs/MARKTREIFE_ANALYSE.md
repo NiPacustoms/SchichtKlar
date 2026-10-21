@@ -98,7 +98,7 @@ npm run lint
 - ✅ Test-Struktur gut organisiert (admin, dispatcher, nurse, shared)
 
 **Coverage:**
-- Admin-Tests: Dashboard, Mitarbeiter, Einrichtungen, Schichten, Berichte, Lohnexport
+- Admin-Tests: Dashboard, Mitarbeiter, Einrichtungen, Schichten, Berichte, Stundennachweise
 - Dispatcher-Tests: Dashboard, Schicht-Zuweisung, Dokumente
 - Nurse-Tests: Dashboard, Zeiterfassung, Dienstplan, Dokumente, Assignments
 - Shared-Tests: Auth-Flow, Navigation
@@ -140,7 +140,7 @@ npm run lint
 - ✅ Arbeitszeiterfassung (mit GPS, Pausen, ArbZG-Compliance)
 - ✅ Signatur-Workflow (digitale Unterschriften)
 - ✅ Live-Überwachung (Admin-Dashboard)
-- ✅ Lohnexport DATEV (freigegebene Stunden je Lohnart; keine Lohnsteuerberechnung in der App)
+- ✅ Stundennachweis als PDF fürs Lohnbüro (keine Lohnsteuerberechnung, kein DATEV-Export in der App)
 - ✅ Dokumentenverwaltung
 - ✅ Berichte & Exporte (PDF, Excel)
 

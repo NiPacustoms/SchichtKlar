@@ -15,7 +15,7 @@ Kurzanleitung für die täglichen Abläufe. Alle Daten und Cloud Functions liege
 1. **Personal → Mitarbeiter → Einladen**, E-Mail-Adresse eingeben.
 2. Die Person bekommt einen Link (7 Tage gültig) und legt damit ihr Passwort fest. Erneutes Einladen erzeugt einen neuen Link.
 3. Für Adressen, zu denen es schon ein Konto gibt, lehnt die App die Einladung ab; die Person meldet sich direkt an.
-4. Im Personalstamm (**Bearbeiten**) eintragen: **Personalnummer** (wie in DATEV, für den Lohnexport), **Urlaubsanspruch (Tage/Jahr)**, Stundenlohn und Qualifikationen.
+4. Im Personalstamm (**Bearbeiten**) eintragen: **Personalnummer** (wie beim Lohnbüro, steht auf dem Stundennachweis), **Urlaubsanspruch (Tage/Jahr)**, Stundenlohn und Qualifikationen.
 
 ## Planen
 
@@ -47,15 +47,13 @@ Digitaler Ersatz für den Papierbogen „Arbeitszeiterfassung / Stunden-Nachweis
 3. Ändern sich Zeiten nach der Unterschrift, steht der Nachweis auf „Geändert“, und die Pflegekraft muss neu unterschreiben.
 4. **Alle als PDF:** ein Sammel-PDF aller Nachweise für das Lohnbüro.
 
-## Lohnexport DATEV (Personal → Stunden → „Lohnexport DATEV“)
+## Lohnbüro
 
-- Einmalig Beraternummer, Mandantennummer, Bearbeitungsschlüssel und Lohnarten vom Steuerbüro eintragen.
-- Exportiert werden nur freigegebene Stunden; Personen ohne Personalnummer werden gemeldet, nicht still übergangen.
-- Vor dem ersten Echtlauf eine Testdatei mit dem Steuerbüro abstimmen.
+- Die App rechnet keine Löhne und exportiert nicht nach DATEV. Fürs Lohnbüro: **Stundennachweise → Alle als PDF** (anerkannte Monatsnachweise) und **Stunden → CSV exportieren**.
 
 ## Prüfprotokolle (Auswertung → Prüfprotokolle)
 
-- Der Server schreibt automatisch mit, wer wann was getan hat: Zeiten (erfasst, eingereicht, freigegeben, abgelehnt, geändert, von der Einrichtung bestätigt), Stundennachweise (unterschrieben, anerkannt, zurückgenommen), Abwesenheiten, Einsätze, Lohnexport-Einstellungen und Stammdaten (Rolle, Stundenlohn, Personalnummer, Urlaubsanspruch).
+- Der Server schreibt automatisch mit, wer wann was getan hat: Zeiten (erfasst, eingereicht, freigegeben, abgelehnt, geändert, von der Einrichtung bestätigt), Stundennachweise (unterschrieben, anerkannt, zurückgenommen), Abwesenheiten, Einsätze und Stammdaten (Rolle, Stundenlohn, Personalnummer, Urlaubsanspruch).
 - Filter nach Bereich, Suche nach Person oder Vorgang, **CSV-Export** für Prüfungen.
 - Einträge kann niemand ändern oder löschen, auch kein Admin.
 

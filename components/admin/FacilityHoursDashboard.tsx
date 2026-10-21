@@ -38,7 +38,6 @@ import type { FacilityHoursSummary } from '@/lib/services/facilityHours';
 import { AppError } from '@/lib/errors';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatStrip } from '@/components/ui/StatStrip';
-import { PayrollExportDialog } from '@/components/admin/PayrollExportDialog';
 
 interface FacilityHoursDashboardProps {
   facilityId?: string;
@@ -77,7 +76,6 @@ export function FacilityHoursDashboard({ facilityId }: FacilityHoursDashboardPro
   const [mode, setMode] = useState<RangeMode>('week');
   const [anchor, setAnchor] = useState(() => new Date());
   const [custom, setCustom] = useState<[Date | null, Date | null]>([null, null]);
-  const [payrollOpen, setPayrollOpen] = useState(false);
 
   const [from, to] = useMemo<[Date | undefined, Date | undefined]>(() => {
     if (mode === 'custom') {
@@ -145,9 +143,6 @@ export function FacilityHoursDashboard({ facilityId }: FacilityHoursDashboardPro
             </Tooltip>
             <Button variant="outlined" startIcon={<FileDownloadOutlined />} onClick={exportCsv} disabled={isLoading || rows.length === 0}>
               CSV exportieren
-            </Button>
-            <Button variant="contained" startIcon={<FileDownloadOutlined />} onClick={() => setPayrollOpen(true)}>
-              Lohnexport DATEV
             </Button>
           </>
         }
@@ -321,7 +316,6 @@ export function FacilityHoursDashboard({ facilityId }: FacilityHoursDashboardPro
           </Box>
         </>
       )}
-      <PayrollExportDialog open={payrollOpen} onClose={() => setPayrollOpen(false)} />
     </LocalizationProvider>
   );
 }

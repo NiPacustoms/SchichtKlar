@@ -127,7 +127,7 @@ async function main() {
       role: 'nurse',
       qualifications: n.q,
       workingHoursPerWeek: n.h,
-      // eine Person ohne Personalnummer, damit der Lohnexport den Hinweis zeigt
+      // eine Person ohne Personalnummer (Stundennachweis ohne Nummer)
       ...(n.uid === 'n-elif' ? {} : { personnelNumber: String(pnr) }),
       vacationDaysPerYear: n.uid === 'n-elif' ? 28 : 30,
       wochenstundenLimit: 48,

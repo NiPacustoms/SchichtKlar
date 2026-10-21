@@ -678,22 +678,6 @@ export const timesheetService = {
     await deleteDoc(timesheetRef);
   },
 
-  /** Freigegebene Zeiten der Firma in einem Zeitraum (Lohnexport) */
-  async listApprovedInRange(companyId: string, start: Date, end: Date): Promise<Timesheet[]> {
-    if (!db || !companyId) return [];
-    const snap = await getDocs(
-      query(
-        collection(getDb(), COLLECTION_NAME),
-        where('companyId', '==', companyId),
-        where('status', '==', 'approved'),
-        where('date', '>=', start),
-        where('date', '<=', end),
-        orderBy('date', 'asc')
-      )
-    );
-    return snap.docs.map(d => this.mapDocToTimesheet({ id: d.id, data: () => d.data() }));
-  },
-
   /** Prüfliste der Disposition: Zeiten der Firma nach Status, neueste zuerst */
   async listForReview(
     companyId: string,

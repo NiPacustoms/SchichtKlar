@@ -4,7 +4,7 @@
  * Protokolliert die für GoBD/AÜG und Lohn relevanten Vorgänge:
  * Zeiten (eingereicht, freigegeben, abgelehnt, geändert), Monatsnachweise
  * (unterschrieben, anerkannt), Abwesenheiten (beantragt, entschieden),
- * Einsätze (Status), Lohnexport-Einstellungen und Personalstamm
+ * Einsätze (Status) und Personalstamm
  * (Rolle, Stundenlohn, Personalnummer, Urlaubsanspruch).
  *
  * auditLogs sind per Rules unveränderlich (create/update/delete: false).
@@ -115,8 +115,6 @@ export function auditFor(collection: string, before: Data, after: Data): AuditDe
       if (changed(before, after, 'userId')) return { action: 'assignment.reassigned', summary: `Einsatz${when} neu zugewiesen`, actorUid: actor(after), fields: ['userId'] };
       return null;
     }
-    case 'payrollSettings':
-      return { action: 'payroll.settings-changed', summary: 'Lohnexport-Einstellungen geändert', fields: ['beraterNr', 'mandantenNr', 'bsStunden', 'lohnarten'] };
     case 'users': {
       if (!before || !after) return null;
       const fields = ['role', 'hourlyRate', 'personnelNumber', 'vacationDaysPerYear', 'active'].filter(f => changed(before, after, f));
@@ -141,7 +139,7 @@ function handler(collection: string) {
     const after = event.data?.after?.exists ? event.data.after.data() : undefined;
     const decision = auditFor(collection, before, after);
     if (!decision) return;
-    const companyId = str((after ?? before)?.companyId) || (collection === 'payrollSettings' ? Object.values(event.params)[0] : '');
+    const companyId = str((after ?? before)?.companyId);
     if (!companyId) return;
     const id = Object.values(event.params)[0];
     try {
@@ -167,5 +165,4 @@ export const auditTimesheets = onDocumentWritten('timesheets/{id}', handler('tim
 export const auditStatements = onDocumentWritten('timesheetStatements/{id}', handler('timesheetStatements'));
 export const auditAbsences = onDocumentWritten('absences/{id}', handler('absences'));
 export const auditAssignments = onDocumentWritten('assignments/{id}', handler('assignments'));
-export const auditPayrollSettings = onDocumentWritten('payrollSettings/{id}', handler('payrollSettings'));
 export const auditUsers = onDocumentWritten('users/{id}', handler('users'));
