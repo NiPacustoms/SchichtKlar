@@ -1,6 +1,6 @@
 # Bekannte Einschränkungen & offene Punkte
 
-**Stand:** 18.10.2026 · Schichtklar
+**Stand:** 21.10.2026 · Schichtklar
 
 Ehrliche Auflistung aller bekannten Einschränkungen, offenen Entscheidungen und bewusst zurückgestellten Arbeiten. Priorisiert nach Dringlichkeit für einen Käufer.
 
@@ -76,8 +76,25 @@ Mehrere Callables prüften nur „ist Admin", nicht „Admin **derselben Firma**
 | H2 | **Annahme ausgeschriebener Einsätze** (Matching) scheiterte an den Rules; zudem keine Sperre gegen Doppelannahme. | behoben: Callable `acceptPublishedAssignment` (Transaktion), Leserecht für Kandidat:innen |
 | H3 | Mitarbeitende konnten eigene Einsätze per `userId` auf andere Personen umschreiben. | behoben (Rules + Test) |
 | H4 | Escalation-Rules-Test endete auch bei Lecks erfolgreich; `@firebase/rules-unit-testing` fehlte als Dependency. | behoben |
-| H5 | ⚖️ **Callable Functions laufen in `us-central1`** (keine Region gesetzt; Client nutzt Default). Personenbezogene Daten werden damit in den USA verarbeitet – passt nicht zur DSGVO-/EU-Positionierung. Umzug nach `europe-west1` braucht koordiniertes Deploy (Functions + Client-Region + Server-Action-URL in `app/(admin)/admin/einsaetze/new/actions.ts`). | **offen – Entscheidung Eigentümer** |
+| H5 | ~~Callable Functions in `us-central1`~~ | **ERLEDIGT (21.10.2026):** Alle Functions (v1 über `functions.region(REGION)`, v2 über `setGlobalOptions`) laufen in `europe-west1`; Client und Server-Action rufen dort auf. Beim Deploy die alten US-Functions löschen lassen (GO_LIVE_CHECKLIST §2). |
 
 ## E. Optionale Ausbaustufen (Marktrecherche)
 
 PDL-Freigabe per Magic-Link (Remote-Bestätigung ohne Account), §82c-Satzdeckel-Monitor, Equal-Pay-/Höchstüberlassungs-Countdown, DATEV-Export-Vertiefung. Kein Blocker – Differenzierungsmerkmale.
+
+## I. Fertigstellung (21.10.2026)
+
+| # | Thema | Status |
+|---|---|---|
+| I1 | **Abwesenheit blockierte die Planung nicht**: Personen mit genehmigtem Urlaub oder Krankmeldung konnten über `assignShift`, `requestShift` und `acceptPublishedAssignment` eingeplant werden. | behoben (Fehler `ABSENT`, Szenario-Test) |
+| I2 | ⚠️ **DSGVO-Callables ohne Rechteprüfung**: Jede angemeldete Person konnte mit `exportUserData`/`deleteUserData` Daten von Kolleg:innen derselben Firma abrufen oder endgültig löschen (inkl. Auth-Konto). | behoben: fremde Daten nur durch Admins, endgültiges Löschen nur durch Admins, Aufbewahrungspflichtiges bleibt gesperrt (`legalHold`), Batches > 500 aufgeteilt |
+| I3 | **Selbstlöschung anonymisierte Lohnunterlagen** (`userId` überschrieben) und löschte angenommene Einsätze (AÜG-Nachweis). | behoben: Sperrvermerk statt Anonymisierung |
+| I4 | **Prüfprotokoll war leer**: Audit-Trigger waren Platzhalter, `/api/audit/logs` existierte nicht, die Seite fragte firmenübergreifend ab (Berechtigungsfehler). | behoben: serverseitige Trigger (`auditTrail.ts`), API-Route, lesbare Ansicht mit Filter und CSV |
+| I5 | **Einladungsvorschau** (`/api/invitations/[token]`) nutzte das Client-SDK auf dem Server → Fehler 500; abgelaufene Einladungen wurden mit altem Link erneut verschickt; bestehende Konten scheiterten ohne verständliche Meldung. | behoben (Admin-SDK, neuer Link bei erneutem Senden, 7 Tage gültig, klare Meldungen) |
+| I6 | Kurz-URLs (`/einrichtungen`, `/dokumente`, `/zeiten`, `/dienstplan`, `/zeiterfassung`) zeigten der Disposition die Mitarbeiterseite. | behoben (Weiterleitung je Rolle) |
+| I7 | Ungenutzte Proxy-Routen (`/api`, `/api/cf`, `/api/proxy-create`, `/api/assignment/*`) und die Demo-Seite `/customers` vergrößerten die Angriffsfläche. | entfernt |
+| I8 | Urlaubstage zählten nur bundesweite Feiertage. | behoben (Bundesland aus `companies/{id}`, Lesen der eigenen Firma erlaubt) |
+| I9 | `functions/test/dsr.test.ts` lief nie (veraltete Handler-Exporte). | ersetzt durch Szenario-Simulation (`test/simulation.emulator.ts`, S4) |
+| I10 | Optional: Mail-Queue mit Zustellstatus (Idee aus geschlossenem PR #8). | offen – Ausbaustufe |
+| I11 | Optional: Überstunden-Übertrag aus dem Vormonat im Stundennachweis. | offen – Ausbaustufe |
+

@@ -1,40 +1,43 @@
-# Go‑Live Checkliste
+# Go-Live-Checkliste
 
-## Technik
+Stand: Oktober 2026. Reihenfolge einhalten; alles aus dem Projektordner auf dem Mac (`~/Desktop/Apps/SchichtKlar`) nach `git pull`.
 
-- [ ] Health `/api/health` liefert 200, Status-Seite `/status` grün
-- [ ] CSP/Security-Header aktiv, keine Mixed-Content-Warnungen
-- [ ] Rate Limiting aktiv für `/api` & `/auth`
-- [ ] Firestore-Rules mit `tenantId`-Isolation verifiziert (neg./pos. Tests)
-- [ ] Backups funktionsfähig (Firestore/Storage), letzter Erfolg < 24h
-- [ ] Restore-Drill dokumentiert (RTO ≤ 2h, RPO ≤ 24h)
+## 1. Einmalig vorbereiten
 
-## Sicherheit & Compliance
+- [ ] **Firmen-Dokument** in der Firebase-Konsole (Firestore → `companies/<eure companyId>`): `holidayState: "NW"` setzen (Feiertage NRW für Zuschläge und Urlaubstage).
+- [ ] **Impressums-/Firmendaten** (`NEXT_PUBLIC_COMPANY_*`, inkl. Steuernummer und Bank) im Hosting setzen. Sie erscheinen in der Fußzeile von Einsatzmitteilung und Stundennachweis.
+- [ ] **E-Mail:** `RESEND_API_KEY` (und `RESEND_FROM` mit eurer Domain) für Einladungen setzen; SMTP-Zugang für die Benachrichtigungen der Cloud Functions.
+- [ ] **AVV mit Google Cloud** abschließen (alle Daten und Functions liegen in `europe-west1`).
 
-- [ ] DSGVO-Prozesse dokumentiert (`DSGVO_PROZESSE.md`)
-- [ ] Datenexport (`exportUserData`) & Löschung (`deleteUserData`) getestet
-- [ ] Audit-Logs aktiv, Viewer erreichbar (`/admin/audit-logs`)
-- [ ] ASVS-Checkliste geprüft, keine offenen High Findings
+## 2. Deploy
 
-## Observability
+```bash
+cd ~/Desktop/Apps/SchichtKlar
+git pull
+npm ci && (cd functions && npm ci)
+firebase deploy --only functions,firestore:rules,firestore:indexes,hosting
+```
 
-- [ ] Alerts für Health/Fehlerraten/Latenz gesetzt
-- [ ] SLO/SLA kommuniziert (`SLO_SLA.md`)
+- [ ] Die CLI fragt, ob Functions in **`us-central1`** gelöscht werden sollen → **mit „y“ bestätigen**. Alle Functions laufen jetzt in Europa. Die alten US-Kopien würden sonst parallel weiterlaufen: doppelte Benachrichtigungen und Datenverarbeitung in den USA.
+- [ ] Falls noch vorhanden: `firebase functions:delete deleteAllAssignments --region us-central1`.
+- [ ] Am besten außerhalb der Dienstzeiten deployen: In den wenigen Minuten zwischen Functions- und Hosting-Deploy können ältere offene App-Fenster Funktionen nicht aufrufen. Danach die Seite neu laden.
 
-## Accounts & Rollen
+## 3. Nach dem Deploy prüfen (10 Minuten)
 
-- [ ] Admin/Dispatcher/Nurse Test-Accounts vorhanden
-- [ ] RBAC: `tenantId`/`facilityIds` im Client wirksam
+- [ ] `/api/health` liefert 200, `/systemstatus` ist grün.
+- [ ] Als Disposition: Personal → Abwesenheiten, Stundennachweise und Prüfprotokolle öffnen – ohne Fehlermeldung.
+- [ ] Test-Pflegekraft einladen → Link öffnen → Passwort setzen → landet im Arbeitsplatz.
+- [ ] Testschicht zuweisen → Einsatzmitteilung erscheint bei der Pflegekraft; Unterschrift → PDF.
+- [ ] Zeiten erfassen → einreichen → freigeben → im Prüfprotokoll steht „Zeiten vom … freigegeben“ mit Namen.
+- [ ] Lohnexport DATEV: Einstellungen vom Steuerbüro eintragen und eine **Testdatei** an das Steuerbüro geben.
 
-## Dokumentation
+## 4. Vor dem zweiten Kunden (Mandant)
 
-- [ ] Admin Guide aktuell (`ADMIN_GUIDE.md`)
-- [ ] Changelog gepflegt (`CHANGELOG.md`)
-- [ ] Tests-Doku (`TESTS.md`) vorhanden
+- [ ] Einmal `/api/admin/backfill-company-ids?confirm=BACKFILL` als Admin ausführen, danach die `null`-Toleranz in `belongsToSameCompany` (firestore.rules) entfernen (siehe KNOWN_LIMITATIONS D1).
 
-## Betrieb
+## Bereits erledigt (Stand dieser Version)
 
-- [ ] Env/Secrets validiert (`scripts/validate-env.js`)
-- [ ] Rollout-Plan: Pilot → GA, Kommunikationsplan vorbereitet
-
-Abschluss: Wenn alle Punkte gecheckt sind, Go‑Live freigeben.
+- Mandantentrennung in Rules und Functions, mit Tests (Rules: 8 Suites, Functions-Emulator: 5 Suites inkl. Szenario-Simulation).
+- Debug-Seiten und -APIs sind in Produktion gesperrt; ungenutzte Proxy-Routen sind entfernt.
+- DSGVO-Auskunft/-Löschung nur für eigene Daten bzw. durch die Disposition; Aufbewahrungspflichten werden eingehalten.
+- Prüfprotokoll serverseitig und unveränderlich.

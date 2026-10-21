@@ -29,7 +29,10 @@ function AcceptInviteContent() {
         const res = await fetch(`/api/invitations/${encodeURIComponent(token)}`);
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          throw new Error(data?.message || 'Einladung ungültig');
+          throw new Error(
+            data?.message || data?.error?.message || data?.error?.userMessage ||
+              (res.status === 404 ? 'Diese Einladung gibt es nicht (mehr).' : 'Einladung ungültig')
+          );
         }
         const data = await res.json();
         if (mounted) setMeta(data);
@@ -64,7 +67,7 @@ function AcceptInviteContent() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data?.message || 'Fehler bei der Einladung');
+        throw new Error(data?.message || data?.error?.message || data?.error?.userMessage || 'Fehler bei der Einladung');
       }
       const created = (await res.json().catch(() => ({}))) as { email?: string };
 
@@ -119,31 +122,38 @@ function AcceptInviteContent() {
             {error}
           </Alert>
         )}
-        <Box
-          component="form"
-          onSubmit={onSubmit}
-          sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
-        >
-          <TextField
-            label="Passwort"
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            fullWidth
-          />
-          <TextField
-            label="Passwort bestätigen"
-            type="password"
-            value={confirmPassword}
-            onChange={e => setConfirmPassword(e.target.value)}
-            required
-            fullWidth
-          />
-          <Button type="submit" variant="contained" disabled={submitting}>
-            {submitting ? 'Wird erstellt...' : 'Konto erstellen'}
-          </Button>
-        </Box>
+        {!meta && (
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            Bitte wenden Sie sich an Ihre Disposition, um eine neue Einladung zu erhalten.
+          </Typography>
+        )}
+        {meta && (
+          <Box
+            component="form"
+            onSubmit={onSubmit}
+            sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+          >
+            <TextField
+              label="Passwort"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              fullWidth
+            />
+            <TextField
+              label="Passwort bestätigen"
+              type="password"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              required
+              fullWidth
+            />
+            <Button type="submit" variant="contained" disabled={submitting}>
+              {submitting ? 'Wird erstellt...' : 'Konto erstellen'}
+            </Button>
+          </Box>
+        )}
       </Paper>
     </Box>
   );

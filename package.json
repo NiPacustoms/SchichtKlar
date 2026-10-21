@@ -56,7 +56,7 @@
     "generate:domain": "node scripts/generate-domain.js",
     "seed:emulator": "FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 GCLOUD_PROJECT=demo-schichtklar node scripts/seed-emulator-demo.mjs",
     "ui:screenshots": "node scripts/ui-screenshots.mjs ui-shots",
-    "test:functions": "FIREBASE_CLI_EXPERIMENTS=webframeworks firebase emulators:exec --only firestore,auth --project schichtklar-rules-test \"cd functions && npx -y tsx test/dayRule.emulator.ts && npx -y tsx test/timesheetBreakdown.emulator.ts && npx -y tsx test/facilityApproval.emulator.ts && npx -y tsx test/absences.emulator.ts && npm run -s test:unit\"",
+    "test:functions": "FIREBASE_CLI_EXPERIMENTS=webframeworks firebase emulators:exec --only firestore,auth --project schichtklar-rules-test \"cd functions && npx -y tsx test/dayRule.emulator.ts && npx -y tsx test/timesheetBreakdown.emulator.ts && npx -y tsx test/facilityApproval.emulator.ts && npx -y tsx test/absences.emulator.ts && npx -y tsx test/simulation.emulator.ts && npm run -s test:unit\"",
     "test:rules": "FIREBASE_CLI_EXPERIMENTS=webframeworks firebase emulators:exec --only firestore --project schichtklar-rules-test \"node tests/rules/firestore-tenant-isolation.test.mjs && node tests/rules/firestore-employee-messaging.test.mjs && node tests/rules/firestore-escalation.test.mjs && node tests/rules/firestore-assignments.test.mjs && node tests/rules/firestore-timesheets.test.mjs && node tests/rules/firestore-absences.test.mjs && node tests/rules/firestore-statements.test.mjs\""
   },
   "dependencies": {

@@ -1,0 +1,22 @@
+# Änderungsprotokoll
+
+## Oktober 2026 – Fertigstellung
+
+**Neu**
+- Freigabe-Link für Einrichtungen: Die PDL bestätigt oder beanstandet eine Woche ohne eigenes Konto (#48).
+- DATEV-LODAS-Export mit Lohnarten, Personalnummern und Zuschlagsstunden (#49).
+- Urlaub & Krankmeldung: Antrag und Genehmigung, Resturlaub, Krankmeldung ohne Diagnose, betroffene Einsätze, Abwesende werden in der Planung gesperrt (#50).
+- Stundennachweis: der Papierbogen „Arbeitszeiterfassung / Stunden-Nachweis“ digital, mit Unterschrift „erfasst“ und „anerkannt“, PDF und Sammel-PDF (#51).
+- Prüfprotokoll: serverseitig, unveränderlich, mit Filter und CSV-Export.
+
+**Sicherheit & Datenschutz**
+- Alle Cloud Functions laufen in der EU (`europe-west1`).
+- DSGVO-Auskunft/-Löschung nur für eigene Daten bzw. durch die Disposition; Aufbewahrungspflichten (MiLoG, AO) werden eingehalten.
+- Pflegekräfte können Stundenlohn, Personalnummer und Urlaubsanspruch nicht selbst ändern.
+- Ungenutzte Proxy-Routen und Demo-Seiten entfernt.
+
+**Fehlerbehebungen**
+- Einladung: Vorschau-Fehler behoben, neuer Link bei erneutem Senden, 7 Tage gültig, klare Meldung bei bestehendem Konto.
+- Kurz-URLs führen je nach Rolle in den richtigen Bereich.
+- Urlaubstage berücksichtigen die Feiertage des Bundeslands.
+- Mobile Darstellung der Seite „Zeiten“ ohne Querscrollen.

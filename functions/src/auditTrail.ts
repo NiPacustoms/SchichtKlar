@@ -31,6 +31,12 @@ const dayOf = (d: Data) => {
   return v?.toDate ? v.toDate().toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin' }) : str(d?.dayKey ?? '');
 };
 
+/** „ am 14.12.2026“ aus startDate eines Einsatzes (sonst leer) */
+const toDay = (d: Data) => {
+  const v = d?.startDate as { toDate?: () => Date } | undefined;
+  return v?.toDate ? ` am ${v.toDate().toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin' })}` : '';
+};
+
 /** Entscheidet je Sammlung, ob und wie protokolliert wird (rein, testbar) */
 export function auditFor(collection: string, before: Data, after: Data): AuditDecision | null {
   const status = (d: Data) => str(d?.status);
@@ -46,7 +52,7 @@ export function auditFor(collection: string, before: Data, after: Data): AuditDe
         return {
           action: `timesheet.${s}`,
           summary: `Zeiten vom ${when} ${label[s] ?? s}${s === 'rejected' && after.rejectionReason ? ` – ${str(after.rejectionReason)}` : ''}${s === 'approved' && after.facilityApprovedVia === 'link' ? ' (Freigabe-Link der Einrichtung)' : ''}`,
-          actorUid: s === 'approved' ? str(after.approvedBy) : s === 'submitted' ? str(after.userId) : undefined,
+          actorUid: s === 'approved' ? str(after.approvedBy) : s === 'submitted' ? str(after.userId) : s === 'rejected' ? str(after.rejectedBy) || undefined : undefined,
           fields: ['status', ...times],
         };
       }
@@ -58,9 +64,10 @@ export function auditFor(collection: string, before: Data, after: Data): AuditDe
     }
     case 'timesheetStatements': {
       if (!after) return null;
-      const month = str(after.month);
+      const [y, m] = str(after.month).split('-').map(Number);
+      const month = y && m ? new Date(Date.UTC(y, m - 1, 15)).toLocaleDateString('de-DE', { month: 'long', year: 'numeric', timeZone: 'UTC' }) : str(after.month);
       if (changed(before, after, 'employeeSignedAt') && after.employeeSignedAt)
-        return { action: 'statement.employee-signed', summary: `Stundennachweis ${month} unterschrieben (${str(after.signedTotalHours)} Std.)`, actorUid: str(after.userId), fields: ['signedTotalHours', 'signedFingerprint'] };
+        return { action: 'statement.employee-signed', summary: `Stundennachweis ${month} unterschrieben (${Number(after.signedTotalHours ?? 0).toLocaleString('de-DE')} Std.)`, actorUid: str(after.userId), fields: ['signedTotalHours', 'signedFingerprint'] };
       if (changed(before, after, 'employerSignedAt'))
         return after.employerSignedAt
           ? { action: 'statement.acknowledged', summary: `Stundennachweis ${month} anerkannt von ${str(after.employerSignedName)}`, actorUid: str(after.employerSignedBy) }
@@ -85,11 +92,27 @@ export function auditFor(collection: string, before: Data, after: Data): AuditDe
       return null;
     }
     case 'assignments': {
-      if (!after) return { action: 'assignment.deleted', summary: 'Einsatz gelöscht' };
-      if (!before) return { action: 'assignment.created', summary: `Einsatz angelegt (${status(after)})` };
-      if (status(before) !== status(after))
-        return { action: `assignment.${status(after)}`, summary: `Einsatz: ${status(before)} → ${status(after)}`, fields: ['status', 'userId'] };
-      if (changed(before, after, 'userId')) return { action: 'assignment.reassigned', summary: 'Einsatz neu zugewiesen', fields: ['userId'] };
+      const label: Record<string, string> = {
+        assigned: 'zugewiesen',
+        accepted: 'angenommen',
+        declined: 'abgelehnt',
+        cancelled: 'abgesagt',
+        completed: 'abgeschlossen',
+        published: 'ausgeschrieben',
+        requested: 'angefragt',
+        'pending-signature': 'wartet auf Unterschrift',
+      };
+      const st = (d: Data) => label[status(d)] ?? status(d);
+      const actor = (d: Data) => str(d?.updatedBy ?? d?.createdBy) || undefined;
+      const when = toDay(after ?? before);
+      if (!after) return { action: 'assignment.deleted', summary: `Einsatz${when} gelöscht` };
+      if (!before) return { action: 'assignment.created', summary: `Einsatz${when} angelegt – ${st(after)}`, actorUid: actor(after) };
+      if (status(before) !== status(after)) {
+        // Annehmen/Ablehnen macht die Pflegekraft selbst
+        const self = ['accepted', 'declined', 'requested'].includes(status(after)) ? str(after.userId) : undefined;
+        return { action: `assignment.${status(after)}`, summary: `Einsatz${when}: ${st(before)} → ${st(after)}`, actorUid: self || actor(after), fields: ['status', 'userId'] };
+      }
+      if (changed(before, after, 'userId')) return { action: 'assignment.reassigned', summary: `Einsatz${when} neu zugewiesen`, actorUid: actor(after), fields: ['userId'] };
       return null;
     }
     case 'payrollSettings':
