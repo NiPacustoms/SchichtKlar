@@ -3,6 +3,7 @@ import * as functions from 'firebase-functions/v1';
 import { validateTimesheetArbZG, TimesheetValidationData } from './timesheetValidationUtils';
 import { computeWorkHoursBreakdown } from './utils/workHoursBreakdown';
 import { parseShiftToUTC } from './utils/timeUtils';
+import { REGION } from './utils/region';
 
 const db = admin.firestore();
 
@@ -10,7 +11,7 @@ const db = admin.firestore();
  * Cloud Function für sichere Timesheet-Einreichung
  * Server-seitige Berechnung von totalHours (verhindert Client-Manipulation)
  */
-export const submitTimesheet = functions.https.onCall(async (data, context) => {
+export const submitTimesheet = functions.region(REGION).https.onCall(async (data, context) => {
   // Authentifizierung prüfen
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');

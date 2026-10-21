@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
+import { REGION } from '../utils/region';
 
 const db = admin.firestore();
 
@@ -11,7 +12,7 @@ export interface AutoCreateChatChannelPayload {
  * Erstellt bei Annahme eines Einsatzes einen Chat-Channel: "Einsatz {Einrichtung} {Datum} - {MA-Name}".
  * Members: [employeeId, adminId]; System-Nachricht: "Einsatz zugewiesen! Kommunikation hier."
  */
-export const autoCreateChatChannel = functions.https.onCall(async (data: AutoCreateChatChannelPayload, context) => {
+export const autoCreateChatChannel = functions.region(REGION).https.onCall(async (data: AutoCreateChatChannelPayload, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }

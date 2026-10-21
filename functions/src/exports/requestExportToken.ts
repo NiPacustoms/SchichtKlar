@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
+import { REGION } from '../utils/region';
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -10,7 +11,7 @@ const db = admin.firestore();
 /**
  * Callable Function: Gibt ein Einmal-Export-Token (TTL ~5 Minuten) für Admins aus.
  */
-export const requestExportToken = functions.https.onCall(async (_data, context) => {
+export const requestExportToken = functions.region(REGION).https.onCall(async (_data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
   }

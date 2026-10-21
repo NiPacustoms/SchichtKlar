@@ -10,6 +10,7 @@
 import * as admin from 'firebase-admin';
 import { FieldValue, type Firestore } from 'firebase-admin/firestore';
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
+import * as functions from 'firebase-functions/v1';
 import { logger } from 'firebase-functions';
 import { formatInTimeZone } from 'date-fns-tz';
 import { DAY_RULE_ACTIVE_STATUSES } from './utils/dayRule';
@@ -31,6 +32,17 @@ export async function isAbsentOn(db: Firestore, userId: string, companyId: strin
     const a = d.data();
     return typeof a.fromKey === 'string' && typeof a.toKey === 'string' && a.fromKey <= dayKey && dayKey <= a.toKey;
   });
+}
+
+/** Fehler für Zuweisung/Anfrage an einem Abwesenheitstag (Urlaub/Krank) */
+export function absenceConflictError(dayKey: string, forAdmin: boolean) {
+  return new functions.https.HttpsError(
+    'failed-precondition',
+    forAdmin
+      ? `Die Person ist am ${deDay(dayKey)} abwesend (Urlaub oder krank). Bitte zuerst die Abwesenheit prüfen.`
+      : `Sie sind am ${deDay(dayKey)} als abwesend eingetragen (Urlaub oder krank).`,
+    { reason: 'ABSENT', dayKey }
+  );
 }
 
 /** Aktive Einsätze der Person im Zeitraum (über startDate bzw. Schichtdatum) */

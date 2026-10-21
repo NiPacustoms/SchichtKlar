@@ -1,4 +1,7 @@
 'use client';
 
-export { default } from '@/app/(employee)/employee/dienstplan/page';
+import { RoleRedirect } from '@/components/auth/RoleRedirect';
 
+export default function Page() {
+  return <RoleRedirect admin="/admin/dienstplan" employee="/employee/dienstplan" />;
+}

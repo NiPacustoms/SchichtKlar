@@ -3,6 +3,7 @@ import { defineString } from 'firebase-functions/params';
 import { getFirestore } from 'firebase-admin/firestore';
 import { sendUserPushNotification } from './pushNotifications';
 import { logger } from './utils/logger';
+import { REGION } from './utils/region';
 
 const db = getFirestore();
 
@@ -22,7 +23,7 @@ interface DeploymentNotificationRequest {
  * Sendet Deployment-Benachrichtigungen an alle Admin-User
  * Wird von GitHub Actions aufgerufen
  */
-export const notifyDeployment = functions.https.onRequest(async (req, res) => {
+export const notifyDeployment = functions.region(REGION).https.onRequest(async (req, res) => {
     try {
       // CORS Headers setzen
       res.set('Access-Control-Allow-Origin', '*');

@@ -12,6 +12,8 @@ import {
   toDayKey,
   formatDayKeyDE,
 } from '../utils/dayRule';
+import { REGION } from '../utils/region';
+import { absenceConflictError, isAbsentOn } from '../absences';
 
 const db = admin.firestore();
 
@@ -23,7 +25,7 @@ const db = admin.firestore();
  * (userId war noch leer) und hätte zwei gleichzeitige Annahmen nicht verhindert.
  * Jetzt: Transaktion, Firmen- und Kandidatenprüfung, Regel „1 Einsatz pro Tag".
  */
-export const acceptPublishedAssignment = functions.https.onCall(async (data, context) => {
+export const acceptPublishedAssignment = functions.region(REGION).https.onCall(async (data, context) => {
   const caller = await getCaller(context.auth);
   const { assignmentId } = (data || {}) as { assignmentId?: string };
   if (!assignmentId) {
@@ -56,6 +58,7 @@ export const acceptPublishedAssignment = functions.https.onCall(async (data, con
         tx
       );
       if (sameDay.length > 0) throw dayRuleConflictError(dayKey, sameDay, false);
+      if (await isAbsentOn(db, caller.uid, caller.companyId, dayKey)) throw absenceConflictError(dayKey, false);
     }
 
     const now = admin.firestore.FieldValue.serverTimestamp();

@@ -1,15 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { RoleRedirect } from '@/components/auth/RoleRedirect';
 
-export default function ZeiterfassungRedirect() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace('/employee/zeiterfassung');
-  }, [router]);
-
-  return null;
+export default function Page() {
+  return <RoleRedirect admin="/admin/zeitnachweise" employee="/employee/zeiterfassung" />;
 }
-

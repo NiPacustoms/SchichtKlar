@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
 import { getCaller } from '../utils/tenant';
 import { sendTemplatedEmail, renderFacilityAssignmentTakenEmail } from '../email';
+import { REGION } from '../utils/region';
 
 const db = admin.firestore();
 
@@ -15,7 +16,7 @@ export interface NotifyFacilityPayload {
  * Sendet E-Mail an die Einrichtung: "Max M. übernimmt Ihren Einsatz! Kontakt: …"
  * Nutzt ausschließlich Firebase (email.ts mit nodemailer/SMTP).
  */
-export const notifyFacility = functions.https.onCall(async (data: NotifyFacilityPayload, context) => {
+export const notifyFacility = functions.region(REGION).https.onCall(async (data: NotifyFacilityPayload, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }

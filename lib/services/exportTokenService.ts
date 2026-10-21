@@ -1,12 +1,12 @@
 import { httpsCallable, getFunctions } from 'firebase/functions';
-import app from '@/lib/firebase';
+import app, { FUNCTIONS_REGION } from '@/lib/firebase';
 
 export const exportTokenService = {
   async requestToken(): Promise<{ token: string; expiresAt: string }> {
     if (!app) {
       throw new Error('Firebase App ist nicht initialisiert');
     }
-    const functions = getFunctions(app);
+    const functions = getFunctions(app, FUNCTIONS_REGION);
     const callable = httpsCallable(functions, 'requestExportToken');
     const res = await callable({});
     const data = res.data as { token?: string; expiresAt?: string };
@@ -17,7 +17,7 @@ export const exportTokenService = {
     if (!app) {
       throw new Error('Firebase App ist nicht initialisiert');
     }
-    const functions = getFunctions(app);
+    const functions = getFunctions(app, FUNCTIONS_REGION);
     const callable = httpsCallable(functions, 'validateExportToken');
     await callable({ token });
   }

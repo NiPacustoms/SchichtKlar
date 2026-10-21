@@ -83,7 +83,7 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`times-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <Box sx={{ p: { xs: 0, sm: 3 }, pt: { xs: 2, sm: 3 }, minWidth: 0 }}>{children}</Box>}
     </div>
   );
 }
@@ -785,7 +785,7 @@ export default function EmployeeTimesPage() {
 
       {/* Tabs */}
       <Paper className="glass" sx={{ mb: 3 }}>
-        <Tabs value={activeTab} onChange={handleTabChange}>
+        <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" allowScrollButtonsMobile>
           <Tab label="Zeitkonto" icon={<AccessTime />} iconPosition="start" />
           <Tab label="Arbeitszeiten" icon={<Work />} iconPosition="start" />
           <Tab label="Krankheit" icon={<Sick />} iconPosition="start" />
@@ -808,6 +808,7 @@ export default function EmployeeTimesPage() {
                   elevation={0}
                   sx={{
                     overflowX: 'auto',
+                    maxWidth: '100%',
                     '&::-webkit-scrollbar': {
                       height: 8,
                     },
@@ -820,7 +821,7 @@ export default function EmployeeTimesPage() {
                     },
                   }}
                 >
-                  <Table>
+                  <Table size="small">
                     <TableHead>
                       <TableRow>
                         <TableCell>Datum</TableCell>

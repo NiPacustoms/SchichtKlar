@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
 import { getCaller } from './utils/tenant';
+import { REGION } from './utils/region';
 
 const db = admin.firestore();
 
@@ -8,7 +9,7 @@ const db = admin.firestore();
  * Cloud Function für Ablehnung von Schichtzuweisungen mit Unterschrifts-Workflow
  * Unterscheidet zwischen nurse-initiated und admin-initiated Ablehnungen
  */
-export const declineAssignment = functions.https.onCall(async (data, context) => {
+export const declineAssignment = functions.region(REGION).https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }

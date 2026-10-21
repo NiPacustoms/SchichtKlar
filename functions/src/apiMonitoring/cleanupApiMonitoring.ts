@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
+import { REGION } from '../utils/region';
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -14,7 +15,7 @@ const DAYS_TO_KEEP = 7; // Daten älter als 7 Tage löschen
  * Cloud Function: Bereinigt alte API-Monitoring-Daten
  * Läuft täglich um 02:00 Uhr (Europe/Berlin)
  */
-export const cleanupApiMonitoring = functions.pubsub
+export const cleanupApiMonitoring = functions.region(REGION).pubsub
   .schedule('every 24 hours')
   .timeZone('Europe/Berlin')
   .onRun(async () => {
@@ -108,7 +109,7 @@ export const cleanupApiMonitoring = functions.pubsub
 /**
  * Manuelle Cleanup-Function (für Testing/Debugging)
  */
-export const manualCleanupApiMonitoring = functions.https.onRequest(async (req, res) => {
+export const manualCleanupApiMonitoring = functions.region(REGION).https.onRequest(async (req, res) => {
   try {
     const now = admin.firestore.Timestamp.now();
     const cutoffDate = new Date();

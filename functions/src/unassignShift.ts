@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
 import { getCaller } from './utils/tenant';
+import { REGION } from './utils/region';
 
 const db = admin.firestore();
 
@@ -8,7 +9,7 @@ const db = admin.firestore();
  * Cloud Function für Rücknahme von Schichtzuweisungen
  * Kann von Admins oder dem betroffenen User (bei eigenen Assignments) aufgerufen werden
  */
-export const unassignShift = functions.https.onCall(async (data, context) => {
+export const unassignShift = functions.region(REGION).https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }

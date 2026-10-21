@@ -1,5 +1,8 @@
+// Region für alle Functions setzen, bevor irgendeine Function definiert wird
+import './setup';
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
+import { REGION } from './utils/region';
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -77,14 +80,22 @@ export {
   decideFacilityApproval,
 } from './facilityApproval';
 export { onAbsenceWritten } from './absences';
+export {
+  auditTimesheets,
+  auditStatements,
+  auditAbsences,
+  auditAssignments,
+  auditPayrollSettings,
+  auditUsers,
+} from './auditTrail';
 export { onTimesheetWrite } from './weeklyLimitOnTimesheetWrite';
 
 // Email – lazy load to avoid loading email/nodemailer at deploy (prevents backend discovery timeout)
-export const sendInvitationEmailCF = functions.https.onCall(async (data, context) => {
+export const sendInvitationEmailCF = functions.region(REGION).https.onCall(async (data, context) => {
   const { sendInvitationEmailHandler } = await import('./email');
   return sendInvitationEmailHandler(data as Parameters<typeof sendInvitationEmailHandler>[0], context);
 });
-export const sendInvitationEmailHttp = functions.https.onRequest(async (req, res) => {
+export const sendInvitationEmailHttp = functions.region(REGION).https.onRequest(async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;

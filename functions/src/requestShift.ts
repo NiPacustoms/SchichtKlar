@@ -2,6 +2,8 @@ import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions/v1';
 import { assertSameCompany, getCaller } from './utils/tenant';
 import { dayRuleConflictError, findDayRuleConflicts, toDayKey } from './utils/dayRule';
+import { REGION } from './utils/region';
+import { absenceConflictError, isAbsentOn } from './absences';
 
 const db = admin.firestore();
 
@@ -9,7 +11,7 @@ const db = admin.firestore();
  * Cloud Function für Schichtanfragen von Pflegekräften
  * Erstellt Assignment mit status='requested' ohne Kapazitätsbelegung
  */
-export const requestShift = functions.https.onCall(async (data, context) => {
+export const requestShift = functions.region(REGION).https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }
@@ -49,6 +51,7 @@ export const requestShift = functions.https.onCall(async (data, context) => {
       if (dayKey) {
         const sameDay = await findDayRuleConflicts(db, { userId, companyId: caller.companyId, dayKey }, transaction);
         if (sameDay.length > 0) throw dayRuleConflictError(dayKey, sameDay, false);
+        if (await isAbsentOn(db, userId, caller.companyId, dayKey)) throw absenceConflictError(dayKey, false);
       }
 
       // 3. Prüfen ob User bereits eine Anfrage für diese Schicht hat

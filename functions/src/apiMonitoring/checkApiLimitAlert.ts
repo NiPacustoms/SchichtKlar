@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { sendTemplatedEmail } from '../email';
+import { REGION } from '../utils/region';
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -15,7 +16,7 @@ const DAILY_LIMIT = 2000;
  * Prüft API-Limit und sendet Alert bei 90% Erreichung
  * Läuft alle 15 Minuten
  */
-export const checkApiLimitAlert = functions.pubsub
+export const checkApiLimitAlert = functions.region(REGION).pubsub
   .schedule('every 15 minutes')
   .timeZone('Europe/Berlin')
   .onRun(async () => {
@@ -177,7 +178,7 @@ Diese E-Mail wurde automatisch von Schichtklar generiert.
 /**
  * Manuelle Alert-Prüfung (für Testing)
  */
-export const manualCheckApiLimitAlert = functions.https.onRequest(async (req, res) => {
+export const manualCheckApiLimitAlert = functions.region(REGION).https.onRequest(async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
     const docRef = db.collection(COLLECTION_NAME).doc(today);
