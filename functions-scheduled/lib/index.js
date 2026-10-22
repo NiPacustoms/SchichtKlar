@@ -39,13 +39,15 @@ const functions = __importStar(require("firebase-functions/v1"));
 const formReminders_1 = require("./formReminders");
 const kpiAggregations_1 = require("./kpiAggregations");
 admin.initializeApp();
-exports.scheduledFormReminders = functions.pubsub
+// Alle Functions in der EU (Belgien), wie die Haupt-Codebase
+const eu = functions.region('europe-west1');
+exports.scheduledFormReminders = eu.pubsub
     .schedule('every 24 hours')
     .timeZone('Europe/Berlin')
     .onRun(async () => {
     await (0, formReminders_1.sendFormReminderEmails)();
 });
-exports.runFormReminders = functions.https.onRequest(async (_req, res) => {
+exports.runFormReminders = eu.https.onRequest(async (_req, res) => {
     try {
         await (0, formReminders_1.sendFormReminderEmails)();
         res.status(200).json({ ok: true });
@@ -55,13 +57,13 @@ exports.runFormReminders = functions.https.onRequest(async (_req, res) => {
         res.status(500).json({ ok: false, error: e instanceof Error ? e.message : 'unknown' });
     }
 });
-exports.aggregateKPIs = functions.pubsub
+exports.aggregateKPIs = eu.pubsub
     .schedule('0 * * * *')
     .timeZone('Europe/Berlin')
     .onRun(async () => {
     await (0, kpiAggregations_1.runAggregateKPIs)();
 });
-exports.dailyKPIAggregation = functions.pubsub
+exports.dailyKPIAggregation = eu.pubsub
     .schedule('0 1 * * *')
     .timeZone('Europe/Berlin')
     .onRun(async () => {

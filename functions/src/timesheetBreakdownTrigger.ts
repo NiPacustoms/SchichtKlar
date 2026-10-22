@@ -10,6 +10,7 @@
  * (verhindert Trigger-Schleifen).
  */
 import * as admin from 'firebase-admin';
+import { resolveHolidayState } from './utils/holidayState';
 import { FieldValue } from 'firebase-admin/firestore';
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { logger } from 'firebase-functions';
@@ -74,12 +75,12 @@ export const computeTimesheetBreakdown = onDocumentWritten(
         after.userId ? db.collection('users').doc(String(after.userId)).get() : Promise.resolve(null),
       ]);
       const c = companySnap && companySnap.exists ? companySnap.data() : undefined;
-      const raw = c?.holidayState ?? c?.state ?? c?.bundesland;
-      holidayState = typeof raw === 'string' && /^[A-Za-z]{2}$/.test(raw) ? raw.toUpperCase() : undefined;
+      holidayState = resolveHolidayState(c);
       const rate = userSnap && userSnap.exists ? userSnap.data()?.hourlyRate : 0;
       hourlyRate = typeof rate === 'number' && rate > 0 ? rate : 0;
     } catch (error) {
-      logger.warn('Breakdown: Firma/Person nicht lesbar – rechne ohne Bundesland/Lohn', { error: String(error) });
+      holidayState = resolveHolidayState(null);
+      logger.warn('Breakdown: Firma/Person nicht lesbar – rechne mit Standard-Bundesland, ohne Lohn', { error: String(error) });
     }
 
     const dayKey = formatInTimeZone(day, BREAKDOWN_TZ, 'yyyy-MM-dd');
