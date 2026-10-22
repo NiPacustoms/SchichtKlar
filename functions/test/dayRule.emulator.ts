@@ -54,7 +54,7 @@ const ctx = (uid: string, role: string, companyId: string) => ({ auth: { uid, to
 
 async function main() {
   const { assignShift } = await import('../src/assignShift');
-  const { requestShift } = await import('../src/requestShift');
+  const { createWithMatching } = await import('../src/assignment/createWithMatching');
   const { acceptPublishedAssignment, enforceDayRule } = await import('../src/assignment/dayRuleFunctions');
   const { setUserRole, getUsersWithRoles } = await import('../src/auth');
 
@@ -83,7 +83,7 @@ async function main() {
   await shift('fremd', 'firmaB', '2026-11-02', '06:00', '14:00');
 
   const assign = fft.wrap(assignShift as never) as (d: unknown, c: unknown) => Promise<{ assignmentId?: string }>;
-  const request = fft.wrap(requestShift as never) as (d: unknown, c: unknown) => Promise<unknown>;
+  const publish = fft.wrap(createWithMatching as never) as (d: unknown, c: unknown) => Promise<{ candidateUserIds?: string[] }>;
   const acceptPub = fft.wrap(acceptPublishedAssignment as never) as (d: unknown, c: unknown) => Promise<unknown>;
   const adminA = ctx('adminA', 'admin', 'firmaA');
   const adminB = ctx('adminB', 'admin', 'firmaB');
@@ -112,13 +112,18 @@ async function main() {
   await check('Admin kann keine Person einer fremden Firma zuweisen', () =>
     expectError(assign({ shiftId: 'folgetag', userId: 'nurseB', adminOverride: true }, adminA), 'permission-denied'));
 
-  console.log('--- Schichtanfrage (requestShift) ---');
-  await check('Anfrage für schon belegten Tag blockiert', async () => {
-    await db.doc('shifts/spaet2').set({ companyId: 'firmaA', facilityId: 'fA', date: berlinMidnight('2026-11-02'), startTime: '15:00', endTime: '22:00', capacity: 1, assignedCount: 0, status: 'open', requiredSkills: [] });
-    await expectError(request({ shiftId: 'spaet2' }, ctx('nurseA', 'nurse', 'firmaA')), 'failed-precondition', 'DAY_RULE_CONFLICT');
+  console.log('--- Ausschreiben an ausgewählte Kräfte (ohne Matching) ---');
+  const slot = { facilityId: 'fA', companyId: 'firmaA', startDate: '2026-11-04', startTime: '07:00', endTime: '15:00' };
+  await check('Ohne Auswahl keine automatische Kandidatensuche', () =>
+    expectError(publish({ ...slot }, adminA), 'invalid-argument'));
+  await check('Ausgewählte Kraft wird benachrichtigt', async () => {
+    const r = await publish({ ...slot, selectedUserIds: ['nurseA2'] }, adminA);
+    expectEq(r.candidateUserIds?.join(','), 'nurseA2', 'Kandidaten');
   });
-  await check('Anfrage für Schicht fremder Firma blockiert', () =>
-    expectError(request({ shiftId: 'fremd' }, ctx('nurseA2', 'nurse', 'firmaA')), 'permission-denied'));
+  await check('Kraft mit Einsatz am selben Tag wird gemeldet statt still entfernt', () =>
+    expectError(publish({ ...slot, startDate: '2026-11-02', selectedUserIds: ['nurseA', 'nurseA2'] }, adminA), 'failed-precondition', 'UNAVAILABLE'));
+  await check('Person einer fremden Firma nicht auswählbar', () =>
+    expectError(publish({ ...slot, selectedUserIds: ['nurseB'] }, adminA), 'permission-denied'));
 
   console.log('--- Ausgeschriebener Einsatz (acceptPublishedAssignment) ---');
   await db.doc('assignments/pub').set({

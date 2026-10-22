@@ -24,7 +24,7 @@ const ADMIN = [
 const EMPLOYEE = [
   '/employee/arbeitsplatz', '/employee/dienstplan', '/employee/einsaetze', '/employee/einsaetze/a-angebot-1',
   '/employee/zeiterfassung', '/employee/zeiten', '/employee/dokumente', '/employee/profil',
-  '/employee/benachrichtigungen', '/employee/berichte',
+  '/employee/benachrichtigungen',
 ];
 
 const VIEWPORTS = [

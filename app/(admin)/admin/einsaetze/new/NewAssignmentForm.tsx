@@ -5,7 +5,6 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { createAssignmentWithMatchingAction } from './actions';
-import { cloudFunctions } from '@/lib/services/cloudFunctions';
 import { facilityService } from '@/lib/services/facilities';
 import { categoriesService } from '@/lib/services/categories';
 import { userService } from '@/lib/services/users';
@@ -36,7 +35,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -50,7 +49,7 @@ const schema = z
     endTime: z.string().regex(/^\d{1,2}:\d{2}$/, 'z.B. 16:00'),
     qualification: z.string().optional(),
     hours: z.number().min(0).optional(),
-    selectedUserIds: z.array(z.string()).optional(),
+    selectedUserIds: z.array(z.string()).min(1, 'Bitte mindestens eine Pflegekraft auswählen'),
   })
   .refine(d => d.startTime !== d.endTime, {
     message: 'Endzeit muss ungleich Startzeit sein',
@@ -106,63 +105,8 @@ export function NewAssignmentForm() {
   });
 
   const startDate = watch('startDate');
-  const startTime = watch('startTime');
-  const endTime = watch('endTime');
-  const qualificationW = watch('qualification');
   const selectedUserIdsRaw = watch('selectedUserIds');
   const selectedUserIdsW = useMemo(() => selectedUserIdsRaw ?? [], [selectedUserIdsRaw]);
-
-  const startDateStr =
-    startDate instanceof Date
-      ? format(startDate, 'yyyy-MM-dd')
-      : startDate
-        ? format(new Date(startDate), 'yyyy-MM-dd')
-        : '';
-
-  const canFetchAvailability =
-    !!user?.companyId && !!startDateStr && !!startTime && !!endTime && startTime !== endTime;
-
-  const { data: availableData, isLoading: loadingAvailability } = useQuery({
-    queryKey: [
-      'available-employees',
-      user?.companyId,
-      startDateStr,
-      startTime,
-      endTime,
-      qualificationW ?? '',
-    ],
-    queryFn: async () => {
-      const companyId = user?.companyId;
-      if (!companyId) throw new Error('Keine Firma zugeordnet');
-      const token = await firebaseUser?.getIdToken();
-      if (!token) throw new Error('Nicht angemeldet');
-      const res = await cloudFunctions.getAvailableEmployeeIdsForSlot(
-        {
-          companyId,
-          startDate: startDateStr,
-          startTime,
-          endTime,
-          qualification: qualificationW || undefined,
-        },
-        token
-      );
-      return res;
-    },
-    enabled: canFetchAvailability && !!firebaseUser,
-    staleTime: 60 * 1000,
-  });
-
-  const availableUserIds = useMemo(
-    () => availableData?.availableUserIds ?? [],
-    [availableData?.availableUserIds]
-  );
-
-  useEffect(() => {
-    if (availableUserIds.length === 0) return;
-    const current = selectedUserIdsW;
-    const valid = current.filter(id => availableUserIds.includes(id));
-    if (valid.length !== current.length) setValue('selectedUserIds', valid);
-  }, [availableUserIds, selectedUserIdsW, setValue]);
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -182,8 +126,7 @@ export function NewAssignmentForm() {
           endTime: data.endTime,
           qualification: data.qualification || undefined,
           hours: data.hours,
-          selectedUserIds:
-            (data.selectedUserIds?.length ?? 0) > 0 ? data.selectedUserIds : undefined,
+          selectedUserIds: data.selectedUserIds,
         },
         token
       );
@@ -191,7 +134,7 @@ export function NewAssignmentForm() {
       return result.data;
     },
     onSuccess: result => {
-      toast.success(`Einsatz erstellt. ${result.candidateCount} Kandidat(en) benachrichtigt.`);
+      toast.success(`Einsatz ausgeschrieben – ${result.candidateCount} Pflegekraft/-kräfte benachrichtigt.`);
       router.push('/admin/einsaetze');
     },
     onError: err => {
@@ -231,7 +174,7 @@ export function NewAssignmentForm() {
       <PageContainer maxWidth="form">
         <PageHeader
           title="Neuer Einsatz"
-          subtitle="Einsatz anlegen und passende Mitarbeiter automatisch benachrichtigen"
+          subtitle="Einsatz anlegen und an ausgewählte Pflegekräfte ausschreiben"
           actions={
             <Button
               component={Link}
@@ -257,8 +200,9 @@ export function NewAssignmentForm() {
               <Grid container spacing={3}>
                 <Grid size={{ xs: 12 }}>
                   <FormControl fullWidth error={!!errors.facilityId} required>
-                    <InputLabel>Einrichtung</InputLabel>
+                    <InputLabel id="na-facility-label">Einrichtung</InputLabel>
                     <Select
+                      labelId="na-facility-label"
                       {...register('facilityId')}
                       value={watch('facilityId')}
                       onChange={e => setValue('facilityId', e.target.value)}
@@ -310,8 +254,9 @@ export function NewAssignmentForm() {
 
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <FormControl fullWidth error={!!errors.qualification}>
-                    <InputLabel>Qualifikation (optional)</InputLabel>
+                    <InputLabel id="na-qual-label">Qualifikation (optional)</InputLabel>
                     <Select
+                      labelId="na-qual-label"
                       {...register('qualification')}
                       value={watch('qualification') || ''}
                       onChange={e => setValue('qualification', e.target.value)}
@@ -329,7 +274,7 @@ export function NewAssignmentForm() {
 
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
-                    {...register('hours', { valueAsNumber: true })}
+                    {...register('hours', { setValueAs: v => (v === '' || v == null || Number.isNaN(Number(v)) ? undefined : Number(v)) })}
                     label="Zu arbeitende Stunden (optional)"
                     type="number"
                     fullWidth
@@ -342,11 +287,7 @@ export function NewAssignmentForm() {
                 <Grid size={{ xs: 12 }}>
                   <Autocomplete
                     multiple
-                    options={
-                      canFetchAvailability
-                        ? staffList.filter(u => availableUserIds.includes(u.id))
-                        : []
-                    }
+                    options={staffList}
                     value={staffList.filter(u => selectedUserIdsW.includes(u.id))}
                     onChange={(_e, newValue) =>
                       setValue(
@@ -356,24 +297,20 @@ export function NewAssignmentForm() {
                     }
                     getOptionLabel={u => u.displayName || u.email || u.id}
                     isOptionEqualToValue={(a, b) => a.id === b.id}
-                    loading={loadingStaff || (canFetchAvailability && loadingAvailability)}
-                    noOptionsText={
-                      !canFetchAvailability
-                        ? 'Bitte zuerst Datum und Zeiten angeben (Start- und Endzeit unterschiedlich).'
-                        : loadingAvailability
-                          ? 'Lade verfügbare Mitarbeiter…'
-                          : 'Keine verfügbaren Mitarbeiter in diesem Zeitraum.'
-                    }
+                    loading={loadingStaff}
+                    noOptionsText="Keine Pflegekräfte angelegt"
                     renderInput={params => (
                       <TextField
                         {...params}
-                        label="Mitarbeiter auswählen (optional)"
+                        label="Pflegekräfte auswählen"
+                        required
+                        error={!!errors.selectedUserIds}
                         placeholder="Mitarbeiter suchen…"
                         InputProps={{
                           ...params.InputProps,
                           endAdornment: (
                             <>
-                              {loadingStaff || (canFetchAvailability && loadingAvailability) ? (
+                              {loadingStaff ? (
                                 <CircularProgress color="inherit" size={20} />
                               ) : null}
                               {params.InputProps.endAdornment}
@@ -383,17 +320,17 @@ export function NewAssignmentForm() {
                       />
                     )}
                   />
-                  <FormHelperText sx={{ mt: 0.5 }}>
-                    Es werden nur Mitarbeiter angezeigt, die im gewählten Zeitraum verfügbar sind
-                    (keine Zeitüberschneidung mit anderen Einsätzen).
+                  <FormHelperText sx={{ mt: 0.5 }} error={!!errors.selectedUserIds}>
+                    {errors.selectedUserIds?.message ??
+                      'Wer an dem Tag schon einen Einsatz hat, wird beim Ausschreiben gemeldet.'}
                   </FormHelperText>
                 </Grid>
 
                 <Grid size={{ xs: 12 }}>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                     {selectedUserIdsW.length > 0
-                      ? `${selectedUserIdsW.length} Mitarbeiter ausgewählt – nur diese werden benachrichtigt.`
-                      : 'Es werden passende Mitarbeiter der Firma ermittelt (ohne Zeitüberschneidung) und per Push benachrichtigt.'}
+                      ? `${selectedUserIdsW.length} ausgewählt – diese werden benachrichtigt; wer zuerst annimmt, bekommt den Einsatz.`
+                      : 'Wählen Sie aus, wem der Einsatz angeboten wird.'}
                   </Typography>
                   <Button type="submit" variant="contained" disabled={createMutation.isPending}>
                     {createMutation.isPending ? 'Wird erstellt…' : 'Einsatz erstellen'}

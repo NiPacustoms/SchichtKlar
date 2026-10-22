@@ -19,5 +19,3 @@ export { GetUserById } from './GetUserById';
 export { GetFacilityById } from './GetFacilityById';
 export { ListFacilitiesByCompany } from './ListFacilitiesByCompany';
 export type { ListFacilitiesByCompanyInput } from './ListFacilitiesByCompany';
-export { CreateAssignmentWithMatching } from './CreateAssignmentWithMatching';
-export type { CreateAssignmentWithMatchingInput } from './CreateAssignmentWithMatching';

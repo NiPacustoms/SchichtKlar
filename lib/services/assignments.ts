@@ -534,34 +534,6 @@ export const assignmentService = {
     await Promise.all(promises);
   },
 
-  // Neue Methoden für erweiterte Assignment-Verwaltung
-  async createRequest(userId: string, shiftId: string, notes?: string): Promise<string> {
-    // Hole companyId aus dem Shift
-    const shiftDoc = await getDoc(doc(getDb(), 'shifts', shiftId));
-    if (!shiftDoc.exists()) {
-      throw new Error('Shift not found');
-    }
-    const shiftData = shiftDoc.data();
-    const companyId = shiftData.companyId || await getCompanyIdFromAuth();
-    
-    if (!companyId) {
-      throw new Error('No companyId found for assignment');
-    }
-
-    const docRef = await addDoc(collection(getDb(), COLLECTION_NAME), {
-      userId: userId,
-      shiftId: shiftId,
-      companyId: companyId,
-      status: 'requested',
-      assignedAt: serverTimestamp(),
-      notes,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-
-    return docRef.id;
-  },
-
   async getByUserAndDateRange(
     userId: string,
     startDate: Date,

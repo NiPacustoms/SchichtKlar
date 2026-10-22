@@ -1,10 +1,11 @@
 import * as admin from 'firebase-admin';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import * as functions from 'firebase-functions/v1';
 import { requireAdmin } from '../utils/tenant';
 import { logger } from '../utils/logger';
 import { parseShiftToUTC } from '../utils/timeUtils';
 import { sendUserPushNotification } from '../pushNotifications';
-import { getAvailableEmployeeIds, isUserAvailableForSlot } from './availability';
+import { isUserAvailableForSlot } from './availability';
 import { REGION } from '../utils/region';
 
 const db = admin.firestore();
@@ -18,14 +19,13 @@ export interface CreateWithMatchingPayload {
   qualification?: string;
   /** Zu arbeitende Stunden (optional). */
   hours?: number;
-  limit?: number;
-  /** Wenn gesetzt: nur diese Mitarbeiter benachrichtigen (anstatt Auto-Matching). */
+  /** Von der Disposition ausgewählte Pflegekräfte (Pflicht). */
   selectedUserIds?: string[];
 }
 
 /**
- * Erstellt einen Einsatz (Assignment) mit Status published, findet 5–10 passende MA
- * und sendet FCM an alle Kandidaten.
+ * Schreibt einen Einsatz (Status published) für die von der Disposition
+ * ausgewählten Pflegekräfte aus und benachrichtigt sie per Push.
  */
 export const createWithMatching = functions.region(REGION).https.onCall(async (data: CreateWithMatchingPayload, context) => {
   if (!context.auth) {
@@ -37,7 +37,7 @@ export const createWithMatching = functions.region(REGION).https.onCall(async (d
     throw new functions.https.HttpsError('permission-denied', 'Only admins can create assignments');
   }
 
-  const { facilityId, companyId, startDate, startTime, endTime, qualification, hours, limit = 10, selectedUserIds } = data || {};
+  const { facilityId, companyId, startDate, startTime, endTime, qualification, hours, selectedUserIds } = data || {};
 
   if (!facilityId || !companyId || !startDate || !startTime || !endTime) {
     throw new functions.https.HttpsError(
@@ -70,7 +70,7 @@ export const createWithMatching = functions.region(REGION).https.onCall(async (d
       facilityId,
       companyId,
       createdBy: context.auth.uid,
-      startDate: admin.firestore.Timestamp.fromDate(date),
+      startDate: Timestamp.fromDate(date),
       startTime,
       endTime,
       qualification: qualification || null,
@@ -79,51 +79,33 @@ export const createWithMatching = functions.region(REGION).https.onCall(async (d
       candidateUserIds: [] as string[],
       declinedUserIds: [] as string[],
       declines: [] as unknown[],
-      assignedAt: admin.firestore.FieldValue.serverTimestamp(),
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      assignedAt: FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
 
-    let candidateUserIds: string[];
-
-    if (selectedUserIds && selectedUserIds.length > 0) {
-      // Nur verfügbare Mitarbeiter (Company, Rolle nurse, Qualifikation, keine Zeitüberschneidung)
-      const availableIds = await getAvailableEmployeeIds(
-        db,
-        companyId,
-        startDate,
-        startTime,
-        endTime,
-        qualification
-      );
-      const availableSet = new Set(availableIds);
-      candidateUserIds = selectedUserIds.filter((uid) => availableSet.has(uid));
-    } else {
-      // Auto-Matching: Nurses derselben Company, Qualifikation optional, keine Überlappung
-      const usersSnap = await db
-        .collection('users')
-        .where('companyId', '==', companyId)
-        .where('role', '==', 'nurse')
-        .get();
-      const candidates: Array<{ userId: string; score: number }> = [];
-
-      for (const userDoc of usersSnap.docs) {
-        const user = userDoc.data();
-
-        if (qualification) {
-          const qualifications = (user.qualifications as string[]) || [];
-          if (!qualifications.includes(qualification)) continue;
-        }
-
-        // Überschneidung + Regel „1 Einsatz pro Tag" (zentral in availability.ts)
-        if (!(await isUserAvailableForSlot(db, userDoc.id, startUTC, endUTC, companyId))) continue;
-
-        const score = ((user.qualifications as string[] | undefined)?.length ?? 0) * 2 + 10;
-        candidates.push({ userId: userDoc.id, score });
+    // Die Disposition wählt die Kräfte selbst aus (keine automatische Kandidatensuche).
+    const wanted = [...new Set((selectedUserIds ?? []).filter((u): u is string => typeof u === 'string' && !!u))].slice(0, 50);
+    if (wanted.length === 0) {
+      throw new functions.https.HttpsError('invalid-argument', 'Bitte mindestens eine Pflegekraft auswählen.');
+    }
+    const blocked: string[] = [];
+    const candidateUserIds: string[] = [];
+    for (const uid of wanted) {
+      const u = await db.collection('users').doc(uid).get();
+      if (!u.exists || u.get('companyId') !== companyId || u.get('role') !== 'nurse') {
+        throw new functions.https.HttpsError('permission-denied', 'Person gehört nicht zu Ihrer Firma');
       }
-
-      candidates.sort((a, b) => b.score - a.score);
-      candidateUserIds = candidates.slice(0, Math.min(limit, 10)).map(c => c.userId);
+      // Überschneidung + Regel „1 Einsatz pro Tag" (zentral in availability.ts)
+      if (await isUserAvailableForSlot(db, uid, startUTC, endUTC, companyId)) candidateUserIds.push(uid);
+      else blocked.push((u.get('displayName') as string) || (u.get('email') as string) || uid);
+    }
+    if (blocked.length > 0) {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        `Nicht verfügbar (anderer Einsatz am Tag oder Überschneidung): ${blocked.join(', ')}`,
+        { code: 'UNAVAILABLE', blocked }
+      );
     }
 
     await assignmentRef.set({

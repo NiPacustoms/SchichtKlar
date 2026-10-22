@@ -15,7 +15,6 @@ const TEMPLATE_KEYS = {
   DOCUMENT_VERIFIED: 'document_verified',
   DOCUMENT_REJECTED: 'document_rejected',
   DOCUMENT_EXPIRY_WARNING: 'document_expiry_warning',
-  SHIFT_REQUESTED_ADMIN: 'shift_requested_admin',
   ASSIGNMENT_ACCEPTED_ADMIN: 'assignment_accepted_admin',
   SHIFT_FULL_ADMIN: 'shift_full_admin',
 } as const;
@@ -407,41 +406,6 @@ export const checkDocumentExpiry = onDocumentCreated('documents/{documentId}', a
 });
 
 // Schichtverwaltung Notification Triggers
-export const onAssignmentRequested = onDocumentCreated(
-  'assignments/{assignmentId}',
-  async event => {
-    const assignment = event.data?.data();
-    if (!assignment || assignment.status !== 'requested') return;
-
-    try {
-      // Admin-Benachrichtigung für Schichtanfrage
-      const shiftRef = db.collection('shifts').doc(assignment.shiftId);
-      const shiftDoc = await shiftRef.get();
-
-      if (shiftDoc.exists) {
-        const shift = shiftDoc.data()!;
-        await sendNotification({
-          userId: shift.createdBy,
-          templateKey: TEMPLATE_KEYS.SHIFT_REQUESTED_ADMIN,
-          actionUrl: `/admin/einsaetze/${event.params.assignmentId}`,
-          payload: {
-            assignmentId: event.params.assignmentId,
-            shiftId: assignment.shiftId,
-            requesterId: assignment.userId,
-          },
-          fallback: {
-            title: 'Neue Schichtanfrage',
-            message: 'Ein Mitarbeiter hat eine Anfrage für eine Schicht gesendet.',
-            subject: 'Neue Schichtanfrage',
-          },
-        });
-      }
-    } catch (error) {
-      logger.error('Error sending assignment request notification:', error);
-    }
-  }
-);
-
 export const onAssignmentAccepted = onDocumentUpdated('assignments/{assignmentId}', async event => {
   const before = event.data?.before.data();
   const after = event.data?.after.data();

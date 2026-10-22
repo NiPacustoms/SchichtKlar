@@ -87,26 +87,6 @@ export async function bulkUpdate(ids: string[], updates: Partial<Assignment>): P
   );
 }
 
-export async function createRequest(userId: string, shiftId: string, notes?: string): Promise<string> {
-  const db = getDb();
-  if (!db) throw new Error('Firebase not initialized');
-  const shiftDoc = await getDoc(doc(db, 'shifts', shiftId));
-  if (!shiftDoc.exists()) throw new Error('Shift not found');
-  const companyId = shiftDoc.data().companyId || await getCompanyIdFromAuth();
-  if (!companyId) throw new Error('No companyId found for assignment');
-  const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-    userId,
-    shiftId,
-    companyId,
-    status: 'requested',
-    assignedAt: serverTimestamp(),
-    notes,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-  return docRef.id;
-}
-
 export async function bulkAssign(shiftId: string, userIds: string[]): Promise<string[]> {
   const db = getDb();
   if (!db) throw new Error('Firebase not initialized');

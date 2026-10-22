@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { assignmentService, cloudFunctions, shiftService } from '@/lib/services';
+import { assignmentService, cloudFunctions } from '@/lib/services';
 import type { Assignment } from '@/lib/services/assignments';
 import { TimeConflict } from '@/lib/types';
 import type { Shift } from '@/lib/services/shifts';
@@ -11,7 +11,6 @@ import { getShiftTypeColor as getShiftTypeColorToken } from '@/lib/design-tokens
 
 export interface NurseScheduleData {
   myAssignments: Assignment[];
-  openShifts: Shift[];
   pendingAssignments: Assignment[];
   upcomingAssignments: Assignment[];
   conflicts: TimeConflict[];
@@ -22,7 +21,6 @@ export interface NurseScheduleData {
 export interface NurseScheduleActions {
   acceptAssignment: (assignmentId: string) => Promise<void>;
   declineAssignment: (assignmentId: string, reason?: string) => Promise<void>;
-  requestShift: (shiftId: string, message?: string) => Promise<void>;
   checkConflicts: (shiftId: string) => Promise<TimeConflict[]>;
 }
 
@@ -63,17 +61,6 @@ export const useNurseSchedule = (view: 'week' | 'month' = 'week', date?: Date) =
     },
     enabled: !!userId,
     staleTime: 2 * 60 * 1000, // 2 minutes
-  });
-
-  // Get open shifts
-  const { data: openShifts = [], isLoading: loadingShifts } = useQuery({
-    queryKey: ['nurseSchedule', 'openShifts', view, format(targetDate, 'yyyy-MM-dd'), user?.companyId],
-    queryFn: async () => {
-      const dateRange = getDateRange();
-      return await shiftService.getByDateRange(dateRange.start, dateRange.end, user?.companyId || undefined);
-    },
-    enabled: !!user?.companyId,
-    staleTime: 1 * 60 * 1000, // 1 minute
   });
 
   // Get facilities for shift details - nur für die eigene Firma
@@ -122,20 +109,6 @@ export const useNurseSchedule = (view: 'week' | 'month' = 'week', date?: Date) =
     },
     onError: (error) => {
       toast.error('Fehler beim Ablehnen der Schicht: ' + error.message);
-    },
-  });
-
-  const requestShift = useMutation({
-    mutationFn: async (data: { shiftId: string; message?: string }) => {
-      return await cloudFunctions.requestShiftAssignment(data.shiftId, data.message);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['nurseSchedule'] });
-      queryClient.invalidateQueries({ queryKey: ['openShifts'] });
-      toast.success('Schichtanfrage gesendet!');
-    },
-    onError: (error) => {
-      toast.error('Fehler beim Senden der Anfrage: ' + error.message);
     },
   });
 
@@ -259,12 +232,11 @@ export const useNurseSchedule = (view: 'week' | 'month' = 'week', date?: Date) =
     return true;
   };
 
-  const isLoading = loadingAssignments || loadingShifts;
-  const error = acceptAssignment.error || declineAssignment.error || requestShift.error;
+  const isLoading = loadingAssignments;
+  const error = acceptAssignment.error || declineAssignment.error;
 
   const data: NurseScheduleData = {
     myAssignments,
-    openShifts: openShifts.filter(shift => shift.status === 'open'),
     pendingAssignments: getPendingAssignments(), // Verwende getPendingAssignments() statt getAssignmentsByStatus('pending')
     upcomingAssignments: getUpcomingAssignments(),
     conflicts: [], // Would be populated by conflict checking
@@ -276,9 +248,6 @@ export const useNurseSchedule = (view: 'week' | 'month' = 'week', date?: Date) =
     acceptAssignment: acceptAssignment.mutateAsync,
     declineAssignment: async (assignmentId: string, reason?: string) => {
       await declineAssignment.mutateAsync({ assignmentId, reason });
-    },
-    requestShift: async (shiftId: string, message?: string) => {
-      await requestShift.mutateAsync({ shiftId, message });
     },
     checkConflicts,
   };

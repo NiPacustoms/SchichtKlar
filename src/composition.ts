@@ -9,7 +9,6 @@ import {
   TimesheetRepo,
   UserRepo,
   FacilityRepo,
-  CloudFunctionsAssignmentGateway,
   type AssignmentWithDetails,
 } from '@/src/infrastructure/firebase';
 import { ListAssignmentsForUser } from '@/src/application/useCases/ListAssignmentsForUser';
@@ -27,7 +26,6 @@ import { ListTimesheetsForUser } from '@/src/application/useCases/ListTimesheets
 import { GetUserById } from '@/src/application/useCases/GetUserById';
 import { GetFacilityById } from '@/src/application/useCases/GetFacilityById';
 import { ListFacilitiesByCompany } from '@/src/application/useCases/ListFacilitiesByCompany';
-import { CreateAssignmentWithMatching } from '@/src/application/useCases/CreateAssignmentWithMatching';
 import { pluginRegistry, registerNotificationsPlugin } from '@/src/plugins';
 
 // Repositories (singletons)
@@ -36,7 +34,6 @@ const shiftRepo = new ShiftRepo();
 const timesheetRepo = new TimesheetRepo();
 const userRepo = new UserRepo();
 const facilityRepo = new FacilityRepo();
-const assignmentWorkflowGateway = new CloudFunctionsAssignmentGateway();
 
 // Use cases
 export const listAssignmentsForUser = new ListAssignmentsForUser(assignmentRepo);
@@ -54,9 +51,6 @@ export const listTimesheetsForUser = new ListTimesheetsForUser(timesheetRepo);
 export const getUserById = new GetUserById(userRepo);
 export const getFacilityById = new GetFacilityById(facilityRepo);
 export const listFacilitiesByCompany = new ListFacilitiesByCompany(facilityRepo);
-export const createAssignmentWithMatching = new CreateAssignmentWithMatching(
-  assignmentWorkflowGateway
-);
 
 // EventBus (singleton)
 export { EventBus };

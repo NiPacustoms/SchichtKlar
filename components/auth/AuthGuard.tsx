@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { logger } from '@/lib/logging';
 
@@ -8,8 +7,6 @@ import { usePermissions } from '../../contexts/PermissionsContext';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { adminSettingsService } from '@/lib/services/adminSettings';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -39,17 +36,6 @@ export function AuthGuard({ children, requireAdmin = false }: AuthGuardProps) {
       });
     }
   }, [requireAdmin, loading, user, canAccessAdminArea]);
-
-  // Load admin settings only if user can access admin area
-  const { data: settings } = useQuery({
-    queryKey: ['adminSettings'],
-    queryFn: () => adminSettingsService.getSettings(),
-    enabled: canAccessAdminArea,
-    retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  const twoFactorRequired = settings?.twoFactorRequired || false;
 
   // Sync claims if user is admin but claims might be missing
   useEffect(() => {
@@ -176,31 +162,6 @@ export function AuthGuard({ children, requireAdmin = false }: AuthGuardProps) {
         : 'Weiterleitung zum Mitarbeiterbereich…';
     return (
       <LoadingSpinner variant="fullscreen" message={message} size={60} showLogo={true} />
-    );
-  }
-
-  // Enforce MFA for admins when required by system settings
-  const mfaRequired = twoFactorRequired;
-  const isPrivileged = canAccessAdminArea;
-  const hasMfa = !!(
-    firebaseUser &&
-    'multiFactor' in firebaseUser &&
-    (firebaseUser as any).multiFactor?.enrolledFactors?.length
-  );
-  if (requireAdmin && isPrivileged && mfaRequired && !hasMfa) {
-    if (typeof window !== 'undefined') {
-      // Redirect admin to secure setup page
-      router.push('/admin/sicherheits-check');
-    }
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">2FA erforderlich</h1>
-          <p className="text-gray-600">
-            Bitte richte die Zwei-Faktor-Authentifizierung ein, um fortzufahren.
-          </p>
-        </div>
-      </div>
     );
   }
 
