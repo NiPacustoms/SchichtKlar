@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
+import { Timestamp } from 'firebase-admin/firestore';
 import { REGION } from '../utils/region';
 
 if (!admin.apps.length) {
@@ -19,7 +20,7 @@ export const cleanupApiMonitoring = functions.region(REGION).pubsub
   .schedule('every 24 hours')
   .timeZone('Europe/Berlin')
   .onRun(async () => {
-    const now = admin.firestore.Timestamp.now();
+    const now = Timestamp.now();
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - DAYS_TO_KEEP);
     const cutoffDateString = cutoffDate.toISOString().split('T')[0]; // YYYY-MM-DD
@@ -111,7 +112,7 @@ export const cleanupApiMonitoring = functions.region(REGION).pubsub
  */
 export const manualCleanupApiMonitoring = functions.region(REGION).https.onRequest(async (req, res) => {
   try {
-    const now = admin.firestore.Timestamp.now();
+    const now = Timestamp.now();
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - DAYS_TO_KEEP);
     const cutoffDateString = cutoffDate.toISOString().split('T')[0];

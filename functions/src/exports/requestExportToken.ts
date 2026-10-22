@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
+import { Timestamp } from 'firebase-admin/firestore';
 import { REGION } from '../utils/region';
 
 if (!admin.apps.length) {
@@ -30,7 +31,7 @@ export const requestExportToken = functions.region(REGION).https.onCall(async (_
   }
 
   // Rate Limiting: max 5 Token pro Minute und User
-  const oneMinuteAgo = admin.firestore.Timestamp.fromDate(new Date(Date.now() - 60 * 1000));
+  const oneMinuteAgo = Timestamp.fromDate(new Date(Date.now() - 60 * 1000));
   const recentSnap = await db
     .collection('exportTokens')
     .where('userId', '==', context.auth.uid)
@@ -42,7 +43,7 @@ export const requestExportToken = functions.region(REGION).https.onCall(async (_
 
   // Token erzeugen
   const token = admin.firestore.FieldValue.serverTimestamp().toString() + '-' + Math.random().toString(36).slice(2);
-  const expiresAt = admin.firestore.Timestamp.fromDate(new Date(Date.now() + 5 * 60 * 1000));
+  const expiresAt = Timestamp.fromDate(new Date(Date.now() + 5 * 60 * 1000));
 
   await db.collection('exportTokens').add({
     userId: context.auth.uid,

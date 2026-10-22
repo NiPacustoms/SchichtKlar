@@ -57,14 +57,12 @@ type Callable = (d: unknown, c: unknown) => Promise<Record<string, unknown>>;
 
 (async () => {
   const { assignShift } = await import('../src/assignShift');
-  const { requestShift } = await import('../src/requestShift');
   const { acceptPublishedAssignment } = await import('../src/assignment/dayRuleFunctions');
   const { computeTimesheetBreakdown } = await import('../src/timesheetBreakdownTrigger');
   const { auditTimesheets, auditStatements, auditUsers } = await import('../src/auditTrail');
   const { exportUserData } = await import('../src/dsr/exportUserData');
   const { deleteUserData } = await import('../src/dsr/deleteUserData');
   const assign = fft.wrap(assignShift as never) as Callable;
-  const request = fft.wrap(requestShift as never) as Callable;
   const acceptPub = fft.wrap(acceptPublishedAssignment as never) as Callable;
   const doExport = fft.wrap(exportUserData as never) as Callable;
   const doDelete = fft.wrap(deleteUserData as never) as Callable;
@@ -99,9 +97,6 @@ type Callable = (d: unknown, c: unknown) => Promise<Record<string, unknown>>;
   await check('Ausgeschriebener Einsatz trotz Altbestand annehmbar', async () => {
     await db.doc('assignments/sim-pub').set({ companyId: C, status: 'published', userId: null, candidateUserIds: ['sim-lea'], startDate: berlinMidnight('2026-12-16'), facilityId: 'sim-f' });
     await acceptPub({ assignmentId: 'sim-pub' }, lea);
-  });
-  await check('Pflegekraft kann trotz Altbestand anfragen', async () => {
-    await request({ shiftId: 'sim-s2' }, lea);
   });
   await check('Disposition plant Kollegin am Folgetag ein', async () => {
     await assign({ shiftId: 'sim-s2', userId: 'sim-tom' }, admin_);

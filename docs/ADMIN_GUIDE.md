@@ -20,12 +20,13 @@ Kurzanleitung für die täglichen Abläufe. Alle Daten und Cloud Functions liege
 ## Planen
 
 - **Dienstplan / Schichten:** Schichten anlegen und Personen zuweisen.
+- **Einsätze → Neuer Einsatz:** Pflegekräfte selbst auswählen und den Einsatz ausschreiben; wer zuerst annimmt, bekommt ihn. Wer an dem Tag schon eingeplant ist, wird beim Ausschreiben namentlich gemeldet.
 - **Regel „1 Einsatz pro Tag“:** Eine zweite Zuweisung am selben Kalendertag geht nur mit Begründung; die Begründung wird gespeichert.
 - **Einsatzmitteilung (§ 11 AÜG):** Die Pflegekraft bestätigt oder lehnt jeden Einsatz digital mit Unterschrift ab; das PDF entspricht der AufAbruf-Vorlage.
 
 ## Nicht in der App
 
-- Urlaubsverwaltung und Krankmeldungen gibt es bewusst nicht. Krankmeldungen laufen wie bisher direkt über die Disposition (eAU-Abruf bei der Krankenkasse); fällt jemand aus, den Einsatz im Dienstplan neu besetzen.
+- Urlaubsverwaltung, Krankmeldungen, automatische Kandidatenvorschläge, Schichtanfragen durch Pflegekräfte, Datei-Import und eigene Auswertungen für Pflegekräfte gibt es bewusst nicht. Personal und Einrichtungen werden einzeln angelegt bzw. eingeladen. Krankmeldungen laufen wie bisher direkt über die Disposition (eAU-Abruf bei der Krankenkasse); fällt jemand aus, den Einsatz im Dienstplan neu besetzen.
 
 ## Zeiten prüfen (Personal → Zeitnachweise)
 

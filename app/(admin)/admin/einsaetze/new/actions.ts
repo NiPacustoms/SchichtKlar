@@ -2,7 +2,7 @@
 import { logger } from '@/lib/logging';
 
 /**
- * Server Action: Cloud Function createWithMatching aufrufen.
+ * Server Action: Einsatz an ausgewählte Pflegekräfte ausschreiben (Cloud Function createWithMatching).
  * Umgeht die API-Route (Browser-POST liefert hier 404, Server Action nicht).
  */
 export type CreateAssignmentPayload = {
@@ -13,7 +13,6 @@ export type CreateAssignmentPayload = {
   endTime: string;
   qualification?: string;
   hours?: number;
-  limit?: number;
   selectedUserIds?: string[];
 };
 
@@ -91,8 +90,8 @@ export async function createAssignmentWithMatchingAction(
   if (err && typeof err === 'object') {
     const message = String(err.message ?? 'Cloud Function Fehler');
     if (err.status === 'unauthenticated') return { ok: false, error: 'Nicht angemeldet' };
-    if (err.status === 'permission-denied')
-      return { ok: false, error: 'Nur Admins dürfen Einsätze erstellen' };
+    if (err.status === 'permission-denied' || err.status === 'PERMISSION_DENIED')
+      return { ok: false, error: message && message !== 'Only admins can create assignments' ? message : 'Nur Admins dürfen Einsätze erstellen' };
     if (err.status === 'invalid-argument') return { ok: false, error: message };
     return { ok: false, error: message };
   }

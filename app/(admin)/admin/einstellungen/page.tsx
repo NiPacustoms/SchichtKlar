@@ -561,20 +561,6 @@ export default function AdminSettingsPage() {
                   secondary={`${settings.sessionTimeout} Minuten`}
                 />
                 <SettingsRow
-                  primary="2FA erforderlich"
-                  secondary={settings.twoFactorRequired ? 'Ja' : 'Nein'}
-                  action={
-                    <Switch
-                      checked={settings.twoFactorRequired}
-                      onChange={() =>
-                        handleUpdateSettings({
-                          twoFactorRequired: !settings.twoFactorRequired,
-                        })
-                      }
-                    />
-                  }
-                />
-                <SettingsRow
                   primary="Login-Versuche"
                   secondary={`Maximal ${settings.maxLoginAttempts} Versuche`}
                 />

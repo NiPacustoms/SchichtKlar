@@ -45,7 +45,6 @@ const { assignment, isLoading } = useDomainAssignment(assignmentId);
 import {
   listAssignmentsForUser,
   getAssignmentById,
-  createAssignmentWithMatching,
   listShiftsForFacility,
   listTimesheetsForUser,
   getUserById,
@@ -53,7 +52,6 @@ import {
 } from '@/src/composition';
 
 const assignments = await listAssignmentsForUser.execute({ userId, companyId });
-const result = await createAssignmentWithMatching.execute(payload, idToken);
 ```
 
 ### 4. Bestehende Services & Migration

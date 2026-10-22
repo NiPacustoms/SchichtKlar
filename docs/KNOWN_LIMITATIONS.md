@@ -94,6 +94,7 @@ PDL-Freigabe per Magic-Link (Remote-Bestätigung ohne Account), §82c-Satzdeckel
 | I6 | Kurz-URLs (`/einrichtungen`, `/dokumente`, `/zeiten`, `/dienstplan`, `/zeiterfassung`) zeigten der Disposition die Mitarbeiterseite. | behoben (Weiterleitung je Rolle) |
 | I7 | Ungenutzte Proxy-Routen (`/api`, `/api/cf`, `/api/proxy-create`, `/api/assignment/*`) und die Demo-Seite `/customers` vergrößerten die Angriffsfläche. | entfernt |
 | I8 | Urlaubsverwaltung | entfernt (21.10.2026, Entscheidung Eigentümer) |
+| I10 | Matching, Schichtanfragen, Import, Sicherheits-Check, Berichte Pflegekraft | entfernt (22.10.2026, Entscheidung Eigentümer) |
 | I9 | Krankmeldung | entfernt (21.10.2026, Entscheidung Eigentümer); Altbestand `absences` gesperrt, nur für DSGVO-Auskunft/Aufbewahrung |
 | I9 | `functions/test/dsr.test.ts` lief nie (veraltete Handler-Exporte). | ersetzt durch Szenario-Simulation (`test/simulation.emulator.ts`, S4) |
 | I10 | Optional: Mail-Queue mit Zustellstatus (Idee aus geschlossenem PR #8). | offen – Ausbaustufe |

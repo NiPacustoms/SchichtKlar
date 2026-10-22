@@ -10,7 +10,8 @@
 **Entfernt**
 - Lohnsteuer-Reste und der DATEV-LODAS-Export (#53, #54) – die Lohnabrechnung macht das Steuerbüro, die App liefert Stundennachweise.
 - Urlaubsverwaltung (Anträge, Genehmigung, Resturlaub, Urlaubsanspruch) (#55).
-- Krankmeldungen (Meldung, Postfach, Sperre in der Planung, „K“ im Stundennachweis) – Krankmeldungen laufen außerhalb der App. Altdaten bleiben gesperrt in der Datenbank.
+- Krankmeldungen (Meldung, Postfach, Sperre in der Planung, „K“ im Stundennachweis) – Krankmeldungen laufen außerhalb der App. Altdaten bleiben gesperrt in der Datenbank (#56).
+- Automatische Kandidatenvorschläge (Matching), Schichtanfragen durch Pflegekräfte, Datei-Import für Personal/Einrichtungen, Sicherheits-Check-Seite samt 2FA-Pflichtschalter und die Berichte-Seite für Pflegekräfte (#57). Ausschreiben geht weiter – an selbst ausgewählte Kräfte.
 
 **Sicherheit & Datenschutz**
 - Alle Cloud Functions laufen in der EU (`europe-west1`).

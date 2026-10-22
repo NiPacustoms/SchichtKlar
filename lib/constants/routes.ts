@@ -23,7 +23,6 @@ export const ROUTES = {
     DOKUMENTE: '/employee/dokumente',
     ASSIGNMENTS: '/employee/einsaetze',
     EINRICHTUNGEN: '/employee/einrichtungen',
-    BERICHTE: '/employee/berichte',
     BENACHRICHTIGUNGEN: '/employee/benachrichtigungen',
     STUNDENNACHWEIS: '/employee/stundennachweis',
   },

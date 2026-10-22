@@ -32,7 +32,6 @@ export const assignmentService = {
   delete: write.deleteAssignment,
   notifyAdminsAboutFormStatus: write.notifyAdminsAboutFormStatus,
   bulkUpdate: write.bulkUpdate,
-  createRequest: write.createRequest,
   bulkAssign: write.bulkAssign,
   addRelievingSignature: writeSignatures.addRelievingSignature,
   checkConflict: conflicts.checkConflict,

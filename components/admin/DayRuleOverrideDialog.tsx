@@ -146,10 +146,10 @@ export async function assignWithDayRulePrompt(
   requestReason: (message: string, personName?: string) => Promise<string>
 ) {
   try {
-    return await cloudFunctions.assignShiftToUser(shiftId, user.id, false, true);
+    return await cloudFunctions.assignShiftToUser(shiftId, user.id, true);
   } catch (error) {
     if (!(error instanceof DayRuleConflictError)) throw error;
     const reason = await requestReason(error.message, user.displayName ?? undefined);
-    return await cloudFunctions.assignShiftToUser(shiftId, user.id, false, true, reason);
+    return await cloudFunctions.assignShiftToUser(shiftId, user.id, true, reason);
   }
 }

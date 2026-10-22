@@ -7,7 +7,7 @@ export {
   type AssignmentForCollection,
   type CollectionPdfOptions,
 } from './assignmentCollectionPdf';
-export { cloudFunctions, shiftAssignmentHelpers } from './cloudFunctions';
+export { cloudFunctions } from './cloudFunctions';
 export { documentTypeService } from './documentTypes';
 export { documentService } from './documents';
 export { facilityService } from './facilities';

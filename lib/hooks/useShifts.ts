@@ -85,7 +85,7 @@ export function useShifts(filters: ShiftFilters = {}) {
   // Assign shift mutation via Cloud Function
   const assignShiftMutation = useMutation({
     mutationFn: ({ shiftId, userId }: { shiftId: string; userId: string }) =>
-      cloudFunctions.assignShiftToUser(shiftId, userId, false, true), // Admins können Konflikte überschreiben
+      cloudFunctions.assignShiftToUser(shiftId, userId, true), // Admins können Konflikte überschreiben
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
       queryClient.invalidateQueries({ queryKey: ['schedule'] });

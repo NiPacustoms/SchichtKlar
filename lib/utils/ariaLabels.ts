@@ -94,7 +94,6 @@ export const ariaLabels = {
   endBreak: 'Pause beenden',
   acceptShift: 'Schicht annehmen',
   declineShift: 'Schicht ablehnen',
-  requestShift: 'Schicht anfragen',
   assignShift: 'Schicht zuweisen',
   unassignShift: 'Schicht-Zuweisung aufheben',
   

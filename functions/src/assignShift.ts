@@ -67,13 +67,12 @@ export const assignShift = functions.region(REGION).https.onCall(async (data, co
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }
 
-  const { shiftId, userId, isRequest = false, adminOverride = false, dayRuleOverrideReason } = data || {};
+  const { shiftId, userId, adminOverride = false, dayRuleOverrideReason } = data || {};
 
   // Log für Debugging
   functions.logger.info('assignShift called', {
     shiftId,
     userId,
-    isRequest,
     adminOverride,
     adminOverrideType: typeof adminOverride,
     adminOverrideValue: String(adminOverride),
@@ -130,7 +129,7 @@ export const assignShift = functions.region(REGION).https.onCall(async (data, co
         (skill: string) => !userQualifications.includes(skill)
       );
 
-      if (missingQualifications.length > 0 && !isRequest && !adminOverride) {
+      if (missingQualifications.length > 0 && !adminOverride) {
         throw new functions.https.HttpsError(
           'failed-precondition',
           `Missing qualifications: ${missingQualifications.join(', ')}`
@@ -213,11 +212,10 @@ export const assignShift = functions.region(REGION).https.onCall(async (data, co
         }
       }
 
-      if (conflicts.length > 0 && !isRequest && !adminOverride) {
+      if (conflicts.length > 0 && !adminOverride) {
         functions.logger.warn('Time conflict detected but adminOverride is false', {
           conflicts: conflicts.length,
           adminOverride,
-          isRequest,
         });
         throw new functions.https.HttpsError(
           'failed-precondition',
@@ -280,11 +278,10 @@ export const assignShift = functions.region(REGION).https.onCall(async (data, co
         userId,
         shiftId,
         companyId: shiftCompanyId, // WICHTIG: companyId für Mandantenisolation
-        status: isRequest ? 'requested' : 'assigned',
+        status: 'assigned',
         assignedAt: admin.firestore.FieldValue.serverTimestamp(),
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        ...(isRequest && { requiresSignature: false }),
         ...(dayRuleOverride && { dayRuleOverride }),
       };
 
@@ -308,10 +305,8 @@ export const assignShift = functions.region(REGION).https.onCall(async (data, co
         userId,
         companyId: shiftCompanyId, // WICHTIG: companyId für Mandantenisolation
         type: 'shift' as const, // WICHTIG: employeeNotifications erwartet 'shift', nicht 'shift-assigned'
-        title: isRequest ? 'Schichtanfrage gesendet' : 'Schicht zugewiesen',
-        message: isRequest
-          ? `Du hast eine Anfrage für eine Schicht gesendet`
-          : `Dir wurde eine Schicht zugewiesen`,
+        title: 'Schicht zugewiesen',
+        message: 'Dir wurde eine Schicht zugewiesen',
         actionUrl: '/employee/dienstplan',
         read: false,
         starred: false, // WICHTIG: employeeNotifications benötigt starred
@@ -322,7 +317,6 @@ export const assignShift = functions.region(REGION).https.onCall(async (data, co
         metadata: {
           shiftId,
           assignmentId: assignmentRef.id,
-          isRequest,
         },
       };
 
@@ -333,7 +327,7 @@ export const assignShift = functions.region(REGION).https.onCall(async (data, co
       const auditData = {
         userId: context.auth?.uid || 'unknown',
         companyId: shiftCompanyId, // WICHTIG: companyId für Mandantenisolation
-        action: isRequest ? 'assignment_requested' : 'assignment_created',
+        action: 'assignment_created',
         resourceType: 'assignment',
         resourceId: assignmentRef.id,
         changes: {
@@ -361,9 +355,7 @@ export const assignShift = functions.region(REGION).https.onCall(async (data, co
       return {
         success: true,
         assignmentId: assignmentRef.id,
-        message: isRequest
-          ? 'Schichtanfrage erfolgreich gesendet'
-          : 'Schicht erfolgreich zugewiesen',
+        message: 'Schicht erfolgreich zugewiesen',
         conflicts: conflicts.length > 0 ? conflicts : undefined,
         missingQualifications: missingQualifications.length > 0 ? missingQualifications : undefined,
         adminOverride: adminOverride,
