@@ -144,12 +144,6 @@ export const cloudFunctions = {
     }
   },
 
-  async runScheduledReportsNow(): Promise<{ success: boolean }> {
-    const fn = httpsCallable(getFunctionsOrThrow(), 'runScheduledReportsNow');
-    const result = await fn({});
-    return result.data as { success: boolean };
-  },
-
   async notifyFacilityForAssignment(payload: { assignmentId: string; employeeName: string; contact?: string }): Promise<{ success: boolean }> {
     const fn = httpsCallable(getFunctionsOrThrow(), 'notifyFacilityForAssignment');
     const result = await fn(payload);

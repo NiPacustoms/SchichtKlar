@@ -56,10 +56,6 @@ export { declineAssignment } from './declineAssignment';
 // gar nicht exportiert und damit nicht deployt (Aufruf lief in Prod ins Leere):
 export { declineWithSignature as declineAssignmentWithSignature } from './assignment/declineWithSignature';
 export { notifyFacility as notifyFacilityForAssignment } from './assignment/notifyFacility';
-// Manuelles Auslösen der geplanten Berichte (Button in /admin/berichte/geplante-berichte).
-// HINWEIS: der automatische Cron `scheduledReportsJob` bleibt bewusst NICHT exportiert
-// (versendet Berichte selbstständig) – erst nach ausdrücklicher Freigabe aktivieren.
-export { runScheduledReportsNow } from './scheduledReports';
 // Weitere vom Client genutzte, bislang nicht exportierte Callables:
 export { requestExportToken } from './exports/requestExportToken';
 export { validateExportToken } from './exports/validateExportToken';
