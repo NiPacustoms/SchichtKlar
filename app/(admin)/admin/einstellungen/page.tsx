@@ -63,19 +63,14 @@ import {
   Security,
   Description,
   Notifications,
-  Backup,
-  Restore,
   Add,
   Edit,
   Delete,
   CloudUpload,
-  CloudDownload,
   Warning,
   ToggleOn,
   People,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
-import { de } from 'date-fns/locale';
 import {
   PERMISSION_OPTIONS,
   PERMISSION_GROUPS,
@@ -159,7 +154,6 @@ export default function AdminSettingsPage() {
     settings,
     roles,
     documentTypes,
-    systemInfo: _systemInfo,
     isLoading,
     error,
     updateSettings,
@@ -169,13 +163,9 @@ export default function AdminSettingsPage() {
     createDocumentType,
     updateDocumentType,
     deleteDocumentType,
-    backupData,
-    restoreData,
     isUpdating,
     isCreating,
     isDeleting,
-    isBackingUp,
-    isRestoring,
   } = useAdminSettings();
 
   const { features, isLoading: featuresLoading } = useFeatureFlags();
@@ -185,8 +175,6 @@ export default function AdminSettingsPage() {
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [documentTypeDialogOpen, setDocumentTypeDialogOpen] = useState(false);
-  const [backupDialogOpen, setBackupDialogOpen] = useState(false);
-  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Role | AdminDocumentType | null>(null);
   const [roleFormName, setRoleFormName] = useState('');
   const [roleFormDescription, setRoleFormDescription] = useState('');
@@ -354,24 +342,6 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const handleBackupData = async () => {
-    try {
-      await backupData();
-      setBackupDialogOpen(false);
-    } catch (_error) {
-      // Error handling is done in the mutations
-    }
-  };
-
-  const handleRestoreData = async (file: File) => {
-    try {
-      await restoreData(file);
-      setRestoreDialogOpen(false);
-    } catch (_error) {
-      // Error handling is done in the mutations
-    }
-  };
-
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin':
@@ -519,7 +489,6 @@ export default function AdminSettingsPage() {
             <Tab label="Rollen & Rechte" icon={<Security />} iconPosition="start" />
             <Tab label="Dokumenttypen" icon={<Description />} iconPosition="start" />
             <Tab label="Benachrichtigungen" icon={<Notifications />} iconPosition="start" />
-            <Tab label="Backup & Restore" icon={<Backup />} iconPosition="start" />
             <Tab label="Features" icon={<ToggleOn />} iconPosition="start" />
           </Tabs>
         </Paper>
@@ -549,23 +518,6 @@ export default function AdminSettingsPage() {
               </Box>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 6 }}>
-              <SettingsSectionLabel>Sicherheits-Einstellungen</SettingsSectionLabel>
-              <Box className="ios-group">
-                <SettingsRow
-                  primary="Passwort-Policy"
-                  secondary="Mindestens 8 Zeichen, Groß-/Kleinbuchstaben, Zahlen"
-                />
-                <SettingsRow
-                  primary="Session-Timeout"
-                  secondary={`${settings.sessionTimeout} Minuten`}
-                />
-                <SettingsRow
-                  primary="Login-Versuche"
-                  secondary={`Maximal ${settings.maxLoginAttempts} Versuche`}
-                />
-              </Box>
-            </Grid>
           </Grid>
         </TabPanel>
 
@@ -971,100 +923,6 @@ export default function AdminSettingsPage() {
 
         <TabPanel value={activeTab} index={4}>
           <Grid container spacing={3}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card className="glass">
-                <CardContent>
-                  <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-                    <Backup sx={{ mr: 1 }} />
-                    Backup erstellen
-                  </Typography>
-
-                  <Alert severity="info" sx={{ mb: 3 }}>
-                    Erstellen Sie regelmäßig Backups Ihrer Daten, um Datenverluste zu vermeiden.
-                  </Alert>
-
-                  <List>
-                    <ListItem>
-                      <ListItemText
-                        primary="Letztes Backup"
-                        secondary={
-                          settings.lastBackup
-                            ? format(settings.lastBackup, 'dd.MM.yyyy HH:mm', { locale: de })
-                            : 'Nie'
-                        }
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText
-                        primary="Backup-Größe"
-                        secondary={settings.backupSize || 'Unbekannt'}
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary="Backup-Typ" secondary="Vollständig" />
-                    </ListItem>
-                  </List>
-
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    startIcon={<CloudUpload />}
-                    onClick={() => setBackupDialogOpen(true)}
-                    disabled={isBackingUp}
-                    sx={{ mt: 2 }}
-                  >
-                    {isBackingUp ? 'Backup wird erstellt...' : 'Backup erstellen'}
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card className="glass">
-                <CardContent>
-                  <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-                    <Restore sx={{ mr: 1 }} />
-                    Daten wiederherstellen
-                  </Typography>
-
-                  <Alert severity="warning" sx={{ mb: 3 }}>
-                    Achtung: Das Wiederherstellen von Daten überschreibt alle aktuellen Daten!
-                  </Alert>
-
-                  <List>
-                    <ListItem>
-                      <ListItemText
-                        primary="Verfügbare Backups"
-                        secondary={settings.availableBackups || 'Keine'}
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary="Backup-Format" secondary="JSON" />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary="Wiederherstellungszeit" secondary="Ca. 5-10 Minuten" />
-                    </ListItem>
-                  </List>
-
-                  <Button
-                    variant="outlined"
-                    fullWidth
-                    startIcon={<CloudDownload />}
-                    onClick={() => setRestoreDialogOpen(true)}
-                    disabled={isRestoring}
-                    sx={{ mt: 2 }}
-                  >
-                    {isRestoring ? 'Wiederherstellung läuft...' : 'Daten wiederherstellen'}
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </TabPanel>
-
-        {/* Features Tab */}
-        <TabPanel value={activeTab} index={5}>
-          <Grid container spacing={3}>
             <Grid size={{ xs: 12 }}>
               <Alert severity="info" sx={{ mb: 3 }}>
                 Aktivieren oder deaktivieren Sie Features, die in der App angezeigt werden sollen.
@@ -1155,18 +1013,6 @@ export default function AdminSettingsPage() {
                           checked={features?.enableEmployeeDocuments ?? true}
                           onChange={e =>
                             handleUpdateFeatures({ enableEmployeeDocuments: e.target.checked })
-                          }
-                          disabled={featuresLoading}
-                        />
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary="Berichte" secondary="Eigene Berichte anzeigen" />
-                      <ListItemSecondaryAction>
-                        <Switch
-                          checked={features?.enableEmployeeReports ?? true}
-                          onChange={e =>
-                            handleUpdateFeatures({ enableEmployeeReports: e.target.checked })
                           }
                           disabled={featuresLoading}
                         />
@@ -1433,80 +1279,6 @@ export default function AdminSettingsPage() {
           </DialogActions>
         </Dialog>
 
-        {/* Backup Dialog */}
-        <Dialog
-          open={backupDialogOpen}
-          onClose={() => setBackupDialogOpen(false)}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>Backup erstellen</DialogTitle>
-          <DialogContent>
-            <Alert severity="info" sx={{ mb: 3 }}>
-              Das Backup wird alle Systemdaten, Benutzer, Schichten und Dokumente enthalten.
-            </Alert>
-
-            <List>
-              <ListItem>
-                <ListItemText primary="Backup-Typ" secondary="Vollständig" />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="Geschätzte Größe" secondary="Ca. 50-100 MB" />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="Geschätzte Zeit" secondary="Ca. 2-5 Minuten" />
-              </ListItem>
-            </List>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setBackupDialogOpen(false)}>Abbrechen</Button>
-            <Button onClick={handleBackupData} variant="contained" disabled={isBackingUp}>
-              {isBackingUp ? 'Backup wird erstellt...' : 'Backup erstellen'}
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Restore Dialog */}
-        <Dialog
-          open={restoreDialogOpen}
-          onClose={() => setRestoreDialogOpen(false)}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>Daten wiederherstellen</DialogTitle>
-          <DialogContent>
-            <Alert severity="warning" sx={{ mb: 3 }}>
-              Achtung: Alle aktuellen Daten werden überschrieben!
-            </Alert>
-
-            <TextField
-              fullWidth
-              type="file"
-              inputProps={{ accept: '.json' }}
-              label="Backup-Datei auswählen"
-              sx={{ mb: 3 }}
-            />
-
-            <List>
-              <ListItem>
-                <ListItemText primary="Wiederherstellungs-Typ" secondary="Vollständig" />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="Geschätzte Zeit" secondary="Ca. 5-10 Minuten" />
-              </ListItem>
-            </List>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setRestoreDialogOpen(false)}>Abbrechen</Button>
-            <Button
-              onClick={() => handleRestoreData(new File([], 'backup.json'))}
-              variant="contained"
-              disabled={isRestoring}
-            >
-              {isRestoring ? 'Wiederherstellung läuft...' : 'Wiederherstellen'}
-            </Button>
-          </DialogActions>
-        </Dialog>
       </PageContainer>
     </GlobalErrorBoundary>
   );

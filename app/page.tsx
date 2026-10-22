@@ -7,7 +7,7 @@ import { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AppLogo } from '@/components/ui/AppLogo';
-import { HeroRosterPreview } from '@/components/marketing/HeroRosterPreview';
+import { HeroWorkflowPreview } from '@/components/marketing/HeroWorkflowPreview';
 import {
   alpha,
   Box,
@@ -19,13 +19,13 @@ import {
 import {
   AccessTime,
   ArrowForward,
-  Assessment,
   CalendarMonth,
   CheckCircleOutline,
   Description,
   Draw,
   VerifiedUser,
   PhoneAndroid,
+  ReceiptLong,
 } from '@mui/icons-material';
 import { useBrandingSettings } from '@/lib/hooks/useBrandingSettings';
 import { ThemeProvider } from '@mui/material/styles';
@@ -56,69 +56,69 @@ function TintedIcon({ children }: { children: React.ReactNode }) {
 const FEATURES = [
   {
     icon: <CalendarMonth fontSize="small" />,
-    title: 'Dienstplanung',
-    desc: 'Schichten anlegen, Einsätze zuweisen und den Dienstplan für alle sichtbar halten – Kalender- und Listenansicht inklusive.',
-  },
-  {
-    icon: <AccessTime fontSize="small" />,
-    title: 'Zeiterfassung',
-    desc: 'Schichten starten, Pausen erfassen, Zeitkonto und Überstunden im Blick – minutengenau und nachvollziehbar.',
-  },
-  {
-    icon: <Draw fontSize="small" />,
-    title: 'Digitale Signatur',
-    desc: 'Arbeitszeiten direkt in der Einrichtung digital gegenzeichnen lassen – ohne Papier und ohne Nachlauf.',
+    title: 'Dienstplan & Einsätze',
+    desc: 'Schichten anlegen, Pflegekräfte zuweisen oder einen Einsatz an ausgewählte Kräfte ausschreiben – wer zuerst annimmt, bekommt ihn. Regel „1 Einsatz pro Tag“ inklusive.',
   },
   {
     icon: <Description fontSize="small" />,
-    title: 'Einsatzmitteilungen',
-    desc: 'Einsatzmitteilungen nach § 11 AÜG digital erstellen, unterschreiben und revisionssicher ablegen.',
+    title: 'Einsatzmitteilung nach § 11 AÜG',
+    desc: 'Die Pflegekraft bestätigt oder lehnt jeden Einsatz digital mit Unterschrift ab; die Einsatzmitteilung wird als PDF abgelegt.',
   },
   {
-    icon: <Assessment fontSize="small" />,
-    title: 'Berichte & Exporte',
-    desc: 'Stunden, Auslastung und Einsätze auswerten – als PDF oder CSV exportieren, bereit für die Abrechnung.',
+    icon: <AccessTime fontSize="small" />,
+    title: 'Zeiterfassung mit Arbeitszeitgesetz',
+    desc: 'Beginn, Ende und Pause je Dienst erfassen. Pausen, 10-Stunden-Grenze und Ruhezeit werden bei Erfassung und Planung geprüft.',
+  },
+  {
+    icon: <Draw fontSize="small" />,
+    title: 'Bestätigung durch die Einrichtung',
+    desc: 'Unterschrift der Einrichtung direkt vor Ort auf dem Gerät – oder Freigabe der Woche per Link, ganz ohne eigenes Konto.',
+  },
+  {
+    icon: <ReceiptLong fontSize="small" />,
+    title: 'Monatlicher Stundennachweis',
+    desc: 'Der Papierbogen digital: Stunden, Pausen sowie Nacht-, Sonn- und Feiertagsstunden – unterschrieben als „erfasst“ und „anerkannt“, als PDF fürs Lohnbüro.',
   },
   {
     icon: <VerifiedUser fontSize="small" />,
-    title: 'Rollen & Datenschutz',
-    desc: 'Klare Rollentrennung zwischen Verwaltung und Pflegekräften, DSGVO-konforme Datenhaltung und Löschkonzepte.',
+    title: 'Prüfprotokoll & Datenschutz',
+    desc: 'Jede Änderung an Zeiten, Nachweisen, Einsätzen und Stammdaten wird serverseitig protokolliert. Daten in der EU, Auskunft und Löschung nach DSGVO.',
   },
 ];
 
 const STEPS = [
   {
     step: '1',
-    title: 'Einrichtung registrieren',
-    desc: 'Firma anlegen, Standorte und Stationen hinterlegen – in wenigen Minuten startklar.',
+    title: 'Firma registrieren',
+    desc: 'Firmenkonto anlegen und Einrichtungen mit Stationen und Ansprechpartnern hinterlegen.',
   },
   {
     step: '2',
     title: 'Team einladen',
-    desc: 'Pflegekräfte per E-Mail einladen. Qualifikationen und Nachweise werden zentral gepflegt.',
+    desc: 'Pflegekräfte per Einladungslink aufnehmen. Qualifikationen und Nachweise mit Ablaufdatum zentral pflegen.',
   },
   {
     step: '3',
-    title: 'Einsätze planen & erfassen',
-    desc: 'Schichten zuweisen, Zeiten erfassen, digital signieren – alles in einem Ablauf.',
+    title: 'Planen, erfassen, nachweisen',
+    desc: 'Einsätze planen, Zeiten erfassen und bestätigen lassen, Stundennachweis zum Monatsende unterschreiben.',
   },
 ];
 
 const AUDIENCE = [
   {
-    title: 'Für Einrichtungen & Agenturen',
+    title: 'Für die Disposition',
     points: [
       'Offene Schichten und Besetzung auf einen Blick',
-      'Wochenlimits nach ArbZG/MiLoG automatisch im Blick',
-      'Nachweise und Dokumente zentral verwaltet',
+      'Zeiten freigeben oder mit Grund zurückgeben',
+      'Nachweise der Pflegekräfte mit Ablaufdaten im Blick',
     ],
   },
   {
     title: 'Für Pflegekräfte',
     points: [
       'Dienstplan und Einsätze mobil auf dem eigenen Gerät',
-      'Zeiten erfassen und Zeitkonto jederzeit einsehen',
-      'Einsätze mit einem Fingertipp annehmen oder ablehnen',
+      'Einsätze annehmen oder ablehnen – mit Unterschrift',
+      'Zeiten erfassen und den Stundennachweis digital unterschreiben',
     ],
   },
 ];
@@ -274,8 +274,8 @@ export default function HomePage() {
               sx={{ fontSize: 17.5, lineHeight: 1.6, maxWidth: 480, mb: 4 }}
             >
               Schichtklar plant Einsätze in Pflegeeinrichtungen, erfasst die Arbeitszeit vor Ort
-              und lässt sie direkt gegenzeichnen – mit Einsatzmitteilung nach § 11 AÜG und
-              Wochenlimit nach ArbZG im Blick.
+              und lässt sie von der Einrichtung bestätigen – mit Einsatzmitteilung nach § 11 AÜG,
+              Arbeitszeitgesetz-Prüfung und digitalem Stundennachweis.
             </Typography>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 4 }}>
               <Button component={Link} href="/admin-registrieren" variant="contained" size="large">
@@ -286,7 +286,7 @@ export default function HomePage() {
               </Button>
             </Stack>
             <Stack spacing={1} sx={{ color: 'text.secondary' }}>
-              {['Daten in der EU, DSGVO-konform', 'Läuft im Browser – Smartphone, Tablet, Desktop'].map(item => (
+              {['Daten und Server in der EU (Belgien)', 'Läuft im Browser – Smartphone, Tablet, Desktop'].map(item => (
                 <Stack key={item} direction="row" spacing={1} alignItems="center">
                   <CheckCircleOutline sx={{ fontSize: 17, color: 'primary.main' }} />
                   <Typography sx={{ fontSize: 14 }}>{item}</Typography>
@@ -295,7 +295,7 @@ export default function HomePage() {
             </Stack>
           </Box>
           <Box sx={{ minWidth: 0 }}>
-            <HeroRosterPreview />
+            <HeroWorkflowPreview />
           </Box>
         </Box>
       </Container>
@@ -303,7 +303,7 @@ export default function HomePage() {
       {/* Funktionen: ruhige Liste statt Kachelraster */}
       <Container maxWidth="lg" sx={{ pb: { xs: 8, md: 12 } }}>
         <Typography variant="h2" sx={{ fontSize: { xs: 26, md: 32 }, letterSpacing: '-0.02em', mb: { xs: 3, md: 5 }, maxWidth: 560 }}>
-          Von der offenen Schicht bis zur Abrechnung
+          Von der offenen Schicht bis zum Stundennachweis
         </Typography>
         <Box
           sx={{
@@ -429,7 +429,7 @@ export default function HomePage() {
             variant="body1"
             sx={{ maxWidth: 560, mx: 'auto', mb: 4, color: 'rgba(255,255,255,0.9)' }}
           >
-            Registrieren Sie Ihre Einrichtung und planen Sie den ersten Dienstplan noch heute.
+            Registrieren Sie Ihre Firma und planen Sie den ersten Einsatz noch heute.
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
             <Button
@@ -494,12 +494,6 @@ export default function HomePage() {
             </Button>
             <Button key="datenschutz" component={Link} href="/recht/datenschutz" color="inherit" size="small">
               Datenschutz
-            </Button>
-            <Button key="agb" component={Link} href="/recht/agb" color="inherit" size="small">
-              AGB
-            </Button>
-            <Button key="avv" component={Link} href="/recht/avv" color="inherit" size="small">
-              AVV
             </Button>
           </Stack>
         </Box>

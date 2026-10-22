@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 
 
 import { useState, useEffect, useMemo } from 'react';
@@ -101,7 +102,6 @@ export default function EmployeeTimesPage() {
     addBreak,
     endBreak,
     getTimeStats,
-    exportTimes,
     isStarting,
     isEnding,
     isAddingBreak,
@@ -759,8 +759,8 @@ export default function EmployeeTimesPage() {
 
       {/* Actions */}
       <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-        <Button variant="outlined" startIcon={<Download />} onClick={() => exportTimes('pdf')}>
-          Export PDF
+        <Button variant="outlined" startIcon={<Download />} component={Link} href="/employee/stundennachweis">
+          Stundennachweis (PDF)
         </Button>
         <Button variant="outlined" startIcon={<Print />} onClick={() => window.print()}>
           Drucken

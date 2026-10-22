@@ -33,7 +33,7 @@ export default function PrivacyPage() {
   }, []);
 
   const companyName = legalInfo?.companyName || 'Schichtklar';
-  const companyEmail = legalInfo?.contact?.email || 'info@example.com';
+  const companyEmail = legalInfo?.contact?.email || 'info@aufabruf.eu';
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
@@ -280,15 +280,15 @@ export default function PrivacyPage() {
             </li>
             <li>
               <Typography variant="body2">
-                <strong>Firebase Analytics:</strong> Analyse der Nutzung (optional, nur bei
-                Einwilligung)
+                <strong>Resend (Resend, Inc.):</strong> Versand von E-Mails (z. B. Einladungen) über
+                die EU-Region (Irland)
               </Typography>
             </li>
           </Box>
           <Typography variant="body2" sx={{ mb: 2 }}>
             Die Daten werden in Rechenzentren der Google Cloud Platform gespeichert, die sich
-            innerhalb der EU befinden (Standard-Region: europe-west3, Frankfurt am Main,
-            Deutschland).
+            innerhalb der EU befinden (Region europe-west1, St. Ghislain,
+            Belgien).
           </Typography>
           <Typography variant="body2" sx={{ mb: 2 }}>
             Weitere Informationen zur Datenverarbeitung durch Firebase finden Sie in der
@@ -523,7 +523,8 @@ export default function PrivacyPage() {
             </li>
             <li>
               <Typography variant="body2">
-                <strong>Firebase Analytics:</strong> Nur bei ausdrücklicher Einwilligung (optional)
+                <strong>Kein Tracking:</strong> Es werden keine Analyse-, Werbe- oder Tracking-Cookies
+                eingesetzt.
               </Typography>
             </li>
           </Box>

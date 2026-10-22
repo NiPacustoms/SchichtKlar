@@ -646,21 +646,6 @@ export const timesService = {
     }
   },
 
-  // Export times
-  async exportTimes(format: 'pdf' | 'excel' | 'csv'): Promise<string> {
-    try {
-      // Generate export file
-      const fileUrl = `/times-export.${format}`;
-      
-      // File generation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      return fileUrl;
-    } catch (error) {
-      throw error;
-    }
-  },
-
   // Get time statistics
   async getStats(): Promise<{
     totalHours: number;

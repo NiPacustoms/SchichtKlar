@@ -71,7 +71,6 @@ export function useFeatureFlags() {
   // Employee Features
   const employeeFeatures = {
     documents: isFeatureEnabled('enableEmployeeDocuments'),
-    reports: isFeatureEnabled('enableEmployeeReports'),
     assignments: isFeatureEnabled('enableEmployeeAssignments'),
     facilities: isFeatureEnabled('enableEmployeeFacilities'),
     notifications: isFeatureEnabled('enableEmployeeNotifications'),
@@ -84,7 +83,6 @@ export function useFeatureFlags() {
   const canAccessTemplates = isAdmin && adminFeatures.templates;
 
   const canAccessEmployeeDocuments = isEmployee && employeeFeatures.documents;
-  const canAccessEmployeeReports = isEmployee && employeeFeatures.reports;
   const canAccessEmployeeAssignments = isEmployee && employeeFeatures.assignments;
   const canAccessEmployeeFacilities = isEmployee && employeeFeatures.facilities;
   const canAccessEmployeeNotifications = isEmployee && employeeFeatures.notifications;
@@ -106,7 +104,6 @@ export function useFeatureFlags() {
     
     // Employee Feature-Checks
     canAccessEmployeeDocuments,
-    canAccessEmployeeReports,
     canAccessEmployeeAssignments,
     canAccessEmployeeFacilities,
     canAccessEmployeeNotifications,

@@ -13,6 +13,12 @@
 - Krankmeldungen (Meldung, Postfach, Sperre in der Planung, „K“ im Stundennachweis) – Krankmeldungen laufen außerhalb der App. Altdaten bleiben gesperrt in der Datenbank (#56).
 - Automatische Kandidatenvorschläge (Matching), Schichtanfragen durch Pflegekräfte, Datei-Import für Personal/Einrichtungen, Sicherheits-Check-Seite samt 2FA-Pflichtschalter und die Berichte-Seite für Pflegekräfte (#57). Ausschreiben geht weiter – an selbst ausgewählte Kräfte.
 
+**Ehrlich statt simuliert (#59)**
+- Keine Mock- oder Platzhalterdaten mehr: Backup & Restore (tat nichts), Export-Buttons ohne Datei, Systemwerte („99,9 % Uptime“), nicht durchgesetzte Sicherheitseinstellungen und Mock-Schalter entfernt.
+- Startseite zeigt nur vorhandene Funktionen; Hero ohne erfundene Personen; AGB/AVV-Platzhalter nicht mehr verlinkt.
+- Cookie-Hinweis und Datenschutzerklärung korrigiert: kein Tracking, Rechenzentrum Belgien (europe-west1), Resend als E-Mail-Dienst.
+- Impressum-Fallbacks mit echten Firmendaten statt „Musterfirma“.
+
 **Sicherheit & Datenschutz**
 - Alle Cloud Functions laufen in der EU (`europe-west1`), auch die geplanten Jobs (Formular-Erinnerungen, Kennzahlen).
 - Feiertage: Standard-Bundesland NRW, wenn bei der Firma keins gesetzt ist.

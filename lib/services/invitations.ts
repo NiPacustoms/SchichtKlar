@@ -25,9 +25,8 @@ function generateToken(length = 32): string {
     crypto.getRandomValues(bytes);
     return toBase64Url(bytes);
   }
-  // Fallback (Node SSR ohne Web Crypto) – ausreichend für Nicht‑Kritik, aber besser via API absichern
-  const arr = Array.from({ length }, () => Math.floor(Math.random() * 256));
-  return toBase64Url(Uint8Array.from(arr));
+  // Ohne sicheren Zufall keine Einladungs-Tokens
+  throw new Error('Sichere Zufallszahlen nicht verfügbar');
 }
 
 export const invitationService = {
