@@ -52,32 +52,32 @@ export interface LegalInfo {
 /**
  * Standard-Impressum-Daten
  * 
- * WICHTIG: Diese müssen vor Produktions-Release durch echte Daten ersetzt werden!
+ * Firmendaten AufAbruf GmbH; per ENV überschreibbar.
  * Alternativ: Daten aus SystemSettings oder ENV-Variablen laden
  */
 export const DEFAULT_LEGAL_INFO: LegalInfo = {
-  companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || 'Musterfirma GmbH',
+  companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || 'AufAbruf GmbH',
   legalForm: process.env.NEXT_PUBLIC_LEGAL_FORM || 'GmbH',
   address: {
-    street: process.env.NEXT_PUBLIC_COMPANY_STREET || 'Musterstraße 123',
-    city: process.env.NEXT_PUBLIC_COMPANY_CITY || 'Musterstadt',
-    zipCode: process.env.NEXT_PUBLIC_COMPANY_ZIP || '12345',
+    street: process.env.NEXT_PUBLIC_COMPANY_STREET || 'Herner Straße 134',
+    city: process.env.NEXT_PUBLIC_COMPANY_CITY || 'Herten',
+    zipCode: process.env.NEXT_PUBLIC_COMPANY_ZIP || '45699',
     country: process.env.NEXT_PUBLIC_COMPANY_COUNTRY || 'Deutschland',
   },
   contact: {
-    email: process.env.NEXT_PUBLIC_COMPANY_EMAIL || 'info@example.com',
-    phone: process.env.NEXT_PUBLIC_COMPANY_PHONE || '+49 123 456789',
+    email: process.env.NEXT_PUBLIC_COMPANY_EMAIL || 'info@aufabruf.eu',
+    phone: process.env.NEXT_PUBLIC_COMPANY_PHONE || '02366 58 292 58',
     fax: process.env.NEXT_PUBLIC_COMPANY_FAX,
-    website: process.env.NEXT_PUBLIC_COMPANY_WEBSITE || process.env.NEXT_PUBLIC_APP_URL || 'https://example.com',
+    website: process.env.NEXT_PUBLIC_COMPANY_WEBSITE || 'www.aufabruf.eu',
   },
   registration: {
     registerType: 'Handelsregister',
-    registerNumber: process.env.NEXT_PUBLIC_REGISTER_NUMBER || 'HRB 12345',
-    registerCourt: process.env.NEXT_PUBLIC_REGISTER_COURT || 'Amtsgericht Musterstadt',
-    vatId: process.env.NEXT_PUBLIC_VAT_ID || 'DE123456789',
+    registerNumber: process.env.NEXT_PUBLIC_REGISTER_NUMBER || 'HRB 9754',
+    registerCourt: process.env.NEXT_PUBLIC_REGISTER_COURT || 'Amtsgericht Recklinghausen',
+    vatId: process.env.NEXT_PUBLIC_VAT_ID || 'DE369 553 099',
   },
   responsiblePerson: {
-    name: process.env.NEXT_PUBLIC_RESPONSIBLE_NAME || 'Max Mustermann',
+    name: process.env.NEXT_PUBLIC_RESPONSIBLE_NAME || 'Christian Zak',
     position: process.env.NEXT_PUBLIC_RESPONSIBLE_POSITION || 'Geschäftsführer',
   },
   taxNumber: process.env.NEXT_PUBLIC_TAX_NUMBER || undefined,

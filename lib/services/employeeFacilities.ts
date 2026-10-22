@@ -498,16 +498,4 @@ export const employeeFacilitiesService = {
   toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
   },
-
-  // Export facilities
-  async exportFacilities(scope: EmployeeFacilityScope, format: 'pdf' | 'excel' | 'csv'): Promise<string> {
-      validateScope(scope);
-      // Generate export file
-      const fileUrl = `/facilities-export.${format}`;
-      
-      // File generation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      return fileUrl;
-  },
 };

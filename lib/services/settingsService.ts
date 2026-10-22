@@ -104,7 +104,6 @@ export interface SettingsUpdateData {
     enableDocumentTypes?: boolean;
     enableTemplates?: boolean;
     enableEmployeeDocuments?: boolean;
-    enableEmployeeReports?: boolean;
     enableEmployeeAssignments?: boolean;
     enableEmployeeFacilities?: boolean;
     enableEmployeeNotifications?: boolean;

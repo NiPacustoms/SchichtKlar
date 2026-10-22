@@ -15,7 +15,6 @@ export interface FeatureFlags {
   
   // Employee Features
   enableEmployeeDocuments: boolean;
-  enableEmployeeReports: boolean;
   enableEmployeeAssignments: boolean;
   enableEmployeeFacilities: boolean;
   enableEmployeeNotifications: boolean;
@@ -32,7 +31,6 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   enableDocumentTypes: true,
   enableTemplates: true,
   enableEmployeeDocuments: true,
-  enableEmployeeReports: true,
   enableEmployeeAssignments: true,
   enableEmployeeFacilities: true,
   enableEmployeeNotifications: true,
@@ -58,7 +56,6 @@ export type AdminFeatureName =
  */
 export type EmployeeFeatureName =
   | 'enableEmployeeDocuments'
-  | 'enableEmployeeReports'
   | 'enableEmployeeAssignments'
   | 'enableEmployeeFacilities'
   | 'enableEmployeeNotifications';

@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { timesService } from '@/lib/services/times';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/utils/toast';
-import { berlinDayKey } from '@/lib/utils/dateKey';
 
 export interface TimeEntry {
   id: string;
@@ -140,24 +139,6 @@ export function useTimes() {
     },
   });
 
-  // Export times mutation
-  const exportTimesMutation = useMutation({
-    mutationFn: (format: 'pdf' | 'excel' | 'csv') => timesService.exportTimes(format),
-    onSuccess: (fileUrl) => {
-      if (fileUrl) {
-        const a = document.createElement('a');
-        a.href = fileUrl;
-        a.download = `times-${berlinDayKey(new Date())}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
-      toast.success('Zeiten erfolgreich exportiert');
-    },
-    onError: (error) => {
-      toast.error('Fehler beim Exportieren: ' + error.message);
-    },
-  });
 
   // Helper functions
   const startShift = async (assignmentId?: string) => {
@@ -174,10 +155,6 @@ export function useTimes() {
 
   const endBreak = async () => {
     return endBreakMutation.mutateAsync();
-  };
-
-  const exportTimes = async (format: 'pdf' | 'excel' | 'csv') => {
-    return exportTimesMutation.mutateAsync(format);
   };
 
   // Get time statistics - berechnet aus echten Daten, keine Mock-Daten
@@ -314,7 +291,6 @@ export function useTimes() {
     endShift,
     addBreak,
     endBreak,
-    exportTimes,
     getTimeStats,
     refetch,
     isStarting: startShiftMutation.isPending,

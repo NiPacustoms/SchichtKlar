@@ -1,5 +1,5 @@
-// Minimaler E-Mail Versand-Adapter (Platzhalter)
-// In Produktion: Resend/SES/Sendgrid integrieren.
+// E-Mail-Versand über Cloud Functions (Resend)
+// Vorlagen für Einladungs- und Einsatz-E-Mails.
 
 export interface InviteEmailPayload {
   to: string;
@@ -12,7 +12,7 @@ export function renderInviteEmailHtml(payload: InviteEmailPayload): string {
     <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111;">
       <h2>Einladung zu Schichtklar</h2>
       <p>Sie wurden von <strong>${payload.companyName}</strong> eingeladen, Schichtklar beizutreten.</p>
-      <p>Bitte klicken Sie innerhalb von 24 Stunden auf den folgenden Link, um Ihr Konto zu erstellen:</p>
+      <p>Bitte klicken Sie innerhalb von 7 Tagen auf den folgenden Link, um Ihr Konto zu erstellen:</p>
       <p>
         <a href="${payload.acceptLink}" style="display:inline-block;background:#3b82f6;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
           Einladung annehmen

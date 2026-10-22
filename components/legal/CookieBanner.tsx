@@ -34,16 +34,6 @@ export function CookieBanner() {
       localStorage.setItem('cookieConsentDate', new Date().toISOString());
     }
     setShowBanner(false);
-    // Optional: Analytics initialisieren, wenn implementiert
-    // initializeAnalytics();
-  };
-
-  const handleReject = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cookieConsent', 'rejected');
-      localStorage.setItem('cookieConsentDate', new Date().toISOString());
-    }
-    setShowBanner(false);
   };
 
   // Während SSR oder vor Hydration: nichts rendern (verhindert Hydration-Mismatch)
@@ -68,28 +58,20 @@ export function CookieBanner() {
         <Cookie sx={{ fontSize: 40, color: 'primary.main', flexShrink: 0 }} />
         <Box sx={{ flex: 1 }}>
           <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
-            Wir verwenden Cookies
+            Nur notwendige Cookies
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Wir verwenden Cookies, um Ihnen die bestmögliche Erfahrung zu bieten und unsere Website
-            zu analysieren. Durch die Nutzung unserer Website stimmen Sie unserer{' '}
-            <Link
-              href="/recht/datenschutz"
-              underline="hover"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            Schichtklar speichert nur technisch notwendige Daten im Browser – für die Anmeldung und
+            Ihre Einstellungen. Kein Tracking, keine Werbe- oder Analyse-Cookies. Mehr dazu in der{' '}
+            <Link href="/recht/datenschutz" underline="hover" target="_blank" rel="noopener noreferrer">
               Datenschutzerklärung
-            </Link>{' '}
-            zu.
+            </Link>
+            .
           </Typography>
         </Box>
         <Stack direction="row" spacing={2} sx={{ flexShrink: 0 }}>
-          <Button variant="outlined" onClick={handleReject} sx={{ minWidth: 100 }}>
-            Ablehnen
-          </Button>
           <Button variant="contained" onClick={handleAccept} sx={{ minWidth: 100 }}>
-            Akzeptieren
+            Verstanden
           </Button>
         </Stack>
       </Stack>

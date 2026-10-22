@@ -1,5 +1,4 @@
 import { db } from '@/lib/firebase';
-import { logger } from '@/lib/logging';
 import {
   addDoc,
   collection,
@@ -61,15 +60,6 @@ export interface DocumentType {
   updatedAt: Date;
 }
 
-export interface SystemInfo {
-  status: string;
-  version: string;
-  uptime: string;
-  storage: string;
-  memory: string;
-  cpu: string;
-  network: string;
-}
 
 export const adminSettingsService = {
   // Get system settings
@@ -386,66 +376,7 @@ export const adminSettingsService = {
     await deleteDoc(doc(db, DOCUMENT_TYPES_COLLECTION, id));
   },
 
-  // Get system info
-  async getSystemInfo(): Promise<SystemInfo> {
-    // Gather system information from Firestore and system stats
-    return {
-      status: 'Online',
-      version: '1.0.0',
-      uptime: '99.9%',
-      storage: '2.5 GB',
-      memory: '512 MB',
-      cpu: '15%',
-      network: 'Gut',
-    };
-  },
 
-  // Backup data
-  async backupData(): Promise<string> {
-    try {
-      // Create backup of Firestore data
-      const backupData = {
-        timestamp: new Date().toISOString(),
-        version: '1.0.0',
-        collections: ['users', 'shifts', 'facilities', 'documents'],
-        size: '2.5 MB',
-      };
-
-      // Simulate backup creation delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Create a blob URL for download
-      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-
-      return url;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // Restore data
-  async restoreData(file: File): Promise<void> {
-    try {
-      // Restore Firestore data from backup
-      // For now, we'll simulate the restore process
-      const text = await file.text();
-      const backupData = JSON.parse(text);
-
-      // Simulate restore process delay
-      await new Promise(resolve => setTimeout(resolve, 5000));
-
-      // Validate backup data
-      if (!backupData.timestamp || !backupData.version) {
-        throw new Error('Ungültige Backup-Datei');
-      }
-
-      // In a real app, you would restore the data to Firestore here
-      logger.info('Restoring data', {}, { backupData });
-    } catch (error) {
-      throw error;
-    }
-  },
 
   // Get document type by ID
   async getDocumentTypeById(documentTypeId: string): Promise<DocumentType | null> {
