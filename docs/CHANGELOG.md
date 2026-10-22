@@ -18,6 +18,7 @@
 - Startseite zeigt nur vorhandene Funktionen; Hero ohne erfundene Personen; AGB/AVV-Platzhalter nicht mehr verlinkt.
 - Cookie-Hinweis und Datenschutzerklärung korrigiert: kein Tracking, Rechenzentrum Belgien (europe-west1), Resend als E-Mail-Dienst.
 - Impressum-Fallbacks mit echten Firmendaten statt „Musterfirma“.
+- Geplante Berichte (Zeitplan ohne automatischen Versand) entfernt; Berichte bleiben unter Auswertung → Berichte (#60).
 
 **Sicherheit & Datenschutz**
 - Alle Cloud Functions laufen in der EU (`europe-west1`), auch die geplanten Jobs (Formular-Erinnerungen, Kennzahlen).

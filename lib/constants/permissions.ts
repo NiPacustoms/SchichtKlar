@@ -31,7 +31,6 @@ export const PERMISSION_OPTIONS: PermissionOption[] = [
   { key: 'manage_timesheets', label: 'Zeiterfassung bearbeiten', group: 'Zeiterfassung' },
   // Berichte
   { key: 'view_reports', label: 'Berichte ansehen', group: 'Berichte' },
-  { key: 'manage_reports', label: 'Geplante Berichte verwalten', group: 'Berichte' },
   // Dokumente
   { key: 'view_documents', label: 'Dokumente ansehen', group: 'Dokumente' },
   { key: 'manage_documents', label: 'Dokumentvorlagen verwalten', group: 'Dokumente' },
