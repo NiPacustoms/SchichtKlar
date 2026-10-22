@@ -5,14 +5,17 @@ import { runAggregateKPIs, runDailyKPIAggregation } from './kpiAggregations';
 
 admin.initializeApp();
 
-export const scheduledFormReminders = functions.pubsub
+// Alle Functions in der EU (Belgien), wie die Haupt-Codebase
+const eu = functions.region('europe-west1');
+
+export const scheduledFormReminders = eu.pubsub
   .schedule('every 24 hours')
   .timeZone('Europe/Berlin')
   .onRun(async () => {
     await sendFormReminderEmails();
   });
 
-export const runFormReminders = functions.https.onRequest(async (_req, res) => {
+export const runFormReminders = eu.https.onRequest(async (_req, res) => {
   try {
     await sendFormReminderEmails();
     res.status(200).json({ ok: true });
@@ -22,14 +25,14 @@ export const runFormReminders = functions.https.onRequest(async (_req, res) => {
   }
 });
 
-export const aggregateKPIs = functions.pubsub
+export const aggregateKPIs = eu.pubsub
   .schedule('0 * * * *')
   .timeZone('Europe/Berlin')
   .onRun(async () => {
     await runAggregateKPIs();
   });
 
-export const dailyKPIAggregation = functions.pubsub
+export const dailyKPIAggregation = eu.pubsub
   .schedule('0 1 * * *')
   .timeZone('Europe/Berlin')
   .onRun(async () => {

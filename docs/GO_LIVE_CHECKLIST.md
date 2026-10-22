@@ -4,7 +4,7 @@ Stand: Oktober 2026. Reihenfolge einhalten; alles aus dem Projektordner auf dem 
 
 ## 1. Einmalig vorbereiten
 
-- [ ] **Firmen-Dokument** in der Firebase-Konsole (Firestore → `companies/<eure companyId>`): `holidayState: "NW"` setzen (Feiertage NRW für die Zuschlagsstunden).
+- [x] **Feiertage:** Ohne Angabe rechnet die App mit NRW (`NW`). Nur für ein anderes Bundesland `holidayState` im Firmen-Dokument setzen oder `DEFAULT_HOLIDAY_STATE` in `functions/.env`.
 - [ ] **Impressums-/Firmendaten** (`NEXT_PUBLIC_COMPANY_*`, inkl. Steuernummer und Bank) im Hosting setzen. Sie erscheinen in der Fußzeile von Einsatzmitteilung und Stundennachweis.
 - [ ] **E-Mail:** `RESEND_API_KEY` (und `RESEND_FROM` mit eurer Domain) für Einladungen setzen; SMTP-Zugang für die Benachrichtigungen der Cloud Functions.
 - [ ] **AVV mit Google Cloud** abschließen (alle Daten und Functions liegen in `europe-west1`).

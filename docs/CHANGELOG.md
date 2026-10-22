@@ -14,7 +14,9 @@
 - Automatische Kandidatenvorschläge (Matching), Schichtanfragen durch Pflegekräfte, Datei-Import für Personal/Einrichtungen, Sicherheits-Check-Seite samt 2FA-Pflichtschalter und die Berichte-Seite für Pflegekräfte (#57). Ausschreiben geht weiter – an selbst ausgewählte Kräfte.
 
 **Sicherheit & Datenschutz**
-- Alle Cloud Functions laufen in der EU (`europe-west1`).
+- Alle Cloud Functions laufen in der EU (`europe-west1`), auch die geplanten Jobs (Formular-Erinnerungen, Kennzahlen).
+- Feiertage: Standard-Bundesland NRW, wenn bei der Firma keins gesetzt ist.
+- firebase-functions 7.4.
 - DSGVO-Auskunft/-Löschung nur für eigene Daten bzw. durch die Disposition; Aufbewahrungspflichten (MiLoG, AO) werden eingehalten.
 - Pflegekräfte können Stundenlohn und Personalnummer nicht selbst ändern.
 - Ungenutzte Proxy-Routen und Demo-Seiten entfernt.

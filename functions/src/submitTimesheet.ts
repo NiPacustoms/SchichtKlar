@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin';
+import { resolveHolidayState } from './utils/holidayState';
 import * as functions from 'firebase-functions/v1';
 import { validateTimesheetArbZG, TimesheetValidationData } from './timesheetValidationUtils';
 import { computeWorkHoursBreakdown } from './utils/workHoursBreakdown';
@@ -84,14 +85,10 @@ export const submitTimesheet = functions.region(REGION).https.onCall(async (data
       // Bundesland der Firma für regionale Feiertage (z. B. NW: Fronleichnam, Allerheiligen)
       let holidayState: string | undefined;
       try {
-        if (timesheet.companyId) {
-          const companySnap = await db.collection('companies').doc(timesheet.companyId).get();
-          const c = companySnap.exists ? companySnap.data() : undefined;
-          const raw = c?.holidayState ?? c?.state ?? c?.bundesland;
-          holidayState = typeof raw === 'string' && /^[A-Za-z]{2}$/.test(raw) ? raw.toUpperCase() : undefined;
-        }
+        const companySnap = timesheet.companyId ? await db.collection('companies').doc(timesheet.companyId).get() : null;
+        holidayState = resolveHolidayState(companySnap?.exists ? companySnap.data() : null);
       } catch {
-        holidayState = undefined;
+        holidayState = resolveHolidayState(null);
       }
       try {
         const userSnap = await db.collection('users').doc(timesheet.userId).get();
