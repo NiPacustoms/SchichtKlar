@@ -14,18 +14,6 @@ export { getUserRole, getUsersWithRoles, setUserRole } from './auth';
 export { onUserCreated, onUserUpdated } from './userTriggers';
 
 export {
-  onAssignmentCreated,
-  onAssignmentUpdated,
-  onDocumentCreated as onDocumentCreatedAudit,
-  onDocumentUpdated as onDocumentUpdatedAudit,
-  onShiftCreated,
-  onShiftUpdated,
-  onTimesheetCreated,
-  onTimesheetDeleted,
-  onTimesheetUpdated,
-} from './auditLogTriggers';
-
-export {
   checkDocumentExpiry,
   onAssignmentStatusChanged,
   onDocumentVerified,
