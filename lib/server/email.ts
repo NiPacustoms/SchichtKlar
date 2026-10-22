@@ -50,6 +50,8 @@ export async function sendInvitationEmailServer(
       const from = process.env.RESEND_FROM?.trim() || 'Schichtklar <onboarding@resend.dev>';
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
+        // Nicht hängen bleiben: die Einladung zeigt den Link auch ohne Mail an
+        signal: AbortSignal.timeout(10_000),
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${resendKey}`,
@@ -95,6 +97,7 @@ export async function sendInvitationEmailServer(
 
   try {
     const res = await fetch(url, {
+      signal: AbortSignal.timeout(10_000),
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

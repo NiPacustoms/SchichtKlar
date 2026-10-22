@@ -133,3 +133,6 @@ y/
 gcloud-*.json
 application_default_credentials.json
 ui-shots/
+
+# Testartefakte
+undefined-*.png
